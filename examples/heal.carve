@@ -1,6 +1,6 @@
 # /heal heals yourself, /heal <player> heals someone else.
 command /heal [<player>]:
-    permission: pumpscript:heal
+    permission: carve:heal
     description: Heal yourself or another player
     trigger:
         if arg is set:

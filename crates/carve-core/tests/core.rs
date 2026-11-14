@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use pumpscript_core::compile::{CONDITION_PATTERNS, EFFECT_PATTERNS, EventKind, check_registry, compile_file};
-use pumpscript_core::*;
+use carve_core::compile::{CONDITION_PATTERNS, EFFECT_PATTERNS, EventKind, check_registry, compile_file};
+use carve_core::*;
 
 #[derive(Default)]
 struct Mock {
@@ -91,13 +91,13 @@ fn steve() -> PlayerRef {
 
 fn engine(src: &str) -> Engine {
     let mut e = Engine::default();
-    let (_, errs) = e.load(&[("test.ps".into(), src.into())]);
+    let (_, errs) = e.load(&[("test.carve".into(), src.into())]);
     assert!(errs.is_empty(), "unexpected errors: {}", errs.iter().map(|e| e.to_string()).collect::<Vec<_>>().join("\n"));
     e
 }
 
 fn errors_of(src: &str) -> Vec<ScriptError> {
-    compile_file("bad.ps", src).err().unwrap_or_default()
+    compile_file("bad.carve", src).err().unwrap_or_default()
 }
 
 fn join(src: &str) -> Vec<String> {
@@ -183,10 +183,10 @@ fn unknown_effect_reports_line_and_did_you_mean() {
     let errs = errors_of("on join:\n    send \"ok\"\n    sned \"hi\" to player\n");
     assert_eq!(errs.len(), 1);
     let e = &errs[0];
-    assert_eq!((e.file.as_str(), e.line), ("bad.ps", 3));
+    assert_eq!((e.file.as_str(), e.line), ("bad.carve", 3));
     assert_eq!(e.suggestions.len(), 3);
     assert!(e.suggestions.iter().any(|s| s.starts_with("send %text%")), "{:?}", e.suggestions);
-    assert!(e.to_string().starts_with("bad.ps:3: "));
+    assert!(e.to_string().starts_with("bad.carve:3: "));
 }
 
 #[test]
@@ -275,7 +275,7 @@ fn division_by_zero_is_runtime_error_with_line() {
     e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
     assert_eq!(h.take(), ["send Steve a"]);
     assert_eq!(h.errors().len(), 1);
-    assert!(h.errors()[0].starts_with("test.ps:3: division by zero"));
+    assert!(h.errors()[0].starts_with("test.carve:3: division by zero"));
 }
 
 #[test]
@@ -381,7 +381,7 @@ fn add_to_text_variable_is_error() {
     let mut h = Mock::with_steve();
     e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
     assert_eq!(h.errors().len(), 1);
-    assert!(h.errors()[0].starts_with("test.ps:3:"));
+    assert!(h.errors()[0].starts_with("test.carve:3:"));
 }
 
 #[test]
@@ -454,7 +454,7 @@ fn cancel_before_and_after_wait() {
     e.resume(tok, &mut h);
     let warns: Vec<_> = h.logs.iter().filter(|(l, _)| *l == LogLevel::Warn).collect();
     assert_eq!(warns.len(), 1);
-    assert!(warns[0].1.starts_with("test.ps:3:"));
+    assert!(warns[0].1.starts_with("test.carve:3:"));
 
     // cancel then wait: still cancelled
     let mut e = engine("on break:\n    cancel event\n    wait 1 tick\n    send \"later\"\n");
@@ -518,13 +518,13 @@ command /echo [<text>]:
 fn reload_keeps_old_scripts_on_error() {
     let mut e = engine("on join:\n    send \"v1\"\n");
     let mut h = Mock::with_steve();
-    let bad = [("a.ps".to_string(), "on join:\n    send \"v2\"\n".to_string()), ("b.ps".into(), "on join:\n    oops\n".into())];
+    let bad = [("a.carve".to_string(), "on join:\n    send \"v2\"\n".to_string()), ("b.carve".into(), "on join:\n    oops\n".into())];
     let errs = e.reload(&bad).unwrap_err();
     assert_eq!(errs.len(), 1);
-    assert_eq!((errs[0].file.as_str(), errs[0].line), ("b.ps", 2));
+    assert_eq!((errs[0].file.as_str(), errs[0].line), ("b.carve", 2));
     e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
     assert_eq!(h.take(), ["send Steve v1"]);
-    let good = [("a.ps".to_string(), "on join:\n    send \"v2\"\n".to_string())];
+    let good = [("a.carve".to_string(), "on join:\n    send \"v2\"\n".to_string())];
     let sum = e.reload(&good).unwrap();
     assert_eq!((sum.files, sum.triggers), (1, 1));
     e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
@@ -536,7 +536,7 @@ fn in_flight_wait_finishes_on_old_code() {
     let mut e = engine("on join:\n    wait 1 tick\n    send \"old\"\n");
     let mut h = Mock::with_steve();
     e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
-    e.reload(&[("t.ps".into(), "on join:\n    send \"new\"\n".into())]).unwrap();
+    e.reload(&[("t.carve".into(), "on join:\n    send \"new\"\n".into())]).unwrap();
     let tok = h.waits[0].1;
     e.resume(tok, &mut h);
     assert_eq!(h.take(), ["send Steve old"]);
@@ -545,11 +545,11 @@ fn in_flight_wait_finishes_on_old_code() {
 #[test]
 fn initial_load_is_partial() {
     let mut e = Engine::default();
-    let files = [("good.ps".to_string(), "on join:\n    send \"g\"\n".to_string()), ("bad.ps".into(), "on join:\n    nope\n".into())];
+    let files = [("good.carve".to_string(), "on join:\n    send \"g\"\n".to_string()), ("bad.carve".into(), "on join:\n    nope\n".into())];
     let (sum, errs) = e.load(&files);
     assert_eq!(sum.files, 1);
     assert_eq!(errs.len(), 1);
-    let dup = [("a.ps".to_string(), "command /x:\n    trigger:\n        send \"a\"\n".to_string()), ("b.ps".into(), "command /x:\n    trigger:\n        send \"b\"\n".into())];
+    let dup = [("a.carve".to_string(), "command /x:\n    trigger:\n        send \"a\"\n".to_string()), ("b.carve".into(), "command /x:\n    trigger:\n        send \"b\"\n".into())];
     assert!(e.reload(&dup).unwrap_err()[0].msg.contains("defined twice"));
 }
 
@@ -576,7 +576,7 @@ fn runaway_guard() {
 
 #[test]
 fn examples_compile() {
-    for f in ["welcome.ps", "heal.ps"] {
+    for f in ["welcome.carve", "heal.carve"] {
         let path = format!("{}/../../examples/{f}", env!("CARGO_MANIFEST_DIR"));
         let src = std::fs::read_to_string(&path).unwrap();
         let errs = errors_of(&src);

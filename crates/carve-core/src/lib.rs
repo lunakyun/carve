@@ -1,4 +1,4 @@
-//! PumpScript core: a small Skript-like language. No game dependencies; the
+//! Carve core: a small Skript-like language. No game dependencies; the
 //! game is reached only through the [`Host`] trait.
 
 pub mod blocks;

@@ -1,4 +1,4 @@
-//! PumpScript as a Pumpkin WASM plugin. All game access goes through
+//! Carve as a Pumpkin WASM plugin. All game access goes through
 //! [`WasmHost`], which implements the core's `Host` trait.
 
 use std::collections::BTreeSet;
@@ -15,14 +15,14 @@ use pumpkin_plugin_api::permission::{Permission, PermissionDefault, PermissionLe
 use pumpkin_plugin_api::scheduler::schedule_repeating_task;
 use pumpkin_plugin_api::text::TextComponent;
 use pumpkin_plugin_api::{Context, Player, Plugin, PluginMetadata, Server, permissions, register_plugin, uuid};
-use pumpscript_core::{
+use carve_core::{
     CommandOutcome, Engine, EventCtx, EventKind, Host, LogLevel, PlayerRef, Recipient, ScriptError, Variables,
 };
 
 const SCRIPTS_DIR: &str = "scripts";
 const VARS_FILE: &str = "variables.json";
-const ADMIN_PERM: &str = "pumpscript:admin";
-const COMMAND_PERM: &str = "pumpscript:command";
+const ADMIN_PERM: &str = "carve:admin";
+const COMMAND_PERM: &str = "carve:command";
 
 struct HostState {
     tick: u64,
@@ -41,7 +41,7 @@ struct State {
 static STATE: Mutex<Option<State>> = Mutex::new(None);
 
 fn plog(level: ApiLevel, msg: &str) {
-    log(level, &format!("[PumpScript] {msg}"));
+    log(level, &format!("[Carve] {msg}"));
 }
 
 fn text(s: &str) -> TextComponent {
@@ -86,9 +86,9 @@ impl WasmHost<'_> {
     }
 }
 
-/// Bare permission names live in the plugin's namespace: `vip` -> `pumpscript:vip`.
+/// Bare permission names live in the plugin's namespace: `vip` -> `carve:vip`.
 fn full_node(node: &str) -> String {
-    if node.contains(':') { node.to_string() } else { format!("pumpscript:{node}") }
+    if node.contains(':') { node.to_string() } else { format!("carve:{node}") }
 }
 
 fn player_ref(p: &Player) -> PlayerRef {
@@ -250,7 +250,7 @@ fn read_scripts(dir: &str) -> Result<Vec<(String, String)>, String> {
     let mut files = Vec::new();
     for entry in entries.flatten() {
         let path = entry.path();
-        if path.extension().is_some_and(|x| x == "ps") {
+        if path.extension().is_some_and(|x| x == "carve") {
             let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
             match std::fs::read_to_string(&path) {
                 Ok(src) => files.push((name, src)),
@@ -394,7 +394,7 @@ impl CommandHandler for ScriptCommand {
                 )));
                 Ok(0)
             }
-            None => Err(CommandError::CommandFailed(text("PumpScript is busy, try again."))),
+            None => Err(CommandError::CommandFailed(text("Carve is busy, try again."))),
         }
     }
 }
@@ -434,7 +434,7 @@ impl CommandHandler for ReloadCommand {
                 sender.send_error(text(&e));
                 Ok(0)
             }
-            None => Err(CommandError::CommandFailed(text("PumpScript is busy, try again."))),
+            None => Err(CommandError::CommandFailed(text("Carve is busy, try again."))),
         }
     }
 }
@@ -465,18 +465,18 @@ fn tick(server: Server) {
     });
 }
 
-struct PumpScript;
+struct Carve;
 
-impl Plugin for PumpScript {
+impl Plugin for Carve {
     fn new() -> Self {
-        PumpScript
+        Carve
     }
 
     fn metadata(&self) -> PluginMetadata {
         PluginMetadata {
-            name: "pumpscript".into(),
+            name: "carve".into(),
             version: env!("CARGO_PKG_VERSION").into(),
-            authors: vec!["PumpScript contributors".into()],
+            authors: vec!["Carve contributors".into()],
             description: "Skript-like scripting for Pumpkin.".into(),
             dependencies: vec![],
             permissions: vec![permissions::FS_READ_DATA.into(), permissions::FS_WRITE_DATA.into()],
@@ -509,8 +509,8 @@ impl Plugin for PumpScript {
         plog(ApiLevel::Info, &format!("loaded {} script(s), {} trigger(s), {} error(s)", sum.files, sum.triggers, errors.len()));
 
         for (node, desc, default) in [
-            (ADMIN_PERM, "Use /pumpscript reload", PermissionDefault::Op(PermissionLevel::Two)),
-            (COMMAND_PERM, "Use PumpScript script commands", PermissionDefault::Allow),
+            (ADMIN_PERM, "Use /carve reload", PermissionDefault::Op(PermissionLevel::Two)),
+            (COMMAND_PERM, "Use Carve script commands", PermissionDefault::Allow),
         ] {
             let p = Permission { node: node.into(), description: desc.into(), default, children: vec![] };
             if let Err(e) = context.register_permission(&p) {
@@ -518,7 +518,7 @@ impl Plugin for PumpScript {
             }
         }
 
-        let admin = Command::new(&["pumpscript".to_string(), "ps".to_string()], "PumpScript admin")
+        let admin = Command::new(&["carve".to_string(), "cv".to_string()], "Carve admin")
             .then(CommandNode::literal("reload").execute(ReloadCommand));
         context.register_command(admin, ADMIN_PERM);
 
@@ -528,7 +528,7 @@ impl Plugin for PumpScript {
             let Some(def) = engine.table().command(name) else { continue };
             // Unregistered nodes are always denied by Pumpkin, so register ours.
             if let Some(node) = def.permission.as_deref().map(full_node)
-                && node.starts_with("pumpscript:")
+                && node.starts_with("carve:")
                 && perms_done.insert(node.clone())
             {
                 let p = Permission {
@@ -579,4 +579,4 @@ impl Plugin for PumpScript {
     }
 }
 
-register_plugin!(PumpScript);
+register_plugin!(Carve);

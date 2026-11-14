@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/pumpscript-core", "crates/pumpscript-wasm"]
+members = ["crates/carve-core", "crates/carve-wasm"]
 
 [workspace.package]
 version = "0.1.0"

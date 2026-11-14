@@ -30,6 +30,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
 
 [[package]]
+name = "carve-core"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+]
+
+[[package]]
+name = "carve-wasm"
+version = "0.1.0"
+dependencies = [
+ "carve-core",
+ "pumpkin-plugin-api",
+]
+
+[[package]]
 name = "cobs"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -210,21 +225,6 @@ dependencies = [
  "tracing",
  "tracing-serde-structured",
  "wit-bindgen",
-]
-
-[[package]]
-name = "pumpscript-core"
-version = "0.1.0"
-dependencies = [
- "serde_json",
-]
-
-[[package]]
-name = "pumpscript-wasm"
-version = "0.1.0"
-dependencies = [
- "pumpkin-plugin-api",
- "pumpscript-core",
 ]
 
 [[package]]
