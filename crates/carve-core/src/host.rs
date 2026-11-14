@@ -301,4 +301,36 @@ pub trait Host {
     fn set_fire(&mut self, _player: &PlayerRef, _ticks: i32) {
         self.log(LogLevel::Warn, "setting fire is not supported on this server");
     }
+
+    /// Open a chest menu with this many rows (1 to 6) and a title.
+    fn open_chest(&mut self, _player: &PlayerRef, _rows: u8, _title: &str) {
+        self.log(LogLevel::Warn, "chest menus are not supported on this server");
+    }
+
+    /// The item in a slot. `current`: the open menu if there is one, else
+    /// the player's own inventory. Item id has no `minecraft:`.
+    fn inv_get(&mut self, _player: &PlayerRef, _current: bool, _slot: i64) -> Option<(String, u32)> {
+        None
+    }
+
+    /// Put an item in a slot; `None` empties it.
+    fn inv_set(&mut self, _player: &PlayerRef, _current: bool, _slot: i64, _item: Option<(&str, u32)>) {
+        self.log(LogLevel::Warn, "setting inventory slots is not supported on this server");
+    }
+
+    /// Empty the player's own inventory, or the open menu when `current`.
+    fn inv_clear(&mut self, _player: &PlayerRef, _current: bool) {
+        self.log(LogLevel::Warn, "clearing inventories is not supported on this server");
+    }
+
+    /// Take up to `count` of an item from the player's inventory. Returns how many were taken.
+    fn inv_remove(&mut self, _player: &PlayerRef, _id: &str, _count: u32) -> u32 {
+        self.log(LogLevel::Warn, "removing items is not supported on this server");
+        0
+    }
+
+    /// Close the inventory the player has open.
+    fn close_inventory(&mut self, _player: &PlayerRef) {
+        self.log(LogLevel::Warn, "closing inventories is not supported on this server");
+    }
 }
