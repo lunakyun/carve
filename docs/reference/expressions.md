@@ -7,7 +7,7 @@ editLink: false
 
 # Expressions
 
-Expressions are values you put into effects and conditions. 61 entries. Search all of them on the [reference home](./index.md).
+Expressions are values you put into effects and conditions. 64 entries. Search all of them on the [reference home](./index.md).
 
 In a pattern, `%type%` is a value, `[...]` is optional and `(a|b)` means one of the words.
 
@@ -678,6 +678,20 @@ on join:
 
 Since **unreleased** · Guide: [functions](../syntax/functions.md)
 
+## Parse placeholders {#parse_placeholders}
+
+```carve
+parse placeholders in %text% [for %player%]
+```
+
+Replaces every `%name%` placeholder in the text. Write `%%name%%` in a script string, because `%%` is a literal percent sign there. Unknown placeholders stay as written.
+
+```carve
+send parse placeholders in "Hi %%player_name%%, %%server_online%% online" for player
+```
+
+Since **unreleased** · Guide: [w4-placeholders](../syntax/w4-placeholders.md)
+
 ## Parsed as number {#parsed_number}
 
 ```carve
@@ -707,6 +721,37 @@ send "Ping: %ping of player% ms" to player
 ```
 
 Since **unreleased** · Guide: [op-kick-ban](../syntax/op-kick-ban.md)
+
+## Placeholder {#placeholder}
+
+```carve
+placeholder %text% [for %player%]
+```
+
+Value of one placeholder (no percent signs), like `"player_name"`, `"server_online"`, `"carve_var_coins"` or one a script defines. The player defaults to the event's player. Unknown placeholders give `<none>`.
+
+```carve
+send placeholder "player_health" for player
+```
+
+Since **unreleased** · Guide: [w4-placeholders](../syntax/w4-placeholders.md)
+
+## Placeholder request values {#placeholder_request_values}
+
+```carve
+the identifier
+the prefix
+the result
+```
+
+Values inside `on placeholder request`. `the identifier` and `the prefix` are read only; `set the result to ...` answers the request.
+
+```carve
+on placeholder request for prefix "x":
+    set the result to "you asked for %the identifier%"
+```
+
+Since **unreleased** · Guide: [w4-placeholders](../syntax/w4-placeholders.md)
 
 ## Player {#player}
 

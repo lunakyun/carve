@@ -216,6 +216,8 @@ pub enum Expr {
     W4(Box<crate::w2_expressions_4::W4>),
     /// Rare wave 2 expressions (numbers, midpoint, metadata, ...), boxed to keep this enum small.
     W5(Box<crate::w2_expressions_5::W5>),
+    /// `placeholder "x" for player` and `parse placeholders in ...`.
+    Ph(Box<crate::placeholders::Ph>),
     /// Rare wave-2 expressions (see `w2_expressions_6.rs`).
     W6(Box<crate::w2_expressions_6::W6>),
     /// Vectors, server facts and other rare expressions (see `w2_expressions_7`).
@@ -460,6 +462,7 @@ impl Expr {
             Expr::Ext(f, _) => crate::w2_expressions_3::ty(*f),
             Expr::W4(w) => w.ty(),
             Expr::W5(w) => w.ty(),
+            Expr::Ph(p) => p.ty(),
             Expr::W6(w) => w.ty(env),
             Expr::ListAgg(Agg::Size | Agg::Sum, _) => Ty::Number,
             Expr::ListAgg(..) => Ty::Object,
@@ -1679,6 +1682,17 @@ impl P<'_> {
                 }
                 if let Some(e) = self.util_prefix(&lw)? {
                     return Ok(e);
+                }
+                match crate::placeholders::parse_word(self.toks, self.pos, self.env, &lw) {
+                    Ok(Some((e, end))) => {
+                        self.pos = end;
+                        return Ok(e);
+                    }
+                    Ok(None) => {}
+                    Err(m) => {
+                        self.hit_end.set(true);
+                        return Err(m);
+                    }
                 }
                 match crate::w2_expressions_5::parse_word(self.toks, self.pos, self.env, &lw) {
                     Ok(Some((e, end))) => {

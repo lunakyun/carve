@@ -186,6 +186,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 On Piston Extend — `on piston extend` — `event-text` is the direction; no position value yet
 - 🟡 On Piston Retract — `on piston retract` — `event-text` is the direction; no position value yet
 - ✅ On Place
+- ✅ On Placeholder Request — `on placeholder request for prefix "shop":` with `the identifier` and `set the result to ...` (docs/placeholders.md)
 - ⛔ On Player Chunk Enter — no chunk enter event for players in Pumpkin's plugin API
 - ⛔ On Player Chunk Enters — no chunk enter event for players in Pumpkin's plugin API
 - ⛔ On Player Deep Sleep — Pumpkin has bed enter/leave but no deep sleep event
@@ -1134,6 +1135,8 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 X of Item/Entity Type — `3 of diamond`; items only
 - 🟡 X Times — only in `loop N times`
 - 🟡 Yaw / Pitch — `yaw of player`, `pitch of player`, and of vectors; read only
+- ✅ Placeholder / Parse Placeholders — `placeholder "player_name" for player`, `parse placeholders in "Hi %%player_name%%" for player`; built-ins, `carve_var_<name>` and script-defined ones
+- 🟡 Placeholders for other plugins — Carve answers `carve:parse` / `carve:get` over Pumpkin's plugin IPC (docs/placeholders.md); Pumpkin has no shared placeholder registry, so other plugins must call Carve themselves
 
 ## Sections (11)
 

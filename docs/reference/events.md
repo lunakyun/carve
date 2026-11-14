@@ -7,7 +7,7 @@ editLink: false
 
 # Events
 
-Events and other top-level lines: what starts a trigger. 146 entries. Search all of them on the [reference home](./index.md).
+Events and other top-level lines: what starts a trigger. 147 entries. Search all of them on the [reference home](./index.md).
 
 In a pattern, `%type%` is a value, `[...]` is optional and `(a|b)` means one of the words.
 
@@ -1581,6 +1581,23 @@ on pick up:
 ```
 
 Since **unreleased** · Guide: [events-items](../syntax/events-items.md)
+
+## Placeholder request {#placeholder_request}
+
+```carve
+on placeholder request for prefix "<prefix>"
+on placeholder request
+```
+
+Someone asks for the placeholder `%<prefix>_<identifier>%`. `the identifier` is the text after the prefix and `the prefix` is the prefix. Answer with `set the result to ...`; if nothing sets it, the placeholder stays as written. Without `for prefix` the trigger sees every placeholder that is not built in.
+
+```carve
+on placeholder request for prefix "shop":
+    if the identifier is "coins":
+        set the result to "%{coins::%player%} ? 0%"
+```
+
+Since **unreleased** · Guide: [w4-placeholders](../syntax/w4-placeholders.md)
 
 ## Projectile hit {#projectile_hit}
 

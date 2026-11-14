@@ -1912,6 +1912,20 @@
     },
     {
       "category": "event",
+      "description": "Someone asks for the placeholder `%<prefix>_<identifier>%`. `the identifier` is the text after the prefix and `the prefix` is the prefix. Answer with `set the result to ...`; if nothing sets it, the placeholder stays as written. Without `for prefix` the trigger sees every placeholder that is not built in.",
+      "example": "on placeholder request for prefix \"shop\":\n    if the identifier is \"coins\":\n        set the result to \"%{coins::%player%} ? 0%\"",
+      "id": "placeholder_request",
+      "name": "Placeholder request",
+      "page": "syntax/w4-placeholders",
+      "patterns": [
+        "on placeholder request for prefix \"<prefix>\"",
+        "on placeholder request"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
       "description": "A projectile hits something. Has `event-location` and `hit player` (`<none>` when it hit something else). Can be cancelled.",
       "example": "on projectile hit:\n    strike lightning effect at event-location",
       "id": "projectile_hit",
@@ -6036,6 +6050,19 @@
     },
     {
       "category": "expression",
+      "description": "Replaces every `%name%` placeholder in the text. Write `%%name%%` in a script string, because `%%` is a literal percent sign there. Unknown placeholders stay as written.",
+      "example": "send parse placeholders in \"Hi %%player_name%%, %%server_online%% online\" for player",
+      "id": "parse_placeholders",
+      "name": "Parse placeholders",
+      "page": "syntax/w4-placeholders",
+      "patterns": [
+        "parse placeholders in %text% [for %player%]"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
       "description": "The number in a text, or `<none>` if it isn't one.",
       "example": "set {_n} to \"42\" parsed as number",
       "id": "parsed_number",
@@ -6058,6 +6085,34 @@
         "ping of %player%",
         "ip [address] of %player%",
         "%player%'s ip"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "Value of one placeholder (no percent signs), like `\"player_name\"`, `\"server_online\"`, `\"carve_var_coins\"` or one a script defines. The player defaults to the event's player. Unknown placeholders give `<none>`.",
+      "example": "send placeholder \"player_health\" for player",
+      "id": "placeholder",
+      "name": "Placeholder",
+      "page": "syntax/w4-placeholders",
+      "patterns": [
+        "placeholder %text% [for %player%]"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "Values inside `on placeholder request`. `the identifier` and `the prefix` are read only; `set the result to ...` answers the request.",
+      "example": "on placeholder request for prefix \"x\":\n    set the result to \"you asked for %the identifier%\"",
+      "id": "placeholder_request_values",
+      "name": "Placeholder request values",
+      "page": "syntax/w4-placeholders",
+      "patterns": [
+        "the identifier",
+        "the prefix",
+        "the result"
       ],
       "since": "unreleased",
       "source": "hand"

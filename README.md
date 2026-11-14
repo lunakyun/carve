@@ -89,6 +89,7 @@ cargo build -p carve-wasm --release --target wasm32-wasip2
   [conditions](docs/syntax/conditions.md), [expressions](docs/syntax/expressions.md),
   [loops](docs/syntax/loops.md), [functions and options](docs/syntax/functions.md),
   [types](docs/syntax/types.md)
+- [Placeholders](docs/placeholders.md)
 - [Variables](docs/variables.md)
 - [Commands](docs/commands.md)
 - [The /carve command](docs/admin.md)

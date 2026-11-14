@@ -2475,6 +2475,52 @@ pub const DOCS: &[Doc] = &[
         "Spawns an entity and runs the body; `event-entity` is the new entity.",
         "spawn a zombie at player:\n    set name of event-entity to \"Bob\"",
     ),
+    doc(
+        Ev,
+        "placeholder_request",
+        "Placeholder request",
+        NEXT,
+        "syntax/w4-placeholders",
+        &[
+            "on placeholder request for prefix \"<prefix>\"",
+            "on placeholder request",
+        ],
+        "Someone asks for the placeholder `%<prefix>_<identifier>%`. `the identifier` is the text after the prefix and `the prefix` is the prefix. Answer with `set the result to ...`; if nothing sets it, the placeholder stays as written. Without `for prefix` the trigger sees every placeholder that is not built in.",
+        "on placeholder request for prefix \"shop\":
+    if the identifier is \"coins\":
+        set the result to \"%{coins::%player%} ? 0%\"",
+    ),
+    doc(
+        Ex,
+        "placeholder",
+        "Placeholder",
+        NEXT,
+        "syntax/w4-placeholders",
+        &["placeholder %text% [for %player%]"],
+        "Value of one placeholder (no percent signs), like `\"player_name\"`, `\"server_online\"`, `\"carve_var_coins\"` or one a script defines. The player defaults to the event's player. Unknown placeholders give `<none>`.",
+        "send placeholder \"player_health\" for player",
+    ),
+    doc(
+        Ex,
+        "parse_placeholders",
+        "Parse placeholders",
+        NEXT,
+        "syntax/w4-placeholders",
+        &["parse placeholders in %text% [for %player%]"],
+        "Replaces every `%name%` placeholder in the text. Write `%%name%%` in a script string, because `%%` is a literal percent sign there. Unknown placeholders stay as written.",
+        "send parse placeholders in \"Hi %%player_name%%, %%server_online%% online\" for player",
+    ),
+    doc(
+        Ex,
+        "placeholder_request_values",
+        "Placeholder request values",
+        NEXT,
+        "syntax/w4-placeholders",
+        &["the identifier", "the prefix", "the result"],
+        "Values inside `on placeholder request`. `the identifier` and `the prefix` are read only; `set the result to ...` answers the request.",
+        "on placeholder request for prefix \"x\":
+    set the result to \"you asked for %the identifier%\"",
+    ),
 ];
 
 /// `on join:` wrapper for examples that are only effect lines.

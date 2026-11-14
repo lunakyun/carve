@@ -97,6 +97,11 @@ struct State {
 
 static STATE: Mutex<Option<State>> = Mutex::new(None);
 
+thread_local! {
+    /// The server handle, kept for IPC calls from other plugins (they come without one).
+    static PH_SERVER: std::cell::RefCell<Option<Server>> = const { std::cell::RefCell::new(None) };
+}
+
 fn plog(level: ApiLevel, msg: &str) {
     log(level, &format!("[Carve] {msg}"));
 }
@@ -2821,8 +2826,25 @@ impl Plugin for Carve {
             });
         }
         schedule_repeating_task(1, 1, tick);
+        PH_SERVER.with(|s| *s.borrow_mut() = Some(context.get_server()));
         fire_load(&context.get_server());
         Ok(())
+    }
+
+    /// Other plugins ask for placeholders here (protocol: docs/placeholders.md).
+    fn handle_ipc_message(&self, _sender: String, message: Vec<u8>) -> Result<Vec<u8>, String> {
+        PH_SERVER.with(|s| {
+            let guard = s.borrow();
+            let server = guard.as_ref().ok_or("Carve is not loaded yet")?;
+            with_state(server, None, |st, host| {
+                let mut th = TickHost {
+                    inner: host,
+                    hs: &mut st.hs,
+                };
+                carve_core::placeholders::handle_ipc(&mut st.engine, &message, &mut th)
+            })
+            .unwrap_or_else(|| Err("Carve is busy, try again".to_string()))
+        })
     }
 
     fn on_unload(&self, _context: Context) -> Result<(), String> {
