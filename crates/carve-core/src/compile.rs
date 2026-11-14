@@ -223,6 +223,7 @@ pub enum Effect {
         to: Expr,
     },
     Heal(Expr),
+    Hf(Box<crate::health_food::HfEffect>),
     SetHealth(Expr, Expr),
     SetGamemode(Expr, Expr),
     /// Experience change; the two expressions are in pattern order.
@@ -345,6 +346,7 @@ pub enum EffKind {
     Send,
     Broadcast,
     Heal,
+    Hf(crate::health_food::HfOp),
     SetHealth,
     SetGamemode,
     Xp(crate::xp_level::XpOp),
@@ -525,6 +527,11 @@ fn registry() -> &'static Registry {
                     .iter()
                     .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
             )
+            .chain(
+                crate::health_food::EFFECT_PATTERNS
+                    .iter()
+                    .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
+            )
             .collect(),
         conditions: crate::senders::SENDER_CONDITION_PATTERNS
             .iter()
@@ -544,6 +551,7 @@ pub fn check_registry() -> Result<(), String> {
         .chain(EFFECT_PATTERNS)
         .chain(crate::sounds::SOUND_PATTERNS)
         .chain(TEXT_EFFECT_PATTERNS)
+        .chain(crate::health_food::EFFECT_PATTERNS)
     {
         Pattern::new(s, *k)?;
     }
@@ -1176,6 +1184,7 @@ impl Cx<'_> {
         let srcs: Vec<&'static str> = EFFECT_PATTERNS
             .iter()
             .chain(TEXT_EFFECT_PATTERNS)
+            .chain(crate::health_food::EFFECT_PATTERNS)
             .map(|(s, _)| *s)
             .collect();
         let mut e = ScriptError::new(
@@ -1369,6 +1378,7 @@ fn build_effect(kind: EffKind, mut c: Vec<Option<Capture>>) -> Option<Effect> {
             to: take_expr(c, 1),
         },
         EffKind::Broadcast => Effect::Broadcast(take_expr(c, 0)?),
+        EffKind::Hf(op) => return crate::health_food::build(op, c),
         EffKind::Heal => Effect::Heal(take_expr(c, 0)?),
         EffKind::SetHealth => Effect::SetHealth(take_expr(c, 0)?, take_expr(c, 1)?),
         EffKind::SetGamemode => Effect::SetGamemode(take_expr(c, 0)?, take_expr(c, 1)?),

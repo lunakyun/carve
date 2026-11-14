@@ -202,6 +202,9 @@ pub enum Prop {
     Level,
     Xp,
     LevelProgress,
+    MaxHealth,
+    Food,
+    Saturation,
     X,
     Y,
     Z,
@@ -232,7 +235,16 @@ impl Prop {
             Prop::World => Ty::World,
             Prop::Uuid | Prop::Name | Prop::Gamemode => Ty::Text,
             Prop::Tool => Ty::Item,
-            Prop::Health | Prop::Level | Prop::Xp | Prop::LevelProgress | Prop::X | Prop::Y | Prop::Z => Ty::Number,
+            Prop::Health
+            | Prop::MaxHealth
+            | Prop::Food
+            | Prop::Saturation
+            | Prop::Level
+            | Prop::Xp
+            | Prop::LevelProgress
+            | Prop::X
+            | Prop::Y
+            | Prop::Z => Ty::Number,
         }
     }
 
@@ -523,17 +535,28 @@ impl P<'_> {
                 return Err("expected a property after 's, like player's location".into());
             };
             let lw = w.to_ascii_lowercase();
-            let prop = match lw.as_str() {
-                "inventory" => return Err("use 'player's inventory contains <item>' as a condition".into()),
-                _ => match self.toks.get(self.pos + 2) {
-                    Some(Tok::Word(w2)) if crate::xp_level::two_word(&lw, &w2.to_ascii_lowercase()).is_some() => {
-                        self.pos += 1;
-                        crate::xp_level::two_word(&lw, &w2.to_ascii_lowercase()).unwrap_or(Prop::Level)
+            if self.pos + 2 >= self.toks.len() {
+                self.hit_end.set(true);
+            }
+            let (prop, extra) = match crate::health_food::words_from(self.toks, self.pos + 1) {
+                Some((p, n)) => (p, n - 1),
+                None => match lw.as_str() {
+                    "inventory" => {
+                        return Err("use 'player's inventory contains <item>' as a condition".into());
                     }
-                    _ => Prop::from_word(&lw).ok_or_else(|| format!("unknown property '{w}'"))?,
+                    _ => match self.toks.get(self.pos + 2) {
+                        Some(Tok::Word(w2)) if crate::xp_level::two_word(&lw, &w2.to_ascii_lowercase()).is_some() => (
+                            crate::xp_level::two_word(&lw, &w2.to_ascii_lowercase()).unwrap_or(Prop::Level),
+                            1,
+                        ),
+                        _ => (
+                            Prop::from_word(&lw).ok_or_else(|| format!("unknown property '{w}'"))?,
+                            0,
+                        ),
+                    },
                 },
             };
-            self.pos += 2;
+            self.pos += 2 + extra;
             if prop == Prop::Tool && matches!(self.peek(), Some(t) if t.is_lit("item")) {
                 self.pos += 1;
             }
@@ -581,6 +604,17 @@ impl P<'_> {
             return Ok(Expr::NameOf(Box::new(of)));
         }
         Ok(Expr::Prop(prop, Box::new(of)))
+    }
+
+    /// `max health of`, `food level of`, ... starting at the word just read.
+    /// Marks the end as hit when more tokens could complete it.
+    fn hf_head(&self) -> Option<(Prop, usize)> {
+        let start = self.pos - 1;
+        if start + 2 >= self.toks.len() {
+            self.hit_end.set(true);
+        }
+        let (p, n) = crate::health_food::words_from(self.toks, start)?;
+        matches!(self.toks.get(start + n), Some(t) if t.is_lit("of")).then_some((p, n))
     }
 
     /// `<word> of <value>` for the properties above.
@@ -962,6 +996,11 @@ impl P<'_> {
                         if matches!(self.peek(), Some(t) if t.is_lit("of") || t.is_lit("item")) =>
                     {
                         let prop = Prop::from_word(&lw).ok_or("unknown property")?;
+                        self.prop_of(prop)
+                    }
+                    "max" | "food" | "hunger" | "saturation" if self.hf_head().is_some() => {
+                        let (prop, n) = self.hf_head().ok_or("unknown property")?;
+                        self.pos += n - 1;
                         self.prop_of(prop)
                     }
                     "name" => {

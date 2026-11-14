@@ -9,6 +9,7 @@ pub mod engine;
 pub mod error;
 pub mod expr;
 pub mod gamemode;
+pub mod health_food;
 pub mod host;
 pub mod items;
 pub mod lexer;
