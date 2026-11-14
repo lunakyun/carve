@@ -173,6 +173,8 @@ pub enum Expr {
     Items(Box<ListSrc>),
     /// `sum of {x::*}`, `max of ...`, `size of {x::*} where [...]`.
     ListAgg(Agg, Box<ListSrc>),
+    /// Rare expressions of `w2_expressions_1` (eternity, biome, armor, block entities, ...).
+    W2(Box<crate::w2_expressions_1::W2>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -358,6 +360,7 @@ impl Expr {
                 DateOp::Format => Ty::Text,
             },
             Expr::Items(_) => Ty::List,
+            Expr::W2(w) => w.ty(),
             Expr::ListAgg(Agg::Size | Agg::Sum, _) => Ty::Number,
             Expr::ListAgg(..) => Ty::Object,
             Expr::Default(a, b) => {
@@ -824,6 +827,10 @@ impl P<'_> {
                 if let Some(span) = self.span_literal(n) {
                     return Ok(span);
                 }
+                if let Some((e, np)) = crate::w2_expressions_1::angle_suffix(self.toks, self.pos, n) {
+                    self.pos = np;
+                    return Ok(e);
+                }
                 // `2 diamonds`: an amount of an item.
                 if self.pos >= self.toks.len() {
                     self.hit_end.set(true);
@@ -870,6 +877,16 @@ impl P<'_> {
                     }
                     if more {
                         self.hit_end.set(true);
+                    }
+                }
+                if crate::w2_expressions_1::starts(&lw) {
+                    // The sub-parsers can't tell us whether they ran off the end,
+                    // so say "maybe" and let the pattern matcher try longer spans.
+                    let before = self.hit_end.replace(true);
+                    if let Some((w2, np)) = crate::w2_expressions_1::parse(self.toks, self.pos, &lw, self.env)? {
+                        self.pos = np;
+                        self.hit_end.set(before);
+                        return Ok(Expr::W2(Box::new(w2)));
                     }
                 }
                 if let Some(e) = self.text_fn(&lw)? {

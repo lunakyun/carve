@@ -357,6 +357,33 @@ impl WasmHost<'_> {
             .map_or(0, |pl| pl.get_inventory().as_inventory().count_item(id))
     }
 
+    fn biome_at(&mut self, world: &str, x: i32, y: i32, z: i32) -> Option<String> {
+        let w = self.server.get_world_by_name(world)?;
+        let b = w.get_biome(carve_block_pos(x, y, z));
+        Some(carve_core::w2_expressions_1::snake(&format!("{b:?}")))
+    }
+
+    fn armor_item(&mut self, p: &PlayerRef, slot: carve_core::w2_expressions_1::ArmorSlot) -> Option<(String, u32)> {
+        use carve_core::w2_expressions_1::ArmorSlot;
+        use pumpkin_plugin_api::world::EquipmentSlot;
+        let slot = match slot {
+            ArmorSlot::Helmet => EquipmentSlot::Head,
+            ArmorSlot::Chestplate => EquipmentSlot::Chest,
+            ArmorSlot::Leggings => EquipmentSlot::Legs,
+            ArmorSlot::Boots => EquipmentSlot::Feet,
+        };
+        let stack = self.get(p)?.as_entity().as_living()?.get_equipment(slot)?;
+        let key = stack.get_registry_key();
+        let id = key.strip_prefix("minecraft:").unwrap_or(&key).to_string();
+        Some((id, u32::from(stack.get_count())))
+    }
+
+    fn block_entity_nbt(&mut self, world: &str, x: i32, y: i32, z: i32) -> Option<Vec<u8>> {
+        self.server
+            .get_world_by_name(world)?
+            .get_block_entity_nbt(carve_block_pos(x, y, z))
+    }
+
     fn health(&mut self, p: &PlayerRef) -> Option<f64> {
         self.get(p).map(|pl| f64::from(pl.get_health()))
     }
@@ -648,6 +675,11 @@ impl Host for TickHost<'_, '_> {
         apply_knockback(p: &PlayerRef, strength: f64, x: f64, z: f64);
         set_rotation(p: &PlayerRef, yaw: f32, pitch: f32);
         open_book(p: &PlayerRef, off_hand: bool);
+    }
+    delegate! {
+        biome_at(world: &str, x: i32, y: i32, z: i32) -> Option<String>;
+        armor_item(p: &PlayerRef, slot: carve_core::w2_expressions_1::ArmorSlot) -> Option<(String, u32)>;
+        block_entity_nbt(world: &str, x: i32, y: i32, z: i32) -> Option<Vec<u8>>;
     }
 
     fn schedule_wait(&mut self, ticks: u64, token: u64) {
@@ -1779,3 +1811,7 @@ impl Plugin for Carve {
 }
 
 register_plugin!(Carve);
+
+fn carve_block_pos(x: i32, y: i32, z: i32) -> pumpkin_plugin_api::common::BlockPos {
+    pumpkin_plugin_api::common::BlockPos { x, y, z }
+}

@@ -21,6 +21,8 @@ pub enum ListSrc {
     /// `a, b and c` where each part is a list or a value.
     Concat(Vec<ListSrc>),
     Sorted(Box<ListSrc>),
+    /// `alphabetically sorted list`: everything compared as text, ignoring case.
+    SortedAlpha(Box<ListSrc>),
     Reversed(Box<ListSrc>),
     Shuffled(Box<ListSrc>),
     /// `list where [input > 2]`
@@ -71,7 +73,10 @@ pub fn parse_src_all(toks: &[Tok], env: &Env, commas: bool) -> Result<ListSrc, S
 pub fn looks_like_list_op(toks: &[Tok], env: &Env) -> bool {
     if let Some(Tok::Word(w)) = toks.first() {
         let lw = w.to_ascii_lowercase();
-        if matches!(lw.as_str(), "sorted" | "reversed" | "shuffled") {
+        if matches!(lw.as_str(), "sorted" | "reversed" | "shuffled" | "alphabetically" | "alphabetical") {
+            return true;
+        }
+        if lw == "all" && toks.get(1).is_some_and(|t| t.is_lit("scripts")) && toks.len() == 2 {
             return true;
         }
         if lw == "random" && matches!(toks.get(1), Some(Tok::Num(_) | Tok::Var(_))) {
@@ -150,6 +155,16 @@ impl Cur<'_> {
                 self.one(pos)
             }
             Some(Tok::Word(w)) => match w.to_ascii_lowercase().as_str() {
+                "alphabetically" | "alphabetical"
+                    if word(self.toks.get(pos + 1)).as_deref() == Some("sorted") =>
+                {
+                    let mut p = pos + 2;
+                    if word(self.toks.get(p)).as_deref() == Some("list") {
+                        p += 1;
+                    }
+                    let (inner, np) = self.concat(p)?;
+                    Ok((ListSrc::SortedAlpha(Box::new(inner)), np))
+                }
                 lw @ ("sorted" | "reversed" | "shuffled") => {
                     let mut p = pos + 1;
                     if word(self.toks.get(p)).as_deref() == Some("list") {

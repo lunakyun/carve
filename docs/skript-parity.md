@@ -598,78 +598,78 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 
 ## Expressions (545)
 
-- ⬜ Absorbed blocks
-- ⬜ Active Item
-- ⬜ Active Item Use Time
-- ⬜ Affected Entities
-- ⬜ Age of Block/Entity
+- ⛔ Absorbed blocks — needs a sponge event; Pumpkin has none
+- ⛔ Active Item — the plugin API cannot see the item being used
+- ⛔ Active Item Use Time — the plugin API cannot see item use time
+- ⬜ Affected Entities — needs the area-effect-cloud event wired; not done yet
+- ⛔ Age of Block/Entity — no block-state API, and only players are reachable as entities
 - ⬜ All Banned Players/IPs
-- ⬜ All Commands
+- ⛔ All Commands — the plugin API cannot list commands
 - ⛔ All Groups — needs a permissions plugin
 - ⬜ All Operators
-- ⬜ All Permissions
-- ⬜ All Persistent Data Keys
-- ⬜ All Scripts
-- ⬜ All Tags of a Type
-- ⬜ Allay Duplication Cooldown
-- ⬜ Allay Target Jukebox
-- ⬜ Alpha/Red/Green/Blue Color Value
-- ⬜ Alphabetical Sort
-- ⬜ Altitude
+- ⛔ All Permissions — the plugin API cannot list permissions
+- ⛔ All Persistent Data Keys — the plugin API cannot list data keys
+- ✅ All Scripts — `all scripts`: file names of the loaded scripts, usable as a list
+- ⛔ All Tags of a Type — no tag registry in the plugin API
+- ⛔ Allay Duplication Cooldown — no mob-specific API
+- ⛔ Allay Target Jukebox — no mob-specific API
+- 🟡 Alpha/Red/Green/Blue Color Value — `red value of "#ff8000"`; works on hex and named color text (no color type yet)
+- ✅ Alphabetical Sort — `alphabetically sorted {x::*}`
+- ✅ Altitude — `altitude of player`, `altitude of {loc}`: the Y coordinate
 - ✅ Amount — `amount of {list::*}`
-- ⬜ Amount of Items
-- ⬜ An Eternity
-- ⬜ Angle
-- ⬜ Anvil Repair Cost
-- ⬜ Anvil Text Input
-- ⬜ Any Of
-- ⬜ Applied Beacon Effect
+- ✅ Amount of Items — `amount of diamonds in player's inventory`
+- ✅ An Eternity — `an eternity` or `eternity`: a huge time span
+- ✅ Angle — `90 degrees`, `1.57 radians`: result is in degrees
+- ⬜ Anvil Repair Cost — needs the prepare-anvil event wired; not done yet
+- ⬜ Anvil Text Input — needs the prepare-anvil event wired; not done yet
+- ⬜ Any Of — not done yet
+- ⛔ Applied Beacon Effect — Pumpkin has no beacon-effect event
 - ⬜ Applied Enchantments
 - ✅ Argument — `arg`, `arg-N`
 - ✅ Arithmetic — + - * /
-- ⬜ Armor Change Item
-- ⬜ Armor Slot
-- ⬜ Arrow Attached Block
-- ⬜ Arrow Knockback Strength
-- ⬜ Arrows Stuck
-- ⬜ Attack Cooldown
+- ⬜ Armor Change Item — needs an equipment-change event; not done yet
+- 🟡 Armor Slot — `helmet of player`, `chestplate`, `leggings`, `boots`: read only
+- ⛔ Arrow Attached Block — no arrow entity API
+- ⛔ Arrow Knockback Strength — no arrow entity API
+- ⬜ Arrows Stuck — needs the arrow-body-count-change event wired; not done yet
+- ⛔ Attack Cooldown — the plugin API has no attack cooldown
 - ✅ Attacked — `victim`
 - 🟡 Attacker — players only
-- ⬜ Banner Pattern
-- ⬜ Banner Pattern Item
-- ⬜ Banner Patterns
-- ⬜ Barter Drops
-- ⬜ Barter Input
-- ⬜ Beacon Effects
-- ⬜ Beacon Range
-- ⬜ Beacon Tier
-- ⬜ Bed
-- ⬜ Beehive Honey Level
-- ⬜ Beehive Target Flower
-- ⬜ Biome
-- ⬜ Blank Equippable Component
+- ⛔ Banner Pattern — the banner block entity API has no patterns
+- ⛔ Banner Pattern Item — the banner block entity API has no patterns
+- ⛔ Banner Patterns — the banner block entity API has no patterns
+- ⬜ Barter Drops — needs the piglin-barter event wired; not done yet
+- ⬜ Barter Input — needs the piglin-barter event wired; not done yet
+- ⬜ Beacon Effects — not done yet (primary and secondary effect are in the block entity NBT)
+- ✅ Beacon Range — `beacon range of {loc}`
+- ✅ Beacon Tier — `beacon tier of {loc}`
+- ⬜ Bed — not done yet (the API has a respawn location)
+- ⛔ Beehive Honey Level — needs block-state properties; the plugin API has none
+- ⛔ Beehive Target Flower — the plugin API has no beehive flower data
+- ✅ Biome — `biome at {loc}`, `biome of player`: a text like `birch_forest`
+- ⛔ Blank Equippable Component — no item component builder in the plugin API
 - ⬜ Block ⭐
-- ⬜ Block Break Speed
+- ⛔ Block Break Speed — no block hardness data in the plugin API
 - ⬜ Block Data
-- ⬜ Block Hardness
-- ⬜ Block Sound
+- ⛔ Block Hardness — no block hardness data in the plugin API
+- ⛔ Block Sound — no block sound data in the plugin API
 - ⬜ Block Sphere
 - ⬜ Blocks
 - ⛔ Blocks in Region — needs WorldGuard
-- ⬜ Book Author
-- ⬜ Book Pages
-- ⬜ Book Title
+- ⬜ Book Author — not done yet (item component API)
+- ⬜ Book Pages — not done yet (item component API)
+- ⬜ Book Title — not done yet (item component API)
 - ⬜ Boss Bar From Boss
 - ⬜ Boss Bar From Key
-- ⬜ Breeding Family
-- ⬜ Brewing Results
-- ⬜ Brewing Stand Fuel Level
+- ⛔ Breeding Family — no breeding data in the plugin API
+- ⬜ Brewing Results — needs the brew event wired; not done yet
+- ✅ Brewing Stand Fuel Level — `brewing stand fuel level of {loc}`
 - ⬜ Brewing Stand Slot
-- ⬜ Brewing Time
-- ⬜ Broadcast Message
-- ⬜ Brushing Stage
-- ⬜ Buried Item
-- ⬜ Burn/Cook Time
+- ✅ Brewing Time — `brewing time of {loc}`: a time span
+- ⬜ Broadcast Message — needs the server-broadcast event wired; not done yet
+- ⛔ Brushing Stage — the plugin API has no brushable block state
+- ⛔ Buried Item — the decorated pot API has no item access
+- ✅ Burn/Cook Time — `burn time of {loc}`, `cook time of {loc}`, `total cook time of {loc}`: time spans
 - ✅ Case Text ⭐ — `uppercase of x`, `x in lower case`, `capitalized x`, `x in proper case`
 - ⬜ Center of World Border
 - ⬜ Character Codepoint
@@ -1225,9 +1225,9 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Anything with Contents
 - ⬜ Attribute Type
 - ⬜ Audience
-- ⬜ Banner Pattern
+- ⛔ Banner Pattern — the banner block entity API has no patterns
 - ⬜ Banner Pattern Type
-- ⬜ Biome
+- ✅ Biome — `biome at {loc}`, `biome of player`: a text like `birch_forest`
 - ⬜ Block ⭐
 - ⬜ Block Data
 - ✅ Boolean

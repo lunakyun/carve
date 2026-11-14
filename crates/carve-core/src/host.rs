@@ -170,6 +170,21 @@ pub trait Host {
         }
     }
 
+    /// Biome name (`plains`, `birch_forest`) at a block position.
+    fn biome_at(&mut self, _world: &str, _x: i32, _y: i32, _z: i32) -> Option<String> {
+        None
+    }
+
+    /// Item id and amount worn in an armor slot of a player.
+    fn armor_item(&mut self, _player: &PlayerRef, _slot: crate::w2_expressions_1::ArmorSlot) -> Option<(String, u32)> {
+        None
+    }
+
+    /// Raw NBT bytes of the block entity (beacon, furnace, brewing stand, ...) at a position.
+    fn block_entity_nbt(&mut self, _world: &str, _x: i32, _y: i32, _z: i32) -> Option<Vec<u8>> {
+        None
+    }
+
     /// Hurt the player. The default lowers health and kills at zero.
     fn damage(&mut self, player: &PlayerRef, amount: f64) {
         if let Some(h) = self.health(player) {
