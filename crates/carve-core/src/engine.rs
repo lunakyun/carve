@@ -249,6 +249,8 @@ pub(crate) struct Exec {
     /// uuid -> current name (None = offline), for the current run slice only.
     /// Cleared at every wait, because a player can leave while a run waits.
     pub(crate) seen: Vec<(String, Option<String>)>,
+    /// `last spawned entity`.
+    pub(crate) last_entity: Option<Box<crate::value::EntityRef>>,
 }
 
 impl Exec {
@@ -273,6 +275,7 @@ impl Exec {
             cancelled: false,
             catches: Vec::new(),
             seen,
+            last_entity: None,
         }
     }
 
@@ -934,11 +937,17 @@ impl Engine {
                 let p = online(v, &mut ex.seen, host)?;
                 host.player_location(&p).map(|(x, y, z, w)| (x, y, z, Some(w)))
             }
+            Value::Entity(e) => host.entity_location(e).map(|(x, y, z, w)| (x, y, z, Some(w))),
             _ => None,
         }
     }
 
     fn property(&mut self, prop: Prop, v: &Value, ex: &mut Exec, host: &mut dyn Host) -> Value {
+        if let Value::Entity(e) = v
+            && let Some(r) = self.entity_prop(prop, e, host)
+        {
+            return r;
+        }
         match prop {
             Prop::X | Prop::Y | Prop::Z | Prop::Location | Prop::World => {
                 let Some((x, y, z, world)) = self.as_location(v, ex, host) else {
@@ -1253,6 +1262,7 @@ impl Engine {
             Cond::Wt(w) => self.wt_cond(w, ex, host),
             Cond::Sb(c, negate) => Ok(self.sb_cond(c, ex, host)? != *negate),
             Cond::Nbt(n) => self.nbt_cond(n, ex, host),
+            Cond::Ent(c) => self.ent_cond(c, ex, host),
             Cond::HasPerm { player, node, negate } => {
                 let p = self.eval(player, ex, host)?;
                 let node = self.text(node, ex, host)?;
@@ -1685,6 +1695,9 @@ impl Engine {
                 if matches!(v, Value::Item { .. }) {
                     return Ok(crate::item_meta::info(crate::item_meta::ItemInfo::Name, &v));
                 }
+                if let Value::Entity(e) = &v {
+                    return Ok(host.entity_name(e).map_or(Value::None, Value::Text));
+                }
                 match online(&v, &mut ex.seen, host) {
                     Some(p) => Value::Text(p.name),
                     None => Value::None,
@@ -1819,6 +1832,7 @@ impl Engine {
             Expr::Items(s) => Value::List(self.eval_list(s, ex, host)?),
             Expr::ListAgg(a, s) => self.eval_agg(*a, s, ex, host)?,
             Expr::Sb(s) => self.sb_eval(s, ex, host)?,
+            Expr::Ent(x) => self.ent_expr(x, ex, host)?,
             Expr::RandomOf(v) => {
                 let items = self.list_items(v, ex, host)?;
                 if items.is_empty() {
@@ -2044,11 +2058,7 @@ impl Engine {
                     crate::xp_level::apply(host, &p, op.field, op.mode, n);
                 }
             }
-            Effect::Kill(p) => {
-                if let Some(p) = self.player(p, ex, host)? {
-                    host.kill(&p);
-                }
-            }
+            Effect::Kill(p) => self.kill_any(p, ex, host)?,
             Effect::Teleport(p, x, y, z) => {
                 let (x, y, z) = (
                     self.num(x, ex, host)?,
@@ -2172,6 +2182,7 @@ impl Engine {
             Effect::Sb(s) => self.sb_effect(s, ex, host)?,
             Effect::Sbt(s) => self.sbt_effect(s, ex, host)?,
             Effect::Nbt(n) => self.nbt_effect(n, ex, host)?,
+            Effect::Ent(f) => self.ent_effect(f, ex, host)?,
             Effect::Cancel => {
                 if ex.waited {
                     host.log(

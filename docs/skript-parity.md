@@ -295,7 +295,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Enchant/Disenchant
 - ⬜ Enderman Teleport
 - ⬜ Enforce Whitelist
-- ⬜ Entity Despawn
+- ✅ Entity Despawn — `despawn`, `remove` or `delete` an entity
 - ⬜ Entity Visibility
 - ⬜ Equip
 - ⬜ Equippable Component - Dispense
@@ -324,7 +324,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Item Tooltips
 - ⬜ Keep Inventory / Experience
 - ✅ Kick ⭐ — `kick player due to "x"`
-- ✅ Kill — players
+- ✅ Kill — players, entities and lists of them
 - ⬜ Knockback
 - ⬜ Launch firework
 - ⬜ Leash entities
@@ -371,7 +371,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Potion Effect - Particles
 - 🟡 Potion Effects ⭐ — `remove all potion effects from player`, `remove speed potion effect from player`; players only
 - ⬜ Pull In Hooked Entity
-- ⬜ Push ⭐
+- 🟡 Push ⭐ — `push <entity or player> up/down/north/south/east/west [with speed N]`; no forward, backward or away-from
 - ⬜ PvP
 - ⬜ Register Tag
 - ⬜ Release From Entity Storage
@@ -388,7 +388,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Shoot
 - ⬜ Silence Entity
 - ✅ Sort — `sort {x::*}`, `in descending order`; no `by`
-- ⬜ Spawn ⭐
+- 🟡 Spawn ⭐ — `spawn [N] <mob> [at <place>]`; no `named`, NBT or mob-specific data
 - ⬜ Sprinting
 - ⬜ Stop Server
 - 🟡 Stop Sound ⭐ (one sound or all, via `stopsound`; no categories)
@@ -396,7 +396,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Suppress Type Hints (Experimental)
 - ⬜ Swing Hand
 - ⬜ Tame / Untame
-- ✅ Teleport — to x, y, z or a location
+- ✅ Teleport — to x, y, z or a location; entities too
 - ⬜ Text Display Drop Shadow
 - ⬜ Text Display See Through Blocks
 - ✅ Title - Clear/Reset — `clear title of player`, `reset title of player`
@@ -522,7 +522,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 Is Member/Owner of Region — `is an owner of bound`, `is a member of bound` (Carve bounds, not WorldGuard)
 - ⬜ Is Normalized
 - ⬜ Is Occluding
-- ⬜ Is of Type
+- 🟡 Is of Type — `<entity> is a zombie`, `is not a zombie`; entity types only
 - ✅ Is on Ground
 - ⬜ Is Online ⭐
 - ✅ Is Operator ⭐ — `player is op` (permission level above zero)
@@ -742,7 +742,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Enchantment Offer Cost
 - ⬜ Ender Chest
 - ⬜ Enderman Carrying BlockData
-- ⬜ Entities
+- 🟡 Entities — `all zombies in radius 10 of player`, `all entities`; no `all entities in chunk` or world filters
 - ⬜ Entity AI
 - ⬜ Entity Attribute
 - ⬜ Entity Fire Burn Duration
@@ -865,7 +865,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Last Interaction Player
 - ⬜ Last Loaded Server Icon
 - ⬜ Last Resource Pack Response
-- ⬜ Last Spawned Entity
+- ✅ Last Spawned Entity — needs the plugin host, `/summon` cannot report it
 - ⬜ Last/First Login Time
 - ⬜ Leash Holder
 - ✅ Length ⭐
@@ -917,11 +917,11 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Money — needs an economy plugin
 - ⬜ Moon Phase
 - ⬜ Moved blocks
-- 🟡 Name — `name of player`
+- 🟡 Name — `name of player`, `name of <entity>`, set name of an entity
 - ✅ Name / Display Name / Tab List Name
 - 🟡 Named Item/Inventory ⭐ — `x named "n"`, `name of x`; no named inventories
 - ⬜ NaN
-- ⬜ Nearest Entity
+- ✅ Nearest Entity — `nearest [type] to <place> [within N]`
 - ⬜ Negative Infinity
 - ✅ New Line ⭐ — `nl`, `new line`
 - ⬜ New Potion Effect
@@ -1107,7 +1107,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Vectors - XYZ Component
 - ⬜ Vectors - Yaw and Pitch
 - ⬜ Vehicle
-- ⬜ Velocity ⭐
+- 🟡 Velocity ⭐ — `x/y/z velocity of <entity>`, set per axis; no vector type
 - ⬜ Version
 - ⬜ Version String
 - ⬜ View Distance
@@ -1249,7 +1249,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Entity
 - ⬜ Entity Effect
 - ⬜ Entity Snapshot
-- ⬜ Entity Type
+- 🟡 Entity Type — `type of <entity>` gives text
 - ⬜ Entity Type with Amount
 - ⬜ Equipment Slot
 - ⬜ Equippable Components

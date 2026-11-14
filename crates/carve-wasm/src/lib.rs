@@ -38,6 +38,8 @@ use pumpkin_plugin_api::{
 };
 
 mod events_items;
+mod ent_host;
+mod ents;
 mod fx;
 mod inv;
 mod sb;
@@ -950,6 +952,17 @@ impl Host for TickHost<'_, '_> {
         set_difficulty(world: Option<&str>, to: &str);
         board_show(p: &PlayerRef, title: &str, lines: &[String]);
         board_clear(p: &PlayerRef);
+        spawn_entity(kind: &str, at: &FxPos) -> Option<carve_core::EntityRef>;
+        entity_kill(e: &carve_core::EntityRef);
+        entity_remove(e: &carve_core::EntityRef);
+        entity_location(e: &carve_core::EntityRef) -> Option<(f64, f64, f64, String)>;
+        entity_name(e: &carve_core::EntityRef) -> Option<String>;
+        entity_health(e: &carve_core::EntityRef) -> Option<f64>;
+        set_entity_name(e: &carve_core::EntityRef, name: Option<&str>);
+        entities_near(at: &FxPos, radius: f64, kind: Option<&str>) -> Vec<carve_core::EntityRef>;
+        entity_velocity(e: &carve_core::EntityRef) -> Option<(f64, f64, f64)>;
+        set_entity_velocity(e: &carve_core::EntityRef, v: (f64, f64, f64));
+        entity_teleport(e: &carve_core::EntityRef, x: f64, y: f64, z: f64, world: Option<&str>);
     }
 
     sb::sb_host_methods!();

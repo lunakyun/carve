@@ -256,6 +256,8 @@ pub enum Cond {
     Sb(Box<crate::skbee_scoreboard_teams::SbCond>, bool),
     /// `{_nbt} has tag "x"`.
     Nbt(Box<crate::skbee_nbt::NbtCond>),
+    /// `last spawned entity is a zombie`.
+    Ent(Box<crate::entities::EntCond>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -347,6 +349,8 @@ pub enum Effect {
     Sb(Box<crate::scoreboards_bossbars::SbFx>),
     /// Scoreboard objectives, scores, teams and boards.
     Sbt(Box<crate::skbee_scoreboard_teams::SbFx>),
+    /// Spawn, kill, push and name entities.
+    Ent(Box<crate::entities::EntFx>),
 }
 
 /// What a `loop` goes over.
@@ -1086,6 +1090,9 @@ impl Cx<'_> {
                 }
             };
         }
+        if let Some(e) = crate::entities::parse_list(&toks, &self.env) {
+            return Some((LoopSrc::Items(ListSrc::One(e)), LoopKind::List));
+        }
         if crate::list_ops::looks_like_list_op(&toks, &self.env) {
             return match crate::list_ops::parse_src_all(&toks, &self.env, true) {
                 Ok(s) => Some((LoopSrc::Items(s), LoopKind::List)),
@@ -1219,6 +1226,9 @@ impl Cx<'_> {
             return Some(c);
         }
         if let Some(c) = crate::skbee_nbt::parse_cond(toks, &self.env) {
+            return Some(c);
+        }
+        if let Some(c) = crate::entities::parse_cond(toks, &self.env) {
             return Some(c);
         }
         let mut memo = Memo::default();
@@ -1453,6 +1463,17 @@ impl Cx<'_> {
             }
         }
         match crate::scoreboards_bossbars::parse_effect(&toks, &self.env) {
+            Ok(Some(eff)) => {
+                self.emit(Instr::Eff(eff), num);
+                return;
+            }
+            Ok(None) => {}
+            Err(msg) => {
+                self.err(num, msg);
+                return;
+            }
+        }
+        match crate::entities::parse_effect(&toks, &self.env) {
             Ok(Some(eff)) => {
                 self.emit(Instr::Eff(eff), num);
                 return;
