@@ -13,6 +13,7 @@ pub mod lexer;
 pub mod pattern;
 pub mod value;
 pub mod vars;
+pub mod xp_level;
 
 pub use compile::{CommandDef, EventKind};
 pub use engine::{CommandOutcome, Engine, EventCtx, FireOutcome, LoadSummary};

@@ -762,7 +762,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Exact Item
 - ⬜ Except
 - ⬜ Exhaustion
-- ⬜ Experience ⭐
+- ✅ Experience ⭐ — `xp of player`, set/add/remove/give; total points
 - ⬜ Experience Cooldown Change Reason
 - ⬜ Experience Pickup Cooldown
 - ⬜ Exploded Blocks
@@ -869,8 +869,8 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Last/First Login Time
 - ⬜ Leash Holder
 - ⬜ Length ⭐
-- ⬜ Level ⭐
-- ⬜ Level Progress
+- ✅ Level ⭐ — `level of player`, set/add/remove/give
+- ✅ Level Progress — read, set, add, remove (0 to 1)
 - ⬜ Light Level
 - ⬜ Loaded Plugins
 - 🟡 Location — `location of player`
@@ -1070,7 +1070,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Timespan Details ⭐
 - ⬜ Title
 - ✅ Tool — main hand
-- ⬜ Total Experience
+- ✅ Total Experience — `total experience of player`
 - ⬜ TPS (ticks per second)
 - ⬜ Transform Reason
 - ⬜ Transformed List

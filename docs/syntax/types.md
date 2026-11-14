@@ -62,6 +62,9 @@ A world equals text with its name: `if world of player is "world":`.
 | `name of %player%`, `%player%'s name` | text |
 | `uuid of %player%`, `%player%'s uuid` | text. Good for variable names: `{coins::%uuid of player%}`. |
 | `health of %player%`, `%player%'s health` | number |
+| `level of %player%`, `%player%'s level` | number |
+| `xp of %player%`, `experience of %player%`, `total experience of %player%` | number (total points) |
+| `level progress of %player%`, `%player%'s level progress` | number from 0 to 1 |
 
 ## In functions
 

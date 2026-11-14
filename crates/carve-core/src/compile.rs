@@ -203,6 +203,8 @@ pub enum Effect {
     },
     Heal(Expr),
     SetHealth(Expr, Expr),
+    /// Experience change; the two expressions are in pattern order.
+    Xp(crate::xp_level::XpOp, Expr, Expr),
     Kill(Expr),
     Teleport(Expr, Expr, Expr, Expr),
     TeleportTo(Expr, Expr),
@@ -299,6 +301,7 @@ pub enum EffKind {
     Broadcast,
     Heal,
     SetHealth,
+    Xp(crate::xp_level::XpOp),
     Kill,
     Teleport,
     TeleportTo,
@@ -410,9 +413,10 @@ fn registry() -> &'static Registry {
     static R: OnceLock<Registry> = OnceLock::new();
     R.get_or_init(|| Registry {
         // The pattern strings are constants covered by tests; a bad one is skipped.
-        effects: EFFECT_PATTERNS
+        effects: crate::xp_level::XP_EFFECT_PATTERNS
             .iter()
-            .filter_map(|(s, k)| Pattern::new(s, *k).ok())
+            .filter_map(|(s, o)| Pattern::new(s, EffKind::Xp(*o)).ok())
+            .chain(EFFECT_PATTERNS.iter().filter_map(|(s, k)| Pattern::new(s, *k).ok()))
             .collect(),
         conditions: CONDITION_PATTERNS
             .iter()
@@ -425,6 +429,9 @@ fn registry() -> &'static Registry {
 pub fn check_registry() -> Result<(), String> {
     for (s, k) in EFFECT_PATTERNS {
         Pattern::new(s, *k)?;
+    }
+    for (s, o) in crate::xp_level::XP_EFFECT_PATTERNS {
+        Pattern::new(s, EffKind::Xp(*o))?;
     }
     for (s, k) in CONDITION_PATTERNS {
         Pattern::new(s, *k)?;
@@ -1197,6 +1204,7 @@ fn build_effect(kind: EffKind, mut c: Vec<Option<Capture>>) -> Option<Effect> {
         EffKind::Broadcast => Effect::Broadcast(take_expr(c, 0)?),
         EffKind::Heal => Effect::Heal(take_expr(c, 0)?),
         EffKind::SetHealth => Effect::SetHealth(take_expr(c, 0)?, take_expr(c, 1)?),
+        EffKind::Xp(op) => Effect::Xp(op, take_expr(c, 0)?, take_expr(c, 1)?),
         EffKind::Kill => Effect::Kill(take_expr(c, 0)?),
         EffKind::Teleport => Effect::Teleport(
             take_expr(c, 0)?,

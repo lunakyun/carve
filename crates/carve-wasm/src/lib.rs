@@ -273,6 +273,26 @@ impl WasmHost<'_> {
         self.get(p).map(|pl| f64::from(pl.get_health()))
     }
 
+    fn xp_get(&mut self, p: &PlayerRef, field: carve_core::xp_level::XpField) -> Option<f64> {
+        use carve_core::xp_level::XpField;
+        self.get(p).map(|pl| match field {
+            XpField::Level => f64::from(pl.get_experience_level()),
+            XpField::Points => f64::from(pl.get_experience_points()),
+            XpField::Progress => f64::from(pl.get_experience_progress()),
+        })
+    }
+
+    fn xp_set(&mut self, p: &PlayerRef, field: carve_core::xp_level::XpField, value: f64) {
+        use carve_core::xp_level::XpField;
+        if let Some(pl) = self.get(p) {
+            match field {
+                XpField::Level => pl.set_experience_level(value as i32),
+                XpField::Points => pl.set_experience_points(value as i32),
+                XpField::Progress => pl.set_experience_progress(value as f32),
+            }
+        }
+    }
+
     fn log(&mut self, level: LogLevel, msg: &str) {
         let l = match level {
             LogLevel::Info => ApiLevel::Info,
@@ -317,6 +337,8 @@ impl Host for TickHost<'_, '_> {
         held_item(p: &PlayerRef) -> Option<(String, u32)>;
         count_item(p: &PlayerRef, id: &str) -> u32;
         health(p: &PlayerRef) -> Option<f64>;
+        xp_get(p: &PlayerRef, field: carve_core::xp_level::XpField) -> Option<f64>;
+        xp_set(p: &PlayerRef, field: carve_core::xp_level::XpField, value: f64);
     }
 
     fn schedule_wait(&mut self, ticks: u64, token: u64) {
