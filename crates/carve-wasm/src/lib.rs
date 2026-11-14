@@ -409,6 +409,56 @@ impl WasmHost<'_> {
         }
     }
 
+    fn set_flight(&mut self, p: &PlayerRef, on: bool) {
+        if let Some(pl) = self.get(p) {
+            pl.set_allow_flight(on);
+            pl.set_flying(on);
+        }
+        if let Ok(mut f) = FLYING.lock() {
+            f.retain(|u| *u != p.uuid);
+            if on {
+                f.push(p.uuid.clone());
+            }
+        }
+    }
+
+    fn set_invulnerable(&mut self, p: &PlayerRef, on: bool) {
+        if let Some(pl) = self.get(p) {
+            pl.set_invulnerable(on);
+        }
+    }
+
+    fn set_invisible(&mut self, p: &PlayerRef, on: bool) {
+        if let Some(pl) = self.get(p) {
+            pl.as_entity().set_invisible(on);
+        }
+    }
+
+    fn set_fire_ticks(&mut self, p: &PlayerRef, ticks: i32) {
+        if let Some(pl) = self.get(p) {
+            pl.as_entity().set_fire_ticks(ticks);
+        }
+    }
+
+    fn apply_knockback(&mut self, p: &PlayerRef, strength: f64, x: f64, z: f64) {
+        if let Some(pl) = self.get(p) {
+            pl.apply_knockback(strength, x, z);
+        }
+    }
+
+    fn set_rotation(&mut self, p: &PlayerRef, yaw: f32, pitch: f32) {
+        if let Some(pl) = self.get(p) {
+            let world = pl.get_world();
+            pl.teleport(pl.get_position(), Some(yaw), Some(pitch), world);
+        }
+    }
+
+    fn open_book(&mut self, p: &PlayerRef, off_hand: bool) {
+        if let Some(pl) = self.get(p) {
+            pl.open_book(if off_hand { Hand::Left } else { Hand::Right });
+        }
+    }
+
     fn damage(&mut self, p: &PlayerRef, amount: f64) {
         if let Some(pl) = self.get(p) {
             pl.damage(amount as f32, DamageType::Generic);
@@ -469,6 +519,13 @@ impl Host for TickHost<'_, '_> {
         vital(p: &PlayerRef, v: Vital) -> Option<f64>;
         set_vital(p: &PlayerRef, v: Vital, value: f64);
         damage(p: &PlayerRef, amount: f64);
+        set_flight(p: &PlayerRef, on: bool);
+        set_invulnerable(p: &PlayerRef, on: bool);
+        set_invisible(p: &PlayerRef, on: bool);
+        set_fire_ticks(p: &PlayerRef, ticks: i32);
+        apply_knockback(p: &PlayerRef, strength: f64, x: f64, z: f64);
+        set_rotation(p: &PlayerRef, yaw: f32, pitch: f32);
+        open_book(p: &PlayerRef, off_hand: bool);
     }
 
     fn schedule_wait(&mut self, ticks: u64, token: u64) {

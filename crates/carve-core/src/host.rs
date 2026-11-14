@@ -180,4 +180,51 @@ pub trait Host {
             }
         }
     }
+    /// `make player fly` / `stop flying`: allow flight and set flying.
+    fn set_flight(&mut self, _player: &PlayerRef, _on: bool) {}
+
+    fn set_invulnerable(&mut self, _player: &PlayerRef, _on: bool) {}
+
+    /// Invisible flag. The default gives or clears the invisibility effect.
+    fn set_invisible(&mut self, player: &PlayerRef, on: bool) {
+        let cmd = if on {
+            format!("effect give {} minecraft:invisibility infinite 0 true", player.name)
+        } else {
+            format!("effect clear {} minecraft:invisibility", player.name)
+        };
+        self.execute_command(&cmd);
+    }
+
+    /// Set the player on fire for this many ticks (0 puts the fire out).
+    fn set_fire_ticks(&mut self, _player: &PlayerRef, _ticks: i32) {}
+
+    /// Push the player. `(x, z)` points from the player toward the pusher.
+    fn apply_knockback(&mut self, _player: &PlayerRef, _strength: f64, _x: f64, _z: f64) {}
+
+    /// Turn the player's view. The default uses the vanilla `rotate` command.
+    fn set_rotation(&mut self, player: &PlayerRef, yaw: f32, pitch: f32) {
+        self.execute_command(&format!("rotate {} {yaw} {pitch}", player.name));
+    }
+
+    /// Open the book held in a hand.
+    fn open_book(&mut self, _player: &PlayerRef, _off_hand: bool) {}
+
+    /// Make the player say something in chat. The default runs `say` as them.
+    fn say_as(&mut self, player: &PlayerRef, text: &str) {
+        self.execute_command_as(player, &format!("say {text}"));
+    }
+
+    /// Append a line to `logs/<file>`. `file` is already a clean plain name.
+    fn log_to_file(&mut self, file: &str, text: &str) {
+        use std::io::Write;
+        let _ = std::fs::create_dir_all("logs");
+        let ms = self.wall_clock_millis();
+        if let Ok(mut f) = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(std::path::Path::new("logs").join(file))
+        {
+            let _ = writeln!(f, "[{ms}] {text}");
+        }
+    }
 }
