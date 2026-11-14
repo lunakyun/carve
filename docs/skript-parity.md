@@ -505,7 +505,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Is From A Mob Spawner
 - ⬜ Is Frozen
 - ⬜ Is Fuel
-- ⬜ Is Gliding
+- ✅ Is Gliding — `player is gliding`, `player is not gliding`
 - ⬜ Is Hand Raised
 - 🟡 Is Holding — via `tool of player is ...`
 - ⬜ Is In Love
@@ -745,83 +745,83 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Entities
 - ⬜ Entity AI
 - ⬜ Entity Attribute
-- ⬜ Entity Fire Burn Duration
-- ⬜ Entity Owner
-- ⬜ Entity Size
-- ⬜ Entity Snapshot
-- ⬜ Entity Sound
-- ⬜ Entity Storage Entity Count
-- ⬜ Entity/Player/World from UUID
-- ⬜ Equippable Component
-- ⬜ Equippable Component - Allowed Entities
-- ⬜ Equippable Component - Camera Overlay
-- ⬜ Equippable Component - Equip Sound
-- ⬜ Equippable Component - Equipment Slot
-- ⬜ Equippable Component - Model
-- ⬜ Equippable Component - Shear Sound
-- ⬜ Exact Item
-- ⬜ Except
-- ⬜ Exhaustion
+- 🟡 Entity Fire Burn Duration — `burn duration of player` (read, set, add, remove); no combust-event value
+- ⛔ Entity Owner — scripts have no entity values, so there is no tamed-owner lookup
+- ⛔ Entity Size — slime and phantom size is not in the plugin API
+- ⛔ Entity Snapshot — the plugin API has no entity snapshots
+- ⛔ Entity Sound — the plugin API cannot read an entity's sounds
+- ⛔ Entity Storage Entity Count — bee hives and nests are not in the plugin API
+- 🟡 Entity/Player/World from UUID — `player from uuid "..."` for online players; worlds and other entities cannot be looked up by UUID
+- ⛔ Equippable Component — item components are not reachable from scripts
+- ⛔ Equippable Component - Allowed Entities — item components are not reachable from scripts
+- ⛔ Equippable Component - Camera Overlay — item components are not reachable from scripts
+- ⛔ Equippable Component - Equip Sound — item components are not reachable from scripts
+- ⛔ Equippable Component - Equipment Slot — item components are not reachable from scripts
+- ⛔ Equippable Component - Model — item components are not reachable from scripts
+- ⛔ Equippable Component - Shear Sound — item components are not reachable from scripts
+- 🟡 Exact Item — `exact item of <item>`; items carry no metadata here, so it returns the item as is
+- ✅ Except — `{a::*} except {b::*}`, also `except "x"`
+- ✅ Exhaustion — `exhaustion of player`; set, add, remove
 - ✅ Experience ⭐ — `xp of player`, set/add/remove/give; total points
-- ⬜ Experience Cooldown Change Reason
-- ⬜ Experience Pickup Cooldown
-- ⬜ Exploded Blocks
-- ⬜ Explosion Block Yield
-- ⬜ Explosion Yield
-- ⬜ Explosive Yield
-- ⬜ Facing
-- ⬜ Fall Distance
-- ⬜ Fertilized Blocks
+- ⛔ Experience Cooldown Change Reason — needs the experience cooldown event, which is not wired in Carve
+- ⛔ Experience Pickup Cooldown — needs the experience cooldown event, which is not wired in Carve
+- ⛔ Exploded Blocks — needs the explosion event, which is not wired in Carve
+- ⛔ Explosion Block Yield — needs the explosion event, which is not wired in Carve
+- ⛔ Explosion Yield — needs the explosion event, which is not wired in Carve
+- ⛔ Explosive Yield — needs the explosion event, which is not wired in Carve
+- 🟡 Facing — `facing of player` as north, south, east, west, up or down; players only
+- ✅ Fall Distance — `fall distance of player`; set, add, remove; players only
+- ⛔ Fertilized Blocks — needs the fertilize event, which is not in the plugin API
 - ✅ Filter ⭐ — `{x::*} where [input > 2]`
-- ⬜ Final Damage
-- ⬜ Firework Effect
-- ⬜ First Empty Slot in Inventory
-- ⬜ Fishing Approach Angle
-- ⬜ Fishing Bite Time
-- ⬜ Fishing Hook
-- ⬜ Fishing Hooked Entity
-- ⬜ Fishing Wait Time
+- 🟡 Final Damage — `final damage` in `on damage`; same value as `damage`
+- ⛔ Firework Effect — firework effects are not in the plugin API
+- ✅ First Empty Slot in Inventory — `first empty slot of player` (0 to 35), `<none>` when full
+- ⛔ Fishing Approach Angle — fishing hook internals are not in the plugin API
+- ⛔ Fishing Bite Time — fishing hook internals are not in the plugin API
+- ⛔ Fishing Hook — fishing hook internals are not in the plugin API
+- ⛔ Fishing Hooked Entity — scripts have no entity values and the hook is not in the plugin API
+- ⛔ Fishing Wait Time — fishing hook internals are not in the plugin API
 - ⛔ Flight Mode (no flight ability in the plugin API)
 - ✅ Food Level ⭐ — read, set, add, remove; `hunger` too
 - ✅ Formatted Date ⭐
-- ⬜ Formatted Time
-- ⬜ Former/Future State
-- ⬜ Free / Max / Total Memory
-- ⬜ Freeze Time
+- 🟡 Formatted Time — `<timespan> formatted` gives `1:05:03`, `5:03` or `2:01:05:03`; no custom format text
+- ⛔ Former/Future State — needs block state change events, which are not in the plugin API
+- 🟡 Free / Max / Total Memory — `free memory`, `max memory`, `total memory` in MB; machine memory, not a JVM heap
+- ✅ Freeze Time — `freeze time of player` as a timespan; set, add, remove
 - ✅ Function
-- ⬜ Furnace Event Items
-- ⬜ Furnace Slot
-- ⬜ Furnace Times
-- ⬜ Game Effects with Data
+- ⛔ Furnace Event Items — furnace events are not in the plugin API
+- ⛔ Furnace Slot — furnace block entities are not reachable from scripts
+- ⛔ Furnace Times — furnace block entities are not reachable from scripts
+- ⛔ Game Effects with Data — game effects with data are not in the plugin API
 - ✅ Game Mode ⭐ — `gamemode of player`, `set gamemode of player to creative`
 - ⬜ Gamerule Value
-- ⬜ Gliding State
-- ⬜ Glowing
-- ⬜ Gravity
+- ✅ Gliding State — `gliding state of player`, `player is gliding`; read only
+- ✅ Glowing — `glowing state of player`, `player is glowing`; `set glowing state of player to true`
+- ✅ Gravity — `gravity of player`; `set gravity of player to false`
 - ⛔ Group — needs a permissions plugin (Vault)
-- ⬜ Hanging Entity/Remover
-- ⬜ Hash ⭐
-- ⬜ Hatching Entity Type
-- ⬜ Hatching Number
-- ⬜ Head location
-- ⬜ Heal Amount
-- ⬜ Heal Reason
+- ⛔ Hanging Entity/Remover — hanging entities are not in the plugin API
+- ✅ Hash ⭐ — `"x" hashed with MD5` (also SHA-1, SHA-256, SHA-512), lowercase hex
+- ⛔ Hatching Entity Type — egg hatching is not in the plugin API
+- ⛔ Hatching Number — egg hatching is not in the plugin API
+- ✅ Head location — `head location of player` (eye position)
+- ⛔ Heal Amount — needs the regain health event, which is not wired in Carve
+- ⛔ Heal Reason — needs the regain health event, which is not wired in Carve
 - ✅ Health — read, set, add, remove
-- ⬜ Hex Code
-- ⬜ Hidden Players
-- ⬜ Highest Solid Block
-- ⬜ Horse Domestication
-- ⬜ Hostname
-- ⬜ Hotbar Button
-- ⬜ Hotbar Slot
-- ⬜ Hover List
-- ⬜ Humidity
-- ⬜ Id
+- 🟡 Hex Code — `hex code of "red"` or of `"#00ff7f"`, gives `FF5555`; named chat colors only
+- ✅ Hidden Players — `hidden players of player`: online players that player cannot see
+- 🟡 Highest Solid Block — `highest solid block at <location>`; the highest non-air block of the column
+- ⛔ Horse Domestication — horses are not in the plugin API
+- ⛔ Hostname — needs the server list ping event, which is not wired in Carve
+- ⛔ Hotbar Button — belongs to inventory click events, which another part of Carve owns
+- 🟡 Hotbar Slot — `hotbar slot of player` (0 to 8); read only, the plugin API cannot change it
+- ⛔ Hover List — needs the server list ping event, which is not wired in Carve
+- ⛔ Humidity — biome climate values are not in the plugin API
+- 🟡 Id — `id of <item>` gives the text id such as `minecraft:diamond`, not a number
 - ✅ Index Of — `[first|last] index of a in b`
 - ✅ Indices of List ⭐ — `indices of {list::*}`, also in `loop` and `set`
-- ⬜ Indices of Value
-- ⬜ Infinity
-- ⬜ Initiator Inventory
+- ✅ Indices of Value — `first index of value x in {l::*}`, `last index ...`, `indices of value x in {l::*}`
+- ✅ Infinity — `infinity`, `negative infinity`
+- ⛔ Initiator Inventory — inventory move events are not in the plugin API
 - ⬜ Input
 - ⬜ Interaction Height/Width
 - ⬜ Inventory ⭐
@@ -922,7 +922,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Named Item/Inventory ⭐
 - ⬜ NaN
 - ⬜ Nearest Entity
-- ⬜ Negative Infinity
+- ✅ Negative Infinity — `negative infinity`
 - ✅ New Line ⭐ — `nl`, `new line`
 - ⬜ New Potion Effect
 - ⬜ No Damage Ticks
@@ -1248,14 +1248,14 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Enchantment Type
 - ⬜ Entity
 - ⬜ Entity Effect
-- ⬜ Entity Snapshot
+- ⛔ Entity Snapshot — the plugin API has no entity snapshots
 - ⬜ Entity Type
 - ⬜ Entity Type with Amount
 - ⬜ Equipment Slot
 - ⬜ Equippable Components
 - ⬜ Executable
 - ⬜ Experience ⭐
-- ⬜ Firework Effect
+- ⛔ Firework Effect — firework effects are not in the plugin API
 - ⬜ Firework Type
 - ⬜ Fishing State
 - ⬜ Frog Variant
@@ -1266,7 +1266,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Gamerule Value
 - ⬜ Gene
 - ⬜ Header
-- ⬜ Heal Reason
+- ⛔ Heal Reason — needs the regain health event, which is not wired in Carve
 - ⬜ Input Key
 - ⬜ Inventory ⭐
 - ⬜ Inventory Action
