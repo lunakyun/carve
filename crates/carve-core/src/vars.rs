@@ -77,6 +77,7 @@ impl Variables {
                 }
                 Value::World(w) => json!({"world": w}),
                 Value::Date(d) => json!({"date": d}),
+                Value::Console => json!({"console": true}),
             };
             obj.insert(k.clone(), j);
         }
@@ -138,6 +139,9 @@ fn object_value(o: &Map<String, Json>) -> Option<Value> {
     }
     if let Some(d) = o.get("date").and_then(Json::as_i64) {
         return Some(Value::Date(d));
+    }
+    if o.contains_key("console") {
+        return Some(Value::Console);
     }
     o.get("world")
         .and_then(Json::as_str)

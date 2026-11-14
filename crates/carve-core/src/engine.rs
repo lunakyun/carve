@@ -1123,6 +1123,15 @@ impl Engine {
                 let v = self.eval(e, ex, host)?;
                 Ok((v != Value::None) == *want)
             }
+            Cond::SenderIs { value, console, negate } => {
+                let v = self.eval(value, ex, host)?;
+                let is = if *console {
+                    matches!(v, Value::Console)
+                } else {
+                    matches!(v, Value::Player(_))
+                };
+                Ok(is != *negate)
+            }
             Cond::HasPerm { player, node, negate } => {
                 let p = self.eval(player, ex, host)?;
                 let node = self.text(node, ex, host)?;
@@ -1476,6 +1485,13 @@ impl Engine {
                 Some(p) => Value::Player(p),
                 None => Value::None,
             },
+            Expr::Sender => match &ex.ctx.sender {
+                Recipient::Console => Value::Console,
+                Recipient::Player(p) => online(&Value::Player(p.clone()), &mut ex.seen, host)
+                    .map(Value::Player)
+                    .unwrap_or(Value::None),
+            },
+            Expr::Console => Value::Console,
             Expr::Message => ex.ctx.message.clone().map(Value::Text).unwrap_or(Value::None),
             Expr::Damage => ex.ctx.damage.map(Value::Num).unwrap_or(Value::None),
             Expr::Attacker => match ex.ctx.attacker.clone() {
@@ -1695,7 +1711,21 @@ impl Engine {
                 let msg = self.text(text, ex, host)?;
                 match to {
                     Some(to) => {
-                        if let Some(p) = self.player(to, ex, host)? {
+                        let p = if let Expr::Player = to {
+                            self.player(to, ex, host)?
+                        } else {
+                            let v = self.eval(to, ex, host)?;
+                            if let Value::Console = v {
+                                if ex.ctx.sender == Recipient::Console {
+                                    host.send_message(&Recipient::Console, &msg);
+                                } else {
+                                    host.send_console(&msg);
+                                }
+                                return Ok(None);
+                            }
+                            online(&v, &mut ex.seen, host)
+                        };
+                        if let Some(p) = p {
                             host.send_message(&Recipient::Player(p), &msg);
                         }
                     }
@@ -1858,6 +1888,19 @@ impl Engine {
             Effect::ConsoleCommand(c) => {
                 let c = self.text(c, ex, host)?;
                 host.execute_command(c.trim_start_matches('/'));
+            }
+            Effect::ExecAs(who, c) => {
+                let who = self.eval(who, ex, host)?;
+                let c = self.text(c, ex, host)?;
+                let c = c.trim_start_matches('/');
+                match who {
+                    Value::Console => host.execute_command(c),
+                    v => {
+                        if let Some(p) = online(&v, &mut ex.seen, host) {
+                            host.execute_command_as(&p, c);
+                        }
+                    }
+                }
             }
             Effect::Cancel => {
                 if ex.waited {
