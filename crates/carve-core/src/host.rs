@@ -63,6 +63,13 @@ pub trait Host {
         self.execute_command(&format!("give {} minecraft:{id} {count}", player.name));
     }
 
+    /// Wall-clock milliseconds since the Unix epoch (for dates and `now`).
+    fn unix_millis(&mut self) -> i64 {
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0, |d| d.as_millis() as i64)
+    }
+
     fn health(&mut self, _player: &PlayerRef) -> Option<f64> {
         None
     }

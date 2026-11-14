@@ -14,6 +14,8 @@ pub enum Ty {
     Item,
     Location,
     World,
+    Timespan,
+    Date,
     /// Unknown until runtime (variables).
     Object,
 }
@@ -28,6 +30,8 @@ impl Ty {
             Ty::Item => "item",
             Ty::Location => "location",
             Ty::World => "world",
+            Ty::Timespan => "timespan",
+            Ty::Date => "date",
             Ty::Object => "object",
         }
     }
@@ -120,6 +124,16 @@ pub enum Expr {
     ParseNum(Box<Expr>),
     /// `random element of {list::*}`.
     RandomOf(VarRef),
+    /// A time span literal like `1 hour and 30 seconds`, in milliseconds.
+    Span(i64),
+    /// `now`.
+    Now,
+    /// `time since <date>` (true) / `time until <date>` (false).
+    Since(Box<Expr>, bool),
+    /// Math where a side is a time span or date.
+    TBin(Box<Expr>, BinOp, Box<Expr>),
+    /// `minutes of <span>` / `total minutes of <span>`: ms per unit, total?
+    SpanPart(i64, bool, Box<Expr>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -241,6 +255,10 @@ impl Expr {
     pub fn ty(&self, env: &Env) -> Ty {
         match self {
             Expr::Num(_) | Expr::Neg(_) | Expr::Bin(..) | Expr::LoopIter(_) | Expr::Size(_) => Ty::Number,
+            Expr::Span(_) | Expr::Since(..) => Ty::Timespan,
+            Expr::Now => Ty::Date,
+            Expr::SpanPart(..) => Ty::Number,
+            Expr::TBin(a, op, b) => crate::timespans::result_ty(a.ty(env), *op, b.ty(env)),
             Expr::LoopIndex(_) => Ty::Text,
             Expr::Bool(_) => Ty::Boolean,
             Expr::Call(id, _) => env.functions.get(*id).and_then(|s| s.ret).unwrap_or(Ty::Object),
@@ -379,6 +397,24 @@ impl P<'_> {
     }
 
     fn bin(&self, l: Expr, op: BinOp, r: Expr) -> Result<Expr, String> {
+        let (lt, rt) = (l.ty(self.env), r.ty(self.env));
+        if matches!(lt, Ty::Timespan | Ty::Date) || matches!(rt, Ty::Timespan | Ty::Date) {
+            if let (Expr::Span(x), Expr::Span(y)) = (&l, &r) {
+                match op {
+                    BinOp::Add => return Ok(Expr::Span(x.saturating_add(*y))),
+                    BinOp::Sub => return Ok(Expr::Span(x.saturating_sub(*y))),
+                    _ => {}
+                }
+            }
+            if !crate::timespans::ok_types(lt, op, rt) {
+                return Err(format!(
+                    "can't do {} and {} with that operator",
+                    lt.name(),
+                    rt.name()
+                ));
+            }
+            return Ok(Expr::TBin(Box::new(l), op, Box::new(r)));
+        }
         for side in [&l, &r] {
             let t = side.ty(self.env);
             if !Ty::Number.accepts(t) {
@@ -417,6 +453,19 @@ impl P<'_> {
 
     fn primary(&mut self) -> Result<Expr, String> {
         let mut e = self.primary_base()?;
+        // `5 minutes ago`, `2 hours later`
+        if let Some(Tok::Word(w)) = self.toks.get(self.pos)
+            && (w.eq_ignore_ascii_case("ago") || w.eq_ignore_ascii_case("later"))
+            && matches!(e.ty(self.env), Ty::Timespan | Ty::Object)
+        {
+            let op = if w.eq_ignore_ascii_case("ago") {
+                BinOp::Sub
+            } else {
+                BinOp::Add
+            };
+            self.pos += 1;
+            e = Expr::TBin(Box::new(Expr::Now), op, Box::new(e));
+        }
         // `arg-1 parsed as number`
         if matches!(self.toks.get(self.pos), Some(t) if t.is_lit("parsed")) && self.pos + 1 >= self.toks.len()
         {
@@ -457,6 +506,69 @@ impl P<'_> {
             e = self.prop(prop, e)?;
         }
         Ok(e)
+    }
+
+    /// After a number: `5 minutes`, `1 hour and 30 seconds`, `1 hour, 5 minutes`.
+    fn span_literal(&mut self, first: f64) -> Option<Expr> {
+        let unit_at = |p: usize| match self.toks.get(p) {
+            Some(Tok::Word(w)) => crate::timespans::unit_ms(w),
+            _ => None,
+        };
+        let mut total = crate::timespans::span_ms(first, unit_at(self.pos)?)?;
+        let mut pos = self.pos + 1;
+        loop {
+            let mut p = pos;
+            if matches!(self.toks.get(p), Some(t) if t.is_lit("and") || t.is_lit(",")) {
+                p += 1;
+            }
+            // Running out of tokens mid-literal means a longer span may parse.
+            if p + 1 >= self.toks.len() && p > pos {
+                self.hit_end.set(true);
+            }
+            let (Some(Tok::Num(n)), Some(u)) = (self.toks.get(p), unit_at(p + 1)) else {
+                break;
+            };
+            total = total.checked_add(crate::timespans::span_ms(*n, u)?)?;
+            pos = p + 2;
+        }
+        self.pos = pos;
+        Some(Expr::Span(total))
+    }
+
+    /// `minutes of`, `total seconds of`.
+    fn span_part_ahead(&self, first: &str) -> bool {
+        let of_at = if first == "total" {
+            if !matches!(self.toks.get(self.pos), Some(Tok::Word(w)) if crate::timespans::unit_ms(w).is_some())
+            {
+                return false;
+            }
+            self.pos + 1
+        } else {
+            self.pos
+        };
+        matches!(self.toks.get(of_at), Some(t) if t.is_lit("of"))
+    }
+
+    fn span_part(&mut self, first: &str) -> Result<Expr, String> {
+        let (total, unit) = if first == "total" {
+            let Some(Tok::Word(w)) = self.toks.get(self.pos).cloned() else {
+                return Err("expected a unit after 'total'".into());
+            };
+            self.pos += 1;
+            (true, w)
+        } else {
+            (false, first.to_string())
+        };
+        let ms = crate::timespans::unit_ms(&unit).ok_or("unknown time unit")?;
+        self.pos += 1; // `of`
+        let inner = self.primary()?;
+        if !matches!(inner.ty(self.env), Ty::Timespan | Ty::Object) {
+            return Err(format!(
+                "'{unit} of' needs a timespan, got {}",
+                inner.ty(self.env).name()
+            ));
+        }
+        Ok(Expr::SpanPart(ms, total, Box::new(inner)))
     }
 
     fn prop(&self, prop: Prop, of: Expr) -> Result<Expr, String> {
@@ -529,6 +641,9 @@ impl P<'_> {
         self.pos += 1;
         match tok {
             Tok::Num(n) => {
+                if let Some(span) = self.span_literal(n) {
+                    return Ok(span);
+                }
                 // `2 diamonds`: an amount of an item.
                 if self.pos >= self.toks.len() {
                     self.hit_end.set(true);
@@ -560,6 +675,26 @@ impl P<'_> {
                 let lw = w.to_ascii_lowercase();
                 match lw.as_str() {
                     "the" => self.primary(),
+                    "now" => Ok(Expr::Now),
+                    "time" if matches!(self.peek(), Some(t) if t.is_lit("since") || t.is_lit("until")) => {
+                        let since = matches!(self.peek(), Some(t) if t.is_lit("since"));
+                        self.pos += 1;
+                        let d = self.primary()?;
+                        if !matches!(d.ty(self.env), Ty::Date | Ty::Object) {
+                            return Err(format!(
+                                "'time since' needs a date, got {}",
+                                d.ty(self.env).name()
+                            ));
+                        }
+                        Ok(Expr::Since(Box::new(d), since))
+                    }
+                    "total" | "tick" | "ticks" | "millisecond" | "milliseconds" | "second" | "seconds"
+                    | "minute" | "minutes" | "hour" | "hours" | "day" | "days" | "week" | "weeks"
+                    | "month" | "months" | "year" | "years"
+                        if self.span_part_ahead(&lw) =>
+                    {
+                        self.span_part(&lw)
+                    }
                     "true" | "yes" => Ok(Expr::Bool(true)),
                     "false" | "no" => Ok(Expr::Bool(false)),
                     "player" if self.env.in_function => {

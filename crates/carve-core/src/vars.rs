@@ -76,6 +76,8 @@ impl Variables {
                     json!({"location": {"x": x, "y": y, "z": z, "world": world}})
                 }
                 Value::World(w) => json!({"world": w}),
+                Value::Timespan { millis } => json!({"timespan": millis}),
+                Value::Date { millis } => json!({"date": millis}),
             };
             obj.insert(k.clone(), j);
         }
@@ -134,6 +136,12 @@ fn object_value(o: &Map<String, Json>) -> Option<Value> {
             z: l.get("z")?.as_f64()?,
             world: l.get("world").and_then(Json::as_str).map(str::to_string),
         });
+    }
+    if let Some(ms) = o.get("timespan").and_then(Json::as_i64) {
+        return Some(Value::Timespan { millis: ms });
+    }
+    if let Some(ms) = o.get("date").and_then(Json::as_i64) {
+        return Some(Value::Date { millis: ms });
     }
     o.get("world")
         .and_then(Json::as_str)
