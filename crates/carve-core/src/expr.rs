@@ -159,6 +159,8 @@ pub enum Expr {
     Replaced(Box<Expr>, Box<Expr>, Box<Expr>, bool),
     /// Text functions: case, substring, characters, index of, trimmed, reversed.
     TextFn(crate::text_case_substring::TextFn, Vec<Expr>),
+    /// SkBee utilities: number formatting, roman, hex, json, random uuid, client info.
+    Util(crate::skbee_utilities::UtilFn, Vec<Expr>),
     /// `indices of {x::*}`: the index of every item, as text.
     Indices(VarRef),
     /// `first element of {x::*}`, `element 2 of {x::*}`.
@@ -394,6 +396,8 @@ impl Expr {
             Expr::Length(_) => Ty::Number,
             Expr::TextFn(f, _) if f.returns_number() => Ty::Number,
             Expr::TextFn(..) => Ty::Text,
+            Expr::Util(f, _) if f.returns_number() => Ty::Number,
+            Expr::Util(..) => Ty::Text,
             Expr::Indices(_) => Ty::Text,
             Expr::Date(op, _) => match op {
                 DateOp::Now | DateOp::FromUnix => Ty::Date,
@@ -664,6 +668,7 @@ impl P<'_> {
         }
         e = self.replaced_postfix(e);
         e = self.in_case(e);
+        e = self.util_postfix(e)?;
         // `now formatted as "yyyy-MM-dd"`
         while matches!(self.toks.get(self.pos), Some(t) if t.is_lit("formatted"))
             && matches!(e.ty(self.env), Ty::Date | Ty::Object)
@@ -692,6 +697,11 @@ impl P<'_> {
             {
                 self.pos += 2;
                 e = Expr::ItemInfo(info, Box::new(e));
+                continue;
+            }
+            if let Some((info, n)) = self.info_at(self.pos + 1) {
+                self.pos += 1 + n;
+                e = self.util_info(info, e)?;
                 continue;
             }
             if let Some((prop, np)) = self.admin_prop_at(&lw, self.pos + 2) {
@@ -1328,6 +1338,9 @@ impl P<'_> {
                     }
                     let operand = self.primary()?;
                     return crate::skbee_nbt::build(&h, operand, self.env);
+                }
+                if let Some(e) = self.util_prefix(&lw)? {
+                    return Ok(e);
                 }
                 match lw.as_str() {
                     "the" => self.primary(),
@@ -2251,6 +2264,149 @@ impl P<'_> {
             }
             _ => Ok(None),
         }
+    }
+
+    /// The client properties (`client brand`, `view distance`, ...) whose words
+    /// start at `at`, with how many words they use.
+    fn info_at(&self, at: usize) -> Option<(crate::skbee_utilities::Info, usize)> {
+        let word = |i: usize| match self.toks.get(at + i) {
+            Some(Tok::Word(w)) => Some(w.to_ascii_lowercase()),
+            Some(_) => None,
+            None => {
+                self.hit_end.set(true);
+                None
+            }
+        };
+        let first = word(0)?;
+        crate::skbee_utilities::info_words(&first, word(1).as_deref(), word(2).as_deref())
+    }
+
+    fn util_info(&self, info: crate::skbee_utilities::Info, of: Expr) -> Result<Expr, String> {
+        let t = of.ty(self.env);
+        if !(t == Ty::Player || t == Ty::Object) {
+            return Err(format!("client properties need a player, got {}", t.name()));
+        }
+        Ok(Expr::Util(crate::skbee_utilities::UtilFn::Info(info), vec![of]))
+    }
+
+    /// SkBee utilities that start with a word: `random uuid`, `hex of n`,
+    /// `roman numeral of n`, `json of x`, `abbreviated n`, `number from hex "ff"`,
+    /// `client brand of player`.
+    fn util_prefix(&mut self, lw: &str) -> Result<Option<Expr>, String> {
+        use crate::skbee_utilities::UtilFn;
+        if !matches!(
+            lw,
+            "random"
+                | "number"
+                | "hex"
+                | "roman"
+                | "json"
+                | "abbreviated"
+                | "client"
+                | "locale"
+                | "language"
+                | "view"
+                | "pose"
+                | "main"
+                | "brand"
+        ) || matches!(self.toks.get(self.pos), Some(t) if t.is_lit("("))
+        {
+            return Ok(None);
+        }
+        let util = |f: UtilFn, a: Vec<Expr>| Ok(Some(Expr::Util(f, a)));
+        match lw {
+            "random" if self.is_word(0, "uuid") => {
+                self.pos += 1;
+                util(UtilFn::RandomUuid, Vec::new())
+            }
+            "number" if self.is_word(0, "from") && (self.is_word(1, "roman") || self.is_word(1, "hex")) => {
+                let roman = self.is_word(1, "roman");
+                self.pos += 2;
+                if roman && self.is_word(0, "numeral") {
+                    self.pos += 1;
+                }
+                let a = self.text_arg("number from")?;
+                util(if roman { UtilFn::FromRoman } else { UtilFn::FromHex }, vec![a])
+            }
+            "hex" if self.is_word(0, "of") => {
+                self.pos += 1;
+                let a = self.num_arg("hex of")?;
+                util(UtilFn::Hex, vec![a])
+            }
+            "roman" if self.is_word(0, "of") || (self.is_word(0, "numeral") && self.is_word(1, "of")) => {
+                self.pos += if self.is_word(0, "of") { 1 } else { 2 };
+                let a = self.num_arg("roman numeral of")?;
+                util(UtilFn::Roman, vec![a])
+            }
+            "json" if self.is_word(0, "of") => {
+                self.pos += 1;
+                let a = self.primary()?;
+                util(UtilFn::Json, vec![a])
+            }
+            "abbreviated" if self.toks.get(self.pos).is_some() => {
+                let a = self.primary()?;
+                if !Ty::Number.accepts(a.ty(self.env)) {
+                    return Err("'abbreviated' needs a number".into());
+                }
+                util(UtilFn::Abbrev, vec![a])
+            }
+            _ => {
+                let Some((info, n)) = self.info_at(self.pos - 1) else {
+                    return Ok(None);
+                };
+                if !self.is_word(n - 1, "of") {
+                    return Ok(None);
+                }
+                self.pos += n;
+                let inner = self.primary()?;
+                Ok(Some(self.util_info(info, inner)?))
+            }
+        }
+    }
+
+    /// `n with commas [and 2 decimal places]`, `n rounded to 2 decimal places`.
+    fn util_postfix(&mut self, e: Expr) -> Result<Expr, String> {
+        use crate::skbee_utilities::UtilFn;
+        let Some(Tok::Word(w)) = self.toks.get(self.pos) else {
+            return Ok(e);
+        };
+        let numeric = matches!(e.ty(self.env), Ty::Number | Ty::Object);
+
+        let is_with = w.eq_ignore_ascii_case("with");
+        let is_rounded = w.eq_ignore_ascii_case("rounded");
+        if is_with && numeric && self.is_word(1, "commas") {
+            self.pos += 2;
+            let mut args = vec![e];
+            let save = self.pos;
+            if self.is_word(0, "and") && matches!(self.peek_at(1), Some(Tok::Num(_) | Tok::Var(_))) {
+                self.pos += 1;
+                let n = self.unary()?;
+                if self.is_word(0, "decimal") || self.is_word(0, "decimals") {
+                    self.pos += 1;
+                    if self.is_word(0, "place") || self.is_word(0, "places") {
+                        self.pos += 1;
+                    }
+                    args.push(n);
+                } else {
+                    self.pos = save;
+                }
+            }
+            return Ok(Expr::Util(UtilFn::Commas, args));
+        }
+        if is_rounded && numeric && self.is_word(1, "to") {
+            let save = self.pos;
+            self.pos += 2;
+            let n = self.unary()?;
+            if self.is_word(0, "decimal") || self.is_word(0, "decimals") {
+                self.pos += 1;
+                if self.is_word(0, "place") || self.is_word(0, "places") {
+                    self.pos += 1;
+                }
+                return Ok(Expr::Util(UtilFn::Round, vec![e, n]));
+            }
+            self.pos = save;
+        }
+        Ok(e)
     }
 
     /// After `index of`: `<text> in <text>`.

@@ -10,6 +10,7 @@ use carve_core::inventories::InvClick;
 use carve_core::weather_time::Weather;
 use carve_core::skbee_text::{Click, Hover, Kind, Part};
 use carve_core::skbee_recipes_advancements::{CookKind, Ingredient as RIngredient, RecipeDef, RecipeKind};
+use carve_core::skbee_utilities::Info;
 use carve_core::world_effects::{FxPos, ParticleFx};
 use carve_core::{
     CommandOutcome, Engine, EventCtx, EventKind, Host, LogLevel, PlayerFlag, PlayerRef, Recipient, ScriptError, Variables,
@@ -918,6 +919,32 @@ impl WasmHost<'_> {
         }
     }
 
+    fn player_info(&mut self, p: &PlayerRef, info: Info) -> Option<String> {
+        let pl = self.get(p)?;
+        Some(match info {
+            Info::Pose => match pl.as_entity().get_pose() {
+                EntityPose::Standing => "standing",
+                EntityPose::FallFlying => "fall flying",
+                EntityPose::Sleeping => "sleeping",
+                EntityPose::Swimming => "swimming",
+                EntityPose::SpinAttack => "spin attack",
+                EntityPose::Crouching => "crouching",
+                EntityPose::LongJumping => "long jumping",
+                EntityPose::Dying => "dying",
+                _ => "other",
+            }
+            .to_string(),
+            Info::Locale => pl.get_locale(),
+            Info::Brand => pl.as_java()?.get_brand(),
+            Info::ViewDistance => pl.as_java()?.get_settings().view_distance.to_string(),
+            Info::MainHand => match pl.as_java()?.get_settings().main_hand {
+                Hand::Left => "left",
+                Hand::Right => "right",
+            }
+            .to_string(),
+        })
+    }
+
     fn ping(&mut self, p: &PlayerRef) -> Option<f64> {
         self.get(p).map(|pl| f64::from(pl.get_ping()))
     }
@@ -1030,6 +1057,7 @@ impl Host for TickHost<'_, '_> {
         set_tab_list_name(p: &PlayerRef, name: Option<&str>);
         ping(p: &PlayerRef) -> Option<f64>;
         ip(p: &PlayerRef) -> Option<String>;
+        player_info(p: &PlayerRef, info: Info) -> Option<String>;
         strike_lightning(at: &FxPos, effect_only: bool);
         explode(at: &FxPos, power: f64, fire: bool);
         spawn_particle(p: &ParticleFx);

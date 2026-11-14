@@ -1812,6 +1812,20 @@ impl Engine {
                 }
                 crate::text_case_substring::apply(*f, &vals)
             }
+            Expr::Util(f, args) => {
+                let mut vals = Vec::with_capacity(args.len().max(4));
+                for a in args {
+                    vals.push(self.eval(a, ex, host)?);
+                }
+                if *f == crate::skbee_utilities::UtilFn::RandomUuid {
+                    for _ in 0..4 {
+                        vals.push(Value::Num(self.next_random(host)));
+                    }
+                } else if f.needs_player() {
+                    vals[0] = online(&vals[0], &mut ex.seen, host).map_or(Value::None, Value::Player);
+                }
+                crate::skbee_utilities::apply(*f, &vals, host)
+            }
             Expr::Span(ms) => Value::Timespan { millis: *ms },
             Expr::Since(d, since) => {
                 let Value::Date(millis) = self.eval(d, ex, host)? else {
