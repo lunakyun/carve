@@ -226,9 +226,9 @@ impl LoopFrame {
         }
     }
 
-    /// The current number of a `loop N times`, without building a value.
-    fn times_pos(&self) -> Option<f64> {
-        matches!(self.items, LoopItems::Times(_)).then_some(self.pos as f64)
+    /// A `loop N times`, whose value is its counter.
+    fn is_times(&self) -> bool {
+        matches!(self.items, LoopItems::Times(_))
     }
 
     fn index(&self) -> Value {
@@ -1164,35 +1164,29 @@ impl Engine {
     #[inline(always)]
     fn cond(&mut self, c: &Cond, ex: &mut Exec, host: &mut dyn Host) -> Result<bool, String> {
         if let Cond::Cmp(a, op, b) = c {
-            // Fast path: `{var} = 5`, `loop-number is -3`... compare a number
-            // read in place with a constant, without building values.
-            if let Expr::Num(n) = b {
-                let x = match a {
-                    Expr::Var(v) if !v.list => {
-                        let k = self.key(v, ex, host)?;
-                        let cur = if v.local {
-                            ex.locals.get(&k)
-                        } else {
-                            self.vars.get_ref(&k)
-                        };
-                        match cur {
-                            Some(Value::Num(x)) => Some(*x),
-                            _ => None,
-                        }
-                    }
-                    Expr::LoopValue(d) => ex.loops.get(*d).and_then(LoopFrame::times_pos),
-                    Expr::LoopIter(d) => ex.loops.get(*d).map(|f| f.pos as f64),
-                    _ => None,
+            // Fast path: `{var} = 5`, `{var} > 2`... read the variable in place.
+            if let (Expr::Var(v), Expr::Num(n)) = (a, b)
+                && !v.list
+            {
+                let k = self.key(v, ex, host)?;
+                let cur = if v.local {
+                    ex.locals.get(&k)
+                } else {
+                    self.vars.get_ref(&k)
                 };
-                if let Some(x) = x {
-                    return Ok(cmp_nums(x, *op, *n));
+                if let Some(Value::Num(x)) = cur {
+                    return Ok(cmp_nums(*x, *op, *n));
                 }
+            }
+            // `loop-number is -3`: compare the loop counter without building a value.
+            if let (Expr::LoopValue(d) | Expr::LoopIter(d), Expr::Num(n)) = (a, b)
+                && let Some(f) = ex.loops.get(*d)
+                && (matches!(a, Expr::LoopIter(_)) || f.is_times())
+            {
+                return Ok(cmp_nums(f.pos as f64, *op, *n));
             }
             let a = self.eval(a, ex, host)?;
             let b = self.eval(b, ex, host)?;
-            if let (Value::Num(x), Value::Num(y)) = (&a, &b) {
-                return Ok(cmp_nums(*x, *op, *y));
-            }
             return Ok(match op {
                 CmpOp::Eq => a.loose_eq(&b),
                 CmpOp::Ne => !a.loose_eq(&b),

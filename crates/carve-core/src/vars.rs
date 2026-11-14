@@ -410,7 +410,8 @@ pub(crate) fn list_prefix(key: &str) -> Option<&str> {
 #[derive(Debug, Default, Clone)]
 pub(crate) struct Locals {
     flat: Vec<(String, Value)>,
-    lists: Store,
+    /// Only allocated once the run uses a list.
+    lists: Option<Box<Store>>,
 }
 
 fn is_list_key(key: &str) -> bool {
@@ -418,19 +419,38 @@ fn is_list_key(key: &str) -> bool {
 }
 
 impl Locals {
-    pub(crate) fn get(&self, key: &str) -> Option<&Value> {
-        if is_list_key(key) {
-            return self.lists.map.get(key);
-        }
-        self.flat.iter().find(|(k, _)| k == key).map(|(_, v)| v)
+    fn lists_mut(&mut self) -> &mut Store {
+        self.lists.get_or_insert_with(Box::default)
     }
 
+    // Kept out of line so `get` and `set` stay small enough to inline.
+    #[inline(never)]
+    fn get_list(&self, key: &str) -> Option<&Value> {
+        self.lists.as_ref()?.map.get(key)
+    }
+
+    #[inline(never)]
+    fn set_list(&mut self, key: &str, v: Value) {
+        self.lists_mut().set_str(key, v);
+    }
+
+    // `flat` never holds a list key, so a hit there needs no further check.
+    #[inline]
+    pub(crate) fn get(&self, key: &str) -> Option<&Value> {
+        match self.flat.iter().find(|(k, _)| k == key) {
+            Some((_, v)) => Some(v),
+            None if is_list_key(key) => self.get_list(key),
+            None => None,
+        }
+    }
+
+    #[inline]
     pub(crate) fn set(&mut self, key: &str, v: Value) {
-        if is_list_key(key) {
-            self.lists.set_str(key, v);
+        let pos = self.flat.iter().position(|(k, _)| k == key);
+        if pos.is_none() && is_list_key(key) {
+            self.set_list(key, v);
             return;
         }
-        let pos = self.flat.iter().position(|(k, _)| k == key);
         match (pos, v) {
             (Some(i), Value::None) => {
                 self.flat.swap_remove(i);
@@ -448,35 +468,44 @@ impl Locals {
     /// Remove everything, keeping the memory for reuse.
     pub(crate) fn clear(&mut self) {
         self.flat.clear();
-        self.lists.map.clear();
-        self.lists.meta.clear();
+        if let Some(l) = &mut self.lists {
+            l.map.clear();
+            l.meta.clear();
+        }
     }
 
     pub(crate) fn delete(&mut self, key: &str) {
         if list_prefix(key).is_some() {
-            self.lists.delete(key);
+            if let Some(l) = &mut self.lists {
+                l.delete(key);
+            }
         } else {
             self.set(key, Value::None);
         }
     }
 
     pub(crate) fn list(&self, prefix: &str) -> Vec<(String, Value)> {
-        self.lists.list(prefix)
+        self.lists.as_ref().map(|l| l.list(prefix)).unwrap_or_default()
     }
 
     pub(crate) fn all_under(&self, prefix: &str) -> Vec<(String, Value)> {
-        self.lists.all_under(prefix)
+        self.lists
+            .as_ref()
+            .map(|l| l.all_under(prefix))
+            .unwrap_or_default()
     }
 
     pub(crate) fn list_len(&self, prefix: &str) -> usize {
-        self.lists.list_len(prefix)
+        self.lists.as_ref().map_or(0, |l| l.list_len(prefix))
     }
 
     pub(crate) fn list_push(&mut self, prefix: &str, v: Value) {
-        self.lists.list_push(prefix, v);
+        self.lists_mut().list_push(prefix, v);
     }
 
     pub(crate) fn list_remove(&mut self, prefix: &str, v: &Value) {
-        self.lists.list_remove(prefix, v);
+        if let Some(l) = &mut self.lists {
+            l.list_remove(prefix, v);
+        }
     }
 }
