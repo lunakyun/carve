@@ -1186,6 +1186,22 @@ impl Engine {
                 };
                 Ok(hit != *negate)
             }
+            Cond::Rare(r) => {
+                let a = self.eval(&r.a, ex, host)?;
+                let b = match &r.b {
+                    Some(b) => Some(self.eval(b, ex, host)?),
+                    None => None,
+                };
+                let hit = if r.kind == crate::w2_conditions_2::W2Kind::ScriptCommand {
+                    match &a {
+                        Value::Text(t) => self.table.command(t.trim().trim_start_matches('/')).is_some(),
+                        _ => false,
+                    }
+                } else {
+                    crate::w2_conditions_2::check(r.kind, &a, b.as_ref(), host)
+                };
+                Ok(hit != r.negate)
+            }
             Cond::IsSet(e, want) => {
                 let v = self.eval(e, ex, host)?;
                 Ok((v != Value::None) == *want)

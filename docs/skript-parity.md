@@ -481,64 +481,64 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Has Persistent Data Tag
 - ⬜ Has Played Before
 - ⬜ Has Potion Effect ⭐
-- ⬜ Has Resource Pack
-- ⬜ Has Scoreboard Tag
-- ⬜ Ignition Process
-- ⬜ In The Past/Future
-- ⬜ Is a Script Command
+- ✅ Has Resource Pack — `player has a resource pack` (set when the pack finishes loading)
+- ⛔ Has Scoreboard Tag — the plugin API has no entity tags to read
+- ⛔ Ignition Process — needs TNT entities, not in the plugin API
+- ✅ In The Past/Future
+- ✅ Is a Script Command — `command "hello" is a script command`
 - ⛔ Is a Skript command — not Skript
-- ⬜ Is Adult
-- ⬜ Is Alive
-- ⬜ Is Baby
+- ⛔ Is Adult — no ageable entities in the plugin API
+- ✅ Is Alive
+- ⛔ Is Baby — no ageable entities in the plugin API
 - ⬜ Is Banned
-- ⬜ Is Bed/Anchor Spawn
-- ⬜ Is Block
-- ⬜ Is Block Redstone Powered
+- ⛔ Is Bed/Anchor Spawn — the API gives the respawn point but not what it is
+- ⛔ Is Block — the core has no block registry to tell blocks from items
+- ⛔ Is Block Redstone Powered — no redstone power query in the plugin API
 - ⛔ Is Blocking (no shield state in the plugin API; always false)
-- ⬜ Is Burning
-- ⬜ Is Charged
-- ⬜ Is Charging Fireball
-- ⬜ Is Climbing
-- ⬜ Is Conditional
-- ⬜ Is Custom Name Visible
-- ⬜ Is Dancing
-- ⬜ Is Eating
-- ⬜ Is Edible
-- ⬜ Is Empty
-- ⬜ Is Enchanted
-- ⬜ Is Evenly Divisible By
-- ⬜ Is Fire Resistant
-- ⬜ Is Fish Hook in Open Water
-- ⬜ Is Flammable
+- ✅ Is Burning
+- ⛔ Is Charged — creepers and crossbows are not reachable
+- ⛔ Is Charging Fireball — ghasts are not reachable
+- ⛔ Is Climbing — no climbing state in the plugin API
+- ⛔ Is Conditional — no command blocks
+- ✅ Is Custom Name Visible
+- ⛔ Is Dancing — no mob state in the plugin API
+- ⛔ Is Eating — no item-use state in the plugin API
+- 🟡 Is Edible — fixed list of vanilla foods
+- ✅ Is Empty — text, lists and unset values
+- ⛔ Is Enchanted — handled with item meta (enchantments)
+- ✅ Is Evenly Divisible By
+- 🟡 Is Fire Resistant — netherite items and ancient debris
+- ⛔ Is Fish Hook in Open Water — no fishing hooks in the plugin API
+- 🟡 Is Flammable — fixed list of vanilla blocks and items
 - 🟡 Is Flying ⭐ (tracked from flight toggle events)
-- ⬜ Is From A Mob Spawner
-- ⬜ Is Frozen
-- ⬜ Is Fuel
-- ⬜ Is Gliding
-- ⬜ Is Hand Raised
+- ⛔ Is From A Mob Spawner — no spawn reason in the plugin API
+- ✅ Is Frozen — fully frozen at 140 freeze ticks
+- 🟡 Is Fuel — fixed list of vanilla fuels
+- ✅ Is Gliding
+- ⛔ Is Hand Raised — no item-use state in the plugin API
 - 🟡 Is Holding — via `tool of player is ...`
-- ⬜ Is In Love
-- ⬜ Is in World
-- ⬜ Is Incendiary
-- ⬜ Is Infinite
-- ⬜ Is Interactable
-- ⬜ Is Invisible
-- ⬜ Is Invulnerable
-- ⬜ Is Jumping
-- ⬜ Is Leashed
-- ⬜ Is Loaded
-- ⬜ Is Lootable
+- ⛔ Is In Love — no animal state in the plugin API
+- ✅ Is in World
+- ⛔ Is Incendiary — explosions are not reachable
+- ⛔ Is Infinite — no infinite potion durations in the plugin API
+- ⛔ Is Interactable — no mob state in the plugin API
+- ✅ Is Invisible
+- ✅ Is Invulnerable
+- ⛔ Is Jumping — no jump state in the plugin API
+- ⛔ Is Leashed — no leads in the plugin API
+- ⛔ Is Loaded — no chunk load query in the plugin API
+- ⛔ Is Lootable — no loot tables in the plugin API
 - ⛔ Is Member/Owner of Region — needs WorldGuard
-- ⬜ Is Normalized
-- ⬜ Is Occluding
-- ⬜ Is of Type
+- ⛔ Is Normalized — Carve has no vector type
+- ⛔ Is Occluding — no block shape data in the core
+- 🟡 Is of Type — items, `player` and `console`
 - ✅ Is on Ground
-- ⬜ Is Online ⭐
+- ✅ Is Online ⭐
 - ⬜ Is Operator ⭐
-- ⬜ Is Passable
-- ⬜ Is Pathfinding
-- ⬜ Is Persistent
-- ⬜ Is Playing Dead
+- ⛔ Is Passable — no block shape data in the core
+- ⛔ Is Pathfinding — no mob AI in the plugin API
+- ⛔ Is Persistent — no entity persistence flag in the plugin API
+- ⛔ Is Playing Dead — axolotls are not reachable
 - 🟡 Is Plugin Enabled — Pumpkin plugins only, not exposed yet
 - ⬜ Is Poisoned
 - ⬜ Is Preferred Tool

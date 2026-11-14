@@ -185,6 +185,8 @@ pub enum Cond {
         negate: bool,
     },
     IsSet(Expr, bool),
+    /// Rare conditions (boxed to keep this enum small).
+    Rare(Box<crate::w2_conditions_2::Rare>),
     /// `chance of 25%`
     Chance(Expr),
     /// `player has 2 diamonds`, `player's inventory contains stone`.
@@ -442,6 +444,8 @@ pub enum CondKind {
     IsNotConsole,
     /// `player is sneaking`; the bool is negation.
     Flag(PlayerFlag, bool),
+    /// Rare checks from `w2_conditions_2`; the bool is negation.
+    W2(crate::w2_conditions_2::W2Kind, bool),
 }
 
 /// Text effects (`replace ...`). Kept apart from `EFFECT_PATTERNS` so the
@@ -579,10 +583,12 @@ fn registry() -> &'static Registry {
                     .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
             )
             .collect(),
-        conditions: crate::senders::SENDER_CONDITION_PATTERNS
+        conditions: crate::w2_conditions_2::CONDITION_PATTERNS
             .iter()
+            .chain(crate::senders::SENDER_CONDITION_PATTERNS)
             .chain(crate::gamemode::CONDITION_PATTERNS)
             .chain(PLAYER_FLAG_PATTERNS)
+            .chain(crate::w2_conditions_2::FLAG_PATTERNS)
             .chain(CONDITION_PATTERNS)
             .filter_map(|(s, k)| Pattern::new(s, *k).ok())
             .collect(),
@@ -610,6 +616,8 @@ pub fn check_registry() -> Result<(), String> {
         .iter()
         .chain(crate::gamemode::CONDITION_PATTERNS)
         .chain(PLAYER_FLAG_PATTERNS)
+        .chain(crate::w2_conditions_2::CONDITION_PATTERNS)
+        .chain(crate::w2_conditions_2::FLAG_PATTERNS)
         .chain(CONDITION_PATTERNS)
     {
         Pattern::new(s, *k)?;
@@ -1048,6 +1056,8 @@ impl Cx<'_> {
         let type_err = inner_error(&toks, &self.env).or(type_err);
         let srcs: Vec<&'static str> = PLAYER_FLAG_PATTERNS
             .iter()
+            .chain(crate::w2_conditions_2::CONDITION_PATTERNS)
+            .chain(crate::w2_conditions_2::FLAG_PATTERNS)
             .chain(CONDITION_PATTERNS)
             .map(|(s, _)| *s)
             .collect();
@@ -1409,6 +1419,10 @@ fn build_cond(kind: CondKind, mut c: Vec<Option<Capture>>) -> Cond {
                 flag,
                 negate,
             };
+        }
+        CondKind::W2(kind, negate) => {
+            let b = (kind_has_b(kind)).then_some(b);
+            return Cond::Rare(Box::new(crate::w2_conditions_2::build(kind, negate, a, b)));
         }
         CondKind::IsSet => return Cond::IsSet(a, true),
         CondKind::NotSet => return Cond::IsSet(a, false),
@@ -2283,4 +2297,9 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
         }
     }
     (triggers, errors)
+}
+
+fn kind_has_b(k: crate::w2_conditions_2::W2Kind) -> bool {
+    use crate::w2_conditions_2::W2Kind::*;
+    matches!(k, Divisible | InWorld | OfType)
 }
