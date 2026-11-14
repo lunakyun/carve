@@ -629,7 +629,7 @@ impl Engine {
         }
         let table = self.table.clone();
         for (period, trig) in &table.every {
-            if *period > 0 && tick % period == 0 {
+            if *period > 0 && tick.is_multiple_of(*period) {
                 let ex = Exec::new(trig, EventCtx::console());
                 self.start(ex, host);
             }

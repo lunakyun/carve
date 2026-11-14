@@ -1155,10 +1155,10 @@ impl Cx<'_> {
         if toks.is_empty() {
             return None;
         }
-        if seps.contains(&"or") {
-            if let Some(parts) = self.split_conds(strip_parens(toks), &["and", ","]) {
-                return Some(Cond::All(parts));
-            }
+        if seps.contains(&"or")
+            && let Some(parts) = self.split_conds(strip_parens(toks), &["and", ","])
+        {
+            return Some(Cond::All(parts));
         }
         let inner = strip_parens(toks);
         if inner.len() != toks.len() {
