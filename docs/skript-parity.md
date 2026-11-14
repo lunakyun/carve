@@ -110,13 +110,13 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ On Combust
 - ⬜ On Command ⭐
 - ⬜ On Connect
-- ⬜ On Consume ⭐
-- ⬜ On Craft
+- ✅ On Consume ⭐
+- 🟡 On Craft — recipe id only
 - ⬜ On Creeper Power
 - 🟡 On Damage — players only; `damage`, `attacker`, `victim`; can't change the damage
 - 🟡 On Death — players only; no attacker or death message
 - ⬜ On Dispense
-- ⬜ On Drop ⭐
+- ✅ On Drop ⭐
 - ⬜ On Egg Throw
 - ⬜ On Elytra Boost
 - ⬜ On Enchant
@@ -144,7 +144,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ On Form
 - ⬜ On Fuel Burn
 - ⬜ On Furnace Item Extract
-- ⬜ On Gamemode Change ⭐
+- ✅ On Gamemode Change ⭐
 - ⬜ On Gliding State Change
 - ⬜ On Grow
 - ⬜ On Hand Item Swap ⭐
@@ -172,7 +172,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ On Language Change
 - ⬜ On Leash / Unleash
 - ⬜ On Leaves Decay
-- ⬜ On Level Change
+- ✅ On Level Change
 - ⬜ On Lightning Strike
 - ⬜ On Loot Generate
 - ⬜ On Love Mode Enter
@@ -180,7 +180,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ On Move On
 - ⬜ On Pathfind
 - ⬜ On Physics
-- ⬜ On Pick Up ⭐
+- ✅ On Pick Up ⭐
 - ⬜ On Pig Zap
 - ⬜ On Piglin Barter
 - ⬜ On Piston Extend
@@ -189,7 +189,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ On Player Chunk Enter
 - ⬜ On Player Chunk Enters
 - ⬜ On Player Deep Sleep
-- ⬜ On Player GameMode Change
+- ✅ On Player GameMode Change
 - ⬜ On Player Input
 - ⬜ On Player Pick Item
 - ⬜ On Player Pickup Arrow
@@ -201,7 +201,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ On Prepare Craft
 - ⬜ On Pressure Plate / Trip
 - ⬜ On Projectile Collide
-- ⬜ On Projectile Hit ⭐
+- 🟡 On Projectile Hit ⭐ — no projectile type
 - ✅ On Quit — player still known until the first wait
 - ⬜ On Ready Arrow
 - ⬜ On Redstone
@@ -220,7 +220,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ On Slime Split
 - ⬜ On Smelt
 - ✅ On Sneak Toggle ⭐
-- ⬜ On Spawn ⭐
+- ✅ On Spawn ⭐
 - ⬜ On Spawn Change
 - ⬜ On Spectate
 - ⬜ On Sponge Absorb

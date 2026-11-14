@@ -33,6 +33,7 @@ use pumpkin_plugin_api::{
     Context, Player, Plugin, PluginMetadata, Server, permissions, register_plugin, uuid,
 };
 
+mod events_items;
 mod fx;
 
 const SCRIPTS_DIR: &str = "scripts";
@@ -1395,6 +1396,7 @@ impl Plugin for Carve {
         register_event::<PlayerToggleSneakEvent>(&context, EventKind::SneakToggle);
         register_event::<PlayerToggleSprintEvent>(&context, EventKind::SprintToggle);
         register_event::<PlayerToggleFlightEvent>(&context, EventKind::FlightToggle);
+        events_items::register(&context);
         for r in [
             context.register_event_handler::<PlayerInteractEvent, _>(OnInteract, EventPriority::Normal, true),
             context.register_event_handler::<EntityDamageEvent, _>(OnDamage, EventPriority::Normal, true),
