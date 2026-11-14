@@ -198,6 +198,7 @@ impl LoopFrame {
 
 /// `a, b and c`, like Skript prints a list.
 mod list_eval;
+mod w6_eval;
 
 fn join_list(items: &[(String, Value)], out: &mut String) {
     if items.is_empty() {
@@ -1669,6 +1670,7 @@ impl Engine {
                 _ => Value::None,
             },
             Expr::Items(s) => Value::List(self.eval_list(s, ex, host)?),
+            Expr::W6(w) => self.eval_w6(w, ex, host)?,
             Expr::ListAgg(a, s) => self.eval_agg(*a, s, ex, host)?,
             Expr::RandomOf(v) => {
                 let items = self.list_items(v, ex, host)?;
@@ -1857,6 +1859,7 @@ impl Engine {
                     crate::health_food::run(h, amount, &p, host);
                 }
             }
+            Effect::W6(w) => self.exec_w6(w, ex, host)?,
             Effect::Heal(p) => {
                 if let Some(p) = self.player(p, ex, host)? {
                     host.heal(&p);

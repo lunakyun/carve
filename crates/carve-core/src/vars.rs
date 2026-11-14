@@ -162,6 +162,25 @@ pub(crate) fn index_order(a: &str, b: &str) -> std::cmp::Ordering {
     }
 }
 
+/// Order two `a::b::c` paths part by part, numbers by value.
+pub(crate) fn path_order(a: &str, b: &str) -> std::cmp::Ordering {
+    let mut x = a.split("::");
+    let mut y = b.split("::");
+    loop {
+        match (x.next(), y.next()) {
+            (None, None) => return std::cmp::Ordering::Equal,
+            (None, Some(_)) => return std::cmp::Ordering::Less,
+            (Some(_), None) => return std::cmp::Ordering::Greater,
+            (Some(p), Some(q)) => {
+                let o = index_order(p, q);
+                if o != std::cmp::Ordering::Equal {
+                    return o;
+                }
+            }
+        }
+    }
+}
+
 /// The direct items of a list (`prefix` is `name::`), sorted by index.
 fn direct<'a>(it: impl Iterator<Item = (&'a String, &'a Value)>, prefix: &str) -> Vec<(String, Value)> {
     let mut out: Vec<(String, Value)> = it
@@ -192,6 +211,18 @@ impl Variables {
                 .take_while(|(k, _)| k.starts_with(prefix)),
             prefix,
         )
+    }
+
+    /// Every value under the list `prefix` (`name::`), at any depth.
+    pub fn all_under(&self, prefix: &str) -> Vec<(String, Value)> {
+        let mut out: Vec<(String, Value)> = self
+            .map
+            .range(prefix.to_string()..)
+            .take_while(|(k, _)| k.starts_with(prefix))
+            .filter_map(|(k, v)| Some((k.strip_prefix(prefix)?.to_string(), v.clone())))
+            .collect();
+        out.sort_by(|a, b| path_order(&a.0, &b.0));
+        out
     }
 
     pub fn list_len(&self, prefix: &str) -> usize {
@@ -265,6 +296,16 @@ impl Locals {
 
     pub(crate) fn list(&self, prefix: &str) -> Vec<(String, Value)> {
         direct(self.0.iter().map(|(k, v)| (k, v)), prefix)
+    }
+
+    pub(crate) fn all_under(&self, prefix: &str) -> Vec<(String, Value)> {
+        let mut out: Vec<(String, Value)> = self
+            .0
+            .iter()
+            .filter_map(|(k, v)| Some((k.strip_prefix(prefix)?.to_string(), v.clone())))
+            .collect();
+        out.sort_by(|a, b| path_order(&a.0, &b.0));
+        out
     }
 
     pub(crate) fn list_len(&self, prefix: &str) -> usize {

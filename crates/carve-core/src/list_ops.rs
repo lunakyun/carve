@@ -27,6 +27,8 @@ pub enum ListSrc {
     Filter(Box<ListSrc>, Box<Cond>),
     /// `random 2 elements of list`
     Random(Box<Expr>, Box<ListSrc>),
+    /// `recursive {x::*}`: every value under the list, at any depth.
+    Recursive(VarRef),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -75,6 +77,12 @@ pub fn looks_like_list_op(toks: &[Tok], env: &Env) -> bool {
             return true;
         }
         if lw == "random" && matches!(toks.get(1), Some(Tok::Num(_) | Tok::Var(_))) {
+            return true;
+        }
+        if lw == "recursive" && matches!(toks.get(1), Some(Tok::Var(_))) {
+            return true;
+        }
+        if lw == "tablisted" && toks.get(1).is_some_and(|t| t.is_lit("players")) {
             return true;
         }
         if matches!(toks.get(1), Some(t) if t.is_lit("("))
@@ -166,6 +174,16 @@ impl Cur<'_> {
                         np,
                     ))
                 }
+                "recursive" if matches!(self.toks.get(pos + 1), Some(Tok::Var(_))) => {
+                    let Some(Tok::Var(raw)) = self.toks.get(pos + 1) else {
+                        return Err("expected 'recursive {list::*}'".into());
+                    };
+                    let v = parse_varref(raw, self.env)?;
+                    if !v.is_list() {
+                        return Err("'recursive' needs a list variable like {x::*}".into());
+                    }
+                    Ok((ListSrc::Recursive(v), pos + 2))
+                }
                 "random" if matches!(self.toks.get(pos + 1), Some(Tok::Num(_) | Tok::Var(_))) => {
                     let n = match self.toks.get(pos + 1) {
                         Some(Tok::Num(n)) => Expr::Num(*n),
@@ -234,7 +252,7 @@ impl Cur<'_> {
 }
 
 /// A `where` condition. `input` is the item being tested.
-fn parse_filter(toks: &[Tok], env: &Env) -> Result<Cond, String> {
+pub(crate) fn parse_filter(toks: &[Tok], env: &Env) -> Result<Cond, String> {
     if toks.is_empty() {
         return Err("empty 'where' condition".into());
     }

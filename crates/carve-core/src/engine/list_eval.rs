@@ -74,6 +74,7 @@ impl Engine {
                 v.truncate(if n.is_finite() && n > 0.0 { n as usize } else { 0 });
                 v
             }
+            ListSrc::Recursive(v) => self.recursive_items(v, ex, host)?,
             ListSrc::Filter(i, c) => {
                 let items = self.eval_list(i, ex, host)?;
                 let saved = ex.locals.get(INPUT_KEY).cloned();
