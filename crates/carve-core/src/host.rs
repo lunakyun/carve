@@ -66,4 +66,20 @@ pub trait Host {
     fn health(&mut self, _player: &PlayerRef) -> Option<f64> {
         None
     }
+
+    /// Play a sound to one player. `at` is the sound position; `None` means at the player.
+    /// The default runs the vanilla `playsound` command as the console.
+    fn play_sound(&mut self, player: &PlayerRef, sound: &str, volume: f64, pitch: f64, at: Option<(f64, f64, f64)>) {
+        let pos = at.or_else(|| self.player_location(player).map(|(x, y, z, _)| (x, y, z)));
+        if let Some((x, y, z)) = pos {
+            let cmd = crate::sounds::play_command(&player.name, sound, x, y, z, volume, pitch);
+            self.execute_command(&cmd);
+        }
+    }
+
+    /// Stop one sound (or all sounds with `None`) for a player.
+    fn stop_sound(&mut self, player: &PlayerRef, sound: Option<&str>) {
+        let cmd = crate::sounds::stop_command(&player.name, sound);
+        self.execute_command(&cmd);
+    }
 }

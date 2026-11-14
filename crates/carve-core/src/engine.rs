@@ -1617,6 +1617,57 @@ impl Engine {
                     host.give_item(&p, &id, count);
                 }
             }
+            Effect::PlaySound { sound, volume, pitch, to, at } => {
+                let id = crate::sounds::clean_id(&self.text(sound, ex, host)?)?;
+                let volume = match volume {
+                    Some(v) => self.num(v, ex, host)?,
+                    None => 1.0,
+                };
+                let pitch = match pitch {
+                    Some(v) => self.num(v, ex, host)?,
+                    None => 1.0,
+                };
+                let at = match at {
+                    Some(l) => {
+                        let l = self.eval(l, ex, host)?;
+                        let Some((x, y, z, _)) = self.as_location(&l, ex, host) else {
+                            return Err(format!("expected a location, got {} ({l})", l.type_name()));
+                        };
+                        Some((x, y, z))
+                    }
+                    None => None,
+                };
+                match (to, at) {
+                    // A location with no player: everyone online hears it.
+                    (None, Some(_)) => {
+                        for p in host.online_players() {
+                            host.play_sound(&p, &id, volume, pitch, at);
+                        }
+                    }
+                    (to, at) => {
+                        let target = match to {
+                            Some(t) => self.player(t, ex, host)?,
+                            None => self.player(&Expr::Player, ex, host)?,
+                        };
+                        if let Some(p) = target {
+                            host.play_sound(&p, &id, volume, pitch, at);
+                        }
+                    }
+                }
+            }
+            Effect::StopSound(sound, from) => {
+                let id = match sound {
+                    Some(s) => Some(crate::sounds::clean_id(&self.text(s, ex, host)?)?),
+                    None => None,
+                };
+                let target = match from {
+                    Some(t) => self.player(t, ex, host)?,
+                    None => self.player(&Expr::Player, ex, host)?,
+                };
+                if let Some(p) = target {
+                    host.stop_sound(&p, id.as_deref());
+                }
+            }
             Effect::ConsoleCommand(c) => {
                 let c = self.text(c, ex, host)?;
                 host.execute_command(c.trim_start_matches('/'));

@@ -220,6 +220,15 @@ pub enum Effect {
     ListAdd(VarRef, Expr),
     /// `remove x from {list::*}`: remove every item equal to x.
     ListRemove(VarRef, Expr),
+    PlaySound {
+        sound: Expr,
+        volume: Option<Expr>,
+        pitch: Option<Expr>,
+        to: Option<Expr>,
+        at: Option<Expr>,
+    },
+    /// sound (None: all sounds), player (None: the event player)
+    StopSound(Option<Expr>, Option<Expr>),
 }
 
 /// What a `loop` goes over.
@@ -313,6 +322,9 @@ pub enum EffKind {
     Add,
     Remove,
     Delete,
+    PlaySound,
+    StopSound,
+    StopAllSounds,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -412,6 +424,7 @@ fn registry() -> &'static Registry {
         // The pattern strings are constants covered by tests; a bad one is skipped.
         effects: EFFECT_PATTERNS
             .iter()
+            .chain(crate::sounds::SOUND_PATTERNS)
             .filter_map(|(s, k)| Pattern::new(s, *k).ok())
             .collect(),
         conditions: CONDITION_PATTERNS
@@ -423,7 +436,7 @@ fn registry() -> &'static Registry {
 
 /// Checks every registered pattern compiles. Used by tests.
 pub fn check_registry() -> Result<(), String> {
-    for (s, k) in EFFECT_PATTERNS {
+    for (s, k) in EFFECT_PATTERNS.iter().chain(crate::sounds::SOUND_PATTERNS) {
         Pattern::new(s, *k)?;
     }
     for (s, k) in CONDITION_PATTERNS {
@@ -1219,6 +1232,15 @@ fn build_effect(kind: EffKind, mut c: Vec<Option<Capture>>) -> Option<Effect> {
             Effect::Give(p, None, take_expr(c, 1)?)
         }
         EffKind::ConsoleCommand => Effect::ConsoleCommand(take_expr(c, 0)?),
+        EffKind::PlaySound => Effect::PlaySound {
+            sound: take_expr(c, 0)?,
+            volume: take_expr(c, 1),
+            pitch: take_expr(c, 2),
+            to: take_expr(c, 3),
+            at: take_expr(c, 4),
+        },
+        EffKind::StopSound => Effect::StopSound(Some(take_expr(c, 0)?), take_expr(c, 1)),
+        EffKind::StopAllSounds => Effect::StopSound(None, take_expr(c, 0)),
         EffKind::Cancel => Effect::Cancel,
         EffKind::WaitTicks => Effect::Wait(take_expr(c, 0)?, 1),
         EffKind::WaitSeconds => Effect::Wait(take_expr(c, 0)?, 20),
