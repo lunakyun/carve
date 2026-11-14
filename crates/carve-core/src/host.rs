@@ -297,6 +297,63 @@ pub trait Host {
         false
     }
 
+    // ----- scoreboards and boss bars -----
+    // The defaults do nothing, except the title ones, which use `/title`.
+
+    /// A title with its own times, all in ticks. The default runs `/title ... times`.
+    fn send_title_timed(
+        &mut self,
+        player: &PlayerRef,
+        title: &str,
+        subtitle: Option<&str>,
+        fade_in: u32,
+        stay: u32,
+        fade_out: u32,
+    ) {
+        self.execute_command(&format!("title {} times {fade_in} {stay} {fade_out}", player.name));
+        self.send_title(player, title, subtitle);
+    }
+
+    /// Remove the title on screen (`reset`: also forget its times). The default runs `/title`.
+    fn clear_title(&mut self, player: &PlayerRef, reset: bool) {
+        let what = if reset { "reset" } else { "clear" };
+        self.execute_command(&format!("title {} {what}", player.name));
+    }
+
+    /// Set the tab list header and footer. `None` keeps what is there now;
+    /// `Some("")` empties it.
+    fn set_tab_list(&mut self, _player: &PlayerRef, _header: Option<&str>, _footer: Option<&str>) {}
+
+    /// Show this player's own sidebar (made if needed) with this title.
+    fn sidebar_set_title(&mut self, _player: &PlayerRef, _title: &str) {}
+    /// Set a sidebar line. `line` is 1 (top) to 15.
+    fn sidebar_set_line(&mut self, _player: &PlayerRef, _line: u32, _text: &str) {}
+    fn sidebar_clear_line(&mut self, _player: &PlayerRef, _line: u32) {}
+    /// Take the sidebar away and go back to the server scoreboard.
+    fn sidebar_remove(&mut self, _player: &PlayerRef) {}
+
+    /// Make a boss bar under a script-chosen id. `progress` is 0.0 to 1.0.
+    /// An existing bar with the same id is replaced. Nobody sees it until `bossbar_show`.
+    fn bossbar_create(
+        &mut self,
+        _id: &str,
+        _title: &str,
+        _color: crate::scoreboards_bossbars::BarColor,
+        _style: crate::scoreboards_bossbars::BarStyle,
+        _progress: f64,
+    ) {
+    }
+    fn bossbar_set_title(&mut self, _id: &str, _title: &str) {}
+    /// 0.0 to 1.0.
+    fn bossbar_set_progress(&mut self, _id: &str, _fraction: f64) {}
+    fn bossbar_set_color(&mut self, _id: &str, _color: crate::scoreboards_bossbars::BarColor) {}
+    fn bossbar_set_style(&mut self, _id: &str, _style: crate::scoreboards_bossbars::BarStyle) {}
+    fn bossbar_set_flag(&mut self, _id: &str, _flag: crate::scoreboards_bossbars::BarFlag, _on: bool) {}
+    fn bossbar_show(&mut self, _id: &str, _player: &PlayerRef) {}
+    fn bossbar_hide(&mut self, _id: &str, _player: &PlayerRef) {}
+    /// Hide the bar from everyone and forget it.
+    fn bossbar_remove(&mut self, _id: &str) {}
+
     /// Set the player on fire for this many ticks; 0 puts the fire out.
     fn set_fire(&mut self, _player: &PlayerRef, _ticks: i32) {
         self.log(LogLevel::Warn, "setting fire is not supported on this server");

@@ -28,6 +28,7 @@ pub mod timespans;
 pub mod value;
 pub mod vars;
 pub mod xp_level;
+pub mod scoreboards_bossbars;
 pub mod world_effects;
 
 pub use compile::{CommandDef, EventKind};

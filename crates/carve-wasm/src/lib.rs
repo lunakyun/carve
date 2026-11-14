@@ -33,6 +33,7 @@ use pumpkin_plugin_api::{
 };
 
 mod fx;
+mod sb;
 
 const SCRIPTS_DIR: &str = "scripts";
 const VARS_FILE: &str = "variables.json";
@@ -615,6 +616,8 @@ impl Host for TickHost<'_, '_> {
         set_fire(p: &PlayerRef, ticks: i32);
     }
 
+    sb::sb_host_methods!();
+
     fn schedule_wait(&mut self, ticks: u64, token: u64) {
         self.hs.pending.push((self.hs.tick + ticks, token));
     }
@@ -680,6 +683,10 @@ struct OnEvent<E>(EventKind, std::marker::PhantomData<fn() -> E>);
 trait EventAccess: FromIntoEvent {
     fn ctx(data: &EventData<Self>) -> EventCtx;
     fn set_cancelled(data: &mut EventData<Self>);
+    /// The uuid of a player who just left, for events that say so.
+    fn left(_data: &EventData<Self>) -> Option<String> {
+        None
+    }
 }
 
 impl EventAccess for PlayerJoinEvent {
@@ -692,6 +699,9 @@ impl EventAccess for PlayerJoinEvent {
 }
 
 impl EventAccess for PlayerLeaveEvent {
+    fn left(d: &EventData<Self>) -> Option<String> {
+        Some(uuid::to_string(d.player.get_id()))
+    }
     fn ctx(d: &EventData<Self>) -> EventCtx {
         EventCtx::player(player_ref(&d.player))
     }
@@ -955,6 +965,9 @@ impl EventHandler<EntityDamageByEntityEvent> for OnDamageByEntity {
 impl<E: EventAccess> EventHandler<E> for OnEvent<E> {
     fn handle(&self, server: Server, mut data: EventData<E>) -> EventData<E> {
         let kind = self.0;
+        if let Some(u) = E::left(&data) {
+            sb::forget(&u);
+        }
         let cancelled = with_state(&server, None, |st, host| {
             if !st.engine.table().has_event(kind) {
                 return false;

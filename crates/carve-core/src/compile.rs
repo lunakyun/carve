@@ -280,6 +280,8 @@ pub enum Effect {
     Admin(AdminEff, Expr, Option<Expr>),
     /// Lightning, explosions, particles, potion effects, fire.
     World(Box<crate::world_effects::WorldFx>),
+    /// Scoreboards, boss bars, timed titles, tab list.
+    Sb(Box<crate::scoreboards_bossbars::SbFx>),
 }
 
 /// What a `loop` goes over.
@@ -1224,6 +1226,17 @@ impl Cx<'_> {
             None => {}
         }
         match crate::world_effects::parse_effect(&toks, &self.env) {
+            Ok(Some(eff)) => {
+                self.emit(Instr::Eff(eff), num);
+                return;
+            }
+            Ok(None) => {}
+            Err(msg) => {
+                self.err(num, msg);
+                return;
+            }
+        }
+        match crate::scoreboards_bossbars::parse_effect(&toks, &self.env) {
             Ok(Some(eff)) => {
                 self.emit(Instr::Eff(eff), num);
                 return;
