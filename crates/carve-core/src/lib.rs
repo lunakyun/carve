@@ -27,6 +27,7 @@ pub mod value;
 pub mod vars;
 pub mod w2_effects_1;
 pub mod w2_events_1;
+pub mod w2_events_2;
 pub mod xp_level;
 
 pub use compile::{CommandDef, EventKind};

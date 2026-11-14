@@ -97,7 +97,7 @@ impl ExtEvent {
             "block damage" | "block damaging" | "damage of block" => ExtEvent::BlockDamage,
             "block drop" | "block drops" | "block drop item" | "drop of block" => ExtEvent::BlockDrop,
             "block fertilize" | "block fertilise" | "fertilize" | "fertilise" => ExtEvent::BlockFertilize,
-            "block growth" | "block grow" | "block growing" | "growth" | "grow" => ExtEvent::BlockGrowth,
+            "block growth" | "block growing" | "growth" => ExtEvent::BlockGrowth,
             "book edit" | "book editing" | "edit book" | "player edit book" => ExtEvent::BookEdit,
             "book sign" | "book signing" | "sign book" | "player sign book" => ExtEvent::BookSign,
             "brewing complete" | "brewing finish" | "brew complete" | "brewing completing" => {

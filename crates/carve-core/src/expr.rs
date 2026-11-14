@@ -125,6 +125,8 @@ pub enum Expr {
     Random(bool, Box<Expr>, Box<Expr>),
     /// `damage` in `on damage`.
     Damage,
+    /// A value of one of the extra events (`w2_events_2`).
+    Ev2Val(crate::w2_events_2::Slot),
     /// `attacker` in `on damage` / `on death` (a player, or `<none>`).
     Attacker,
     /// `clicked block` in click events (an item value of the block type).
@@ -316,6 +318,8 @@ pub struct Env {
     pub has_block: bool,
     /// `event-...` values of the current trigger (see `w2_events_1`).
     pub ev_fields: &'static [(&'static str, Ty)],
+    /// Set inside the extra events of `w2_events_2`.
+    pub ext_event: Option<crate::w2_events_2::Ev>,
 }
 
 impl Expr {
@@ -334,6 +338,7 @@ impl Expr {
             Expr::WorldNamed(_) => Ty::World,
             Expr::Distance(..) | Expr::Random(..) | Expr::Damage => Ty::Number,
             Expr::Attacker => Ty::Player,
+            Expr::Ev2Val(s) => s.ty(),
             Expr::Math(..) | Expr::ParseNum(_) => Ty::Number,
             Expr::Color(..) => Ty::Text,
             Expr::RandomOf(_) | Expr::Split(..) | Expr::Elem(..) => Ty::Object,
@@ -849,6 +854,19 @@ impl P<'_> {
             }
             Tok::Word(w) => {
                 let lw = w.to_ascii_lowercase();
+                if let Some(ev) = self.env.ext_event
+                    && !self.env.in_function
+                {
+                    let mut more = false;
+                    let rest = self.toks.get(self.pos..).unwrap_or(&[]);
+                    if let Some((e, used)) = crate::w2_events_2::parse_value(ev, &lw, rest, &mut more) {
+                        self.pos += used;
+                        return Ok(e);
+                    }
+                    if more {
+                        self.hit_end.set(true);
+                    }
+                }
                 if let Some(e) = self.text_fn(&lw)? {
                     return Ok(e);
                 }
