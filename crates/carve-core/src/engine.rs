@@ -249,6 +249,7 @@ mod x2_eval;
 mod w2e3;
 mod w5_eval;
 mod w6_eval;
+mod w4_eval;
 
 fn join_list(items: &[(String, Value)], out: &mut String) {
     if items.is_empty() {
@@ -1984,6 +1985,7 @@ impl Engine {
             Expr::Ext(f, args) => self.eval_ext(*f, args, ex, host)?,
             Expr::W5(w) => self.eval_w5(w, ex, host)?,
             Expr::W6(w) => self.eval_w6(w, ex, host)?,
+            Expr::W4F(n) => self.eval_w4f(n, ex, host)?,
             Expr::ListAgg(a, s) => self.eval_agg(*a, s, ex, host)?,
             Expr::Sb(s) => self.sb_eval(s, ex, host)?,
             Expr::Ent(x) => self.ent_expr(x, ex, host)?,

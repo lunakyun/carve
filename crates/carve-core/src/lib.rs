@@ -61,6 +61,8 @@ pub mod w2_effects_3;
 pub mod w2_expressions_5;
 pub mod w2_expressions_6;
 pub mod w2_expressions_7;
+pub mod w4_functions;
+pub mod w4_sections;
 pub mod xp_level;
 pub mod inventories;
 pub mod scoreboards_bossbars;

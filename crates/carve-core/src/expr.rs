@@ -220,6 +220,8 @@ pub enum Expr {
     W6(Box<crate::w2_expressions_6::W6>),
     /// Vectors, server facts and other rare expressions (see `w2_expressions_7`).
     W7(Box<crate::w2_expressions_7::Node>),
+    /// Wave-4 functions: trigonometry, `clamp`, `concat`, `formatNumber`, ... (see `w4_functions`).
+    W4F(Box<crate::w4_functions::Node>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -448,6 +450,7 @@ impl Expr {
                 crate::skbee_recipes_advancements::SkbExpr::EventId => Ty::Text,
             },
             Expr::W7(n) => n.ty,
+            Expr::W4F(n) => n.f.ty(),
             Expr::Items(_) => Ty::List,
             Expr::Bound(b) => b.ty(),
             Expr::Sb(s) => s.ty(),
@@ -1693,6 +1696,12 @@ impl P<'_> {
                     }
                 }
                 match lw.as_str() {
+                    _ if matches!(self.peek(), Some(t) if t.is_lit("("))
+                        && !self.has_function(&lw)
+                        && crate::w4_functions::lookup(&lw).is_some() =>
+                    {
+                        self.w4_function(&lw)
+                    }
                     "the" => self.primary(),
                     _ if self.bound_head(&lw) => self.bound_expr(&lw),
                     _ if crate::gamemode::is_mode_word(&lw) => Ok(Expr::Text(vec![Part::Lit(lw)])),
@@ -2205,6 +2214,48 @@ impl P<'_> {
             }
             other => Err(format!("unexpected {}", describe(&other))),
         }
+    }
+
+    /// Wave-4 functions like `clamp(x, 0, 10)` (see `w4_functions`).
+    fn w4_function(&mut self, lw: &str) -> Result<Expr, String> {
+        let (f, min, max) = crate::w4_functions::lookup(lw).ok_or("unknown function")?;
+        self.pos += 1; // (
+        let mut args = Vec::new();
+        loop {
+            let rest = self.toks.get(self.pos..).unwrap_or_default();
+            let is_list = matches!(rest.first(), Some(Tok::Var(v)) if v.contains("::"))
+                || crate::list_ops::looks_like_list_op(rest, self.env);
+            if f.takes_lists() && is_list {
+                let (src, end) = crate::list_ops::parse_src_at(self.toks, self.pos, self.env, false)?;
+                self.pos = end;
+                args.push(Expr::Items(Box::new(src)));
+            } else {
+                args.push(self.top()?);
+            }
+            if self.eat_sym(",") {
+                continue;
+            }
+            break;
+        }
+        if !self.eat_sym(")") {
+            return Err(format!("missing ')' after {lw}("));
+        }
+        if args.len() < min || args.len() > max {
+            let want = if min == max {
+                min.to_string()
+            } else if max == usize::MAX {
+                format!("at least {min}")
+            } else {
+                format!("{min} to {max}")
+            };
+            return Err(format!("{lw}() takes {want} argument(s), got {}", args.len()));
+        }
+        for (i, a) in args.iter().enumerate() {
+            if f.number_arg(i) && !Ty::Number.accepts(a.ty(self.env)) {
+                return Err(format!("argument {} of {lw}() must be a number, got a {}", i + 1, a.ty(self.env).name()));
+            }
+        }
+        Ok(Expr::W4F(Box::new(crate::w4_functions::Node { f, args })))
     }
 
     /// Server expressions: `online players count`, `motd`, `spawn of <world>`, ...
