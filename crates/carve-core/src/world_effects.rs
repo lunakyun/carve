@@ -13,6 +13,7 @@ use crate::lexer::Tok;
 use crate::value::{PlayerRef, Value};
 
 pub use crate::fx_names::{EFFECTS, PARTICLES};
+pub use crate::skbee_particles_display::{ParticleData, ParticleOpts};
 
 /// A point in a world. `world: None` means the default world.
 #[derive(Debug, Clone, PartialEq)]
@@ -32,6 +33,18 @@ pub struct ParticleFx {
     /// Random spread on each axis.
     pub spread: f64,
     pub speed: f64,
+    /// A different spread on each axis; wins over `spread`.
+    pub offset: Option<[f64; 3]>,
+    /// Show to players far away too.
+    pub force: bool,
+    pub data: ParticleData,
+}
+
+impl ParticleFx {
+    /// The spread on each axis.
+    pub fn offsets(&self) -> [f64; 3] {
+        self.offset.unwrap_or([self.spread; 3])
+    }
 }
 
 /// A duration: an amount and how many ticks one unit is.
@@ -54,7 +67,11 @@ pub enum WorldFx {
         at: Expr,
         spread: Option<Expr>,
         speed: Option<Expr>,
+        /// Extra options (force, per-axis offset, color, block, item).
+        opts: Option<Box<ParticleOpts>>,
     },
+    /// `spawn text display at <place> with ...`.
+    Display(crate::skbee_particles_display::DisplayFx),
     Apply {
         effect: String,
         tier: Option<Expr>,
@@ -185,7 +202,9 @@ pub fn parse_effect(toks: &[Tok], env: &Env) -> Result<Option<Effect>, String> {
     let fx = match first.as_str() {
         "strike" => lightning(toks, env),
         "show" | "play" | "create" | "make" | "spawn" | "draw" | "summon" => {
-            if toks.iter().any(|t| is(t, "particle") || is(t, "particles")) {
+            if toks.iter().any(|t| is(t, "display")) {
+                crate::skbee_particles_display::parse_display(toks, env)?.map(WorldFx::Display)
+            } else if toks.iter().any(|t| is(t, "particle") || is(t, "particles")) {
                 particles(toks, env)?
             } else if toks.iter().any(|t| is(t, "explosion")) {
                 explosion(toks, env)?
@@ -340,31 +359,32 @@ fn particles(toks: &[Tok], env: &Env) -> Result<Option<WorldFx>, String> {
         return Ok(None);
     };
     let (mut spread, mut speed) = (None, None);
+    let mut opts = ParticleOpts::default();
     for seg in parts {
+        let seg = match seg.split_last() {
+            Some((a, v)) if is(a, "and") => v,
+            _ => seg,
+        };
         let Some((kind, val)) = seg.split_first() else {
             return Ok(None);
         };
-        let val = match val.split_last() {
-            Some((a, v)) if is(a, "and") => v,
-            _ => val,
-        };
-        let Some(n) = number(val, env) else {
-            return Ok(None);
-        };
-        if is(kind, "spread") || is(kind, "offset") {
+        let one = || number(val, env);
+        if (is(kind, "spread") || is(kind, "offset")) && let Some(n) = one() {
             spread = Some(n);
-        } else if is(kind, "speed") {
+        } else if (is(kind, "speed") || is(kind, "extra")) && let Some(n) = one() {
             speed = Some(n);
-        } else {
+        } else if !crate::skbee_particles_display::particle_opt(seg, env, &mut opts)? {
             return Ok(None);
         }
     }
+    let opts = (opts != ParticleOpts::default()).then(|| Box::new(opts));
     Ok(Some(WorldFx::Particles {
         name: name.to_string(),
         count,
         at,
         spread,
         speed,
+        opts,
     }))
 }
 
@@ -505,7 +525,7 @@ fn ticks_of(
 
 impl Engine {
     /// The position a `place` expression stands for.
-    fn fx_pos(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<Option<FxPos>, String> {
+    pub(crate) fn fx_pos(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<Option<FxPos>, String> {
         let v = self.eval(e, ex, host)?;
         match v {
             Value::Location { x, y, z, world } => Ok(Some(FxPos { x, y, z, world })),
@@ -579,10 +599,23 @@ impl Engine {
                 at,
                 spread,
                 speed,
+                opts,
             } => {
                 let count = self.fx_num(count, 1.0, MAX_PARTICLES, ex, host)? as u32;
                 let spread = self.fx_num(spread, 0.0, 64.0, ex, host)?;
                 let speed = self.fx_num(speed, 0.0, 64.0, ex, host)?;
+                let (mut offset, mut force, mut data) = (None, false, ParticleData::None);
+                if let Some(o) = opts {
+                    offset = self.particle_offset(o, ex, host)?;
+                    force = o.force;
+                    data = self.particle_data(name, o, ex, host)?;
+                } else if crate::skbee_particles_display::needs_data(name) {
+                    data = self.particle_data(name, &ParticleOpts::default(), ex, host)?;
+                }
+                if crate::skbee_particles_display::needs_data(name) && !host.supports_particle_data() {
+                    crate::skbee_particles_display::warn_no_data(host, name);
+                    return Ok(());
+                }
                 if let Some(at) = self.fx_pos(at, ex, host)? {
                     host.spawn_particle(&ParticleFx {
                         name: name.clone(),
@@ -590,9 +623,13 @@ impl Engine {
                         count,
                         spread,
                         speed,
+                        offset,
+                        force,
+                        data,
                     });
                 }
             }
+            WorldFx::Display(d) => self.display_effect(d, ex, host)?,
             WorldFx::Apply {
                 effect,
                 tier,

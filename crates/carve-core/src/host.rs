@@ -292,16 +292,25 @@ pub trait Host {
 
     /// The default runs `/particle`.
     fn spawn_particle(&mut self, p: &ParticleFx) {
-        self.execute_command(&format!(
-            "particle minecraft:{} {} {} {} {sp} {sp} {sp} {} {}",
-            p.name,
-            p.at.x,
-            p.at.y,
-            p.at.z,
-            p.speed,
-            p.count,
-            sp = p.spread,
-        ));
+        self.execute_command(&crate::skbee_particles_display::particle_command(p));
+    }
+
+    /// Can this host send particle data (dust color, block, item)?
+    /// When not, those particles are skipped with a warning.
+    fn supports_particle_data(&mut self) -> bool {
+        false
+    }
+
+    /// Spawn a display entity. The default runs `/summon` for text displays
+    /// and warns for block and item displays, which the command cannot fill.
+    fn spawn_display(&mut self, d: &crate::skbee_particles_display::DisplaySpec) {
+        match crate::skbee_particles_display::summon_command(d) {
+            Some(cmd) => self.execute_command(&cmd),
+            None => self.log(
+                LogLevel::Warn,
+                &format!("{} entities are not supported on this server", d.kind.entity_id()),
+            ),
+        }
     }
 
     /// Give a potion effect (`effect` is a vanilla id like `speed`).
