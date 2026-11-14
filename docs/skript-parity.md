@@ -139,7 +139,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ On Firework Explode
 - ⬜ On First Join ⭐
 - ⬜ On Fishing
-- ⬜ On Flight Toggle
+- ✅ On Flight Toggle
 - ⬜ On Flow
 - ⬜ On Form
 - ⬜ On Fuel Burn
@@ -219,13 +219,13 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ On Sign Change
 - ⬜ On Slime Split
 - ⬜ On Smelt
-- ⬜ On Sneak Toggle ⭐
+- ✅ On Sneak Toggle ⭐
 - ⬜ On Spawn ⭐
 - ⬜ On Spawn Change
 - ⬜ On Spectate
 - ⬜ On Sponge Absorb
 - ⬜ On Spread
-- ⬜ On Sprint Toggle
+- ✅ On Sprint Toggle
 - ⬜ On Start Smelt
 - ⬜ On Stonecutter Recipe Select
 - ⬜ On Stop Using Item
@@ -403,7 +403,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Title - Send — title + subtitle
 - ⬜ Toggle
 - ⬜ Toggle Custom Name Visibility
-- ⬜ Toggle Flight
+- ⛔ Toggle Flight (no flight ability in the plugin API)
 - ⬜ Toggle Picking Up Items
 - ⬜ Transform List
 - ⬜ Tree
@@ -427,7 +427,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Can Breed
 - ⬜ Can Build
 - ⬜ Can Despawn
-- ⬜ Can Fly
+- 🟡 Can Fly (follows game mode: creative and spectator)
 - ⬜ Can Hold
 - ⬜ Can Pick Up Items
 - ⬜ Can See
@@ -485,7 +485,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Is Bed/Anchor Spawn
 - ⬜ Is Block
 - ⬜ Is Block Redstone Powered
-- ⬜ Is Blocking
+- ⛔ Is Blocking (no shield state in the plugin API; always false)
 - ⬜ Is Burning
 - ⬜ Is Charged
 - ⬜ Is Charging Fireball
@@ -501,7 +501,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Is Fire Resistant
 - ⬜ Is Fish Hook in Open Water
 - ⬜ Is Flammable
-- ⬜ Is Flying ⭐
+- 🟡 Is Flying ⭐ (tracked from flight toggle events)
 - ⬜ Is From A Mob Spawner
 - ⬜ Is Frozen
 - ⬜ Is Fuel
@@ -523,7 +523,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Is Normalized
 - ⬜ Is Occluding
 - ⬜ Is of Type
-- ⬜ Is on Ground
+- ✅ Is on Ground
 - ⬜ Is Online ⭐
 - ⬜ Is Operator ⭐
 - ⬜ Is Passable
@@ -541,14 +541,14 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Is Screaming
 - ⬜ Is Script Loaded
 - ⬜ Is Silent
-- ⬜ Is Sleeping
+- ✅ Is Sleeping
 - ⬜ Is Slime Chunk
-- ⬜ Is Sneaking ⭐
+- ✅ Is Sneaking ⭐
 - ⬜ Is Solid
 - ⬜ Is Spawnable
-- ⬜ Is Sprinting ⭐
+- ✅ Is Sprinting ⭐
 - ⬜ Is Stackable
-- ⬜ Is Swimming
+- ✅ Is Swimming
 - ⬜ Is Tagged
 - ⬜ Is Tameable
 - ⬜ Is Tamed
@@ -781,7 +781,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Fishing Hook
 - ⬜ Fishing Hooked Entity
 - ⬜ Fishing Wait Time
-- ⬜ Flight Mode
+- ⛔ Flight Mode (no flight ability in the plugin API)
 - ⬜ Food Level ⭐
 - ⬜ Formatted Date ⭐
 - ⬜ Formatted Time
@@ -1040,7 +1040,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Spawner Type
 - ⬜ Special Number
 - ⬜ Spectator Target
-- ⬜ Speed
+- ⛔ Speed (walk and fly speed: no attribute API in the plugin API)
 - ⬜ Stored Enchantments
 - ⬜ String Colors
 - ⬜ Style

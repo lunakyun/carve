@@ -1,3 +1,4 @@
+use crate::player_flags::PlayerFlag;
 use crate::value::{PlayerRef, Recipient};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -65,5 +66,11 @@ pub trait Host {
 
     fn health(&mut self, _player: &PlayerRef) -> Option<f64> {
         None
+    }
+
+    /// A yes/no state of an online player (sneaking, flying, ...).
+    /// Hosts that cannot tell answer `false`.
+    fn player_flag(&mut self, _player: &PlayerRef, _flag: PlayerFlag) -> bool {
+        false
     }
 }

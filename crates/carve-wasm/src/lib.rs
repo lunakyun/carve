@@ -5,18 +5,19 @@ use std::collections::BTreeSet;
 use std::sync::Mutex;
 
 use carve_core::{
-    CommandOutcome, Engine, EventCtx, EventKind, Host, LogLevel, PlayerRef, Recipient, ScriptError, Variables,
+    CommandOutcome, Engine, EventCtx, EventKind, Host, LogLevel, PlayerFlag, PlayerRef, Recipient, ScriptError, Variables,
 };
 use pumpkin_plugin_api::DamageType;
 use pumpkin_plugin_api::command::{
     ArgumentType, Command, CommandError, CommandNode, CommandSender, ConsumedArgs, StringType,
 };
 use pumpkin_plugin_api::commands::CommandHandler;
-use pumpkin_plugin_api::common::Hand;
+use pumpkin_plugin_api::common::{EntityPose, GameMode, Hand};
 use pumpkin_plugin_api::events::{
     BlockBreakEvent, BlockPlaceEvent, EntityDamageByEntityEvent, EntityDamageEvent, EventData, EventHandler,
     EventPriority, FromIntoEvent, InteractAction, PlayerChatEvent, PlayerDeathEvent, PlayerInteractEvent,
-    PlayerJoinEvent, PlayerLeaveEvent, PlayerRespawnEvent,
+    PlayerJoinEvent, PlayerLeaveEvent, PlayerRespawnEvent, PlayerToggleFlightEvent, PlayerToggleSneakEvent,
+    PlayerToggleSprintEvent,
 };
 use pumpkin_plugin_api::logging::{LogLevel as ApiLevel, log};
 use pumpkin_plugin_api::permission::{Permission, PermissionDefault, PermissionLevel};
@@ -121,6 +122,10 @@ impl WasmHost<'_> {
         self.players.get(i).and_then(|(_, p)| p.as_ref())
     }
 }
+
+/// UUIDs of players who are flying right now. The API reports flight only
+/// through the toggle event, so it is tracked here.
+static FLYING: Mutex<Vec<String>> = Mutex::new(Vec::new());
 
 /// Bare permission names live in the plugin's namespace: `vip` -> `carve:vip`.
 fn full_node(node: &str) -> String {
@@ -273,6 +278,28 @@ impl WasmHost<'_> {
         self.get(p).map(|pl| f64::from(pl.get_health()))
     }
 
+    fn player_flag(&mut self, p: &PlayerRef, flag: PlayerFlag) -> bool {
+        let flying = FLYING.lock().is_ok_and(|f| f.contains(&p.uuid));
+        let Some(pl) = self.get(p) else {
+            return false;
+        };
+        let e = pl.as_entity();
+        match flag {
+            PlayerFlag::Sneaking => e.is_sneaking(),
+            PlayerFlag::Sprinting => e.is_sprinting(),
+            PlayerFlag::Swimming => e.is_swimming(),
+            PlayerFlag::OnGround => e.is_on_ground(),
+            PlayerFlag::Sleeping => matches!(e.get_pose(), EntityPose::Sleeping),
+            PlayerFlag::Flying => flying,
+            // The API has no "allow flight" ability, so this follows the game mode.
+            PlayerFlag::CanFly => {
+                matches!(pl.get_gamemode(), GameMode::Creative | GameMode::Spectator) || flying
+            }
+            // No shield-blocking state in the plugin API yet.
+            PlayerFlag::Blocking => false,
+        }
+    }
+
     fn log(&mut self, level: LogLevel, msg: &str) {
         let l = match level {
             LogLevel::Info => ApiLevel::Info,
@@ -317,6 +344,7 @@ impl Host for TickHost<'_, '_> {
         held_item(p: &PlayerRef) -> Option<(String, u32)>;
         count_item(p: &PlayerRef, id: &str) -> u32;
         health(p: &PlayerRef) -> Option<f64>;
+        player_flag(p: &PlayerRef, flag: PlayerFlag) -> bool;
     }
 
     fn schedule_wait(&mut self, ticks: u64, token: u64) {
@@ -440,6 +468,48 @@ impl EventAccess for PlayerDeathEvent {
     }
     fn set_cancelled(d: &mut EventData<Self>) {
         d.cancelled = true;
+    }
+}
+
+impl EventAccess for PlayerToggleSneakEvent {
+    fn ctx(d: &EventData<Self>) -> EventCtx {
+        EventCtx::player(player_ref(&d.player))
+    }
+    fn set_cancelled(d: &mut EventData<Self>) {
+        d.cancelled = true;
+    }
+}
+
+impl EventAccess for PlayerToggleSprintEvent {
+    fn ctx(d: &EventData<Self>) -> EventCtx {
+        EventCtx::player(player_ref(&d.player))
+    }
+    fn set_cancelled(d: &mut EventData<Self>) {
+        d.cancelled = true;
+    }
+}
+
+impl EventAccess for PlayerToggleFlightEvent {
+    fn ctx(d: &EventData<Self>) -> EventCtx {
+        let p = player_ref(&d.player);
+        if let Ok(mut f) = FLYING.lock() {
+            f.retain(|u| *u != p.uuid);
+            if d.is_flying {
+                f.push(p.uuid.clone());
+            }
+        }
+        EventCtx::player(p)
+    }
+    fn set_cancelled(d: &mut EventData<Self>) {
+        d.cancelled = true;
+        // The flight change did not happen.
+        if let Ok(mut f) = FLYING.lock() {
+            let u = uuid::to_string(d.player.get_id());
+            f.retain(|x| *x != u);
+            if !d.is_flying {
+                f.push(u);
+            }
+        }
     }
 }
 
@@ -1006,6 +1076,9 @@ impl Plugin for Carve {
         register_event::<BlockPlaceEvent>(&context, EventKind::Place);
         register_event::<PlayerDeathEvent>(&context, EventKind::Death);
         register_event::<PlayerRespawnEvent>(&context, EventKind::Respawn);
+        register_event::<PlayerToggleSneakEvent>(&context, EventKind::SneakToggle);
+        register_event::<PlayerToggleSprintEvent>(&context, EventKind::SprintToggle);
+        register_event::<PlayerToggleFlightEvent>(&context, EventKind::FlightToggle);
         for r in [
             context.register_event_handler::<PlayerInteractEvent, _>(OnInteract, EventPriority::Normal, true),
             context.register_event_handler::<EntityDamageEvent, _>(OnDamage, EventPriority::Normal, true),

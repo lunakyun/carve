@@ -11,6 +11,7 @@ pub mod host;
 pub mod items;
 pub mod lexer;
 pub mod pattern;
+pub mod player_flags;
 pub mod value;
 pub mod vars;
 
@@ -18,5 +19,6 @@ pub use compile::{CommandDef, EventKind};
 pub use engine::{CommandOutcome, Engine, EventCtx, FireOutcome, LoadSummary};
 pub use error::ScriptError;
 pub use host::{Host, LogLevel};
+pub use player_flags::PlayerFlag;
 pub use value::{PlayerRef, Recipient, Value};
 pub use vars::Variables;

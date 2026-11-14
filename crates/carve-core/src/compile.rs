@@ -7,6 +7,7 @@ use crate::error::ScriptError;
 use crate::expr::{Env, Expr, LoopKind, Sig, Ty, VarRef, parse_expr, parse_template, parse_varref};
 use crate::lexer::{Tok, lex};
 use crate::pattern::{Capture, Memo, Pattern, closest};
+use crate::player_flags::{PLAYER_FLAG_PATTERNS, PlayerFlag};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum EventKind {
@@ -24,6 +25,9 @@ pub enum EventKind {
     LeftClick,
     /// After scripts load or reload.
     Load,
+    SneakToggle,
+    SprintToggle,
+    FlightToggle,
 }
 
 impl EventKind {
@@ -41,6 +45,9 @@ impl EventKind {
             EventKind::RightClick => "right click",
             EventKind::LeftClick => "left click",
             EventKind::Load => "load",
+            EventKind::SneakToggle => "sneak toggle",
+            EventKind::SprintToggle => "sprint toggle",
+            EventKind::FlightToggle => "flight toggle",
         }
     }
 
@@ -63,6 +70,9 @@ impl EventKind {
             }
             "leftclick" | "left click" => EventKind::LeftClick,
             "load" | "script load" | "server start" | "skript load" => EventKind::Load,
+            "sneak toggle" | "toggle sneak" | "player toggle sneak" => EventKind::SneakToggle,
+            "sprint toggle" | "toggle sprint" | "player toggle sprint" => EventKind::SprintToggle,
+            "flight toggle" | "toggle flight" | "player toggle flight" => EventKind::FlightToggle,
             _ => return None,
         })
     }
@@ -139,6 +149,11 @@ pub enum CmpOp {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Cond {
+    PlayerFlag {
+        player: Expr,
+        flag: PlayerFlag,
+        negate: bool,
+    },
     Cmp(Expr, CmpOp, Expr),
     HasPerm {
         player: Expr,
@@ -338,6 +353,8 @@ pub enum CondKind {
     HasItem,
     NotHasItem,
     InvContains,
+    /// `player is sneaking`; the bool is negation.
+    Flag(PlayerFlag, bool),
 }
 
 /// Effect patterns, tried in order (more specific first).
@@ -414,8 +431,9 @@ fn registry() -> &'static Registry {
             .iter()
             .filter_map(|(s, k)| Pattern::new(s, *k).ok())
             .collect(),
-        conditions: CONDITION_PATTERNS
+        conditions: PLAYER_FLAG_PATTERNS
             .iter()
+            .chain(CONDITION_PATTERNS)
             .filter_map(|(s, k)| Pattern::new(s, *k).ok())
             .collect(),
     })
@@ -426,7 +444,7 @@ pub fn check_registry() -> Result<(), String> {
     for (s, k) in EFFECT_PATTERNS {
         Pattern::new(s, *k)?;
     }
-    for (s, k) in CONDITION_PATTERNS {
+    for (s, k) in PLAYER_FLAG_PATTERNS.iter().chain(CONDITION_PATTERNS) {
         Pattern::new(s, *k)?;
     }
     Ok(())
@@ -836,7 +854,11 @@ impl Cx<'_> {
         }
         // A broken template or variable explains the failure best.
         let type_err = inner_error(&toks, &self.env).or(type_err);
-        let srcs: Vec<&'static str> = CONDITION_PATTERNS.iter().map(|(s, _)| *s).collect();
+        let srcs: Vec<&'static str> = PLAYER_FLAG_PATTERNS
+            .iter()
+            .chain(CONDITION_PATTERNS)
+            .map(|(s, _)| *s)
+            .collect();
         let mut e = ScriptError::new(
             self.file,
             num,
@@ -1107,6 +1129,13 @@ fn build_cond(kind: CondKind, mut c: Vec<Option<Capture>>) -> Cond {
     let a = take_expr(&mut c, 0).unwrap_or(Expr::Num(0.0));
     let b = take_expr(&mut c, 1).unwrap_or(Expr::Num(0.0));
     let op = match kind {
+        CondKind::Flag(flag, negate) => {
+            return Cond::PlayerFlag {
+                player: a,
+                flag,
+                negate,
+            };
+        }
         CondKind::IsSet => return Cond::IsSet(a, true),
         CondKind::NotSet => return Cond::IsSet(a, false),
         CondKind::Ne => CmpOp::Ne,
@@ -1693,7 +1722,7 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                         file,
                         top.num,
                         format!(
-                            "unknown event '{ev}', known: join, quit, chat, break, place, death, damage, respawn, click, right click, left click, load (and 'every N seconds:')"
+                            "unknown event '{ev}', known: join, quit, chat, break, place, death, damage, respawn, click, right click, left click, sneak toggle, sprint toggle, flight toggle, load (and 'every N seconds:')"
                         ),
                     ));
                 continue;
