@@ -48,5 +48,4 @@ Lowering max health also lowers current health if needed.
 ## Not supported
 
 - Healing or damage reasons and causes.
-- Changing the damage in `on damage`.
 - Fractional food level (it is rounded).

@@ -7,7 +7,7 @@ editLink: false
 
 # Effects
 
-Effects are lines that do something. 105 entries. Search all of them on the [reference home](./index.md).
+Effects are lines that do something. 107 entries. Search all of them on the [reference home](./index.md).
 
 In a pattern, `%type%` is a value, `[...]` is optional and `(a|b)` means one of the words.
 
@@ -122,6 +122,24 @@ on chat:
 ```
 
 Since **0.1.0** · Guide: [effects](../syntax/effects.md)
+
+## Change damage {#damage_change}
+
+```carve
+set [the] damage to %number%
+add %number% to [the] damage
+remove %number% from [the] damage
+```
+
+Changes the damage of the hit in `on damage` (never below 0). Only a change before the first `wait` reaches the server.
+
+```carve
+on damage of player:
+    if damage > 6:
+        set damage to 6
+```
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
 
 ## Change experience {#xp}
 
@@ -398,6 +416,22 @@ damage player by 2
 ```
 
 Since **unreleased** · Guide: [health-food](../syntax/health-food.md)
+
+## Death message {#death_message_set}
+
+```carve
+set [the] death message to %text%
+```
+
+Replaces the death message in `on death`. Colors work. Only a change before the first `wait` reaches the server.
+
+```carve
+on death:
+    if attacker is a zombie:
+        set death message to "&c%player% was eaten"
+```
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
 
 ## Delete {#delete}
 

@@ -34,6 +34,8 @@ pub enum W2Op {
     DamageCause,
     /// `chat recipients` in `on chat`.
     ChatRecipients,
+    /// `victim` in `on damage`: the player or the hurt entity.
+    Victim,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -50,6 +52,7 @@ impl W2Op {
             W2Op::FromCodepoint | W2Op::DeathMessage | W2Op::DamageCause => Ty::Text,
             W2Op::CharsBetween { .. } | W2Op::ChatRecipients => Ty::List,
             W2Op::Offset(..) | W2Op::CompassTarget => Ty::Location,
+            W2Op::Victim => Ty::Object,
             W2Op::Difference => match (args.first().map(|a| a.ty(env)), args.get(1).map(|a| a.ty(env))) {
                 (Some(Ty::Number), Some(Ty::Number)) => Ty::Number,
                 (Some(Ty::Date | Ty::Timespan), Some(Ty::Date | Ty::Timespan)) => Ty::Timespan,

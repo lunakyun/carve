@@ -18,7 +18,7 @@ on join:
 | `on break:` | `on block break:`, `on mine:` | a block is broken |
 | `on place:` | `on block place:` | a player places a block |
 | `on death:` | `on death of player:`, `on player death:` | a player dies |
-| `on damage:` | `on damage of player:`, `on player damage:` | a player takes damage |
+| `on damage:` | `on damage of player:`, `on damage of zombie:`, `on player damage:` | a player or mob takes damage |
 | `on respawn:` | `on player respawn:` | a player respawns |
 | `on right click:` | `on rightclick:` | a player right-clicks (air or a block) |
 | `on left click:` | `on leftclick:` | a player left-clicks (air or a block) |
@@ -118,25 +118,46 @@ Arguments, permissions and everything else about commands is on the
 ## Damage and death
 
 ```
-on damage:
-    if attacker is set:
+on damage of player:
+    if attacker is a player:
         send "%attacker% hit you for %damage%" to victim
     if damage > 10:
-        cancel event
+        set damage to 10
 
-on death of player:
-    broadcast "%player% died"
+on damage of zombie:
+    if attacker is a player:
+        add 2 to damage
+
+on death:
+    if attacker is a zombie:
+        set death message to "&c%player% was eaten"
 ```
 
 | Expression | Where | Meaning |
 |---|---|---|
 | `damage` | `on damage` | Damage of this hit, a number (2 = one heart). |
-| `attacker` | `on damage`, `on death` | The attacking player, or `<none>` for mobs, falls and the like. |
-| `victim` | `on damage`, `on death` | Same as `player`. |
+| `attacker` | `on damage`, `on death` | The attacking player or entity, `<none>` for falls, fire and the like. |
+| `victim` | `on damage`, `on death` | The hurt player or entity. |
 
-Only players are covered: damage to mobs doesn't run `on damage`. Pumpkin's
-death event has no attacker, so in `on death` it is always `<none>`. Use
-`on damage` and check `health of player` for that.
+`on damage` runs for players and mobs. `on damage of <type>` (`of player`,
+`of a zombie`, `of skeletons`) runs only for that victim type. With a mob
+victim, `player` is `<none>`; use `victim`.
+
+`attacker` and `victim` are entities when they aren't players: `attacker is a
+zombie`, `type of attacker` and `name of attacker` (the custom name, else the
+type) work.
+
+| Effect | Where | Meaning |
+|---|---|---|
+| `set damage to 4` | `on damage` | Change the damage of this hit. |
+| `add 2 to damage`, `remove 1 from damage` | `on damage` | Raise or lower it (not below 0). |
+| `set death message to "..."` | `on death` | Replace the death message. Colors work. |
+
+The damage and death message reach the server only when set before the first
+`wait`, like `cancel event`.
+
+In `on death`, `attacker` is the last player or entity that hit the player in
+the 5 seconds before the death, else `<none>`.
 
 Cancelling `on death` stops Pumpkin's death handling, but the player keeps 0
 health. Heal them in the same trigger.

@@ -34,6 +34,18 @@ impl WasmHost<'_> {
         None
     }
 
+    /// The entity with this server entity id, searched in every world.
+    #[cold]
+    pub(super) fn entity_by_id(&mut self, id: i32) -> Option<EntityRef> {
+        let id = u32::try_from(id).ok()?;
+        for w in self.server.get_all_worlds() {
+            if let Some(e) = w.get_entities().into_iter().find(|e| e.get_id() == id) {
+                return Some(handle(&e));
+            }
+        }
+        None
+    }
+
     /// The worlds an area search covers: the named one, or all of them.
     fn search_worlds(&mut self, at: &FxPos) -> Vec<World> {
         match at.world.as_deref() {

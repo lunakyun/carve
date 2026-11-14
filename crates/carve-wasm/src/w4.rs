@@ -18,6 +18,11 @@ pub struct W4State {
     pub deaths: HashMap<String, (f64, f64, f64, String)>,
     /// victim uuid -> last hit
     pub hits: HashMap<String, DamageInfo>,
+    /// victim uuid -> (entity id of the last attacker, tick), for `on death`.
+    pub hit_by: HashMap<String, (i32, u64)>,
+    /// entity id -> entity, looked up this tick (`ent_tick`).
+    pub ent_ids: Vec<(i32, Option<carve_core::EntityRef>)>,
+    pub ent_tick: u64,
     /// player uuid -> last resource pack status
     pub packs: HashMap<String, String>,
     /// Join message while an `on join` trigger runs.
@@ -58,6 +63,9 @@ impl State {
             return;
         };
         let attacker: Option<PlayerRef> = damager.and_then(|id| self.player_by_entity(host, id));
+        if let Some(id) = damager {
+            self.hs.w4.hit_by.insert(victim.uuid.clone(), (id, self.hs.tick));
+        }
         let entry = self.hs.w4.hits.entry(victim.uuid).or_insert_with(|| DamageInfo {
             amount: 0.0,
             cause: String::new(),

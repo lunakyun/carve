@@ -50,6 +50,7 @@ use pumpkin_plugin_api::{
     Context, Player, Plugin, PluginMetadata, Server, permissions, register_plugin, uuid,
 };
 
+mod combat;
 mod custom_stats;
 mod displays;
 mod ent_host;
@@ -92,6 +93,8 @@ struct State {
     /// Victim of the damage event being handled, and whether scripts already ran
     /// for it (the by-entity event that may follow must not run them twice).
     damage_pending: Option<(i32, bool, u64)>,
+    /// A hit whose by-entity event may still follow (see `combat`).
+    late_hit: Option<combat::LateHit>,
     /// Extra events (`w2_events_1`) that have a listener on the server.
     ext_registered: Vec<carve_core::w2_events_1::ExtEvent>,
     /// World time of the previous tick, for `at <time>:` triggers.
@@ -1610,6 +1613,21 @@ impl Host for TickHost<'_, '_> {
         self.inner.system_memory_impl()
     }
 
+    /// Cached for the tick: every script of a hit asks for the same entities.
+    fn entity_by_id(&mut self, id: i32) -> Option<carve_core::EntityRef> {
+        let w4 = &mut self.hs.w4;
+        if w4.ent_tick != self.hs.tick {
+            w4.ent_tick = self.hs.tick;
+            w4.ent_ids.clear();
+        }
+        if let Some((_, r)) = w4.ent_ids.iter().find(|(i, _)| *i == id) {
+            return r.clone();
+        }
+        let r = self.inner.entity_by_id(id);
+        self.hs.w4.ent_ids.push((id, r.clone()));
+        r
+    }
+
     fn top_block_y(&mut self, world: Option<&str>, x: i32, z: i32) -> Option<i32> {
         self.inner.top_block_y_impl(world, x, z)
     }
@@ -1950,32 +1968,6 @@ impl EventHandler<PlayerInteractEvent> for OnInteract {
     }
 }
 
-/// Damage types that come with an attacking entity. For these, scripts run
-/// from the by-entity event that follows, so `attacker` is known.
-fn has_attacker(t: DamageType) -> bool {
-    matches!(
-        t,
-        DamageType::Arrow
-            | DamageType::Fireball
-            | DamageType::Fireworks
-            | DamageType::MaceSmash
-            | DamageType::MobAttack
-            | DamageType::MobAttackNoAggro
-            | DamageType::MobProjectile
-            | DamageType::PlayerAttack
-            | DamageType::PlayerExplosion
-            | DamageType::SonicBoom
-            | DamageType::Spear
-            | DamageType::Spit
-            | DamageType::Sting
-            | DamageType::Thorns
-            | DamageType::Thrown
-            | DamageType::Trident
-            | DamageType::WindCharge
-            | DamageType::WitherSkull
-    )
-}
-
 impl State {
     /// The online player with this entity id, if any.
     fn player_by_entity(&mut self, host: &mut WasmHost, id: i32) -> Option<PlayerRef> {
@@ -1996,91 +1988,6 @@ impl State {
         }?;
         let name = host.resolve_player(&uuid)?;
         Some(PlayerRef { uuid, name })
-    }
-
-    fn fire_damage(
-        &mut self,
-        host: &mut WasmHost,
-        victim: PlayerRef,
-        damage: f32,
-        attacker: Option<PlayerRef>,
-        cause: String,
-    ) -> bool {
-        let mut ctx = EventCtx::player(victim);
-        ctx.damage = Some(f64::from(damage));
-        ctx.damage_cause = Some(cause);
-        ctx.attacker = attacker;
-        let mut th = TickHost {
-            inner: host,
-            hs: &mut self.hs,
-        };
-        self.engine.fire(EventKind::Damage, ctx, &mut th).cancelled
-    }
-}
-
-struct OnDamage;
-
-impl EventHandler<EntityDamageEvent> for OnDamage {
-    fn handle(&self, server: Server, mut data: EventData<EntityDamageEvent>) -> EventData<EntityDamageEvent> {
-        let cancelled = with_state(&server, None, |st, host| {
-            st.track_hit(host, data.entity_id, data.damage, Some(data.damage_type), None);
-            if !st.engine.table().has_event(EventKind::Damage) {
-                return false;
-            }
-            let Some(victim) = st.player_by_entity(host, data.entity_id) else {
-                return false;
-            };
-            if has_attacker(data.damage_type) {
-                st.damage_pending = Some((data.entity_id, false, st.hs.tick));
-                return false;
-            }
-            st.damage_pending = Some((data.entity_id, true, st.hs.tick));
-            let cause = carve_core::w2_expressions_2::snake_case(&format!("{:?}", data.damage_type));
-            st.fire_damage(host, victim, data.damage, None, cause)
-        });
-        if cancelled == Some(true) {
-            data.cancelled = true;
-        }
-        data
-    }
-}
-
-struct OnDamageByEntity;
-
-impl EventHandler<EntityDamageByEntityEvent> for OnDamageByEntity {
-    fn handle(
-        &self,
-        server: Server,
-        mut data: EventData<EntityDamageByEntityEvent>,
-    ) -> EventData<EntityDamageByEntityEvent> {
-        let cancelled = with_state(&server, None, |st, host| {
-            st.track_hit(host, data.entity_id, data.damage, None, Some(data.damager_id));
-            if !st.engine.table().has_event(EventKind::Damage) {
-                return false;
-            }
-            // Already handled by the plain damage event of this hit.
-            if let Some((id, true, tick)) = st.damage_pending
-                && id == data.entity_id
-                && tick == st.hs.tick
-            {
-                return false;
-            }
-            st.damage_pending = None;
-            let Some(victim) = st.player_by_entity(host, data.entity_id) else {
-                return false;
-            };
-            let attacker = st.player_by_entity(host, data.damager_id);
-            let cause = data
-                .cause
-                .strip_prefix("minecraft:")
-                .unwrap_or(&data.cause)
-                .to_string();
-            st.fire_damage(host, victim, data.damage, attacker, cause)
-        });
-        if cancelled == Some(true) {
-            data.cancelled = true;
-        }
-        data
     }
 }
 
@@ -2750,6 +2657,7 @@ impl CommandHandler for AdminCommand {
 
 fn tick(server: Server) {
     with_state(&server, None, |st, host| {
+        st.flush_late(host, None);
         st.hs.tick += 1;
         let now = st.hs.tick;
         let mut due = Vec::new();
@@ -2987,7 +2895,6 @@ impl Plugin for Carve {
         register_event::<PlayerChatEvent>(&context, EventKind::Chat);
         register_event::<BlockBreakEvent>(&context, EventKind::Break);
         register_event::<BlockPlaceEvent>(&context, EventKind::Place);
-        register_event::<PlayerDeathEvent>(&context, EventKind::Death);
         register_event::<PlayerRespawnEvent>(&context, EventKind::Respawn);
         register_event::<PlayerToggleSneakEvent>(&context, EventKind::SneakToggle);
         register_event::<PlayerToggleSprintEvent>(&context, EventKind::SprintToggle);
@@ -3008,14 +2915,23 @@ impl Plugin for Carve {
         for r in [
             context.register_event_handler::<PlayerInteractEvent, _>(OnInteract, EventPriority::Normal, true),
             context.register_event_handler::<InventoryCloseEvent, _>(OnInvClose, EventPriority::Normal, true),
-            context.register_event_handler::<EntityDamageEvent, _>(OnDamage, EventPriority::Normal, true),
+            context.register_event_handler::<EntityDamageEvent, _>(
+                combat::OnDamage,
+                EventPriority::Normal,
+                true,
+            ),
+            context.register_event_handler::<PlayerDeathEvent, _>(
+                combat::OnDeath,
+                EventPriority::Normal,
+                true,
+            ),
             context.register_event_handler::<pumpkin_plugin_api::events::PlayerResourcePackStatusEvent, _>(
                 OnPackStatus,
                 EventPriority::Lowest,
                 false,
             ),
             context.register_event_handler::<EntityDamageByEntityEvent, _>(
-                OnDamageByEntity,
+                combat::OnDamageByEntity,
                 EventPriority::Normal,
                 true,
             ),
@@ -3042,6 +2958,7 @@ impl Plugin for Carve {
                 entity_map_tick: u64::MAX,
                 last_minute: 0,
                 damage_pending: None,
+                late_hit: None,
             });
         }
         schedule_repeating_task(1, 1, tick);

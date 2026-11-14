@@ -191,6 +191,15 @@ fn ent(e: EntExpr) -> Expr {
     Expr::Ent(Box::new(e))
 }
 
+/// `type of victim`, for the `on damage of <type>` filter.
+pub(crate) fn victim_type() -> Expr {
+    let victim = Expr::X2(Box::new(crate::w2_expressions_2::W2 {
+        op: crate::w2_expressions_2::W2Op::Victim,
+        args: Vec::new(),
+    }));
+    ent(EntExpr::TypeOf(victim))
+}
+
 /// An entity expression starting at `start` (the first word). `Ok(None)`:
 /// not ours. On success: the expression and the position after it.
 pub fn parse_expr_at(
@@ -952,7 +961,7 @@ impl Engine {
         use crate::expr::Prop;
         Some(match prop {
             Prop::Uuid => Value::Text(e.uuid.clone()),
-            Prop::Name => host.entity_name(e).map_or(Value::None, Value::Text),
+            Prop::Name => Value::Text(host.entity_name(e).unwrap_or_else(|| e.kind.replace('_', " "))),
             Prop::Health => host.entity_health(e).map_or(Value::None, Value::Num),
             _ => return None,
         })

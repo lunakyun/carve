@@ -426,6 +426,8 @@ pub enum Effect {
     Skb(Box<crate::skbee_recipes_advancements::SkbFx>),
     /// Whitelist, world broadcast, world border, teleport to spawn.
     Server(Box<crate::server_misc::ServerFx>),
+    /// `set damage to`, `set death message to` (see `combat`).
+    Combat(Box<crate::combat::CombatFx>),
 }
 
 /// What a `loop` goes over.
@@ -1532,6 +1534,19 @@ impl Cx<'_> {
         };
         if self.call_stmt(num, &toks) {
             return;
+        }
+        if self.env.has_attacker {
+            match crate::combat::parse_effect(&toks, &self.env) {
+                Some(Ok(eff)) => {
+                    self.emit(Instr::Eff(eff), num);
+                    return;
+                }
+                Some(Err(e)) => {
+                    self.err(num, e);
+                    return;
+                }
+                None => {}
+            }
         }
         if self.env.ext4.is_some() {
             match crate::w2_events_4::parse_effect(&toks, &self.env) {
@@ -2806,7 +2821,7 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
             }
             let item = if let Some(e) = crate::events_items::filter_rhs(what, &text) {
                 e
-            } else if matches!(what, "entity" | "mode") {
+            } else if matches!(what, "entity" | "mode" | "victim") {
                 cx.err(top.num, format!("'{text}' is not a valid name here"));
                 header_ok = false;
                 continue;

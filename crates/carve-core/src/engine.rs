@@ -49,6 +49,8 @@ pub struct EventCtx {
     pub damage_cause: Option<String>,
     /// `chat recipients` in `on chat`.
     pub recipients: Option<Vec<PlayerRef>>,
+    /// Victim and attacker of a hit that are not players (see `combat`).
+    pub combat: Option<Box<crate::combat::Combat>>,
 }
 
 impl EventCtx {
@@ -68,6 +70,7 @@ impl EventCtx {
             death_message: None,
             damage_cause: None,
             recipients: None,
+            combat: None,
         }
     }
 
@@ -88,6 +91,7 @@ impl EventCtx {
             death_message: None,
             damage_cause: None,
             recipients: None,
+            combat: None,
         }
     }
 
@@ -282,7 +286,7 @@ pub(crate) struct Exec {
     /// Callers of the running function, innermost last.
     callers: Vec<Frame>,
     pub(crate) ctx: EventCtx,
-    waited: bool,
+    pub(crate) waited: bool,
     cancelled: bool,
     /// Open `catch runtime errors:` sections, innermost last.
     catches: Vec<structures_rt::Catch>,
@@ -420,7 +424,7 @@ pub struct Engine {
     /// Sidebar boards by player uuid (not saved).
     pub(crate) boards: crate::skbee_scoreboard_teams::Boards,
     /// Event values changed by the run in progress (`w2_events_4`).
-    ext_out: Vec<(u8, Value)>,
+    pub(crate) ext_out: Vec<(u8, Value)>,
     w5: crate::w2_expressions_5::State,
     /// Nesting of placeholder scripts that parse placeholders themselves.
     ph_depth: u8,
@@ -652,6 +656,11 @@ impl Engine {
             let ex = Exec::new(trig, c);
             if let Some(c) = self.start(ex, host) {
                 cancelled |= c;
+            }
+            if !self.ext_out.is_empty()
+                && let Some(c) = ctx.as_mut()
+            {
+                crate::combat::carry(c, &self.ext_out);
             }
         }
         FireOutcome {
@@ -1839,7 +1848,7 @@ impl Engine {
                 Some(a) => online(&Value::Player(a), &mut ex.seen, host)
                     .map(Value::Player)
                     .unwrap_or(Value::None),
-                None => Value::None,
+                None => crate::combat::attacker(&mut ex.ctx, host),
             },
             Expr::Inv(i) => self.inv_expr(i, ex, host)?,
             Expr::ExtVal(i) => ex.ctx.ev.get(usize::from(*i)).cloned().unwrap_or(Value::None),
@@ -1860,7 +1869,10 @@ impl Engine {
                     return Ok(crate::item_meta::info(crate::item_meta::ItemInfo::Name, &v));
                 }
                 if let Value::Entity(e) = &v {
-                    return Ok(host.entity_name(e).map_or(Value::None, Value::Text));
+                    // Like Skript: the custom name, else the type.
+                    return Ok(Value::Text(
+                        host.entity_name(e).unwrap_or_else(|| e.kind.replace('_', " ")),
+                    ));
                 }
                 match online(&v, &mut ex.seen, host) {
                     Some(p) => Value::Text(p.name),
@@ -2435,6 +2447,7 @@ impl Engine {
             Effect::Sbt(s) => self.sbt_effect(s, ex, host)?,
             Effect::Nbt(n) => self.nbt_effect(n, ex, host)?,
             Effect::Ent(f) => self.ent_effect(f, ex, host)?,
+            Effect::Combat(f) => self.combat_effect(f, ex, host)?,
             Effect::Skb(s) => self.skb_effect(s, ex, host)?,
             Effect::Server(f) => self.server_effect(f, ex, host)?,
             Effect::Cancel => {

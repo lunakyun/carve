@@ -504,14 +504,14 @@
     },
     {
       "category": "event",
-      "description": "A player takes damage. Has `damage`, `attacker` (`<none>` for mobs and falls) and `victim`. Can be cancelled.",
-      "example": "on damage:\n    if damage > 10:\n        cancel event",
+      "description": "A player or mob takes damage. `on damage of player` / `on damage of zombie` run for that victim type only. Has `damage` (settable), `damage cause`, `attacker` (a player or entity, `<none>` for falls and the like) and `victim`; `player` is `<none>` when the victim is a mob. Can be cancelled.",
+      "example": "on damage of zombie:\n    if attacker is a player:\n        add 2 to damage",
       "id": "damage",
       "name": "Damage",
       "page": "syntax/triggers",
       "patterns": [
         "on damage",
-        "on damage of player",
+        "on damage of %entity type%",
         "on player damage"
       ],
       "since": "unreleased",
@@ -519,7 +519,7 @@
     },
     {
       "category": "event",
-      "description": "A player dies. Has `player` and `victim`; `attacker` is always `<none>` here. Cancelling stops Pumpkin's death handling but leaves 0 health.",
+      "description": "A player dies. Has `player`, `victim`, `death message` (settable) and `attacker`: the last player or entity that hit them in the 5 seconds before, else `<none>`. Cancelling stops Pumpkin's death handling but leaves 0 health.",
       "example": "on death of player:\n    broadcast \"%player% died\"",
       "id": "death",
       "name": "Death",
@@ -2160,6 +2160,21 @@
     },
     {
       "category": "effect",
+      "description": "Changes the damage of the hit in `on damage` (never below 0). Only a change before the first `wait` reaches the server.",
+      "example": "on damage of player:\n    if damage > 6:\n        set damage to 6",
+      "id": "damage_change",
+      "name": "Change damage",
+      "page": "syntax/triggers",
+      "patterns": [
+        "set [the] damage to %number%",
+        "add %number% to [the] damage",
+        "remove %number% from [the] damage"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
       "description": "Changes total experience points. Never below 0.",
       "example": "give player 10 xp",
       "id": "xp",
@@ -2435,6 +2450,19 @@
       ],
       "since": "unreleased",
       "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Replaces the death message in `on death`. Colors work. Only a change before the first `wait` reaches the server.",
+      "example": "on death:\n    if attacker is a zombie:\n        set death message to \"&c%player% was eaten\"",
+      "id": "death_message_set",
+      "name": "Death message",
+      "page": "syntax/triggers",
+      "patterns": [
+        "set [the] death message to %text%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
     },
     {
       "category": "effect",
@@ -4949,8 +4977,8 @@
     },
     {
       "category": "expression",
-      "description": "In `on damage` and `on death`: the damage of the hit, the attacking player and the hurt player.",
-      "example": "on damage:\n    if attacker is set:\n        send \"%attacker% hit you for %damage%\" to victim",
+      "description": "In `on damage` and `on death`: the damage of the hit, the attacking player or entity and the hurt player or entity. `attacker is a zombie`, `type of attacker` and `name of attacker` (the custom name, else the type) work on entities.",
+      "example": "on damage:\n    if attacker is a player:\n        send \"%attacker% hit you for %damage%\" to victim",
       "id": "damage_values",
       "name": "Damage values",
       "page": "syntax/triggers",

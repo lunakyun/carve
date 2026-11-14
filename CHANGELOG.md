@@ -22,6 +22,12 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### Added (Skript parity)
 
+- `on damage` runs for mobs too, with `on damage of <type>` filters.
+  `victim` and `attacker` can be any entity (`attacker is a zombie`,
+  `type of attacker`). `set damage to`, `add/remove ... damage` and
+  `set death message to` change the hit and the death message on the server.
+  `on death` has an `attacker`: the last hit within 5 seconds. Hits of
+  fireballs, thorns, tridents and wither skulls now run `on damage`.
 - About 120 more events: inventories, items, blocks, movement, vehicles,
   portals, pistons, weather, worlds, chunks, server list ping, `at 18:00`
   triggers and more, each wired to Pumpkin where its API fires them.

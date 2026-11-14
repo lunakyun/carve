@@ -714,6 +714,11 @@ pub trait Host {
         Vec::new()
     }
 
+    /// The entity with this server entity id (the id events carry).
+    fn entity_by_id(&mut self, _id: i32) -> Option<EntityRef> {
+        None
+    }
+
     /// Velocity of an entity or player (`uuid` of either).
     fn entity_velocity(&mut self, _e: &EntityRef) -> Option<(f64, f64, f64)> {
         None
