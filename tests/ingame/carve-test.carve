@@ -51,3 +51,73 @@ command /tvar:
 command /tconsole:
     trigger:
         execute console command "say t:console"
+
+# ---- v2 ----
+options:
+    tp: t:
+
+on load:
+    set {t_loaded} to "yes"
+
+every 1 second:
+    add 1 to {t_beats}
+
+function double(n: number) :: number:
+    return {_n} * 2
+
+function later(p: player):
+    wait 5 ticks
+    send "t:fwait" to {_p}
+
+command /tloop:
+    trigger:
+        loop all players:
+            add name of loop-player to {_names::*}
+        send "{@tp}loop %size of {_names::*}%"
+        loop 3 times:
+            add loop-number to {_sum}
+        send "t:sum %{_sum}%"
+
+command /tcond:
+    trigger:
+        if 5 is between 1 and 9 and "Hello" contains "ELL":
+            if player is "nobody" or player is "Tester":
+                if name of player is "x", "y" or "Tester":
+                    send "t:cond ok"
+
+command /tfunc:
+    trigger:
+        send "t:func %double(21)%"
+        later(player)
+
+command /tstate:
+    trigger:
+        send "t:loaded %{t_loaded}% beats %{t_beats}%"
+
+command /titem:
+    trigger:
+        give 3 diamonds to player
+        wait 10 ticks
+        if player has 3 diamonds:
+            send "t:has diamonds"
+        send "t:tool %tool of player%"
+
+command /tloc:
+    trigger:
+        send "t:loc %x of player% %y of player% %z of player% %world of player%"
+        teleport player to location(5, 90, 5)
+
+on damage:
+    send "t:dmg %damage% by %attacker%" to victim
+
+on death:
+    send "t:died" to player
+
+on respawn:
+    send "t:respawned" to player
+
+on right click:
+    send "t:rclick %clicked block%" to player
+
+on left click with stone:
+    send "t:lclick-stone" to player

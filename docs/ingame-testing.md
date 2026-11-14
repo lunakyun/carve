@@ -46,9 +46,31 @@ another folder or binary.
 
 ## What it covers
 
-join, quit, chat (cancel and `message`), break and place, titles, subtitles,
-action bars, `wait`, `cancel event` after a wait, commands with arguments,
-permissions (op allowed, non-op denied), health and heal, teleport, console
-commands, global variables across `/carve reload` and across a restart, a
-broken reload keeping the old scripts, the restart notice for new commands,
-and the runaway guard.
+**v1:** join, quit, chat (cancel and `message`), break and place, titles,
+subtitles, action bars, `wait`, `cancel event` after a wait, commands with
+arguments, permissions (op allowed, non-op denied), health and heal,
+teleport, console commands, global variables across `/carve reload` and
+across a restart, a broken reload keeping the old scripts, the restart notice
+for new commands, and the runaway guard.
+
+**v2:**
+- loops (`loop all players`, `loop N times`, list size)
+- combined conditions
+- functions (value and waiting statement calls) and options
+- `on load` and `every`
+- `give`, `has`, `tool of player`
+- location, x/y/z and world of a player, teleport to a location
+- `on damage` (from the console `damage` command), `on death` (`kill`) and
+  `on respawn`
+- right and left click with filters
+
+Not covered: `attacker` with a real hit. That needs the test client to attack
+another player's entity, which it can't do yet.
+
+## Client notes
+
+- **Teleport confirms.** Pumpkin kicks a client that confirms a teleport
+  after a newer one was already sent ("Wrong teleport id"). The test client
+  waits 60 ms and confirms only the latest one.
+- **After a respawn**, the client sends "player loaded" again. Without it,
+  Pumpkin ignores right clicks.

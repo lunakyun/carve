@@ -1289,6 +1289,10 @@ fn options_are_substituted() {
         "options:\n    prefix: &7[Server]&r\n    max: 3\non join:\n    send \"{@prefix} hi\"\n    loop {@max} times:\n        add 1 to {_n}\n    send \"%{_n}%\"\n",
     );
     assert_eq!(out, ["send Steve &7[Server]&r hi", "send Steve 3"]);
+    // a value that ends with ':' is not a block (found in-game)
+    let out = join("options:\n    tag: [t]:\non join:\n    send \"{@tag} x\"\n");
+    assert_eq!(out, ["send Steve [t]: x"]);
+    assert!(errors_of("on join:\n")[0].msg.contains("empty block"));
     let e = &errors_of("on join:\n    send \"{@nope}\"\n")[0];
     assert_eq!(e.line, 2);
     assert!(e.msg.contains("unknown option {@nope}"));

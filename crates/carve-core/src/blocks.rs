@@ -110,7 +110,7 @@ pub fn parse_blocks(file: &str, src: &str) -> Result<Vec<Line>, Vec<ScriptError>
             ));
         }
         if let Some((pl, pn, pt)) = prev
-            && pt.ends_with(':')
+            && opens(pt)
             && *level <= *pl
         {
             errors.push(ScriptError::new(
@@ -122,7 +122,7 @@ pub fn parse_blocks(file: &str, src: &str) -> Result<Vec<Line>, Vec<ScriptError>
         prev = Some(item);
     }
     if let Some((_, pn, pt)) = prev
-        && pt.ends_with(':')
+        && opens(pt)
     {
         errors.push(ScriptError::new(
             file,
@@ -135,6 +135,28 @@ pub fn parse_blocks(file: &str, src: &str) -> Result<Vec<Line>, Vec<ScriptError>
     }
     let mut i = 0;
     Ok(build(&flat, &mut i, 0))
+}
+
+/// A line that must have an indented block. `key: value:` (an option whose
+/// value ends with `:`) is a plain line: only the last `:` is outside quotes,
+/// but another `: ` comes before it.
+fn opens(line: &str) -> bool {
+    let Some(body) = line.strip_suffix(':') else {
+        return false;
+    };
+    let mut in_str = false;
+    let mut prev = ' ';
+    for c in body.chars() {
+        if c == '"' {
+            in_str = !in_str;
+        }
+        // `name: value` inside the line, not `::` of a list or a return type.
+        if !in_str && prev == ':' && c == ' ' && !body.contains("::") {
+            return false;
+        }
+        prev = c;
+    }
+    true
 }
 
 fn build(flat: &[(usize, usize, String)], i: &mut usize, level: usize) -> Vec<Line> {

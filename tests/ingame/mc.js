@@ -13,13 +13,13 @@ const SB = {
   HANDSHAKE: 0, HELLO: 0, LOGIN_ACK: 3,
   C_CLIENT_INFO: 0, C_FINISH: 3, C_KEEP_ALIVE: 4, C_PONG: 5, C_KNOWN_PACKS: 7, C_ACCEPT_COC: 9,
   ACCEPT_TP: 0, CHAT_COMMAND: 7, CHAT: 9, CHUNK_BATCH_RECEIVED: 11, KEEP_ALIVE: 28, MOVE_POS: 30,
-  PLAYER_ACTION: 41, PLAYER_LOADED: 44, PONG: 45, USE_ITEM_ON: 66,
+  PLAYER_ACTION: 41, PLAYER_LOADED: 44, PONG: 45, USE_ITEM_ON: 66, CLIENT_COMMAND: 12,
 }
 const CB = {
   L_DISCONNECT: 0, L_FINISHED: 2, L_COMPRESSION: 3,
   C_DISCONNECT: 2, C_FINISH: 3, C_KEEP_ALIVE: 4, C_PING: 5, C_KNOWN_PACKS: 15, C_COC: 20,
   CHUNK_BATCH_FINISHED: 11, DISCONNECT: 32, DISGUISED_CHAT: 33, KEEP_ALIVE: 45, PING: 62,
-  PLAYER_CHAT: 66, PLAYER_POSITION: 73, ACTION_BAR: 89, SET_HEALTH: 106, SUBTITLE: 114,
+  PLAYER_CHAT: 66, PLAYER_POSITION: 73, RESPAWN: 84, ACTION_BAR: 89, SET_HEALTH: 106, SUBTITLE: 114,
   TITLE: 116, SYSTEM_CHAT: 124,
 }
 
@@ -136,11 +136,22 @@ class Bot extends EventEmitter {
         const [tp, o] = readVarint(d, 0)
         this.pos = { x: d.readDoubleBE(o), y: d.readDoubleBE(o + 8), z: d.readDoubleBE(o + 16) }
         const yaw = d.readFloatBE(o + 48); const pitch = d.readFloatBE(o + 52)
-        // 26.3 adds the position and rotation to the teleport confirm.
-        this._send(SB.ACCEPT_TP, Buffer.concat([varint(tp), f64(this.pos.x, this.pos.y, this.pos.z), f32(yaw, pitch)]))
-        this._send(SB.MOVE_POS, Buffer.concat([f64(this.pos.x, this.pos.y, this.pos.z), u8(1)]))
+        // Pumpkin kicks a client that confirms a teleport after a newer one was
+        // sent, so confirm only the latest one, once teleports stop coming.
+        // 26.3 adds the position and rotation to the confirm.
+        const pos = this.pos
+        clearTimeout(this.tpTimer)
+        this.tpTimer = setTimeout(() => {
+          this._send(SB.ACCEPT_TP, Buffer.concat([varint(tp), f64(pos.x, pos.y, pos.z), f32(yaw, pitch)]))
+        }, this.loaded ? 60 : 0)
         this._record('position', `${this.pos.x} ${this.pos.y} ${this.pos.z}`)
-        if (!this.loaded) { this.loaded = true; this._send(SB.PLAYER_LOADED); this.emit('spawn') }
+        if (!this.loaded) {
+          const first = this.firstSpawn === undefined
+          this.firstSpawn = false
+          this.loaded = true
+          setTimeout(() => this._send(SB.PLAYER_LOADED), first ? 0 : 100)
+          if (first) this.emit('spawn')
+        }
         break
       }
       case CB.SET_HEALTH: this.health = d.readFloatBE(0); this._record('health', String(this.health)); break
@@ -152,6 +163,8 @@ class Bot extends EventEmitter {
       case CB.SUBTITLE: this._record('subtitle', text(d)); break
       case CB.ACTION_BAR: this._record('actionbar', text(d)); break
       case CB.DISCONNECT: this._record('kick', text(d)); break
+      // After a respawn the client must say "loaded" again, or Pumpkin ignores clicks.
+      case CB.RESPAWN: this.loaded = false; this._record('respawn', ''); break
     }
   }
 
@@ -167,6 +180,9 @@ class Bot extends EventEmitter {
   placeOn (x, y, z) {
     this._send(SB.USE_ITEM_ON, Buffer.concat([varint(0), blockPos(x, y, z), varint(1), f32(0.5, 1, 0.5), u8(0), u8(0), varint(2)]))
   }
+
+  // Press "Respawn" on the death screen.
+  respawn () { this._send(SB.CLIENT_COMMAND, varint(0)) }
 
   quit () { this.sock.end(); this.closed = true }
 
