@@ -4,6 +4,7 @@ use std::cell::Cell;
 
 use crate::lexer::{Tok, lex};
 use crate::list_literals::ElemSel;
+use crate::list_ops::{Agg, ListSrc, parse_src_at};
 use crate::value::format_num;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -19,6 +20,8 @@ pub enum Ty {
     Date,
     /// Unknown until runtime (variables).
     Object,
+    /// A list (function parameters and results like `numbers`).
+    List,
 }
 
 impl Ty {
@@ -34,6 +37,7 @@ impl Ty {
             Ty::Timespan => "timespan",
             Ty::Date => "date",
             Ty::Object => "object",
+            Ty::List => "list",
         }
     }
 
@@ -159,6 +163,10 @@ pub enum Expr {
     TBin(Box<Expr>, BinOp, Box<Expr>),
     /// `minutes of <span>` / `total minutes of <span>`: ms per unit, total?
     SpanPart(i64, bool, Box<Expr>),
+    /// `sorted {x::*}`, `{x::*} where [...]`, ...: a list value.
+    Items(Box<ListSrc>),
+    /// `sum of {x::*}`, `max of ...`, `size of {x::*} where [...]`.
+    ListAgg(Agg, Box<ListSrc>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -335,6 +343,9 @@ impl Expr {
                 DateOp::ToUnix => Ty::Number,
                 DateOp::Format => Ty::Text,
             },
+            Expr::Items(_) => Ty::List,
+            Expr::ListAgg(Agg::Size | Agg::Sum, _) => Ty::Number,
+            Expr::ListAgg(..) => Ty::Object,
             Expr::Default(a, b) => {
                 let (x, y) = (a.ty(env), b.ty(env));
                 if x == y { x } else { Ty::Object }
@@ -356,6 +367,18 @@ impl Expr {
                 .unwrap_or(Ty::Object),
         }
     }
+}
+
+/// Parse one arithmetic expression starting at `pos`; returns it and where it ended.
+pub(crate) fn parse_sum_at(toks: &[Tok], pos: usize, env: &Env) -> Result<(Expr, usize), String> {
+    let mut p = P {
+        toks,
+        pos,
+        env,
+        hit_end: Cell::new(false),
+    };
+    let e = p.sum()?;
+    Ok((e, p.pos))
 }
 
 pub fn parse_expr(toks: &[Tok], env: &Env) -> Result<Expr, String> {
@@ -805,7 +828,13 @@ impl P<'_> {
                 Ok(Expr::Num(n))
             }
             Tok::Str(s) => Ok(Expr::Text(parse_template(&s, self.env)?)),
-            Tok::Var(v) => Ok(Expr::Var(parse_varref(&v, self.env)?)),
+            Tok::Var(v) => {
+                let var = parse_varref(&v, self.env)?;
+                if var.is_list() && matches!(self.peek(), Some(t) if t.is_lit("where")) {
+                    return self.list_expr(self.pos - 1);
+                }
+                Ok(Expr::Var(var))
+            }
             Tok::Sym("(") => {
                 let e = self.sum()?;
                 if !self.eat_sym(")") {
@@ -1008,6 +1037,24 @@ impl P<'_> {
                         Ok(Expr::Elem(ElemSel::Nth(Box::new(n)), self.list_after_of("element N")?))
                     }
                     "size" | "amount" | "count" => self.size_of(&lw),
+                    "sorted" | "reversed" | "shuffled" if self.peek().is_some() => {
+                        self.list_expr(self.pos - 1)
+                    }
+                    "random" if matches!(self.peek(), Some(Tok::Num(_) | Tok::Var(_))) => {
+                        self.list_expr(self.pos - 1)
+                    }
+                    "sum" | "average" | "avg" | "min" | "max" | "minimum" | "maximum"
+                        if matches!(self.peek(), Some(t) if t.is_lit("of")) =>
+                    {
+                        self.pos += 1;
+                        let agg = match lw.as_str() {
+                            "sum" => Agg::Sum,
+                            "average" | "avg" => Agg::Avg,
+                            "min" | "minimum" => Agg::Min,
+                            _ => Agg::Max,
+                        };
+                        self.try_agg(agg).unwrap_or_else(|| Err("missing list".into()))
+                    }
                     "location"
                         if matches!(self.peek(), Some(t) if t.is_lit("("))
                             && !self.has_function("location") =>
@@ -1429,6 +1476,18 @@ impl P<'_> {
 
     /// `size of`, `amount of`, `number of`.
     fn size_of(&mut self, word: &str) -> Result<Expr, String> {
+        if matches!(self.peek(), Some(t) if t.is_lit("of")) {
+            let plain_var = matches!(self.toks.get(self.pos + 1), Some(Tok::Var(_)))
+                && !matches!(self.toks.get(self.pos + 2), Some(t) if t.is_lit("where"));
+            if !plain_var {
+                let save = self.pos;
+                self.pos += 1;
+                if let Some(e) = self.try_agg(Agg::Size) {
+                    return e;
+                }
+                self.pos = save;
+            }
+        }
         Ok(Expr::Size(self.list_after_of(word)?))
     }
 
@@ -1491,6 +1550,36 @@ impl P<'_> {
         })
     }
 
+    /// A list expression starting at `start` (a word or list variable).
+    fn list_expr(&mut self, start: usize) -> Result<Expr, String> {
+        match parse_src_at(self.toks, start, self.env, false) {
+            Ok((s, end)) => {
+                self.pos = end;
+                Ok(Expr::Items(Box::new(s)))
+            }
+            Err(e) => {
+                self.hit_end.set(true);
+                Err(e)
+            }
+        }
+    }
+
+    /// The list after `sum of` / `size of`: a number computed from it.
+    /// `None` when it is a single plain value (not a list at all).
+    fn try_agg(&mut self, agg: Agg) -> Option<Result<Expr, String>> {
+        match parse_src_at(self.toks, self.pos, self.env, false) {
+            Ok((ListSrc::One(_), _)) if agg == Agg::Size => None,
+            Ok((s, end)) => {
+                self.pos = end;
+                Some(Ok(Expr::ListAgg(agg, Box::new(s))))
+            }
+            Err(e) => {
+                self.hit_end.set(true);
+                Some(Err(e))
+            }
+        }
+    }
+
     fn has_function(&self, name: &str) -> bool {
         self.env
             .functions
@@ -1512,7 +1601,14 @@ impl P<'_> {
         let mut args = Vec::new();
         if !self.eat_sym(")") {
             loop {
-                args.push(self.top()?);
+                let want_list = env.functions.get(id).and_then(|s| s.params.get(args.len())).map(|p| p.1) == Some(Ty::List);
+                if want_list {
+                    let (src, end) = parse_src_at(self.toks, self.pos, env, false)?;
+                    self.pos = end;
+                    args.push(Expr::Items(Box::new(src)));
+                } else {
+                    args.push(self.top()?);
+                }
                 if self.eat_sym(")") {
                     break;
                 }

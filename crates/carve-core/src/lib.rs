@@ -14,6 +14,7 @@ pub mod host;
 pub mod items;
 pub mod lexer;
 pub mod list_literals;
+pub mod list_ops;
 pub mod pattern;
 pub mod sounds;
 pub mod text_join_split;

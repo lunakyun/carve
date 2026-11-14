@@ -6,6 +6,7 @@ use crate::blocks::{Line, parse_blocks};
 use crate::error::ScriptError;
 use crate::expr::{Env, Expr, LoopKind, Sig, Ty, VarRef, parse_expr, parse_template, parse_varref};
 use crate::lexer::{Tok, lex};
+use crate::list_ops::ListSrc;
 use crate::pattern::{Capture, Memo, Pattern, closest};
 use crate::player_flags::{PLAYER_FLAG_PATTERNS, PlayerFlag};
 
@@ -266,6 +267,10 @@ pub enum Effect {
     ListAddAll(VarRef, Vec<Expr>),
     /// `remove a, b from {x::*}`.
     ListRemoveAll(VarRef, Vec<Expr>),
+    /// `set {x::*} to sorted {y::*}` and other list expressions.
+    SetList(VarRef, ListSrc),
+    /// `sort {x::*}` (true: descending).
+    SortList(VarRef, bool),
 }
 
 /// What a `loop` goes over.
@@ -275,6 +280,8 @@ pub enum LoopSrc {
     /// `loop split <text> at <sep>`.
     Split(Expr, Expr),
     List(VarRef),
+    /// `loop sorted {x::*}:` and other list expressions.
+    Items(ListSrc),
     Players,
     Values(Vec<Expr>),
 }
@@ -795,6 +802,15 @@ impl Cx<'_> {
                 return;
             }
         };
+        if want == Ty::List {
+            match crate::list_ops::parse_src_all(&toks, &self.env, true) {
+                Ok(s) => {
+                    self.emit(Instr::Return(Some(Expr::Items(Box::new(s)))), num);
+                }
+                Err(e) => self.err(num, format!("can't understand the returned list: {e}")),
+            }
+            return;
+        }
         match parse_expr(&toks, &self.env) {
             Ok(e) if want.accepts(e.ty(&self.env)) => {
                 self.emit(Instr::Return(Some(e)), num);
@@ -930,6 +946,15 @@ impl Cx<'_> {
                 }
                 Err(e) => {
                     self.err(num, e);
+                    None
+                }
+            };
+        }
+        if crate::list_ops::looks_like_list_op(&toks, &self.env) {
+            return match crate::list_ops::parse_src_all(&toks, &self.env, true) {
+                Ok(s) => Some((LoopSrc::Items(s), LoopKind::List)),
+                Err(e) => {
+                    self.err(num, format!("can't understand 'loop {rest}': {e}"));
                     None
                 }
             };
@@ -1155,7 +1180,17 @@ impl Cx<'_> {
         if self.call_stmt(num, &toks) {
             return;
         }
-        match crate::list_literals::parse_list_effect(&toks, &self.env) {
+        let ops_first = toks.first().is_some_and(|t| t.is_lit("sort"))
+            || (toks.first().is_some_and(|t| t.is_lit("set"))
+                && toks.get(3..).is_some_and(|r| crate::list_ops::looks_like_list_op(r, &self.env)));
+        let parsed = if ops_first {
+            crate::list_ops::parse_effect(&toks, &self.env)
+                .or_else(|| crate::list_literals::parse_list_effect(&toks, &self.env))
+        } else {
+            crate::list_literals::parse_list_effect(&toks, &self.env)
+                .or_else(|| crate::list_ops::parse_effect(&toks, &self.env))
+        };
+        match parsed {
             Some(Ok(eff)) => {
                 self.emit(Instr::Eff(eff), num);
                 return;
@@ -1774,6 +1809,8 @@ pub fn type_from_name(name: &str) -> Option<Ty> {
         "timespan" | "time span" => Ty::Timespan,
         "date" => Ty::Date,
         "object" => Ty::Object,
+        "numbers" | "integers" | "texts" | "strings" | "players" | "booleans" | "items" | "itemtypes"
+        | "locations" | "worlds" | "objects" => Ty::List,
         _ => return None,
     })
 }
@@ -1846,7 +1883,7 @@ fn parse_function_header(
             })?;
             let pname = pname.trim().to_ascii_lowercase();
             let ty = type_from_name(pty).ok_or_else(|| {
-                err(format!("unknown type '{}' for parameter {pname} (use text, number, player, boolean, item, location, world or object; lists are not supported)", pty.trim()))
+                err(format!("unknown type '{}' for parameter {pname} (use text, number, player, boolean, item, location, world or object; for lists use numbers, texts, players, objects and so on)", pty.trim()))
             })?;
             if default.is_none() && defaults.iter().any(Option::is_some) {
                 return Err(err(format!(

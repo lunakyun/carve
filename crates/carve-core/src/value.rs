@@ -42,6 +42,8 @@ pub enum Value {
     Timespan {
         millis: i64,
     },
+    /// A list produced by a list operation or a function. Not stored in variables.
+    List(Vec<Value>),
 }
 
 impl Value {
@@ -58,6 +60,7 @@ impl Value {
             Value::Date(_) => "date",
             Value::Console => "console",
             Value::Timespan { .. } => "timespan",
+            Value::List(_) => "list",
         }
     }
 
@@ -178,6 +181,17 @@ impl Value {
             Value::Date(d) => out.push_str(&crate::time_dates::format_date(*d, crate::time_dates::DEFAULT_FORMAT)),
             Value::Console => out.push_str("console"),
             Value::Timespan { millis } => crate::timespans::push_span(out, *millis),
+            Value::List(items) => {
+                if items.is_empty() {
+                    out.push_str("<none>");
+                }
+                for (i, v) in items.iter().enumerate() {
+                    if i > 0 {
+                        out.push_str(if i + 1 == items.len() { " and " } else { ", " });
+                    }
+                    v.push_to(out);
+                }
+            }
         }
     }
 }
