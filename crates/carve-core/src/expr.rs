@@ -18,6 +18,7 @@ pub enum Ty {
     World,
     Timespan,
     Date,
+    Vector,
     /// Unknown until runtime (variables).
     Object,
     /// A list (function parameters and results like `numbers`).
@@ -36,6 +37,7 @@ impl Ty {
             Ty::World => "world",
             Ty::Timespan => "timespan",
             Ty::Date => "date",
+            Ty::Vector => "vector",
             Ty::Object => "object",
             Ty::List => "list",
         }
@@ -167,6 +169,8 @@ pub enum Expr {
     Items(Box<ListSrc>),
     /// `sum of {x::*}`, `max of ...`, `size of {x::*} where [...]`.
     ListAgg(Agg, Box<ListSrc>),
+    /// Vectors, server facts and other rare expressions (see `w2_expressions_7`).
+    W2(Box<crate::w2_expressions_7::Node>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -270,7 +274,10 @@ impl Prop {
     fn takes(self, t: Ty) -> bool {
         t == Ty::Object
             || match self {
-                Prop::X | Prop::Y | Prop::Z | Prop::World => t == Ty::Player || t == Ty::Location,
+                Prop::X | Prop::Y | Prop::Z | Prop::World => {
+                    t == Ty::Player || t == Ty::Location || (t == Ty::Vector && !matches!(self, Prop::World))
+                }
+                Prop::Location => t == Ty::Player || t == Ty::Vector,
                 _ => t == Ty::Player,
             }
     }
@@ -343,6 +350,7 @@ impl Expr {
                 DateOp::ToUnix => Ty::Number,
                 DateOp::Format => Ty::Text,
             },
+            Expr::W2(n) => n.ty,
             Expr::Items(_) => Ty::List,
             Expr::ListAgg(Agg::Size | Agg::Sum, _) => Ty::Number,
             Expr::ListAgg(..) => Ty::Object,
@@ -419,12 +427,12 @@ fn describe(t: &Tok) -> String {
     }
 }
 
-struct P<'a> {
-    toks: &'a [Tok],
-    pos: usize,
-    env: &'a Env,
+pub(crate) struct P<'a> {
+    pub(crate) toks: &'a [Tok],
+    pub(crate) pos: usize,
+    pub(crate) env: &'a Env,
     /// Set when the parser asked for a token past the end.
-    hit_end: Cell<bool>,
+    pub(crate) hit_end: Cell<bool>,
 }
 
 impl P<'_> {
@@ -445,7 +453,7 @@ impl P<'_> {
         t
     }
 
-    fn eat_sym(&mut self, s: &str) -> bool {
+    pub(crate) fn eat_sym(&mut self, s: &str) -> bool {
         if matches!(self.peek(), Some(Tok::Sym(x)) if *x == s) {
             self.pos += 1;
             true
@@ -464,7 +472,7 @@ impl P<'_> {
         Ok(e)
     }
 
-    fn sum(&mut self) -> Result<Expr, String> {
+    pub(crate) fn sum(&mut self) -> Result<Expr, String> {
         let mut left = self.product()?;
         loop {
             let op = if self.eat_sym("+") {
@@ -496,6 +504,9 @@ impl P<'_> {
 
     fn bin(&self, l: Expr, op: BinOp, r: Expr) -> Result<Expr, String> {
         let (lt, rt) = (l.ty(self.env), r.ty(self.env));
+        if lt == Ty::Vector || rt == Ty::Vector {
+            return crate::w2_expressions_7::vec_bin(l, op, r, lt, rt);
+        }
         if matches!(lt, Ty::Timespan | Ty::Date) || matches!(rt, Ty::Timespan | Ty::Date) {
             if let (Expr::Span(x), Expr::Span(y)) = (&l, &r) {
                 match op {
@@ -538,6 +549,9 @@ impl P<'_> {
     fn unary(&mut self) -> Result<Expr, String> {
         if self.eat_sym("-") {
             let inner = self.unary()?;
+            if inner.ty(self.env) == Ty::Vector {
+                return Ok(crate::w2_expressions_7::neg(inner));
+            }
             if !Ty::Number.accepts(inner.ty(self.env)) {
                 return Err("'-' needs a number".into());
             }
@@ -549,8 +563,9 @@ impl P<'_> {
         self.primary()
     }
 
-    fn primary(&mut self) -> Result<Expr, String> {
+    pub(crate) fn primary(&mut self) -> Result<Expr, String> {
         let mut e = self.primary_base()?;
+        e = self.w2e7_post(e)?;
         // `5 minutes ago`, `2 hours later`
         if let Some(Tok::Word(w)) = self.toks.get(self.pos)
             && (w.eq_ignore_ascii_case("ago") || w.eq_ignore_ascii_case("later"))
@@ -725,7 +740,7 @@ impl P<'_> {
         Ok(Expr::SpanPart(ms, total, Box::new(inner)))
     }
 
-    fn prop(&self, prop: Prop, of: Expr) -> Result<Expr, String> {
+    pub(crate) fn prop(&self, prop: Prop, of: Expr) -> Result<Expr, String> {
         let t = of.ty(self.env);
         if !prop.takes(t) {
             return Err(format!("can't take the {prop:?} of a {}", t.name()).to_lowercase());
@@ -799,13 +814,16 @@ impl P<'_> {
         None
     }
 
-    fn primary_base(&mut self) -> Result<Expr, String> {
+    pub(crate) fn primary_base(&mut self) -> Result<Expr, String> {
         let Some(tok) = self.peek().cloned() else {
             return Err("missing expression".into());
         };
         self.pos += 1;
         match tok {
             Tok::Num(n) => {
+                if let Some(e) = self.w2e7_num_of(n) {
+                    return Ok(e);
+                }
                 if let Some(span) = self.span_literal(n) {
                     return Ok(span);
                 }
@@ -845,6 +863,9 @@ impl P<'_> {
             Tok::Word(w) => {
                 let lw = w.to_ascii_lowercase();
                 if let Some(e) = self.text_fn(&lw)? {
+                    return Ok(e);
+                }
+                if let Some(e) = self.w2e7_head(&lw)? {
                     return Ok(e);
                 }
                 match lw.as_str() {
@@ -1580,7 +1601,7 @@ impl P<'_> {
         }
     }
 
-    fn has_function(&self, name: &str) -> bool {
+    pub(crate) fn has_function(&self, name: &str) -> bool {
         self.env
             .functions
             .iter()

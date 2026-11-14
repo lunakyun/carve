@@ -170,6 +170,12 @@ pub trait Host {
         }
     }
 
+    /// Server facts and per-player numbers for vectors, `tps`, versions and
+    /// play time (see `w2_expressions_7::Query`). `None` means unknown.
+    fn w2e7_query(&mut self, _q: crate::w2_expressions_7::Query<'_>) -> Option<crate::value::Value> {
+        None
+    }
+
     /// Hurt the player. The default lowers health and kills at zero.
     fn damage(&mut self, player: &PlayerRef, amount: f64) {
         if let Some(h) = self.health(player) {
