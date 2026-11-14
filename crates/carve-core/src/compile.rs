@@ -203,6 +203,8 @@ pub enum Cond {
     Admin(AdminCond, Expr, bool),
     /// `player has potion effect speed`.
     World(Box<crate::world_effects::WorldCond>),
+    /// `last spawned entity is a zombie`.
+    Ent(Box<crate::entities::EntCond>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -280,6 +282,8 @@ pub enum Effect {
     Admin(AdminEff, Expr, Option<Expr>),
     /// Lightning, explosions, particles, potion effects, fire.
     World(Box<crate::world_effects::WorldFx>),
+    /// Spawn, kill, push and name entities.
+    Ent(Box<crate::entities::EntFx>),
 }
 
 /// What a `loop` goes over.
@@ -968,6 +972,9 @@ impl Cx<'_> {
                 }
             };
         }
+        if let Some(e) = crate::entities::parse_list(&toks, &self.env) {
+            return Some((LoopSrc::Items(ListSrc::One(e)), LoopKind::List));
+        }
         if crate::list_ops::looks_like_list_op(&toks, &self.env) {
             return match crate::list_ops::parse_src_all(&toks, &self.env, true) {
                 Ok(s) => Some((LoopSrc::Items(s), LoopKind::List)),
@@ -1078,6 +1085,9 @@ impl Cx<'_> {
 
     fn single_cond(&self, toks: &[Tok]) -> Option<Cond> {
         if let Some(c) = crate::world_effects::parse_cond(toks, &self.env) {
+            return Some(c);
+        }
+        if let Some(c) = crate::entities::parse_cond(toks, &self.env) {
             return Some(c);
         }
         let mut memo = Memo::default();
@@ -1224,6 +1234,17 @@ impl Cx<'_> {
             None => {}
         }
         match crate::world_effects::parse_effect(&toks, &self.env) {
+            Ok(Some(eff)) => {
+                self.emit(Instr::Eff(eff), num);
+                return;
+            }
+            Ok(None) => {}
+            Err(msg) => {
+                self.err(num, msg);
+                return;
+            }
+        }
+        match crate::entities::parse_effect(&toks, &self.env) {
             Ok(Some(eff)) => {
                 self.emit(Instr::Eff(eff), num);
                 return;

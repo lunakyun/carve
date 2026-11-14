@@ -167,6 +167,8 @@ pub enum Expr {
     Items(Box<ListSrc>),
     /// `sum of {x::*}`, `max of ...`, `size of {x::*} where [...]`.
     ListAgg(Agg, Box<ListSrc>),
+    /// `last spawned entity`, `nearest zombie to player`, `all pigs in radius 5 of player`, ...
+    Ent(Box<crate::entities::EntExpr>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -334,6 +336,7 @@ impl Expr {
             Expr::Call(id, _) => env.functions.get(*id).and_then(|s| s.ret).unwrap_or(Ty::Object),
             Expr::Item { .. } => Ty::Item,
             Expr::Prop(p, _) => p.ty(),
+            Expr::Ent(e) => crate::entities::ty(e),
             Expr::Loc(..) => Ty::Location,
             Expr::WorldNamed(_) => Ty::World,
             Expr::Distance(..) | Expr::Random(..) | Expr::Damage => Ty::Number,
@@ -880,6 +883,10 @@ impl P<'_> {
             }
             Tok::Word(w) => {
                 let lw = w.to_ascii_lowercase();
+                if let Some((e, end)) = crate::entities::parse_expr_at(self.toks, self.pos - 1, self.env, &self.hit_end)? {
+                    self.pos = end;
+                    return Ok(e);
+                }
                 if let Some(e) = self.text_fn(&lw)? {
                     return Ok(e);
                 }
@@ -1551,7 +1558,7 @@ impl P<'_> {
             _ => (word, None),
         };
         let want: Option<LoopKind> = match name {
-            "loop-value" | "loop-iteration" | "loop-counter" => None,
+            "loop-value" | "loop-iteration" | "loop-counter" | "loop-entity" => None,
             "loop-player" => Some(LoopKind::Players),
             "loop-index" => Some(LoopKind::List),
             "loop-number" => Some(LoopKind::Times),

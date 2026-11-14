@@ -32,6 +32,8 @@ use pumpkin_plugin_api::{
     Context, Player, Plugin, PluginMetadata, Server, permissions, register_plugin, uuid,
 };
 
+mod ent_host;
+mod ents;
 mod fx;
 
 const SCRIPTS_DIR: &str = "scripts";
@@ -613,6 +615,17 @@ impl Host for TickHost<'_, '_> {
         clear_effects(p: &PlayerRef, effect: Option<&str>);
         has_effect(p: &PlayerRef, effect: &str) -> bool;
         set_fire(p: &PlayerRef, ticks: i32);
+        spawn_entity(kind: &str, at: &FxPos) -> Option<carve_core::EntityRef>;
+        entity_kill(e: &carve_core::EntityRef);
+        entity_remove(e: &carve_core::EntityRef);
+        entity_location(e: &carve_core::EntityRef) -> Option<(f64, f64, f64, String)>;
+        entity_name(e: &carve_core::EntityRef) -> Option<String>;
+        entity_health(e: &carve_core::EntityRef) -> Option<f64>;
+        set_entity_name(e: &carve_core::EntityRef, name: Option<&str>);
+        entities_near(at: &FxPos, radius: f64, kind: Option<&str>) -> Vec<carve_core::EntityRef>;
+        entity_velocity(e: &carve_core::EntityRef) -> Option<(f64, f64, f64)>;
+        set_entity_velocity(e: &carve_core::EntityRef, v: (f64, f64, f64));
+        entity_teleport(e: &carve_core::EntityRef, x: f64, y: f64, z: f64, world: Option<&str>);
     }
 
     fn schedule_wait(&mut self, ticks: u64, token: u64) {

@@ -44,6 +44,17 @@ pub enum Value {
     },
     /// A list produced by a list operation or a function. Not stored in variables.
     List(Vec<Value>),
+    /// A non-player entity (mob, item, ...). Not saved in global variables.
+    Entity(EntityRef),
+}
+
+/// A handle to an entity. Looked up through the host on every use, so a
+/// handle for an entity that is gone does nothing.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EntityRef {
+    pub uuid: String,
+    /// Entity type id without `minecraft:`, like `zombie`.
+    pub kind: String,
 }
 
 impl Value {
@@ -61,6 +72,7 @@ impl Value {
             Value::Console => "console",
             Value::Timespan { .. } => "timespan",
             Value::List(_) => "list",
+            Value::Entity(_) => "entity",
         }
     }
 
@@ -114,6 +126,7 @@ impl Value {
                     && (az - bz).abs() < 1e-9
                     && (aw.is_none() || bw.is_none() || aw == bw)
             }
+            (Value::Entity(a), Value::Entity(b)) => a.uuid == b.uuid,
             (Value::Date(a), Value::Date(b)) => a == b,
             (Value::Timespan { millis: a }, Value::Timespan { millis: b })
             => a == b,
@@ -180,6 +193,7 @@ impl Value {
             Value::World(w) => out.push_str(w),
             Value::Date(d) => out.push_str(&crate::time_dates::format_date(*d, crate::time_dates::DEFAULT_FORMAT)),
             Value::Console => out.push_str("console"),
+            Value::Entity(e) => out.push_str(&e.kind.replace('_', " ")),
             Value::Timespan { millis } => crate::timespans::push_span(out, *millis),
             Value::List(items) => {
                 if items.is_empty() {

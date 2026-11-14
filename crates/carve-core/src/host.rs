@@ -1,5 +1,5 @@
 use crate::player_flags::PlayerFlag;
-use crate::value::{PlayerRef, Recipient};
+use crate::value::{EntityRef, PlayerRef, Recipient};
 use crate::xp_level::XpField;
 use crate::world_effects::{FxPos, ParticleFx};
 
@@ -300,5 +300,64 @@ pub trait Host {
     /// Set the player on fire for this many ticks; 0 puts the fire out.
     fn set_fire(&mut self, _player: &PlayerRef, _ticks: i32) {
         self.log(LogLevel::Warn, "setting fire is not supported on this server");
+    }
+
+    // ---- entities ----
+
+    /// Spawn an entity (`kind` is a vanilla id like `zombie`). Hosts that can
+    /// return the new entity should; the default runs `/summon`, which cannot,
+    /// so `last spawned entity` stays unset.
+    fn spawn_entity(&mut self, kind: &str, at: &FxPos) -> Option<EntityRef> {
+        self.execute_command(&format!("summon minecraft:{kind} {} {} {}", at.x, at.y, at.z));
+        None
+    }
+
+    /// Kill an entity. The default runs `/kill <uuid>`.
+    fn entity_kill(&mut self, e: &EntityRef) {
+        self.execute_command(&format!("kill {}", e.uuid));
+    }
+
+    /// Remove an entity with no death. The default kills it.
+    fn entity_remove(&mut self, e: &EntityRef) {
+        self.entity_kill(e);
+    }
+
+    /// Position and world name of an entity, `None` when it is gone.
+    fn entity_location(&mut self, _e: &EntityRef) -> Option<(f64, f64, f64, String)> {
+        None
+    }
+
+    /// Custom name of an entity as plain text.
+    fn entity_name(&mut self, _e: &EntityRef) -> Option<String> {
+        None
+    }
+
+    fn entity_health(&mut self, _e: &EntityRef) -> Option<f64> {
+        None
+    }
+
+    /// Set (or with `None`, clear) the custom name of an entity.
+    fn set_entity_name(&mut self, _e: &EntityRef, _name: Option<&str>) {
+        self.log(LogLevel::Warn, "naming entities is not supported on this server");
+    }
+
+    /// Entities (never players) within `radius` blocks of a point, optionally of one type.
+    fn entities_near(&mut self, _at: &FxPos, _radius: f64, _kind: Option<&str>) -> Vec<EntityRef> {
+        Vec::new()
+    }
+
+    /// Velocity of an entity or player (`uuid` of either).
+    fn entity_velocity(&mut self, _e: &EntityRef) -> Option<(f64, f64, f64)> {
+        None
+    }
+
+    /// Set the velocity of an entity or player.
+    fn set_entity_velocity(&mut self, _e: &EntityRef, _v: (f64, f64, f64)) {
+        self.log(LogLevel::Warn, "setting velocity is not supported on this server");
+    }
+
+    /// Teleport an entity. The default runs `/teleport <uuid> x y z`.
+    fn entity_teleport(&mut self, e: &EntityRef, x: f64, y: f64, z: f64, _world: Option<&str>) {
+        self.execute_command(&format!("teleport {} {x} {y} {z}", e.uuid));
     }
 }
