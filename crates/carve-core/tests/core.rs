@@ -844,12 +844,12 @@ fn player_resolved_once_per_slice() {
     );
     let mut h = Mock::with_steve();
     e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
-    assert_eq!(h.resolves, 1, "one lookup before the wait");
+    assert_eq!(h.resolves, 0, "the event player is known before the first wait");
     let tok = h.waits[0].1;
     e.resume(tok, &mut h);
     assert_eq!(
-        h.resolves, 2,
-        "the cache is cleared at the wait, so one more lookup after it"
+        h.resolves, 1,
+        "the cache is cleared at the wait, so one lookup after it"
     );
     assert_eq!(
         h.take(),
@@ -933,4 +933,22 @@ fn chat_filter_example_runs() {
         ]
     );
     assert_eq!(e.vars.get("warnings::steve"), Value::None);
+}
+
+#[test]
+fn quit_player_resolves_until_first_wait() {
+    // In Pumpkin the leave event fires after the player is gone from the server.
+    let mut e = engine(
+        "on quit:
+    broadcast \"%player% left\"
+    wait 1 tick
+    broadcast \"later %player%\"
+",
+    );
+    let mut h = Mock::default(); // nobody online
+    e.fire(EventKind::Quit, EventCtx::player(steve()), &mut h);
+    assert_eq!(h.take(), ["broadcast Steve left"]);
+    let tok = h.waits[0].1;
+    e.resume(tok, &mut h);
+    assert_eq!(h.take(), ["broadcast later <none>"]);
 }

@@ -7,6 +7,16 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Fixed
+
+- `on quit`: `player` was `<none>` because Pumpkin removes the player before
+  the event runs. The event's player now resolves until the first `wait`.
+
+### Added
+
+- In-game test runner (`tests/ingame/`) for a real Pumpkin server. See
+  [in-game testing](docs/ingame-testing.md).
+
 ## [0.1.0] - 2026-11-14
 
 ### Added

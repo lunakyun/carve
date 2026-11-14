@@ -44,6 +44,11 @@ on quit:
     broadcast "%player% left the server"
 ```
 
+Pumpkin fires this event after the player is already gone. Carve still knows
+the player's name until the first `wait`, so `%player%` works. Effects that
+target the player (like `send ... to player`) do nothing, because the player
+can't receive them anymore.
+
 ### `on chat:`
 
 ```

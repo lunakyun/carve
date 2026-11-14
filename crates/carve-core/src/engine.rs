@@ -102,6 +102,13 @@ struct Exec {
 
 impl Exec {
     fn new(trig: Arc<Trigger>, ctx: EventCtx) -> Self {
+        // The event's own player counts as online until the first wait, even if
+        // the server already dropped them (`on quit` runs after the player left).
+        let seen = ctx
+            .player
+            .iter()
+            .map(|p| (p.uuid.clone(), Some(p.name.clone())))
+            .collect();
         Exec {
             trig,
             pc: 0,
@@ -109,7 +116,7 @@ impl Exec {
             ctx,
             waited: false,
             cancelled: false,
-            seen: Vec::new(),
+            seen,
         }
     }
 }
@@ -334,7 +341,8 @@ impl Engine {
 
     fn run(&mut self, ex: &mut Exec, host: &mut dyn Host) -> Step {
         let trig = ex.trig.clone();
-        ex.seen.clear();
+        // `seen` is cleared when a run pauses (see `start`), so a fresh run keeps
+        // the event player seeded in `Exec::new`.
         let mut budget = self.max_instructions;
         while let Some(instr) = trig.code.get(ex.pc) {
             let line = trig.lines.get(ex.pc).copied().unwrap_or(trig.line);
