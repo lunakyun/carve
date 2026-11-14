@@ -1694,3 +1694,58 @@ fn new_event_errors() {
             .contains("only works for click events")
     );
 }
+
+// ---------- v2: Skript compatibility extras ----------
+
+#[test]
+fn default_value_operator() {
+    let out = join(
+        "on join:\n    send \"%{missing} ? \"none\"% %{_n} ? 0 + 1% %5 ? 9%\"\n    set {_x} to {nope} ? {nope2} ? 7\n    send \"%{_x}%\"\n",
+    );
+    assert_eq!(out, ["send Steve none 1 5", "send Steve 7"]);
+}
+
+#[test]
+fn bare_condition_line_stops_when_false() {
+    let out = join(
+        "on join:\n    send \"a\"\n    player is \"Steve\"\n    send \"b\"\n    {nope} is set\n    send \"never\"\n",
+    );
+    assert_eq!(out, ["send Steve a", "send Steve b"]);
+    // in a function it returns
+    let out = join(
+        "function f(n: number):\n    {_n} > 1\n    send \"big\" to {_p}\non join:\n    f(0)\n    send \"after\"\n",
+    );
+    assert_eq!(out, ["send Steve after"]);
+}
+
+#[test]
+fn chance_and_math_helpers() {
+    let out = join(
+        "on join:\n    if chance of 100%:\n        send \"always\"\n    if chance of 0%:\n        send \"never\"\n    send \"%floor(2.7)% %ceil(2.1)% %round(2.5)% %abs(-3)% %sqrt(16)% %min(3, 9)% %max(3, 9)% %mod(-1, 5)%\"\n",
+    );
+    assert_eq!(out, ["send Steve always", "send Steve 2 3 3 3 4 3 9 4"]);
+    assert!(
+        errors_of("on join:\n    send \"%floor(1, 2)%\"\n")[0]
+            .msg
+            .contains("can't understand")
+    );
+}
+
+#[test]
+fn command_aliases_usage_and_executable_by() {
+    let mut e = engine(
+        "command /home <text>:\n    aliases: /h, base\n    usage: &cUse /home <name>\n    executable by: players\n    trigger:\n        send \"home %arg%\"\n",
+    );
+    let mut h = Mock::with_steve();
+    let me = Recipient::Player(steve());
+    assert_eq!(e.table().command_names(), ["base", "h", "home"]);
+    assert_eq!(e.run_command("h", me.clone(), "x", &mut h), CommandOutcome::Ran);
+    assert_eq!(
+        e.run_command("base", me.clone(), "", &mut h),
+        CommandOutcome::Usage("&cUse /home <name>".into())
+    );
+    assert!(
+        matches!(e.run_command("home", Recipient::Console, "x", &mut h), CommandOutcome::Usage(m) if m.contains("Only players"))
+    );
+    assert_eq!(h.take(), ["send Steve home x"]);
+}

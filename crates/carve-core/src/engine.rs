@@ -9,7 +9,7 @@ use crate::compile::{
     TriggerKind, compile_all,
 };
 use crate::error::ScriptError;
-use crate::expr::{BinOp, Expr, Key, Part, Prop, VarRef};
+use crate::expr::{BinOp, Expr, Key, MathFn, Part, Prop, VarRef};
 use crate::host::{Host, LogLevel};
 use crate::value::{PlayerRef, Recipient, Value, format_num, push_num};
 use crate::vars::{Locals, Variables};
@@ -327,6 +327,17 @@ fn build_table(files: &[(String, String)]) -> (ScriptTable, Vec<ScriptError>) {
                         ));
                     } else {
                         table.commands.insert(d.name.clone(), t.clone());
+                        for a in &d.aliases {
+                            if table.commands.contains_key(a) {
+                                errors.push(ScriptError::new(
+                                    &t.file,
+                                    t.line,
+                                    format!("alias /{a} is already a command"),
+                                ));
+                            } else {
+                                table.commands.insert(a.clone(), t.clone());
+                            }
+                        }
                     }
                 }
             }
@@ -430,9 +441,21 @@ impl Engine {
         {
             return CommandOutcome::NoPermission;
         }
+        match (def.players_only, &player) {
+            (Some(true), None) => return CommandOutcome::Usage("Only players can use this command.".into()),
+            (Some(false), Some(_)) => {
+                return CommandOutcome::Usage("Only the console can use this command.".into());
+            }
+            _ => {}
+        }
         let args = match parse_args(def, raw_args, host) {
             Ok(a) => a,
-            Err(msg) => return CommandOutcome::Usage(msg),
+            Err(msg) => {
+                return CommandOutcome::Usage(match &def.usage_msg {
+                    Some(u) if !msg.starts_with("Player '") => u.clone(),
+                    _ => msg,
+                });
+            }
         };
         let mut ctx = EventCtx::console();
         ctx.player = player;
@@ -569,6 +592,19 @@ impl Engine {
                         }
                     }
                     Instr::Call(id, args) => self.enter(*id, args, ex, host).map(|()| None),
+                    Instr::StopUnless(c) => match self.cond(c, ex, host) {
+                        Ok(true) => Ok(None),
+                        Ok(false) => {
+                            if ex.callers.is_empty() {
+                                return Step::Done;
+                            }
+                            if let Some(step) = self.leave(ex, base, Value::None) {
+                                return step;
+                            }
+                            Ok(None)
+                        }
+                        Err(e) => Err(e),
+                    },
                 };
                 match r {
                     Ok(None) => {}
@@ -797,6 +833,10 @@ impl Engine {
                         }
                     }
                 })
+            }
+            Cond::Chance(p) => {
+                let p = self.num(p, ex, host)?;
+                Ok(self.next_random(host) * 100.0 < p)
             }
             Cond::HasItem { player, item, negate } => {
                 let p = self.eval(player, ex, host)?;
@@ -1112,6 +1152,40 @@ impl Engine {
                     }
                     _ => Value::None,
                 }
+            }
+            Expr::Default(a, b) => match self.eval(a, ex, host)? {
+                Value::None => self.eval(b, ex, host)?,
+                v => v,
+            },
+            Expr::Math(f, args) => {
+                let x = match args.first() {
+                    Some(a) => self.num(a, ex, host)?,
+                    None => 0.0,
+                };
+                let y = match args.get(1) {
+                    Some(a) => self.num(a, ex, host)?,
+                    None => 0.0,
+                };
+                Value::Num(match f {
+                    MathFn::Floor => x.floor(),
+                    MathFn::Ceil => x.ceil(),
+                    MathFn::Round => x.round(),
+                    MathFn::Abs => x.abs(),
+                    MathFn::Sqrt => {
+                        if x < 0.0 {
+                            return Err(format!("sqrt of a negative number ({})", format_num(x)));
+                        }
+                        x.sqrt()
+                    }
+                    MathFn::Min => x.min(y),
+                    MathFn::Max => x.max(y),
+                    MathFn::Mod => {
+                        if y == 0.0 {
+                            return Err("mod by zero".into());
+                        }
+                        x.rem_euclid(y)
+                    }
+                })
             }
             Expr::Random(int, a, b) => {
                 let (a, b) = (self.num(a, ex, host)?, self.num(b, ex, host)?);

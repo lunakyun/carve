@@ -200,3 +200,26 @@ if {_c} is not "red" or "blue":
 `x is a or b` is true when x equals any option. `x is not a or b` is true when
 x equals none of them. This is the Skript meaning.
 
+## Chance
+
+### `chance of %number%%`
+
+```
+if chance of 25%:
+    give 1 diamond to player
+```
+
+True that many percent of the time.
+
+## Conditions on their own line
+
+Like in Skript, a condition can stand alone on a line, without `if`. When it
+is false, the trigger stops there (in a function, the function returns):
+
+```
+command /fly:
+    trigger:
+        player has permission "fly"
+        send "You can fly now."
+```
+

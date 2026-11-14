@@ -131,3 +131,26 @@ list. `{list::*}` itself prints as `a, b and c`.
 
 The bounds can come in any order.
 
+## Default values
+
+`a ? b` is `a`, or `b` when `a` is not set:
+
+```
+send "Coins: %{coins::%uuid of player%} ? 0%"
+set {_name} to {nick::%uuid of player%} ? name of player
+```
+
+`?` has the lowest priority, so `{x} ? 0 + 1` means `{x} ? (0 + 1)`.
+
+## Math helpers
+
+| Expression | Result |
+|---|---|
+| `floor(x)`, `ceil(x)`, `round(x)` | Rounded down, up, to the nearest |
+| `abs(x)` | Without the minus sign |
+| `sqrt(x)` | Square root (a negative number is an error) |
+| `min(a, b)`, `max(a, b)` | The smaller or bigger one |
+| `mod(a, b)` | Remainder, always 0 or more: `mod(-1, 5)` is 4 |
+
+A script function with the same name wins over these.
+

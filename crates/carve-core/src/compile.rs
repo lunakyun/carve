@@ -92,6 +92,12 @@ pub struct CommandDef {
     pub permission: Option<String>,
     pub description: Option<String>,
     pub args: Vec<ArgDef>,
+    /// Other names for the command (`aliases: /h, /hi`).
+    pub aliases: Vec<String>,
+    /// Message for wrong arguments instead of the generated usage.
+    pub usage_msg: Option<String>,
+    /// `executable by: players` (true) or `console` (false).
+    pub players_only: Option<bool>,
 }
 
 impl CommandDef {
@@ -140,6 +146,8 @@ pub enum Cond {
         negate: bool,
     },
     IsSet(Expr, bool),
+    /// `chance of 25%`
+    Chance(Expr),
     /// `player has 2 diamonds`, `player's inventory contains stone`.
     HasItem {
         player: Expr,
@@ -241,6 +249,8 @@ pub enum Instr {
     Call(usize, Vec<Expr>),
     /// `return [value]` from a function.
     Return(Option<Expr>),
+    /// A condition on its own line: stop here when it is false (Skript style).
+    StopUnless(Cond),
 }
 
 /// A compiled body: a trigger's or a function's instructions.
@@ -838,6 +848,17 @@ impl Cx<'_> {
     /// `a or b`, `a and b`, `a, b and c`, `(a or b) and c`, `x is a or b`, or one condition.
     fn parse_cond(&self, toks: &[Tok]) -> Option<Cond> {
         let toks = strip_parens(toks);
+        // `chance of 25%`
+        if let [first, second, mid @ .., last] = toks
+            && first.is_lit("chance")
+            && second.is_lit("of")
+            && last.is_lit("%")
+        {
+            return parse_expr(mid, &self.env)
+                .ok()
+                .filter(|e| Ty::Number.accepts(e.ty(&self.env)))
+                .map(Cond::Chance);
+        }
         if let Some(parts) = self.split_conds(toks, &["or"]) {
             return Some(Cond::Any(parts));
         }
@@ -981,6 +1002,11 @@ impl Cx<'_> {
                 Err(Some(e)) if type_err.is_none() => type_err = Some(e),
                 Err(_) => {}
             }
+        }
+        // A condition on its own line stops the trigger when false.
+        if let Some(c) = self.parse_cond(&toks) {
+            self.emit(Instr::StopUnless(c), num);
+            return;
         }
         let type_err = inner_error(&toks, &self.env).or(type_err);
         let srcs: Vec<&'static str> = EFFECT_PATTERNS.iter().map(|(s, _)| *s).collect();
@@ -1256,6 +1282,9 @@ fn parse_command_header(file: &str, num: usize, head: &str) -> Result<CommandDef
         permission: None,
         description: None,
         args,
+        aliases: Vec::new(),
+        usage_msg: None,
+        players_only: None,
     })
 }
 
@@ -1709,6 +1738,36 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                 } else if el.starts_with("permission:") {
                     let v = entry.text.get("permission:".len()..).unwrap_or("").trim();
                     def.permission = Some(v.to_string()).filter(|s| !s.is_empty());
+                } else if el.starts_with("aliases:") {
+                    let v = entry.text.get("aliases:".len()..).unwrap_or("");
+                    def.aliases = v
+                        .split(',')
+                        .map(|a| a.trim().trim_start_matches('/').to_ascii_lowercase())
+                        .filter(|a| !a.is_empty())
+                        .collect();
+                } else if el.starts_with("usage:") {
+                    def.usage_msg = Some(entry.text.get("usage:".len()..).unwrap_or("").trim().to_string());
+                } else if el.starts_with("executable by:") {
+                    let v = el.get("executable by:".len()..).unwrap_or("").trim().to_string();
+                    def.players_only = match v.as_str() {
+                        "players" | "player" => Some(true),
+                        "console" => Some(false),
+                        "players and console" | "console and players" => None,
+                        _ => {
+                            errors.push(ScriptError::new(
+                                file,
+                                entry.num,
+                                "use 'executable by: players' or 'console'",
+                            ));
+                            None
+                        }
+                    };
+                } else if el.starts_with("cooldown") {
+                    errors.push(ScriptError::new(
+                        file,
+                        entry.num,
+                        "command cooldowns are not supported yet; store the time in a variable instead",
+                    ));
                 } else if el.starts_with("description:") {
                     def.description = Some(
                         entry
@@ -1723,7 +1782,7 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                         file,
                         entry.num,
                         format!(
-                            "unknown command entry '{}', use permission:, description: or trigger:",
+                            "unknown command entry '{}', use permission:, description:, aliases:, usage:, executable by: or trigger:",
                             entry.text
                         ),
                     ));

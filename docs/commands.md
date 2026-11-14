@@ -61,6 +61,11 @@ Too many arguments. Usage: /pay <player> <number>
 | `trigger:` | yes | The code that runs. |
 | `permission: node` | no | Only players with this permission can use the command. |
 | `description: text` | no | Shown in the server's command help. Without it, the usage line is used. |
+| `aliases: /h, /hi` | no | Other names for the command. Like the command itself, they need a restart to appear. |
+| `usage: text` | no | Sent instead of the generated usage line when the arguments are wrong. |
+| `executable by: players` | no | `players` or `console`. Others get an error message. |
+
+There is no `cooldown:` entry yet. Store the time in a variable instead.
 
 ## Permissions
 

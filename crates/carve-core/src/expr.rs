@@ -112,6 +112,38 @@ pub enum Expr {
     Attacker,
     /// `clicked block` in click events (an item value of the block type).
     ClickedBlock,
+    /// `a ? b`: a, or b when a is not set.
+    Default(Box<Expr>, Box<Expr>),
+    /// `floor(x)`, `max(a, b)`, ...
+    Math(MathFn, Vec<Expr>),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MathFn {
+    Floor,
+    Ceil,
+    Round,
+    Abs,
+    Sqrt,
+    Min,
+    Max,
+    Mod,
+}
+
+impl MathFn {
+    fn from_name(n: &str) -> Option<(MathFn, usize)> {
+        Some(match n {
+            "floor" => (MathFn::Floor, 1),
+            "ceil" | "ceiling" => (MathFn::Ceil, 1),
+            "round" => (MathFn::Round, 1),
+            "abs" => (MathFn::Abs, 1),
+            "sqrt" => (MathFn::Sqrt, 1),
+            "min" => (MathFn::Min, 2),
+            "max" => (MathFn::Max, 2),
+            "mod" => (MathFn::Mod, 2),
+            _ => return None,
+        })
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -214,6 +246,11 @@ impl Expr {
             Expr::WorldNamed(_) => Ty::World,
             Expr::Distance(..) | Expr::Random(..) | Expr::Damage => Ty::Number,
             Expr::Attacker => Ty::Player,
+            Expr::Math(..) => Ty::Number,
+            Expr::Default(a, b) => {
+                let (x, y) = (a.ty(env), b.ty(env));
+                if x == y { x } else { Ty::Object }
+            }
             Expr::ClickedBlock => Ty::Item,
             Expr::LoopValue(d) => match env.loops.get(*d) {
                 Some(LoopKind::Times) => Ty::Number,
@@ -249,7 +286,7 @@ pub fn parse_expr_span(toks: &[Tok], env: &Env) -> Result<Expr, (String, bool)> 
         env,
         hit_end: Cell::new(false),
     };
-    let e = p.sum().map_err(|m| (m, p.hit_end.get()))?;
+    let e = p.top().map_err(|m| (m, p.hit_end.get()))?;
     if let Some(t) = toks.get(p.pos) {
         return Err((format!("unexpected {}", describe(t)), p.hit_end.get()));
     }
@@ -294,6 +331,16 @@ impl P<'_> {
         } else {
             false
         }
+    }
+
+    /// `a ? b ? c`: the lowest priority, below math.
+    fn top(&mut self) -> Result<Expr, String> {
+        let mut e = self.sum()?;
+        while self.eat_sym("?") {
+            let b = self.sum()?;
+            e = Expr::Default(Box::new(e), Box::new(b));
+        }
+        Ok(e)
     }
 
     fn sum(&mut self) -> Result<Expr, String> {
@@ -627,6 +674,27 @@ impl P<'_> {
                         Ok(Expr::NameOf(Box::new(inner)))
                     }
                     _ if lw.starts_with("loop-") => self.loop_expr(&lw),
+                    _ if matches!(self.peek(), Some(t) if t.is_lit("("))
+                        && !self.has_function(&lw)
+                        && MathFn::from_name(&lw).is_some() =>
+                    {
+                        let (f, n) = MathFn::from_name(&lw).ok_or("unknown math function")?;
+                        self.pos += 1;
+                        let mut args = vec![self.top()?];
+                        while self.eat_sym(",") {
+                            args.push(self.top()?);
+                        }
+                        if !self.eat_sym(")") {
+                            return Err(format!("missing ')' after {lw}("));
+                        }
+                        if args.len() != n {
+                            return Err(format!("{lw}() takes {n} number(s), got {}", args.len()));
+                        }
+                        if args.iter().any(|a| !Ty::Number.accepts(a.ty(self.env))) {
+                            return Err(format!("{lw}() needs numbers"));
+                        }
+                        Ok(Expr::Math(f, args))
+                    }
                     _ if matches!(self.peek(), Some(t) if t.is_lit("(")) => self.call(&w),
                     _ => {
                         if let Some(d) = lw.strip_prefix("arg-") {
@@ -725,7 +793,7 @@ impl P<'_> {
         let mut args = Vec::new();
         if !self.eat_sym(")") {
             loop {
-                args.push(self.sum()?);
+                args.push(self.top()?);
                 if self.eat_sym(")") {
                     break;
                 }
