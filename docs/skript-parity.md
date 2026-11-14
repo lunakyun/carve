@@ -265,7 +265,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Allow Aging
 - ⬜ Apply Bone Meal
 - ⬜ Apply Fishing Lure
-- ⬜ Apply Potion Effect ⭐
+- ✅ Apply Potion Effect ⭐ — `apply [potion of] speed 2 to player for 10 seconds`
 - ⬜ Ban ⭐
 - ⬜ Boss Bar Flags
 - ⬜ Break Block ⭐
@@ -306,7 +306,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Exit — `exit loop`, `stop`
 - ⬜ Expand/Shrink World Border
 - ⬜ Explode Creeper
-- ⬜ Explosion ⭐
+- ✅ Explosion ⭐ — `create explosion of force 3 [with fire] at ...` (plugin API only; Pumpkin has no /explode command)
 - ⬜ Fail Command Execution
 - ⬜ Feed ⭐
 - ⬜ Force Attack
@@ -318,7 +318,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Goat Horns
 - ⬜ Handedness
 - ⬜ Hide Player from Server List
-- ⬜ Ignite/Extinguish
+- ✅ Ignite/Extinguish — `ignite player for 5 seconds`, `set player on fire`, `extinguish player` (players only)
 - ⬜ Insert Entity Storage
 - ⬜ Item Despawn
 - ⬜ Item Tooltips
@@ -328,7 +328,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Knockback
 - ⬜ Launch firework
 - ⬜ Leash entities
-- ⬜ Lightning ⭐
+- ✅ Lightning ⭐ — `strike lightning [effect] at ...`
 - ⬜ Load Server Icon
 - ⬜ Load World
 - ⬜ Locally Suppress Warning
@@ -359,8 +359,8 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Pathfind
 - ⬜ Persistent
 - ⬜ Play Dead
-- ⬜ Play Effect
-- ⬜ Play or Draw an Effect ⭐
+- 🟡 Play Effect — particles only: `play 5 flame particles at player`
+- 🟡 Play or Draw an Effect ⭐ — particles only, with `with spread N` and `with speed N`
 - ⬜ Play Sound ⭐
 - ⬜ Player Info Visibility
 - ⬜ Player Visibility
@@ -369,7 +369,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Potion Effect - Icon
 - ⬜ Potion Effect - Infinite
 - ⬜ Potion Effect - Particles
-- ⬜ Potion Effects ⭐
+- 🟡 Potion Effects ⭐ — `remove all potion effects from player`, `remove speed potion effect from player`; players only
 - ⬜ Pull In Hooked Entity
 - ⬜ Push ⭐
 - ⬜ PvP
@@ -471,7 +471,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Has Permission
 - ⬜ Has Persistent Data Tag
 - ⬜ Has Played Before
-- ⬜ Has Potion Effect ⭐
+- ✅ Has Potion Effect ⭐ — `player has potion effect speed`, `player doesn't have potion effect speed`
 - ⬜ Has Resource Pack
 - ⬜ Has Scoreboard Tag
 - ⬜ Ignition Process

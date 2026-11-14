@@ -176,6 +176,8 @@ pub enum Cond {
         high: Expr,
         negate: bool,
     },
+    /// `player has potion effect speed`.
+    World(Box<crate::world_effects::WorldCond>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -220,6 +222,8 @@ pub enum Effect {
     ListAdd(VarRef, Expr),
     /// `remove x from {list::*}`: remove every item equal to x.
     ListRemove(VarRef, Expr),
+    /// Lightning, explosions, particles, potion effects, fire.
+    World(Box<crate::world_effects::WorldFx>),
 }
 
 /// What a `loop` goes over.
@@ -885,6 +889,9 @@ impl Cx<'_> {
     }
 
     fn single_cond(&self, toks: &[Tok]) -> Option<Cond> {
+        if let Some(c) = crate::world_effects::parse_cond(toks, &self.env) {
+            return Some(c);
+        }
         let mut memo = Memo::default();
         registry().conditions.iter().find_map(|p| {
             p.matches_memo(toks, &self.env, &mut memo)
@@ -976,6 +983,17 @@ impl Cx<'_> {
         };
         if self.call_stmt(num, &toks) {
             return;
+        }
+        match crate::world_effects::parse_effect(&toks, &self.env) {
+            Ok(Some(eff)) => {
+                self.emit(Instr::Eff(eff), num);
+                return;
+            }
+            Ok(None) => {}
+            Err(msg) => {
+                self.err(num, msg);
+                return;
+            }
         }
         let mut type_err = None;
         let mut memo = Memo::default();
