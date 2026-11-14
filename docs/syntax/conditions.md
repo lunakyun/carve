@@ -19,7 +19,9 @@ Rules:
 - `else if` and `else` must come right after the `if` block (or another
   `else if` block) at the same indent.
 - `if` blocks can be nested.
-- There is no `and` or `or` yet. Nest `if` blocks instead.
+- Conditions can be combined with `and`, `or`, commas and brackets. See
+  [combining conditions](#combining-conditions).
+- `while` loops use the same conditions (see [loops](loops.md)).
 
 Each heading below is the exact pattern Carve matches. See
 [effects](effects.md) for how to read a pattern.
@@ -102,3 +104,76 @@ if player does not have permission "carve:builder":
 A permission without a namespace gets Carve's namespace: `"vip"` checks
 `carve:vip`. If the player is offline, both conditions are false. See
 [commands](../commands.md#permissions) for how permissions are registered.
+
+## Text
+
+All text checks ignore upper and lower case, like Skript.
+
+### `%text% contains %text%`
+
+### `%text% (does not|doesn't) contain %text%`
+
+```
+if message contains "discord":
+    send "Our Discord is on the website."
+if {banned::*} contains name of player:
+    kick player
+```
+
+With a list on the left (`{list::*}`), this checks whether one of the items
+equals the text exactly (ignoring case), not whether it appears inside one.
+
+### `%text% starts with %text%`
+
+### `%text% (does not|doesn't) start with %text%`
+
+### `%text% ends with %text%`
+
+### `%text% (does not|doesn't) end with %text%`
+
+```
+if message starts with "!":
+    cancel event
+```
+
+## Ranges
+
+### `%number% is between %number% and %number%`
+
+### `%number% is not between %number% and %number%`
+
+```
+if {level::%player%} is between 10 and 20:
+    send "You can enter the mid-level arena."
+```
+
+Both ends count as inside. The two bounds can come in any order. Text that is
+not a number is never between anything.
+
+## Combining conditions
+
+```
+if {coins::%player%} >= 10 and player has permission "shop":
+if {team::%player%} is "red" or {team::%player%} is "blue":
+if {a} is set, {b} is set and {c} is set:
+if ({x} > 1 or {y} > 1) and {z} is 0:
+```
+
+- `and` (or a comma list ending in `and`) needs every part to be true.
+- `or` needs at least one part to be true.
+- `and` binds tighter than `or`: `a or b and c` means `a or (b and c)`.
+  Use brackets to say something else.
+- Parts are checked left to right, and checking stops as soon as the answer is
+  known.
+
+### One value, several options
+
+```
+if {class::%player%} is "sniper" or "scout":
+if {_n} is 1, 2 or 3:
+if {_c} is not "red" or "blue":
+```
+
+`x is a or b` is true when x equals any option. `x is not a or b` is true when
+x equals none of them. This is the Skript meaning.
+

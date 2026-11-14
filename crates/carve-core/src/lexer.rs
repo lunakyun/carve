@@ -58,6 +58,10 @@ pub fn lex(s: &str) -> Result<Vec<Tok>, String> {
             while i < n && (c[i].is_alphanumeric() || c[i] == '_') {
                 i += 1;
             }
+            // Contractions like `doesn't`, `isn't`.
+            if i + 1 < n && c[i] == '\'' && c[i + 1] == 't' && (i + 2 >= n || !c[i + 2].is_alphanumeric()) {
+                i += 2;
+            }
             let mut word: String = c[start..i].iter().collect();
             // `arg-1`, `arg-2`: one word.
             if word.eq_ignore_ascii_case("arg") && i + 1 < n && c[i] == '-' && c[i + 1].is_ascii_digit() {

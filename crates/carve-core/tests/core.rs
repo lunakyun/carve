@@ -192,8 +192,17 @@ fn every_condition_pattern_parses() {
         "{x} < 5",
         r#"player has permission "a.b""#,
         r#"player does not have permission "a.b""#,
+        "{x} is between 1 and 5",
+        "{x} is not between 1 and 5",
+        r#"{x} contains "a""#,
+        r#"{x} does not contain "a""#,
+        r#"{x} doesn't contain "a""#,
+        r#"{x} starts with "a""#,
+        r#"{x} does not start with "a""#,
+        r#"{x} ends with "a""#,
+        r#"{x} doesn't end with "a""#,
     ];
-    assert_eq!(conds.len(), CONDITION_PATTERNS.len() + 2);
+    assert_eq!(conds.len(), CONDITION_PATTERNS.len() + 3);
     for c in conds {
         let src = format!("on join:\n    if {c}:\n        send \"y\"\n");
         let errs = errors_of(&src);
@@ -1151,4 +1160,78 @@ fn loop_errors() {
             .msg
             .contains("can't add a text")
     );
+}
+
+// ---------- v2: conditions ----------
+
+fn cond_true(c: &str) -> bool {
+    let out = join(&format!(
+        "on join:\n    set {{_t}} to \"Hello World\"\n    set {{_n}} to 5\n    if {c}:\n        send \"yes\"\n"
+    ));
+    !out.is_empty()
+}
+
+#[test]
+fn and_or_parentheses() {
+    assert!(cond_true("{_n} is 5 and {_t} contains \"world\""));
+    assert!(!cond_true("{_n} is 5 and {_t} contains \"moon\""));
+    assert!(cond_true("{_n} is 4 or {_n} is 5"));
+    assert!(!cond_true("{_n} is 4 or {_n} is 6"));
+    assert!(cond_true("{_n} > 1, {_n} < 9 and {_t} is set"));
+    assert!(cond_true("({_n} is 4 or {_n} is 5) and {_t} starts with \"hel\""));
+    assert!(!cond_true(
+        "({_n} is 4 or {_n} is 6) and {_t} starts with \"hel\""
+    ));
+    assert!(
+        cond_true("{_n} is 1 or {_n} is 2 and {_n} is 3 or {_n} is 5"),
+        "and binds tighter than or"
+    );
+}
+
+#[test]
+fn value_alternatives() {
+    assert!(cond_true("{_n} is 1, 3 or 5"));
+    assert!(cond_true("{_t} is \"x\" or \"hello world\""));
+    assert!(!cond_true("{_t} is not \"x\" or \"hello world\""));
+    assert!(cond_true("{_t} is not \"x\" or \"y\""));
+    assert!(cond_true("{_n} is 2 or 5 or {_t} is \"nope\""));
+}
+
+#[test]
+fn text_conditions_ignore_case() {
+    assert!(cond_true("{_t} contains \"WORLD\""));
+    assert!(cond_true("{_t} does not contain \"moon\""));
+    assert!(cond_true("{_t} starts with \"hello\""));
+    assert!(cond_true("{_t} doesn't start with \"world\""));
+    assert!(cond_true("{_t} ends with \"WORLD\""));
+    assert!(!cond_true("{_t} does not end with \"world\""));
+    assert!(cond_true("player contains \"ste\""));
+}
+
+#[test]
+fn between_and_mixed_with_and() {
+    assert!(cond_true("{_n} is between 1 and 5"));
+    assert!(cond_true("{_n} is between 9 and 5"), "bounds in any order");
+    assert!(!cond_true("{_n} is between 6 and 9"));
+    assert!(cond_true("{_n} is not between 6 and 9"));
+    assert!(cond_true("{_n} is between 1 and 9 and {_t} is set"));
+    assert!(
+        !cond_true("{_t} is between 1 and 9"),
+        "text is never between numbers"
+    );
+}
+
+#[test]
+fn list_contains() {
+    let out = join(
+        "on join:\n    add \"Apple\" to {_l::*}\n    add \"pear\" to {_l::*}\n    if {_l::*} contains \"apple\":\n        send \"a\"\n    if {_l::*} contains \"app\":\n        send \"WRONG\"\n",
+    );
+    assert_eq!(out, ["send Steve a"]);
+}
+
+#[test]
+fn bad_conditions_still_explain() {
+    let e = &errors_of("on join:\n    if {_n} is 1 andd {_n} is 2:\n        send \"x\"\n")[0];
+    assert!(e.msg.contains("can't understand this condition"), "{}", e.msg);
+    assert!(!e.suggestions.is_empty());
 }

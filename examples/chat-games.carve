@@ -1,0 +1,24 @@
+# Small chat helpers that use combined conditions.
+on chat:
+    if message starts with "!" and message does not contain " ":
+        cancel event
+        if message is "!help" or "!commands":
+            send "&eTry !discord, !rules or !roll" to player
+        else if message is "!discord":
+            send "&9Our Discord link is on the website." to player
+        else if message is "!rules":
+            send "&cBe nice, no griefing, no cheating." to player
+        else:
+            send "&7Unknown command. Type !help" to player
+    else if message contains "lag" and {lagwarned::%player%} is not set:
+        set {lagwarned::%player%} to true
+        send "&7If the server lags, tell an admin with /report." to player
+
+command /level <number>:
+    trigger:
+        if arg-1 is between 1 and 10:
+            send "&aBeginner level %arg-1%."
+        else if arg-1 is between 11 and 50 or player has permission "veteran":
+            send "&6Veteran level %arg-1%."
+        else:
+            send "&cThat level is out of range."

@@ -99,8 +99,41 @@ pub enum CmpOp {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Cond {
     Cmp(Expr, CmpOp, Expr),
-    HasPerm { player: Expr, node: Expr, negate: bool },
+    HasPerm {
+        player: Expr,
+        node: Expr,
+        negate: bool,
+    },
     IsSet(Expr, bool),
+    /// Every part is true (`a and b`).
+    All(Vec<Cond>),
+    /// At least one part is true (`a or b`).
+    Any(Vec<Cond>),
+    /// `x is a or b`: equal to any of the values (negated: equal to none).
+    AnyOf {
+        value: Expr,
+        options: Vec<Expr>,
+        negate: bool,
+    },
+    Text {
+        left: Expr,
+        op: TextOp,
+        right: Expr,
+        negate: bool,
+    },
+    Between {
+        value: Expr,
+        low: Expr,
+        high: Expr,
+        negate: bool,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TextOp {
+    Contains,
+    StartsWith,
+    EndsWith,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -206,6 +239,14 @@ pub enum CondKind {
     Lt,
     HasPerm,
     NotHasPerm,
+    Contains,
+    NotContains,
+    StartsWith,
+    NotStartsWith,
+    EndsWith,
+    NotEndsWith,
+    Between,
+    NotBetween,
 }
 
 /// Effect patterns, tried in order (more specific first).
@@ -245,6 +286,20 @@ pub const CONDITION_PATTERNS: &[(&str, CondKind)] = &[
     ("%number% < %number%", CondKind::Lt),
     ("%player% has permission %text%", CondKind::HasPerm),
     ("%player% does not have permission %text%", CondKind::NotHasPerm),
+    ("%number% is between %number% and %number%", CondKind::Between),
+    (
+        "%number% is not between %number% and %number%",
+        CondKind::NotBetween,
+    ),
+    ("%text% contains %text%", CondKind::Contains),
+    ("%text% (does not|doesn't) contain %text%", CondKind::NotContains),
+    ("%text% starts with %text%", CondKind::StartsWith),
+    (
+        "%text% (does not|doesn't) start with %text%",
+        CondKind::NotStartsWith,
+    ),
+    ("%text% ends with %text%", CondKind::EndsWith),
+    ("%text% (does not|doesn't) end with %text%", CondKind::NotEndsWith),
 ];
 
 struct Registry {
@@ -589,6 +644,9 @@ impl Cx<'_> {
                 return None;
             }
         };
+        if let Some(c) = self.parse_cond(&toks) {
+            return Some(c);
+        }
         let mut type_err = None;
         let mut memo = Memo::default();
         for p in &registry().conditions {
@@ -612,6 +670,103 @@ impl Cx<'_> {
         e.suggestions = suggest(&toks, &srcs);
         self.errors.push(e);
         None
+    }
+
+    /// `a or b`, `a and b`, `a, b and c`, `(a or b) and c`, `x is a or b`, or one condition.
+    fn parse_cond(&self, toks: &[Tok]) -> Option<Cond> {
+        let toks = strip_parens(toks);
+        if let Some(parts) = self.split_conds(toks, &["or"]) {
+            return Some(Cond::Any(parts));
+        }
+        if let Some(parts) = self.split_conds(toks, &["and", ","]) {
+            return Some(Cond::All(parts));
+        }
+        if let Some(c) = self.single_cond(toks) {
+            return Some(c);
+        }
+        self.alternatives(toks)
+    }
+
+    fn single_cond(&self, toks: &[Tok]) -> Option<Cond> {
+        let mut memo = Memo::default();
+        registry().conditions.iter().find_map(|p| {
+            p.matches_memo(toks, &self.env, &mut memo)
+                .ok()
+                .map(|caps| build_cond(p.kind, caps))
+        })
+    }
+
+    /// Split at top-level separators so that every part is a condition.
+    /// Tries split points in order, so `x is between 1 and 5 and y is 2` works.
+    fn split_conds(&self, toks: &[Tok], seps: &[&str]) -> Option<Vec<Cond>> {
+        let cuts = top_level(toks, seps);
+        if cuts.is_empty() {
+            return None;
+        }
+        self.split_from(toks, &cuts, 0, seps)
+    }
+
+    fn split_from(&self, toks: &[Tok], cuts: &[usize], start: usize, seps: &[&str]) -> Option<Vec<Cond>> {
+        for (i, &cut) in cuts.iter().enumerate() {
+            if cut <= start {
+                continue;
+            }
+            let Some(first) = toks.get(start..cut).and_then(|t| self.parse_part(t, seps)) else {
+                continue;
+            };
+            let rest_cuts = cuts.get(i + 1..).unwrap_or_default();
+            let tail_start = cut + 1;
+            // The rest as one condition, or split further.
+            if let Some(last) = toks.get(tail_start..).and_then(|t| self.parse_part(t, seps)) {
+                return Some(vec![first, last]);
+            }
+            if let Some(mut more) = self.split_from(toks, rest_cuts, tail_start, seps) {
+                more.insert(0, first);
+                return Some(more);
+            }
+        }
+        None
+    }
+
+    /// A part of an `or` may itself hold `and`; a part of an `and` is one condition.
+    fn parse_part(&self, toks: &[Tok], seps: &[&str]) -> Option<Cond> {
+        if toks.is_empty() {
+            return None;
+        }
+        if seps.contains(&"or") {
+            if let Some(parts) = self.split_conds(strip_parens(toks), &["and", ","]) {
+                return Some(Cond::All(parts));
+            }
+        }
+        let inner = strip_parens(toks);
+        if inner.len() != toks.len() {
+            return self.parse_cond(inner);
+        }
+        self.single_cond(toks).or_else(|| self.alternatives(toks))
+    }
+
+    /// `x is "a" or "b"`, `x is not 1, 2 or 3`.
+    fn alternatives(&self, toks: &[Tok]) -> Option<Cond> {
+        let pos = toks
+            .iter()
+            .position(|t| t.is_lit("is") || t.is_lit("=") || t.is_lit("!="))?;
+        let (negate, rest_at) = match toks.get(pos) {
+            Some(t) if t.is_lit("!=") => (true, pos + 1),
+            Some(t) if t.is_lit("=") => (false, pos + 1),
+            _ if toks.get(pos + 1).is_some_and(|t| t.is_lit("not")) => (true, pos + 2),
+            _ => (false, pos + 1),
+        };
+        let value = parse_expr(toks.get(..pos)?, &self.env).ok()?;
+        let rest = toks.get(rest_at..)?;
+        let mut options = Vec::new();
+        for part in rest.split(|t| t.is_lit("or") || t.is_lit(",") || t.is_lit("and")) {
+            options.push(parse_expr(part, &self.env).ok()?);
+        }
+        (options.len() >= 2).then_some(Cond::AnyOf {
+            value,
+            options,
+            negate,
+        })
     }
 
     fn effect(&mut self, num: usize, text: &str) {
@@ -666,6 +821,51 @@ impl Cx<'_> {
     }
 }
 
+/// `( ... )` around the whole token list, removed.
+fn strip_parens(toks: &[Tok]) -> &[Tok] {
+    let mut t = toks;
+    while let (Some(first), Some(last)) = (t.first(), t.last()) {
+        if !(first.is_lit("(") && last.is_lit(")")) {
+            break;
+        }
+        // The first '(' must close at the very end.
+        let mut depth = 0i32;
+        let mut closes_at_end = true;
+        for (i, tok) in t.iter().enumerate() {
+            if tok.is_lit("(") {
+                depth += 1;
+            } else if tok.is_lit(")") {
+                depth -= 1;
+                if depth == 0 && i + 1 != t.len() {
+                    closes_at_end = false;
+                    break;
+                }
+            }
+        }
+        if !closes_at_end {
+            break;
+        }
+        t = t.get(1..t.len() - 1).unwrap_or_default();
+    }
+    t
+}
+
+/// Positions of separator words outside brackets.
+fn top_level(toks: &[Tok], seps: &[&str]) -> Vec<usize> {
+    let mut depth = 0i32;
+    let mut out = Vec::new();
+    for (i, t) in toks.iter().enumerate() {
+        if t.is_lit("(") {
+            depth += 1;
+        } else if t.is_lit(")") {
+            depth -= 1;
+        } else if depth == 0 && seps.iter().any(|s| t.is_lit(s)) {
+            out.push(i);
+        }
+    }
+    out
+}
+
 /// A broken text template or variable name inside the line, if any.
 fn inner_error(toks: &[Tok], env: &Env) -> Option<String> {
     toks.iter().find_map(|t| match t {
@@ -712,6 +912,37 @@ fn build_cond(kind: CondKind, mut c: Vec<Option<Capture>>) -> Cond {
                 player: a,
                 node: b,
                 negate: true,
+            };
+        }
+        CondKind::Between | CondKind::NotBetween => {
+            let high = take_expr(&mut c, 2).unwrap_or(Expr::Num(0.0));
+            return Cond::Between {
+                value: a,
+                low: b,
+                high,
+                negate: kind == CondKind::NotBetween,
+            };
+        }
+        CondKind::Contains
+        | CondKind::NotContains
+        | CondKind::StartsWith
+        | CondKind::NotStartsWith
+        | CondKind::EndsWith
+        | CondKind::NotEndsWith => {
+            let op = match kind {
+                CondKind::Contains | CondKind::NotContains => TextOp::Contains,
+                CondKind::StartsWith | CondKind::NotStartsWith => TextOp::StartsWith,
+                _ => TextOp::EndsWith,
+            };
+            let negate = matches!(
+                kind,
+                CondKind::NotContains | CondKind::NotStartsWith | CondKind::NotEndsWith
+            );
+            return Cond::Text {
+                left: a,
+                op,
+                right: b,
+                negate,
             };
         }
     };

@@ -6,6 +6,9 @@ use std::collections::HashMap;
 use crate::expr::{Env, Expr, Ty, VarRef, parse_expr_span, parse_varref};
 use crate::lexer::Tok;
 
+/// The apostrophe, for `doesn't` and possessive `'s` in patterns.
+const APOS: char = 0x27 as char;
+
 /// Parse results for one line, shared by every pattern tried on that line.
 /// Backtracking asks for the same token span many times; this parses each
 /// span once.
@@ -170,9 +173,14 @@ fn parse_seq(
             _ => {
                 let start = *pos;
                 if ch.is_alphanumeric() || ch == '_' || ch == '-' {
-                    while *pos < c.len() && (c[*pos].is_alphanumeric() || c[*pos] == '_' || c[*pos] == '-') {
+                    while *pos < c.len()
+                        && (c[*pos].is_alphanumeric() || c[*pos] == '_' || c[*pos] == '-' || c[*pos] == APOS)
+                    {
                         *pos += 1;
                     }
+                } else if ch == APOS && c.get(*pos + 1) == Some(&'s') {
+                    // possessive `'s`
+                    *pos += 2;
                 } else {
                     *pos += 1;
                     // two-char symbols

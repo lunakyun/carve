@@ -5,7 +5,8 @@ use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
 use crate::compile::{
-    ArgTy, CmpOp, CommandDef, Cond, Effect, EventKind, Instr, LoopSrc, Trigger, TriggerKind, compile_file,
+    ArgTy, CmpOp, CommandDef, Cond, Effect, EventKind, Instr, LoopSrc, TextOp, Trigger, TriggerKind,
+    compile_file,
 };
 use crate::error::ScriptError;
 use crate::expr::{BinOp, Expr, Key, Part, VarRef};
@@ -536,6 +537,73 @@ impl Engine {
                         }
                     }
                 })
+            }
+            Cond::All(parts) => {
+                for p in parts {
+                    if !self.cond(p, ex, host)? {
+                        return Ok(false);
+                    }
+                }
+                Ok(true)
+            }
+            Cond::Any(parts) => {
+                for p in parts {
+                    if self.cond(p, ex, host)? {
+                        return Ok(true);
+                    }
+                }
+                Ok(false)
+            }
+            Cond::AnyOf {
+                value,
+                options,
+                negate,
+            } => {
+                let v = self.eval(value, ex, host)?;
+                let mut hit = false;
+                for o in options {
+                    if v.loose_eq(&self.eval(o, ex, host)?) {
+                        hit = true;
+                        break;
+                    }
+                }
+                Ok(hit != *negate)
+            }
+            Cond::Between {
+                value,
+                low,
+                high,
+                negate,
+            } => {
+                let v = self.eval(value, ex, host)?;
+                let (lo, hi) = (self.num(low, ex, host)?, self.num(high, ex, host)?);
+                let (lo, hi) = if lo <= hi { (lo, hi) } else { (hi, lo) };
+                Ok(to_num_opt(&v).is_some_and(|n| n >= lo && n <= hi) != *negate)
+            }
+            Cond::Text {
+                left,
+                op,
+                right,
+                negate,
+            } => {
+                let needle = self.text(right, ex, host)?.to_lowercase();
+                // `{list::*} contains x` checks the items.
+                if let (Expr::Var(v), TextOp::Contains) = (left, op)
+                    && v.list
+                {
+                    let items = self.list_items(v, ex, host)?;
+                    let hit = items
+                        .iter()
+                        .any(|(_, item)| item.to_string().to_lowercase() == needle);
+                    return Ok(hit != *negate);
+                }
+                let hay = self.text(left, ex, host)?.to_lowercase();
+                let hit = match op {
+                    TextOp::Contains => hay.contains(&needle),
+                    TextOp::StartsWith => hay.starts_with(&needle),
+                    TextOp::EndsWith => hay.ends_with(&needle),
+                };
+                Ok(hit != *negate)
             }
             Cond::IsSet(e, want) => {
                 let v = self.eval(e, ex, host)?;
