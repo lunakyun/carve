@@ -6,6 +6,7 @@ use crate::lexer::{Tok, lex};
 use crate::list_literals::ElemSel;
 use crate::list_ops::{Agg, ListSrc, parse_src_at};
 use crate::value::format_num;
+use crate::w2_expressions_2::W2Op;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Ty {
@@ -147,6 +148,8 @@ pub enum Expr {
     Replaced(Box<Expr>, Box<Expr>, Box<Expr>, bool),
     /// Text functions: case, substring, characters, index of, trimmed, reversed.
     TextFn(crate::text_case_substring::TextFn, Vec<Expr>),
+    /// Rare expressions of `w2_expressions_2`, boxed so `Expr` stays small.
+    W2(Box<crate::w2_expressions_2::W2>),
     /// `indices of {x::*}`: the index of every item, as text.
     Indices(VarRef),
     /// `first element of {x::*}`, `element 2 of {x::*}`.
@@ -337,6 +340,7 @@ impl Expr {
             Expr::Length(_) => Ty::Number,
             Expr::TextFn(f, _) if f.returns_number() => Ty::Number,
             Expr::TextFn(..) => Ty::Text,
+            Expr::W2(w) => w.op.ty(&w.args, env),
             Expr::Indices(_) => Ty::Text,
             Expr::Date(op, _) => match op {
                 DateOp::Now | DateOp::FromUnix => Ty::Date,
@@ -605,6 +609,11 @@ impl P<'_> {
             if self.pos + 2 >= self.toks.len() {
                 self.hit_end.set(true);
             }
+            if lw == "compass" && matches!(self.toks.get(self.pos + 2), Some(t) if t.is_lit("target")) {
+                self.pos += 3;
+                e = Self::w2(W2Op::CompassTarget, vec![e]);
+                continue;
+            }
             let (prop, extra) = match crate::health_food::words_from(self.toks, self.pos + 1) {
                 Some((p, n)) => (p, n - 1),
                 None => match lw.as_str() {
@@ -809,6 +818,9 @@ impl P<'_> {
                 if let Some(span) = self.span_literal(n) {
                     return Ok(span);
                 }
+                if let Some(off) = self.w2_offset(n)? {
+                    return Ok(off);
+                }
                 // `2 diamonds`: an amount of an item.
                 if self.pos >= self.toks.len() {
                     self.hit_end.set(true);
@@ -844,6 +856,9 @@ impl P<'_> {
             }
             Tok::Word(w) => {
                 let lw = w.to_ascii_lowercase();
+                if let Some(e) = self.w2_fn(&lw)? {
+                    return Ok(e);
+                }
                 if let Some(e) = self.text_fn(&lw)? {
                     return Ok(e);
                 }
@@ -1279,6 +1294,133 @@ impl P<'_> {
         format!("expected '{usage}'")
     }
 
+    fn w2(op: W2Op, args: Vec<Expr>) -> Expr {
+        Expr::W2(Box::new(crate::w2_expressions_2::W2 { op, args }))
+    }
+
+    /// `3 blocks above loc`, `2 meters north of player's location`. The cursor is
+    /// after the number. `None` when the words after it are not this form.
+    fn w2_offset(&mut self, n: f64) -> Result<Option<Expr>, String> {
+        let word = |k: usize| match self.toks.get(self.pos + k) {
+            Some(Tok::Word(w)) => Some(w.to_ascii_lowercase()),
+            _ => None,
+        };
+        if self.pos + 1 >= self.toks.len() {
+            self.hit_end.set(true);
+        }
+        if !matches!(word(0).as_deref(), Some("block" | "blocks" | "meter" | "meters" | "metre" | "metres")) {
+            return Ok(None);
+        }
+        let Some((dx, dy, dz)) = word(1).as_deref().and_then(crate::w2_expressions_2::direction) else {
+            return Ok(None);
+        };
+        self.pos += 2;
+        if self.is_word(0, "of") {
+            self.pos += 1;
+        }
+        let loc = self.primary()?;
+        if !matches!(loc.ty(self.env), Ty::Location | Ty::Player | Ty::Object) {
+            return Err("expected a location after 'blocks above/below/north/south/east/west'".into());
+        }
+        Ok(Some(Self::w2(W2Op::Offset(dx, dy, dz), vec![Expr::Num(n), loc])))
+    }
+
+    /// `codepoint of`, `character from codepoint`, `characters between`,
+    /// `difference between`, `chunk x of`, `compass target of`, `death message`,
+    /// `damage cause` and `chat recipients`. `None` when the words do not fit.
+    fn w2_fn(&mut self, lw: &str) -> Result<Option<Expr>, String> {
+        match lw {
+            "codepoint" | "unicode" if self.is_word(0, "of") => {
+                self.pos += 1;
+                let a = self.text_arg("codepoint of")?;
+                Ok(Some(Self::w2(W2Op::Codepoint, vec![a])))
+            }
+            "code" if self.is_word(0, "point") && self.is_word(1, "of") => {
+                self.pos += 2;
+                let a = self.text_arg("code point of")?;
+                Ok(Some(Self::w2(W2Op::Codepoint, vec![a])))
+            }
+            "character" | "char"
+                if self.is_word(0, "from")
+                    && (self.is_word(1, "codepoint")
+                        || self.is_word(1, "unicode")
+                        || (self.is_word(1, "code") && self.is_word(2, "point"))) =>
+            {
+                self.pos += if self.is_word(1, "code") { 3 } else { 2 };
+                let a = self.sum()?;
+                if !Ty::Number.accepts(a.ty(self.env)) {
+                    return Err("'character from codepoint' needs a number".into());
+                }
+                Ok(Some(Self::w2(W2Op::FromCodepoint, vec![a])))
+            }
+            "characters" | "alphanumeric" | "all" => {
+                let mut words = vec![lw.to_string()];
+                for k in 0..3 {
+                    match self.toks.get(self.pos + k) {
+                        Some(Tok::Word(w)) => words.push(w.to_ascii_lowercase()),
+                        _ => break,
+                    }
+                }
+                let mut i = usize::from(words[0] == "all");
+                let alnum = words.get(i).map(String::as_str) == Some("alphanumeric");
+                i += usize::from(alnum);
+                if words.get(i).map(String::as_str) != Some("characters")
+                    || words.get(i + 1).map(String::as_str) != Some("between")
+                {
+                    return Ok(None);
+                }
+                self.pos += i + 1;
+                let a = self.text_arg("characters between")?;
+                if !(self.is_word(0, "and") || self.is_word(0, "to")) {
+                    return Err(self.expected("characters between <text> and <text>"));
+                }
+                self.pos += 1;
+                let b = self.text_arg("characters between")?;
+                Ok(Some(Self::w2(W2Op::CharsBetween { alnum }, vec![a, b])))
+            }
+            "difference" if self.is_word(0, "between") => {
+                self.pos += 1;
+                let a = self.sum()?;
+                if !self.is_word(0, "and") {
+                    return Err(self.expected("difference between <a> and <b>"));
+                }
+                self.pos += 1;
+                let b = self.sum()?;
+                Ok(Some(Self::w2(W2Op::Difference, vec![a, b])))
+            }
+            "chunk" if (self.is_word(0, "x") || self.is_word(0, "z")) && self.is_word(1, "of") => {
+                let op = if self.is_word(0, "x") { W2Op::ChunkX } else { W2Op::ChunkZ };
+                self.pos += 2;
+                let l = self.primary()?;
+                if !matches!(l.ty(self.env), Ty::Location | Ty::Player | Ty::Object) {
+                    return Err("'chunk x of' needs a location".into());
+                }
+                Ok(Some(Self::w2(op, vec![l])))
+            }
+            "compass" if self.is_word(0, "target") && self.is_word(1, "of") => {
+                self.pos += 2;
+                let p = self.primary()?;
+                Ok(Some(Self::w2(W2Op::CompassTarget, vec![p])))
+            }
+            "death" if self.is_word(0, "message") && self.env.has_attacker && !self.env.has_damage => {
+                if self.env.in_function {
+                    return Err("'death message' is not available inside a function".into());
+                }
+                self.pos += 1;
+                Ok(Some(Self::w2(W2Op::DeathMessage, Vec::new())))
+            }
+            "damage" if self.is_word(0, "cause") && self.env.has_damage && !self.env.in_function => {
+                self.pos += 1;
+                Ok(Some(Self::w2(W2Op::DamageCause, Vec::new())))
+            }
+            "chat" if self.is_word(0, "recipients") && self.env.has_message && !self.env.in_function => {
+                self.pos += 1;
+                Ok(Some(Self::w2(W2Op::ChatRecipients, Vec::new())))
+            }
+            _ => Ok(None),
+        }
+    }
+
     /// Text functions that start with a word (`uppercase of x`, `substring of x from 1 to 3`,
     /// `first 3 characters of x`, `index of "a" in x`, `nl`, `trimmed x`, `reversed x`).
     /// Returns `None` when the words are not one of these forms.
@@ -1568,7 +1710,7 @@ impl P<'_> {
     /// `None` when it is a single plain value (not a list at all).
     fn try_agg(&mut self, agg: Agg) -> Option<Result<Expr, String>> {
         match parse_src_at(self.toks, self.pos, self.env, false) {
-            Ok((ListSrc::One(_), _)) if agg == Agg::Size => None,
+            Ok((ListSrc::One(e), _)) if agg == Agg::Size && !matches!(e, Expr::W2(_)) => None,
             Ok((s, end)) => {
                 self.pos = end;
                 Some(Ok(Expr::ListAgg(agg, Box::new(s))))

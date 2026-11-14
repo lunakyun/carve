@@ -663,33 +663,33 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Burn/Cook Time
 - ✅ Case Text ⭐ — `uppercase of x`, `x in lower case`, `capitalized x`, `x in proper case`
 - ⬜ Center of World Border
-- ⬜ Character Codepoint
-- ⬜ Character from Codepoint
-- ⬜ Characters Between
-- ⬜ Chat Format
+- ✅ Character Codepoint — `codepoint of "a"`, `unicode of x`, `code point of x`
+- ✅ Character from Codepoint — `character from codepoint 65`, `char from unicode n`
+- ✅ Characters Between — `characters between "a" and "e"`, `alphanumeric characters between ...`, `loop` works
+- ⛔ Chat Format — the chat event has no format field in the plugin API
 - ✅ Chat Message — `message`
-- ⬜ Chat Recipients
-- ⬜ Choice Argument
-- ⬜ Chunk
+- ✅ Chat Recipients — `chat recipients` in `on chat`
+- ⛔ Choice Argument — command arguments only support text, number and player so far
+- 🟡 Chunk — `chunk x of loc`, `chunk z of loc` (numbers only, no chunk value)
 - 🟡 Clicked Block/Entity/Inventory/Slot — `clicked block` only
 - 🟡 Color from Hex Code ⭐ — `<#rrggbb>`, `&#rrggbb` and `&x&r...` in text; no `rgb(...)` color value
-- ⬜ Color of
+- ⛔ Color of — item and entity colours are not reachable (item-meta and entities topics)
 - ✅ Colored / Uncolored ⭐ — `colored`, `uncolored`
 - ✅ Colored/Formatted/Uncolored — `colored`, `formatted`, `uncolored`, `unformatted`
 - ✅ Command — args, permission, aliases, usage, executable by; no cooldown; new commands need a restart
-- ⬜ Command Block Command
+- ⛔ Command Block Command — needs block entity handles; no block values yet
 - ✅ Command Executor — `executor`, same as `sender`
-- ⬜ Command Info
+- ⛔ Command Info — the plugin API cannot list or inspect other commands
 - ✅ Command Sender ⭐ — `sender`, `command sender`, `sender is a player`
-- ⬜ Compass Target
-- ⬜ Config
+- ✅ Compass Target — `compass target of player`, `player's compass target`, `set compass target of player to loc`, `reset compass target of player`
+- ⛔ Config — Skript's config.sk does not exist in Carve
 - ✅ Console ⭐ — `console`, `send ... to console`, `sender is console`
 - ⬜ Consumed Item
 - ✅ Coordinate — `x/y/z of`, `x-coordinate of`
 - ⬜ Create Boss Bar
-- ⬜ Create Loot Context
+- ⛔ Create Loot Context — no loot table API in the plugin API
 - ⬜ Create WorldBorder
-- ⬜ Created Damage Source
+- ⛔ Created Damage Source — the plugin API has damage types but no damage source object
 - ⬜ Created Potion Effect
 - ⬜ Creature/Entity/Player/Projectile/Villager/Powered Creeper/etc.
 - ⬜ Cursor Slot
@@ -698,35 +698,35 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Damage — read only
 - ⬜ Damage Amount of World Border
 - ⬜ Damage Buffer of World Border
-- ⬜ Damage Cause
-- ⬜ Damage Source
-- ⬜ Damage Source - Causing Entity
-- ⬜ Damage Source - Damage Location
-- ⬜ Damage Source - Damage Type
-- ⬜ Damage Source - Direct Entity
-- ⬜ Damage Source - Food Exhaustion
-- ⬜ Damage Source - Source Location
+- 🟡 Damage Cause — `damage cause` in `on damage` (read only, like `fall`, `player_attack`)
+- ⛔ Damage Source — the plugin API has damage types but no damage source object
+- ⛔ Damage Source - Causing Entity — the plugin API has damage types but no damage source object
+- ⛔ Damage Source - Damage Location — the plugin API has damage types but no damage source object
+- ⛔ Damage Source - Damage Type — the plugin API has damage types but no damage source object
+- ⛔ Damage Source - Direct Entity — the plugin API has damage types but no damage source object
+- ⛔ Damage Source - Food Exhaustion — the plugin API has damage types but no damage source object
+- ⛔ Damage Source - Source Location — the plugin API has damage types but no damage source object
 - ⬜ Damage Value/Durability
 - ⬜ Damaged Item
 - ✅ Date Ago/Later ⭐ — `5 minutes ago`, `2 hours later`
-- ⬜ De-queue Queue (Experimental)
-- ⬜ Death Message ⭐
-- ⬜ Debug Info
+- ⛔ De-queue Queue (Experimental) — Carve has no queue type
+- 🟡 Death Message ⭐ — `death message` in `on death` (read only; WIT lets us read it)
+- ⛔ Debug Info — Skript internals only, no meaning in Carve
 - ✅ Default Value — `a ? b`
-- ⬜ Difference
+- ✅ Difference — `difference between 3 and 10`, also dates and timespans
 - ⬜ Difficulty
-- ⬜ Direction
-- ⬜ Display Billboard
-- ⬜ Display Brightness
-- ⬜ Display Glow Color Override
-- ⬜ Display Height/Width
-- ⬜ Display Interpolation Delay/Duration
+- 🟡 Direction — `3 blocks above/below/north/south/east/west [of] loc`; no direction type
+- ⛔ Display Billboard — needs entity values, which Carve does not have yet
+- ⛔ Display Brightness — needs entity values, which Carve does not have yet
+- ⛔ Display Glow Color Override — needs entity values, which Carve does not have yet
+- ⛔ Display Height/Width — needs entity values, which Carve does not have yet
+- ⛔ Display Interpolation Delay/Duration — needs entity values, which Carve does not have yet
 - ⬜ Display Name ⭐
-- ⬜ Display Shadow Radius/Strength
-- ⬜ Display Teleport Duration
-- ⬜ Display Transformation Rotation
-- ⬜ Display Transformation Scale/Translation
-- ⬜ Display View Range
+- ⛔ Display Shadow Radius/Strength — needs entity values, which Carve does not have yet
+- ⛔ Display Teleport Duration — needs entity values, which Carve does not have yet
+- ⛔ Display Transformation Rotation — needs entity values, which Carve does not have yet
+- ⛔ Display Transformation Scale/Translation — needs entity values, which Carve does not have yet
+- ⛔ Display View Range — needs entity values, which Carve does not have yet
 - ✅ Distance
 - ⬜ Dropped Item Owner
 - ⬜ Dropped Item Thrower

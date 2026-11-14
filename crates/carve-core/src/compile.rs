@@ -225,6 +225,7 @@ pub enum Effect {
     },
     Heal(Expr),
     Hf(Box<crate::health_food::HfEffect>),
+    W2(crate::w2_expressions_2::W2Eff, Box<(Expr, Expr)>),
     SetHealth(Expr, Expr),
     SetGamemode(Expr, Expr),
     /// Experience change; the two expressions are in pattern order.
@@ -354,6 +355,7 @@ pub enum EffKind {
     Broadcast,
     Heal,
     Hf(crate::health_food::HfOp),
+    W2(crate::w2_expressions_2::W2Eff),
     SetHealth,
     SetGamemode,
     Xp(crate::xp_level::XpOp),
@@ -539,6 +541,11 @@ fn registry() -> &'static Registry {
                     .iter()
                     .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
             )
+            .chain(
+                crate::w2_expressions_2::EFFECT_PATTERNS
+                    .iter()
+                    .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
+            )
             .collect(),
         conditions: crate::senders::SENDER_CONDITION_PATTERNS
             .iter()
@@ -559,6 +566,7 @@ pub fn check_registry() -> Result<(), String> {
         .chain(crate::sounds::SOUND_PATTERNS)
         .chain(TEXT_EFFECT_PATTERNS)
         .chain(crate::health_food::EFFECT_PATTERNS)
+        .chain(crate::w2_expressions_2::EFFECT_PATTERNS)
     {
         Pattern::new(s, *k)?;
     }
@@ -1254,6 +1262,7 @@ impl Cx<'_> {
             .iter()
             .chain(TEXT_EFFECT_PATTERNS)
             .chain(crate::health_food::EFFECT_PATTERNS)
+            .chain(crate::w2_expressions_2::EFFECT_PATTERNS)
             .map(|(s, _)| *s)
             .collect();
         let mut e = ScriptError::new(
@@ -1448,6 +1457,7 @@ fn build_effect(kind: EffKind, mut c: Vec<Option<Capture>>) -> Option<Effect> {
         },
         EffKind::Broadcast => Effect::Broadcast(take_expr(c, 0)?),
         EffKind::Hf(op) => return crate::health_food::build(op, c),
+        EffKind::W2(k) => return crate::w2_expressions_2::build(k, c),
         EffKind::Heal => Effect::Heal(take_expr(c, 0)?),
         EffKind::SetHealth => Effect::SetHealth(take_expr(c, 0)?, take_expr(c, 1)?),
         EffKind::SetGamemode => Effect::SetGamemode(take_expr(c, 0)?, take_expr(c, 1)?),
