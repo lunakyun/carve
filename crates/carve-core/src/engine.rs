@@ -910,6 +910,17 @@ impl Engine {
                 .and_then(|p| host.health(&p))
                 .map(Value::Num)
                 .unwrap_or(Value::None),
+            Prop::Level | Prop::Xp | Prop::LevelProgress => {
+                let field = match prop {
+                    Prop::Level => crate::xp_level::XpField::Level,
+                    Prop::Xp => crate::xp_level::XpField::Points,
+                    _ => crate::xp_level::XpField::Progress,
+                };
+                online(v, &mut ex.seen, host)
+                    .and_then(|p| host.xp_get(&p, field))
+                    .map(Value::Num)
+                    .unwrap_or(Value::None)
+            }
         }
     }
 
@@ -1790,6 +1801,13 @@ impl Engine {
                 };
                 if let Some(p) = self.player(p, ex, host)? {
                     host.set_gamemode(&p, mode);
+                }
+            }
+            Effect::Xp(op, a, b) => {
+                let (pe, ne) = if op.num_first { (b, a) } else { (a, b) };
+                let n = self.num(ne, ex, host)?;
+                if let Some(p) = self.player(pe, ex, host)? {
+                    crate::xp_level::apply(host, &p, op.field, op.mode, n);
                 }
             }
             Effect::Kill(p) => {

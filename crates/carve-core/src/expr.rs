@@ -197,6 +197,9 @@ pub enum Prop {
     Tool,
     Health,
     Gamemode,
+    Level,
+    Xp,
+    LevelProgress,
     X,
     Y,
     Z,
@@ -212,6 +215,8 @@ impl Prop {
             "tool" | "held" => Prop::Tool,
             "health" => Prop::Health,
             "gamemode" => Prop::Gamemode,
+            "level" => Prop::Level,
+            "xp" | "exp" | "experience" => Prop::Xp,
             "x" => Prop::X,
             "y" => Prop::Y,
             "z" => Prop::Z,
@@ -225,7 +230,7 @@ impl Prop {
             Prop::World => Ty::World,
             Prop::Uuid | Prop::Name | Prop::Gamemode => Ty::Text,
             Prop::Tool => Ty::Item,
-            Prop::Health | Prop::X | Prop::Y | Prop::Z => Ty::Number,
+            Prop::Health | Prop::Level | Prop::Xp | Prop::LevelProgress | Prop::X | Prop::Y | Prop::Z => Ty::Number,
         }
     }
 
@@ -517,7 +522,13 @@ impl P<'_> {
             let lw = w.to_ascii_lowercase();
             let prop = match lw.as_str() {
                 "inventory" => return Err("use 'player's inventory contains <item>' as a condition".into()),
-                _ => Prop::from_word(&lw).ok_or_else(|| format!("unknown property '{w}'"))?,
+                _ => match self.toks.get(self.pos + 2) {
+                    Some(Tok::Word(w2)) if crate::xp_level::two_word(&lw, &w2.to_ascii_lowercase()).is_some() => {
+                        self.pos += 1;
+                        crate::xp_level::two_word(&lw, &w2.to_ascii_lowercase()).unwrap_or(Prop::Level)
+                    }
+                    _ => Prop::from_word(&lw).ok_or_else(|| format!("unknown property '{w}'"))?,
+                },
             };
             self.pos += 2;
             if prop == Prop::Tool && matches!(self.peek(), Some(t) if t.is_lit("item")) {
@@ -922,8 +933,19 @@ impl P<'_> {
                         }
                         Ok(Expr::Distance(Box::new(a), Box::new(b)))
                     }
-                    "location" | "position" | "world" | "uuid" | "tool" | "health" | "gamemode" | "x" | "y"
-                    | "z" | "held"
+                    "level" | "total"
+                        if matches!(self.peek(), Some(Tok::Word(w2)) if crate::xp_level::two_word(&lw, &w2.to_ascii_lowercase()).is_some()) =>
+                    {
+                        let prop = match self.peek() {
+                            Some(Tok::Word(w2)) => crate::xp_level::two_word(&lw, &w2.to_ascii_lowercase()),
+                            _ => None,
+                        }
+                        .ok_or("unknown property")?;
+                        self.pos += 1;
+                        self.prop_of(prop)
+                    }
+                    "location" | "position" | "world" | "uuid" | "tool" | "health" | "gamemode" | "x" | "y" | "z"
+                    | "held" | "level" | "xp" | "exp" | "experience"
                         if matches!(self.peek(), Some(t) if t.is_lit("of") || t.is_lit("item")) =>
                     {
                         let prop = Prop::from_word(&lw).ok_or("unknown property")?;

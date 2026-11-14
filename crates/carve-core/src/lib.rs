@@ -21,6 +21,7 @@ pub mod senders;
 pub mod player_flags;
 pub mod value;
 pub mod vars;
+pub mod xp_level;
 
 pub use compile::{CommandDef, EventKind};
 pub use engine::{CommandOutcome, Engine, EventCtx, FireOutcome, LoadSummary};

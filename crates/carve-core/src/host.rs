@@ -1,5 +1,6 @@
 use crate::player_flags::PlayerFlag;
 use crate::value::{PlayerRef, Recipient};
+use crate::xp_level::XpField;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LogLevel {
@@ -125,5 +126,32 @@ pub trait Host {
     /// Hosts that cannot tell answer `false`.
     fn player_flag(&mut self, _player: &PlayerRef, _flag: PlayerFlag) -> bool {
         false
+    }
+
+    /// Current level, total experience points, or level progress (0 to 1).
+    fn xp_get(&mut self, _player: &PlayerRef, _field: XpField) -> Option<f64> {
+        None
+    }
+
+    /// Set level, total points, or level progress. The default uses the
+    /// `experience` command, which cannot set progress.
+    fn xp_set(&mut self, player: &PlayerRef, field: XpField, value: f64) {
+        let unit = match field {
+            XpField::Level => "levels",
+            XpField::Points => "points",
+            XpField::Progress => return,
+        };
+        self.execute_command(&format!("experience set {} {} {unit}", player.name, value as i64));
+    }
+
+    /// Add (or with a negative amount, remove) levels or points. Only used
+    /// when `xp_get` is unavailable.
+    fn xp_add(&mut self, player: &PlayerRef, field: XpField, amount: f64) {
+        let unit = match field {
+            XpField::Level => "levels",
+            XpField::Points => "points",
+            XpField::Progress => return,
+        };
+        self.execute_command(&format!("experience add {} {} {unit}", player.name, amount as i64));
     }
 }
