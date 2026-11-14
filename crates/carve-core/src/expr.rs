@@ -83,6 +83,17 @@ pub enum Expr {
     LoopIter(usize),
     /// Number of items in a list variable (`size of {x::*}`).
     Size(VarRef),
+    /// Call of a script function, by id, with its arguments.
+    Call(usize, Vec<Expr>),
+}
+
+/// A function's parameters and return type, known to every script at load.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Sig {
+    pub name: String,
+    /// (local variable key like `_name`, type, has a default value)
+    pub params: Vec<(String, Ty, bool)>,
+    pub ret: Option<Ty>,
 }
 
 /// What a loop goes over. Decides the type of `loop-value`.
@@ -103,6 +114,10 @@ pub struct Env {
     pub trigger_name: String,
     /// Loops around the current line, outermost first (`while` not included).
     pub loops: Vec<LoopKind>,
+    /// Every function of every script, by id.
+    pub functions: std::sync::Arc<Vec<Sig>>,
+    /// Inside a function body: no event values (`player`, `message`, `arg`).
+    pub in_function: bool,
 }
 
 impl Expr {
@@ -111,6 +126,7 @@ impl Expr {
             Expr::Num(_) | Expr::Neg(_) | Expr::Bin(..) | Expr::LoopIter(_) | Expr::Size(_) => Ty::Number,
             Expr::LoopIndex(_) => Ty::Text,
             Expr::Bool(_) => Ty::Boolean,
+            Expr::Call(id, _) => env.functions.get(*id).and_then(|s| s.ret).unwrap_or(Ty::Object),
             Expr::LoopValue(d) => match env.loops.get(*d) {
                 Some(LoopKind::Times) => Ty::Number,
                 Some(LoopKind::Players) => Ty::Player,
@@ -281,9 +297,12 @@ impl P<'_> {
                     "the" => self.primary(),
                     "true" | "yes" => Ok(Expr::Bool(true)),
                     "false" | "no" => Ok(Expr::Bool(false)),
+                    "player" if self.env.in_function => {
+                        Err("'player' doesn't exist inside a function; pass the player as a parameter".into())
+                    }
                     "player" => Ok(Expr::Player),
                     "message" => {
-                        if self.env.has_message {
+                        if self.env.has_message && !self.env.in_function {
                             Ok(Expr::Message)
                         } else {
                             Err(format!(
@@ -323,6 +342,7 @@ impl P<'_> {
                         Ok(Expr::NameOf(Box::new(inner)))
                     }
                     _ if lw.starts_with("loop-") => self.loop_expr(&lw),
+                    _ if matches!(self.peek(), Some(t) if t.is_lit("(")) => self.call(&w),
                     _ => {
                         if let Some(d) = lw.strip_prefix("arg-") {
                             let i: usize = d.parse().map_err(|_| format!("bad argument '{w}'"))?;
@@ -396,8 +416,65 @@ impl P<'_> {
         })
     }
 
+    /// `name(a, b)`: a call of a script function. The `(` is next.
+    fn call(&mut self, name: &str) -> Result<Expr, String> {
+        let env = self.env;
+        let Some(id) = env
+            .functions
+            .iter()
+            .position(|s| s.name.eq_ignore_ascii_case(name))
+        else {
+            return Err(format!("unknown function '{name}'"));
+        };
+        self.pos += 1; // (
+        let mut args = Vec::new();
+        if !self.eat_sym(")") {
+            loop {
+                args.push(self.sum()?);
+                if self.eat_sym(")") {
+                    break;
+                }
+                if !self.eat_sym(",") {
+                    return Err(format!("expected ',' or ')' in the call of {name}"));
+                }
+            }
+        }
+        let sig = env.functions.get(id).ok_or("unknown function")?;
+        let required = sig.params.iter().filter(|p| !p.2).count();
+        if args.len() < required || args.len() > sig.params.len() {
+            return Err(format!(
+                "{}() takes {} argument(s), got {}",
+                sig.name,
+                if required == sig.params.len() {
+                    required.to_string()
+                } else {
+                    format!("{required} to {}", sig.params.len())
+                },
+                args.len()
+            ));
+        }
+        for (i, (a, (pname, pty, _))) in args.iter().zip(&sig.params).enumerate() {
+            let got = a.ty(env);
+            if !pty.accepts(got) {
+                return Err(format!(
+                    "argument {} ({}) of {}() must be a {}, got a {}",
+                    i + 1,
+                    pname.trim_start_matches('_'),
+                    sig.name,
+                    pty.name(),
+                    got.name()
+                ));
+            }
+        }
+        Ok(Expr::Call(id, args))
+    }
+
     fn arg(&self, i: usize) -> Result<Expr, String> {
-        let n = self.env.arg_types.len();
+        let n = if self.env.in_function {
+            0
+        } else {
+            self.env.arg_types.len()
+        };
         if n == 0 {
             return Err(format!(
                 "'arg' only exists in commands with arguments, not in {}",

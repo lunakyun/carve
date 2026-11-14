@@ -4,7 +4,7 @@ use std::sync::{Arc, OnceLock};
 
 use crate::blocks::{Line, parse_blocks};
 use crate::error::ScriptError;
-use crate::expr::{Env, Expr, LoopKind, Ty, VarRef, parse_expr, parse_template, parse_varref};
+use crate::expr::{Env, Expr, LoopKind, Sig, Ty, VarRef, parse_expr, parse_template, parse_varref};
 use crate::lexer::{Tok, lex};
 use crate::pattern::{Capture, Memo, Pattern, closest};
 
@@ -191,8 +191,22 @@ pub enum Instr {
     LoopNext(usize),
     /// `exit loop`: end the innermost loop and jump to the target.
     LoopBreak(usize),
-    /// `stop`: end the whole run.
+    /// `stop`: end the trigger, or return from a function.
     Stop,
+    /// A function call used as a statement (its result is dropped).
+    Call(usize, Vec<Expr>),
+    /// `return [value]` from a function.
+    Return(Option<Expr>),
+}
+
+/// A compiled body: a trigger's or a function's instructions.
+#[derive(Debug, Clone)]
+pub struct Code {
+    pub file: Arc<str>,
+    pub line: usize,
+    pub instrs: Vec<Instr>,
+    /// Source line of each instruction.
+    pub lines: Vec<usize>,
 }
 
 #[derive(Debug, Clone)]
@@ -200,9 +214,25 @@ pub struct Trigger {
     pub file: Arc<str>,
     pub line: usize,
     pub kind: TriggerKind,
-    pub code: Vec<Instr>,
-    /// Source line of each instruction.
-    pub lines: Vec<usize>,
+    pub code: Arc<Code>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Function {
+    pub sig: Sig,
+    /// Default value of each parameter, if any.
+    pub defaults: Vec<Option<Expr>>,
+    pub code: Arc<Code>,
+}
+
+/// Everything compiled from a set of files.
+#[derive(Debug, Default)]
+pub struct Compiled {
+    /// Triggers per file that compiled without errors.
+    pub files: Vec<(String, Vec<Trigger>)>,
+    /// By function id; `None` when the function's body had errors.
+    pub functions: Vec<Option<Arc<Function>>>,
+    pub errors: Vec<ScriptError>,
 }
 
 // ---- syntax registry ----
@@ -388,6 +418,8 @@ struct Cx<'a> {
     file: &'a str,
     env: Env,
     is_command: bool,
+    /// Return type of the function being compiled (`Some(None)`: returns nothing).
+    func_ret: Option<Option<Ty>>,
     code: Vec<Instr>,
     lines: Vec<usize>,
     errors: Vec<ScriptError>,
@@ -505,6 +537,9 @@ impl Cx<'_> {
                     lp.breaks.push(at);
                 }
             }
+            ["return", ..] => {
+                self.return_stmt(num, lower);
+            }
             ["continue"] | ["continue", "loop"] => {
                 let Some(next) = self.loops.last().map(|l| l.next) else {
                     self.err(num, "'continue' only works inside a loop");
@@ -513,6 +548,73 @@ impl Cx<'_> {
                 self.emit(Instr::Jump(next), num);
             }
             _ => return false,
+        }
+        true
+    }
+
+    fn return_stmt(&mut self, num: usize, lower: &str) {
+        let Some(ret) = self.func_ret else {
+            self.err(
+                num,
+                "'return' only works inside a function (use 'stop' to end a trigger)",
+            );
+            return;
+        };
+        let rest = lower.get(6..).unwrap_or("").trim();
+        if rest.is_empty() {
+            if ret.is_some() {
+                self.err(num, "this function must return a value");
+            }
+            self.emit(Instr::Return(None), num);
+            return;
+        }
+        let Some(want) = ret else {
+            self.err(
+                num,
+                "this function has no return type; add ':: <type>' to its first line",
+            );
+            return;
+        };
+        let toks = match lex(rest) {
+            Ok(t) => t,
+            Err(e) => {
+                self.err(num, e);
+                return;
+            }
+        };
+        match parse_expr(&toks, &self.env) {
+            Ok(e) if want.accepts(e.ty(&self.env)) => {
+                self.emit(Instr::Return(Some(e)), num);
+            }
+            Ok(e) => self.err(
+                num,
+                format!(
+                    "this function returns a {}, not a {}",
+                    want.name(),
+                    e.ty(&self.env).name()
+                ),
+            ),
+            Err(e) => self.err(num, format!("can't understand the returned value: {e}")),
+        }
+    }
+
+    /// A line that is just `name(args)`.
+    fn call_stmt(&mut self, num: usize, toks: &[Tok]) -> bool {
+        let is_call = match toks {
+            [Tok::Word(w), Tok::Sym("("), .., Tok::Sym(")")] => {
+                self.env.functions.iter().any(|f| f.name.eq_ignore_ascii_case(w))
+            }
+            _ => false,
+        };
+        if !is_call {
+            return false;
+        }
+        match parse_expr(toks, &self.env) {
+            Ok(Expr::Call(id, args)) => {
+                self.emit(Instr::Call(id, args), num);
+            }
+            Ok(_) => return false,
+            Err(e) => self.err(num, e),
         }
         true
     }
@@ -777,6 +879,9 @@ impl Cx<'_> {
                 return;
             }
         };
+        if self.call_stmt(num, &toks) {
+            return;
+        }
         let mut type_err = None;
         let mut memo = Memo::default();
         for p in &registry().effects {
@@ -784,6 +889,10 @@ impl Cx<'_> {
                 Ok(caps) => {
                     if p.kind == EffKind::Cancel && self.is_command {
                         self.err(num, "commands have no event to cancel");
+                        return;
+                    }
+                    if p.kind == EffKind::Cancel && self.func_ret.is_some() {
+                        self.err(num, "functions have no event to cancel");
                         return;
                     }
                     if matches!(p.kind, EffKind::Add | EffKind::Remove) {
@@ -1055,13 +1164,324 @@ fn parse_command_header(file: &str, num: usize, head: &str) -> Result<CommandDef
     })
 }
 
+/// Compile one file on its own (no functions from other files).
 pub fn compile_file(file: &str, src: &str) -> Result<Vec<Trigger>, Vec<ScriptError>> {
-    let tree = parse_blocks(file, src)?;
+    let mut c = compile_all(&[(file.to_string(), src.to_string())]);
+    if c.errors.is_empty() {
+        Ok(c.files.pop().map(|(_, t)| t).unwrap_or_default())
+    } else {
+        Err(c.errors)
+    }
+}
+
+/// Parsed file: its lines after options were filled in.
+struct Parsed {
+    name: String,
+    tree: Vec<Line>,
+}
+
+/// Compile a set of files together, so functions can be called across files.
+pub fn compile_all(files: &[(String, String)]) -> Compiled {
+    let mut out = Compiled::default();
+    // Pass 1: block structure, options and every function signature.
+    let mut parsed: Vec<Parsed> = Vec::new();
+    let mut bad_files: Vec<String> = Vec::new();
+    let mut sigs: Vec<Sig> = Vec::new();
+    let mut func_src: Vec<(usize, usize)> = Vec::new(); // (parsed index, top line index)
+    let mut defaults_src: Vec<Vec<Option<String>>> = Vec::new();
+    for (name, src) in files {
+        let tree = match parse_blocks(name, src) {
+            Ok(t) => t,
+            Err(e) => {
+                out.errors.extend(e);
+                bad_files.push(name.clone());
+                continue;
+            }
+        };
+        // Most files have no options; skip the extra pass for them.
+        let has_options = src.contains("{@") || tree.iter().any(|t| t.text.eq_ignore_ascii_case("options:"));
+        let tree = match if has_options {
+            apply_options(name, tree)
+        } else {
+            Ok(tree)
+        } {
+            Ok(t) => t,
+            Err(e) => {
+                out.errors.extend(e);
+                bad_files.push(name.clone());
+                continue;
+            }
+        };
+        for (ti, top) in tree.iter().enumerate() {
+            if top.head().to_ascii_lowercase().starts_with("function ") {
+                match parse_function_header(name, top.num, top.head()) {
+                    Ok((sig, defs)) => {
+                        if let Some(prev) = sigs.iter().position(|s| s.name.eq_ignore_ascii_case(&sig.name)) {
+                            let _ = prev;
+                            out.errors.push(ScriptError::new(
+                                name,
+                                top.num,
+                                format!("function {}() is defined twice", sig.name),
+                            ));
+                            continue;
+                        }
+                        sigs.push(sig);
+                        defaults_src.push(defs);
+                        func_src.push((parsed.len(), ti));
+                    }
+                    Err(e) => out.errors.push(e),
+                }
+            }
+        }
+        parsed.push(Parsed {
+            name: name.clone(),
+            tree,
+        });
+    }
+    let sigs = Arc::new(sigs);
+
+    // Pass 2: function bodies.
+    for (id, &(pi, ti)) in func_src.iter().enumerate() {
+        let (Some(p), Some(sig)) = (parsed.get(pi), sigs.get(id)) else {
+            out.functions.push(None);
+            continue;
+        };
+        let Some(top) = p.tree.get(ti) else {
+            out.functions.push(None);
+            continue;
+        };
+        let env = Env {
+            trigger_name: format!("function {}()", sig.name),
+            functions: sigs.clone(),
+            in_function: true,
+            ..Env::default()
+        };
+        // Defaults are plain values: compile them without parameters in scope.
+        let mut defaults = Vec::new();
+        let mut errs = Vec::new();
+        for d in defaults_src.get(id).map(Vec::as_slice).unwrap_or_default() {
+            defaults.push(match d {
+                Some(text) => match lex(text).and_then(|t| parse_expr(&t, &env)) {
+                    Ok(e) => Some(e),
+                    Err(e) => {
+                        errs.push(ScriptError::new(
+                            &p.name,
+                            top.num,
+                            format!("bad default value '{text}': {e}"),
+                        ));
+                        None
+                    }
+                },
+                None => None,
+            });
+        }
+        let mut cx = Cx {
+            file: &p.name,
+            env,
+            is_command: false,
+            func_ret: Some(sig.ret),
+            code: Vec::new(),
+            lines: Vec::new(),
+            errors: errs,
+            loops: Vec::new(),
+        };
+        cx.block(&top.children);
+        if cx.errors.is_empty() {
+            out.functions.push(Some(Arc::new(Function {
+                sig: sig.clone(),
+                defaults,
+                code: Arc::new(Code {
+                    file: Arc::from(p.name.as_str()),
+                    line: top.num,
+                    instrs: cx.code,
+                    lines: cx.lines,
+                }),
+            })));
+        } else {
+            out.errors.extend(cx.errors);
+            bad_files.push(p.name.clone());
+            out.functions.push(None);
+        }
+    }
+
+    // Pass 3: triggers.
+    for p in &parsed {
+        let (trigs, errs) = compile_triggers(&p.name, &p.tree, &sigs);
+        if errs.is_empty() && !bad_files.contains(&p.name) {
+            out.files.push((p.name.clone(), trigs));
+        } else {
+            out.errors.extend(errs);
+        }
+    }
+    out
+}
+
+/// Replace `{@name}` with the values from the file's `options:` blocks.
+fn apply_options(file: &str, tree: Vec<Line>) -> Result<Vec<Line>, Vec<ScriptError>> {
+    let mut opts: Vec<(String, String)> = Vec::new();
+    let mut rest = Vec::new();
+    let mut errors = Vec::new();
+    for top in tree {
+        if top.text.eq_ignore_ascii_case("options:") {
+            for o in &top.children {
+                match o.text.split_once(':') {
+                    Some((k, v)) if !k.trim().is_empty() => {
+                        opts.push((k.trim().to_ascii_lowercase(), v.trim().to_string()))
+                    }
+                    _ => errors.push(ScriptError::new(file, o.num, "options look like 'name: value'")),
+                }
+            }
+        } else {
+            rest.push(top);
+        }
+    }
+    fn fill(line: &mut Line, opts: &[(String, String)], file: &str, errors: &mut Vec<ScriptError>) {
+        while let Some(start) = line.text.find("{@") {
+            let Some(len) = line.text.get(start..).and_then(|t| t.find('}')) else {
+                errors.push(ScriptError::new(
+                    file,
+                    line.num,
+                    "unclosed option: missing '}' after '{@'",
+                ));
+                break;
+            };
+            let name = line
+                .text
+                .get(start + 2..start + len)
+                .unwrap_or("")
+                .trim()
+                .to_ascii_lowercase();
+            match opts.iter().find(|(k, _)| *k == name) {
+                Some((_, v)) => line.text.replace_range(start..start + len + 1, v),
+                None => {
+                    errors.push(ScriptError::new(
+                        file,
+                        line.num,
+                        format!("unknown option {{@{name}}}"),
+                    ));
+                    break;
+                }
+            }
+        }
+        for c in &mut line.children {
+            fill(c, opts, file, errors);
+        }
+    }
+    for l in &mut rest {
+        fill(l, &opts, file, &mut errors);
+    }
+    if errors.is_empty() { Ok(rest) } else { Err(errors) }
+}
+
+pub fn type_from_name(name: &str) -> Option<Ty> {
+    Some(match name.trim().to_ascii_lowercase().as_str() {
+        "text" | "string" => Ty::Text,
+        "number" | "integer" | "int" => Ty::Number,
+        "player" | "offline player" | "offlineplayer" => Ty::Player,
+        "boolean" | "bool" => Ty::Boolean,
+        "object" => Ty::Object,
+        _ => return None,
+    })
+}
+
+/// Split at commas that are outside quotes and brackets.
+fn split_commas(s: &str) -> Vec<&str> {
+    let mut out = Vec::new();
+    let (mut depth, mut in_str, mut last) = (0i32, false, 0usize);
+    for (i, c) in s.char_indices() {
+        match c {
+            '"' => in_str = !in_str,
+            '(' | '{' if !in_str => depth += 1,
+            ')' | '}' if !in_str => depth -= 1,
+            ',' if !in_str && depth == 0 => {
+                out.push(s.get(last..i).unwrap_or(""));
+                last = i + 1;
+            }
+            _ => {}
+        }
+    }
+    out.push(s.get(last..).unwrap_or(""));
+    out
+}
+
+/// `function name(a: text, b: number = 5) :: text` (the trailing `:` already removed).
+fn parse_function_header(
+    file: &str,
+    num: usize,
+    head: &str,
+) -> Result<(Sig, Vec<Option<String>>), ScriptError> {
+    let err = |m: String| ScriptError::new(file, num, m);
+    let rest = head.get("function".len()..).unwrap_or("").trim();
+    let (name, after) = rest
+        .split_once('(')
+        .ok_or_else(|| err("expected 'function name(...)'".into()))?;
+    let name = name.trim();
+    if name.is_empty() || !name.chars().all(|c| c.is_alphanumeric() || c == '_') {
+        return Err(err(format!(
+            "bad function name '{name}': use letters, digits and _"
+        )));
+    }
+    let close = after
+        .rfind(')')
+        .ok_or_else(|| err("missing ')' in the function header".into()))?;
+    let params_src = after.get(..close).unwrap_or("");
+    let tail = after.get(close + 1..).unwrap_or("").trim();
+    let ret = if tail.is_empty() {
+        None
+    } else {
+        let t = tail.strip_prefix("::").ok_or_else(|| {
+            err(format!(
+                "unexpected '{tail}' after the parameters (use ':: type' for the return type)"
+            ))
+        })?;
+        Some(type_from_name(t).ok_or_else(|| err(format!("unknown return type '{}'", t.trim())))?)
+    };
+    let mut params = Vec::new();
+    let mut defaults = Vec::new();
+    if !params_src.trim().is_empty() {
+        for p in split_commas(params_src) {
+            let (decl, default) = match p.split_once('=') {
+                Some((d, v)) => (d, Some(v.trim().to_string())),
+                None => (p, None),
+            };
+            let (pname, pty) = decl.split_once(':').ok_or_else(|| {
+                err(format!(
+                    "parameter '{}' needs a type, like 'name: text'",
+                    decl.trim()
+                ))
+            })?;
+            let pname = pname.trim().to_ascii_lowercase();
+            let ty = type_from_name(pty).ok_or_else(|| {
+                err(format!("unknown type '{}' for parameter {pname} (use text, number, player, boolean or object; lists are not supported)", pty.trim()))
+            })?;
+            if default.is_none() && defaults.iter().any(Option::is_some) {
+                return Err(err(format!(
+                    "parameter {pname} needs a default, because the one before it has one"
+                )));
+            }
+            params.push((format!("_{pname}"), ty, default.is_some()));
+            defaults.push(default);
+        }
+    }
+    Ok((
+        Sig {
+            name: name.to_string(),
+            params,
+            ret,
+        },
+        defaults,
+    ))
+}
+
+fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Trigger>, Vec<ScriptError>) {
     let file_arc: Arc<str> = Arc::from(file);
     let mut triggers = Vec::new();
     let mut errors = Vec::new();
-    for top in &tree {
+    for top in tree {
         let lower = top.head().to_ascii_lowercase();
+        if lower.starts_with("function ") {
+            continue;
+        }
         if !top.opens_block() {
             errors.push(ScriptError::new(
                 file,
@@ -1168,27 +1588,29 @@ pub fn compile_file(file: &str, src: &str) -> Result<Vec<Trigger>, Vec<ScriptErr
             file,
             env,
             is_command,
+            func_ret: None,
             code: Vec::new(),
             lines: Vec::new(),
             errors: Vec::new(),
             loops: Vec::new(),
         };
+        cx.env.functions = sigs.clone();
         cx.block(body);
         if cx.errors.is_empty() {
             triggers.push(Trigger {
                 file: file_arc.clone(),
                 line: top.num,
                 kind,
-                code: cx.code,
-                lines: cx.lines,
+                code: Arc::new(Code {
+                    file: file_arc.clone(),
+                    line: top.num,
+                    instrs: cx.code,
+                    lines: cx.lines,
+                }),
             });
         } else {
             errors.extend(cx.errors);
         }
     }
-    if errors.is_empty() {
-        Ok(triggers)
-    } else {
-        Err(errors)
-    }
+    (triggers, errors)
 }

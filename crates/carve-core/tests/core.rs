@@ -1235,3 +1235,179 @@ fn bad_conditions_still_explain() {
     assert!(e.msg.contains("can't understand this condition"), "{}", e.msg);
     assert!(!e.suggestions.is_empty());
 }
+
+// ---------- v2: options and functions ----------
+
+fn engine_files(files: &[(&str, &str)]) -> Engine {
+    let mut e = Engine::default();
+    let files: Vec<(String, String)> = files
+        .iter()
+        .map(|(n, s)| (n.to_string(), s.to_string()))
+        .collect();
+    let (_, errs) = e.load(&files);
+    assert!(
+        errs.is_empty(),
+        "unexpected errors: {}",
+        errs.iter().map(|e| e.to_string()).collect::<Vec<_>>().join("\n")
+    );
+    e
+}
+
+#[test]
+fn options_are_substituted() {
+    let out = join(
+        "options:\n    prefix: &7[Server]&r\n    max: 3\non join:\n    send \"{@prefix} hi\"\n    loop {@max} times:\n        add 1 to {_n}\n    send \"%{_n}%\"\n",
+    );
+    assert_eq!(out, ["send Steve &7[Server]&r hi", "send Steve 3"]);
+    let e = &errors_of("on join:\n    send \"{@nope}\"\n")[0];
+    assert_eq!(e.line, 2);
+    assert!(e.msg.contains("unknown option {@nope}"));
+}
+
+#[test]
+fn functions_return_values_across_files() {
+    let mut e = engine_files(&[
+        (
+            "lib.carve",
+            "function double(n: number) :: number:\n    return n2({_n}) + n2({_n})\nfunction n2(n: number) :: number:\n    return {_n}\nfunction greet(p: player, word: text = \"Hi\"):\n    send \"%{_word}% %{_p}%\" to {_p}\n",
+        ),
+        (
+            "main.carve",
+            "on join:\n    send \"%double(21)%\"\n    greet(player)\n    greet(player, \"Yo\")\n    if double(2) is 4:\n        send \"ok\"\n",
+        ),
+    ]);
+    let mut h = Mock::with_steve();
+    e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
+    assert_eq!(
+        h.take(),
+        [
+            "send Steve 42",
+            "send Steve Hi Steve",
+            "send Steve Yo Steve",
+            "send Steve ok"
+        ]
+    );
+}
+
+#[test]
+fn function_locals_are_separate_and_loops_survive_calls() {
+    let out = join(
+        "function f(x: number) :: number:\n    set {_i} to 100\n    loop 2 times:\n        add 1 to {_x}\n    return {_x}\non join:\n    set {_i} to 1\n    loop 3 times:\n        send \"%loop-value% %f(loop-value)% %{_i}%\"\n",
+    );
+    assert_eq!(out, ["send Steve 1 3 1", "send Steve 2 4 1", "send Steve 3 5 1"]);
+}
+
+#[test]
+fn wait_inside_a_statement_call_works() {
+    let mut e = engine(
+        "function later(p: player):\n    send \"a\" to {_p}\n    wait 1 tick\n    send \"b\" to {_p}\non join:\n    later(player)\n    send \"c\"\n",
+    );
+    let mut h = Mock::with_steve();
+    e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
+    assert_eq!(h.take(), ["send Steve a"]);
+    let tok = h.waits[0].1;
+    e.resume(tok, &mut h);
+    assert_eq!(h.take(), ["send Steve b", "send Steve c"]);
+}
+
+#[test]
+fn value_call_that_waits_is_an_error() {
+    let mut e = engine(
+        "function slow() :: number:\n    wait 1 tick\n    return 1\non join:\n    send \"%slow()%\"\n    send \"never\"\n",
+    );
+    let mut h = Mock::with_steve();
+    e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
+    assert!(h.take().is_empty());
+    assert_eq!(h.errors().len(), 1, "{:?}", h.errors());
+    assert!(h.errors()[0].starts_with("test.carve:2:") && h.errors()[0].contains("can't wait"));
+}
+
+#[test]
+fn recursion_works_and_is_limited() {
+    let out = join(
+        "function fact(n: number) :: number:\n    if {_n} <= 1:\n        return 1\n    return {_n} * fact({_n} - 1)\non join:\n    send \"%fact(10)%\"\n",
+    );
+    assert_eq!(out, ["send Steve 3628800"]);
+    let mut e = engine(
+        "function forever(n: number) :: number:\n    return forever({_n} + 1)\non join:\n    send \"%forever(1)%\"\n",
+    );
+    let mut h = Mock::with_steve();
+    e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
+    assert!(h.take().is_empty());
+    assert_eq!(h.errors().len(), 1, "{:?}", h.errors());
+    assert!(h.errors()[0].contains("more than 64 levels"));
+}
+
+#[test]
+fn stop_and_return_in_functions() {
+    let out = join(
+        "function f(n: number):\n    if {_n} > 1:\n        stop\n    send \"small %{_n}%\" to {_who}\nfunction g(n: number) :: text:\n    if {_n} is 1:\n        return \"one\"\n    return \"many\"\non join:\n    f(5)\n    send \"%g(1)% %g(2)%\"\n",
+    );
+    assert_eq!(out, ["send Steve one many"]);
+}
+
+#[test]
+fn function_errors_at_load() {
+    let errs = errors_of(
+        "function f(a: number, b: text) :: number:\n    return 1\non join:\n    send \"%f(1)%\"\n    send \"%f(\"x\", \"y\")%\"\n    send \"%nope(1)%\"\n",
+    );
+    let msgs: Vec<String> = errs.iter().map(|e| format!("{}:{}", e.line, e.msg)).collect();
+    assert_eq!(errs.len(), 3, "{msgs:?}");
+    assert!(
+        msgs[0].starts_with("4:") && msgs[0].contains("takes 2 argument(s), got 1"),
+        "{msgs:?}"
+    );
+    assert!(
+        msgs[1].starts_with("5:") && msgs[1].contains("must be a number"),
+        "{msgs:?}"
+    );
+    assert!(
+        msgs[2].starts_with("6:") && msgs[2].contains("unknown function 'nope'"),
+        "{msgs:?}"
+    );
+    assert!(
+        errors_of("function f():\n    send \"%player%\"\n")[0]
+            .msg
+            .contains("pass the player as a parameter")
+    );
+    assert!(
+        errors_of("function f() :: number:\n    return \"x\"\n")[0]
+            .msg
+            .contains("returns a number")
+    );
+    assert!(
+        errors_of("on join:\n    return 1\n")[0]
+            .msg
+            .contains("only works inside a function")
+    );
+    assert!(
+        errors_of("function f(a: list):\n    stop\n")[0]
+            .msg
+            .contains("unknown type")
+    );
+    assert!(
+        errors_of("function f():\n    stop\nfunction F():\n    stop\n")[0]
+            .msg
+            .contains("defined twice")
+    );
+    assert!(
+        errors_of("function f():\n    cancel event\n")[0]
+            .msg
+            .contains("no event to cancel")
+    );
+}
+
+#[test]
+fn reload_with_broken_function_keeps_old_scripts() {
+    let mut e = engine("function f() :: text:\n    return \"v1\"\non join:\n    send \"%f()%\"\n");
+    assert!(
+        e.reload(&[(
+            "t.carve".into(),
+            "function f() :: text:\n    return 5 +\non join:\n    send \"%f()%\"\n".into()
+        )])
+        .is_err()
+    );
+    let mut h = Mock::with_steve();
+    e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
+    assert_eq!(h.take(), ["send Steve v1"]);
+}

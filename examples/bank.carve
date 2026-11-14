@@ -1,0 +1,34 @@
+# A tiny bank built from functions. Shows parameters, defaults, return values,
+# options and a function that waits.
+options:
+    prefix: &8[&6Bank&8]&r
+    start: 100
+
+function balance(p: player) :: number:
+    if {bank::%{_p}%} is not set:
+        return {@start}
+    return {bank::%{_p}%}
+
+function deposit(p: player, amount: number, note: text = "deposit"):
+    set {bank::%{_p}%} to balance({_p}) + {_amount}
+    send "{@prefix} %{_note}%: +%{_amount}%. Balance: %balance({_p})%" to {_p}
+
+function interest(p: player):
+    send "{@prefix} Interest arrives in 3 seconds..." to {_p}
+    wait 3 seconds
+    deposit({_p}, balance({_p}) / 100, "interest")
+
+command /bank:
+    trigger:
+        send "{@prefix} You have %balance(player)% coins."
+
+command /deposit <number>:
+    trigger:
+        if arg-1 is not between 1 and 10000:
+            send "{@prefix} &cPick an amount from 1 to 10000."
+            stop
+        deposit(player, arg-1)
+
+command /interest:
+    trigger:
+        interest(player)

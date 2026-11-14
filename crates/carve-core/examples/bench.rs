@@ -210,7 +210,14 @@ fn main() {
     if let Ok(rd) = std::fs::read_dir(&dir) {
         for entry in rd.flatten() {
             let p = entry.path();
+            // The six v1 examples, so the number stays comparable as examples are added.
+            let v1 = ["chat-filter", "economy", "heal", "join-counter", "kit", "welcome"];
+            let stem = p
+                .file_stem()
+                .map(|s| s.to_string_lossy().into_owned())
+                .unwrap_or_default();
             if p.extension().is_some_and(|x| x == "carve")
+                && v1.contains(&stem.as_str())
                 && let Ok(src) = std::fs::read_to_string(&p)
             {
                 files.push((p.display().to_string(), src));

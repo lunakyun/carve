@@ -108,9 +108,31 @@ pub fn lex(s: &str) -> Result<Vec<Tok>, String> {
         if ch == '"' {
             i += 1;
             let mut text = String::new();
+            // Inside `%...%` quotes start a nested text, like `"%f("x")%"`.
+            let mut in_expr = false;
             loop {
                 if i >= n {
                     return Err("unclosed text: missing closing \"".into());
+                }
+                if c[i] == '%' {
+                    if !in_expr && i + 1 < n && c[i + 1] == '%' {
+                        text.push_str("%%");
+                        i += 2;
+                        continue;
+                    }
+                    in_expr = !in_expr;
+                } else if c[i] == '"' && in_expr && c.get(i + 1) == Some(&'"') {
+                    // `""` stays the escaped quote, also inside `%...%`.
+                    text.push('"');
+                    i += 2;
+                    continue;
+                } else if c[i] == '"' && in_expr && c.get(i + 1..).is_some_and(|r| r.contains(&'%')) {
+                    let close = c.get(i + 1..).and_then(|r| r.iter().position(|ch| *ch == '"'));
+                    if let Some(len) = close {
+                        text.extend(c.get(i..i + len + 2).unwrap_or_default());
+                        i += len + 2;
+                        continue;
+                    }
                 }
                 if c[i] == '"' {
                     if i + 1 < n && c[i + 1] == '"' {

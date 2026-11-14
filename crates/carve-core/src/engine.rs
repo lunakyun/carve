@@ -5,8 +5,8 @@ use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
 use crate::compile::{
-    ArgTy, CmpOp, CommandDef, Cond, Effect, EventKind, Instr, LoopSrc, TextOp, Trigger, TriggerKind,
-    compile_file,
+    ArgTy, CmpOp, Code, CommandDef, Cond, Effect, EventKind, Function, Instr, LoopSrc, TextOp, Trigger,
+    TriggerKind, compile_all,
 };
 use crate::error::ScriptError;
 use crate::expr::{BinOp, Expr, Key, Part, VarRef};
@@ -15,6 +15,10 @@ use crate::value::{PlayerRef, Recipient, Value, format_num, push_num};
 use crate::vars::{Locals, Variables};
 
 pub const DEFAULT_MAX_INSTRUCTIONS: usize = 100_000;
+/// How deep functions may call each other (recursion included).
+pub const MAX_CALL_DEPTH: usize = 64;
+/// Error text for "already reported, just stop".
+const SILENT: &str = "(reported)";
 pub const SAVE_DEBOUNCE_MS: u64 = 5_000;
 
 /// What an event offers to the scripts that handle it.
@@ -47,6 +51,7 @@ impl EventCtx {
 pub struct ScriptTable {
     events: HashMap<EventKind, Vec<Arc<Trigger>>>,
     commands: BTreeMap<String, Arc<Trigger>>,
+    functions: Vec<Option<Arc<Function>>>,
     pub files: usize,
     pub triggers: usize,
 }
@@ -144,11 +149,22 @@ fn join_list(items: &[(String, Value)], out: &mut String) {
     }
 }
 
-struct Exec {
-    trig: Arc<Trigger>,
+/// A caller's state, saved while a function runs.
+struct Frame {
+    code: Arc<Code>,
     pc: usize,
     locals: Locals,
     loops: Vec<LoopFrame>,
+}
+
+struct Exec {
+    /// The code running now (a trigger or a function body).
+    code: Arc<Code>,
+    pc: usize,
+    locals: Locals,
+    loops: Vec<LoopFrame>,
+    /// Callers of the running function, innermost last.
+    callers: Vec<Frame>,
     ctx: EventCtx,
     waited: bool,
     cancelled: bool,
@@ -158,7 +174,7 @@ struct Exec {
 }
 
 impl Exec {
-    fn new(trig: Arc<Trigger>, ctx: EventCtx) -> Self {
+    fn new(trig: &Trigger, ctx: EventCtx) -> Self {
         // The event's own player counts as online until the first wait, even if
         // the server already dropped them (`on quit` runs after the player left).
         let seen = ctx
@@ -167,14 +183,40 @@ impl Exec {
             .map(|p| (p.uuid.clone(), Some(p.name.clone())))
             .collect();
         Exec {
-            trig,
+            code: trig.code.clone(),
             pc: 0,
             locals: Locals::default(),
             loops: Vec::new(),
+            callers: Vec::new(),
             ctx,
             waited: false,
             cancelled: false,
             seen,
+        }
+    }
+
+    /// Enter a function body with the given parameter values.
+    fn push_call(&mut self, f: &Function, args: Vec<Value>) {
+        let mut locals = Locals::default();
+        for ((key, _, _), v) in f.sig.params.iter().zip(args) {
+            locals.set(key, v);
+        }
+        let caller = Frame {
+            code: std::mem::replace(&mut self.code, f.code.clone()),
+            pc: std::mem::replace(&mut self.pc, 0),
+            locals: std::mem::replace(&mut self.locals, locals),
+            loops: std::mem::take(&mut self.loops),
+        };
+        self.callers.push(caller);
+    }
+
+    /// Leave the running function and continue in its caller.
+    fn pop_call(&mut self) {
+        if let Some(f) = self.callers.pop() {
+            self.code = f.code;
+            self.pc = f.pc;
+            self.locals = f.locals;
+            self.loops = f.loops;
         }
     }
 }
@@ -212,6 +254,8 @@ enum Step {
     Done,
     Wait(u64),
     Abort,
+    /// A function called as a value returned.
+    Returned(Value),
 }
 
 pub struct Engine {
@@ -221,6 +265,8 @@ pub struct Engine {
     pub vars: Variables,
     pub max_instructions: usize,
     dirty_since: Option<u64>,
+    /// Instructions left in the current run slice (shared by function calls).
+    budget: usize,
 }
 
 impl Default for Engine {
@@ -231,31 +277,28 @@ impl Default for Engine {
 
 fn build_table(files: &[(String, String)]) -> (ScriptTable, Vec<ScriptError>) {
     let mut table = ScriptTable::default();
-    let mut errors = Vec::new();
-    for (name, src) in files {
-        match compile_file(name, src) {
-            Ok(trigs) => {
-                table.files += 1;
-                for t in trigs {
-                    table.triggers += 1;
-                    let t = Arc::new(t);
-                    match &t.kind {
-                        TriggerKind::Event(k) => table.events.entry(*k).or_default().push(t.clone()),
-                        TriggerKind::Command(d) => {
-                            if table.commands.contains_key(&d.name) {
-                                errors.push(ScriptError::new(
-                                    &t.file,
-                                    t.line,
-                                    format!("command /{} is defined twice", d.name),
-                                ));
-                            } else {
-                                table.commands.insert(d.name.clone(), t.clone());
-                            }
-                        }
+    let compiled = compile_all(files);
+    let mut errors = compiled.errors;
+    table.functions = compiled.functions;
+    for (_, trigs) in compiled.files {
+        table.files += 1;
+        for t in trigs {
+            table.triggers += 1;
+            let t = Arc::new(t);
+            match &t.kind {
+                TriggerKind::Event(k) => table.events.entry(*k).or_default().push(t.clone()),
+                TriggerKind::Command(d) => {
+                    if table.commands.contains_key(&d.name) {
+                        errors.push(ScriptError::new(
+                            &t.file,
+                            t.line,
+                            format!("command /{} is defined twice", d.name),
+                        ));
+                    } else {
+                        table.commands.insert(d.name.clone(), t.clone());
                     }
                 }
             }
-            Err(e) => errors.extend(e),
         }
     }
     (table, errors)
@@ -270,6 +313,7 @@ impl Engine {
             vars,
             max_instructions: DEFAULT_MAX_INSTRUCTIONS,
             dirty_since: None,
+            budget: 0,
         }
     }
 
@@ -322,7 +366,7 @@ impl Engine {
                 ctx.clone()
             };
             let Some(c) = c else { break };
-            let ex = Exec::new(trig.clone(), c);
+            let ex = Exec::new(trig, c);
             if let Some(c) = self.start(ex, host) {
                 cancelled |= c;
             }
@@ -364,7 +408,7 @@ impl Engine {
             message: None,
             args,
         };
-        let ex = Exec::new(trig.clone(), ctx);
+        let ex = Exec::new(&trig, ctx);
         self.start(ex, host);
         CommandOutcome::Ran
     }
@@ -380,8 +424,9 @@ impl Engine {
     /// run was aborted or was a resumed run).
     fn start(&mut self, mut ex: Exec, host: &mut dyn Host) -> Option<bool> {
         let resumed = ex.waited;
-        match self.run(&mut ex, host) {
-            Step::Done => {}
+        self.budget = self.max_instructions;
+        match self.run(&mut ex, host, 0) {
+            Step::Done | Step::Returned(_) => {}
             Step::Wait(ticks) => {
                 let cancelled = ex.cancelled;
                 ex.waited = true;
@@ -397,67 +442,169 @@ impl Engine {
         if resumed { None } else { Some(ex.cancelled) }
     }
 
-    fn run(&mut self, ex: &mut Exec, host: &mut dyn Host) -> Step {
-        let trig = ex.trig.clone();
-        // `seen` is cleared when a run pauses (see `start`), so a fresh run keeps
-        // the event player seeded in `Exec::new`.
-        let mut budget = self.max_instructions;
-        while let Some(instr) = trig.code.get(ex.pc) {
-            let line = trig.lines.get(ex.pc).copied().unwrap_or(trig.line);
-            if budget == 0 {
-                host.log(
-                    LogLevel::Error,
-                    &format!(
-                        "{}:{}: script stopped: ran more than {} instructions without a wait",
-                        trig.file, line, self.max_instructions
-                    ),
-                );
-                return Step::Abort;
-            }
-            budget -= 1;
-            ex.pc += 1;
-            let r = match instr {
-                Instr::Jump(t) => {
-                    ex.pc = *t;
-                    Ok(None)
+    /// Run until the run ends, waits, fails, or (for `base > 0`) the function
+    /// entered at depth `base` returns.
+    fn run(&mut self, ex: &mut Exec, host: &mut dyn Host, base: usize) -> Step {
+        loop {
+            let code = ex.code.clone();
+            let depth = ex.callers.len();
+            while ex.callers.len() == depth {
+                let Some(instr) = code.instrs.get(ex.pc) else {
+                    // End of the body: an implicit `return` with no value.
+                    if let Some(step) = self.leave(ex, base, Value::None) {
+                        return step;
+                    }
+                    break;
+                };
+                let line = code.lines.get(ex.pc).copied().unwrap_or(code.line);
+                if self.budget == 0 {
+                    host.log(
+                        LogLevel::Error,
+                        &format!(
+                            "{}:{}: script stopped: ran more than {} instructions without a wait",
+                            code.file, line, self.max_instructions
+                        ),
+                    );
+                    return Step::Abort;
                 }
-                Instr::JumpIfNot(c, t) => match self.cond(c, ex, host) {
-                    Ok(true) => Ok(None),
-                    Ok(false) => {
+                self.budget -= 1;
+                ex.pc += 1;
+                let r = match instr {
+                    Instr::Jump(t) => {
                         ex.pc = *t;
                         Ok(None)
                     }
-                    Err(e) => Err(e),
-                },
-                Instr::Eff(e) => self.effect(e, ex, host, line),
-                Instr::LoopInit(src) => self.loop_init(src, ex, host).map(|()| None),
-                Instr::LoopNext(end) => {
-                    match ex.loops.last_mut() {
-                        Some(f) if f.pos < f.len() => f.pos += 1,
-                        _ => {
-                            ex.loops.pop();
-                            ex.pc = *end;
+                    Instr::JumpIfNot(c, t) => match self.cond(c, ex, host) {
+                        Ok(true) => Ok(None),
+                        Ok(false) => {
+                            ex.pc = *t;
+                            Ok(None)
+                        }
+                        Err(e) => Err(e),
+                    },
+                    Instr::Eff(e) => self.effect(e, ex, host, line),
+                    Instr::LoopInit(src) => self.loop_init(src, ex, host).map(|()| None),
+                    Instr::LoopNext(end) => {
+                        match ex.loops.last_mut() {
+                            Some(f) if f.pos < f.len() => f.pos += 1,
+                            _ => {
+                                ex.loops.pop();
+                                ex.pc = *end;
+                            }
+                        }
+                        Ok(None)
+                    }
+                    Instr::LoopBreak(end) => {
+                        ex.loops.pop();
+                        ex.pc = *end;
+                        Ok(None)
+                    }
+                    Instr::Stop => {
+                        if ex.callers.is_empty() {
+                            return Step::Done;
+                        }
+                        if let Some(step) = self.leave(ex, base, Value::None) {
+                            return step;
+                        }
+                        Ok(None)
+                    }
+                    Instr::Return(e) => {
+                        let v = match e {
+                            Some(e) => self.eval(e, ex, host),
+                            None => Ok(Value::None),
+                        };
+                        match v {
+                            Ok(v) => {
+                                if let Some(step) = self.leave(ex, base, v) {
+                                    return step;
+                                }
+                                Ok(None)
+                            }
+                            Err(e) => Err(e),
                         }
                     }
-                    Ok(None)
-                }
-                Instr::LoopBreak(end) => {
-                    ex.loops.pop();
-                    ex.pc = *end;
-                    Ok(None)
-                }
-                Instr::Stop => return Step::Done,
-            };
-            match r {
-                Ok(None) => {}
-                Ok(Some(ticks)) => return Step::Wait(ticks),
-                Err(e) => {
-                    host.log(LogLevel::Error, &format!("{}:{}: {}", trig.file, line, e));
-                    return Step::Abort;
+                    Instr::Call(id, args) => self.enter(*id, args, ex, host).map(|()| None),
+                };
+                match r {
+                    Ok(None) => {}
+                    Ok(Some(ticks)) => {
+                        if base > 0 {
+                            host.log(
+                                LogLevel::Error,
+                                &format!(
+                                    "{}:{}: a function used as a value can't wait (call it on its own line instead)",
+                                    code.file, line
+                                ),
+                            );
+                            return Step::Abort;
+                        }
+                        return Step::Wait(ticks);
+                    }
+                    Err(e) => {
+                        if e != SILENT {
+                            host.log(LogLevel::Error, &format!("{}:{}: {}", code.file, line, e));
+                        }
+                        return Step::Abort;
+                    }
                 }
             }
         }
-        Step::Done
+    }
+
+    /// Return from the running body. `Some(step)` when the run (or the
+    /// value call at depth `base`) is over.
+    fn leave(&mut self, ex: &mut Exec, base: usize, v: Value) -> Option<Step> {
+        if ex.callers.is_empty() {
+            return Some(Step::Done);
+        }
+        let ends_value_call = base > 0 && ex.callers.len() == base;
+        ex.pop_call();
+        ends_value_call.then_some(Step::Returned(v))
+    }
+
+    /// Evaluate arguments (filling defaults) and enter function `id`.
+    fn enter(&mut self, id: usize, args: &[Expr], ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
+        let f = match self.table.functions.get(id) {
+            Some(Some(f)) => f.clone(),
+            _ => return Err("this function failed to load; see the load errors".into()),
+        };
+        if ex.callers.len() >= MAX_CALL_DEPTH {
+            return Err(format!(
+                "functions called each other more than {MAX_CALL_DEPTH} levels deep (endless recursion?)"
+            ));
+        }
+        let mut vals = Vec::with_capacity(f.sig.params.len());
+        for (i, d) in f.defaults.iter().enumerate() {
+            vals.push(match (args.get(i), d) {
+                (Some(a), _) => self.eval(a, ex, host)?,
+                (None, Some(d)) => self.eval(d, ex, host)?,
+                (None, None) => Value::None,
+            });
+        }
+        ex.push_call(&f, vals);
+        Ok(())
+    }
+
+    /// A function call used as a value: run it to its `return` right now.
+    fn call_value(
+        &mut self,
+        id: usize,
+        args: &[Expr],
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<Value, String> {
+        self.enter(id, args, ex, host)?;
+        let base = ex.callers.len();
+        match self.run(ex, host, base) {
+            Step::Returned(v) => Ok(v),
+            // The error was already logged with the function's line.
+            _ => {
+                while ex.callers.len() >= base {
+                    ex.pop_call();
+                }
+                Err(SILENT.into())
+            }
+        }
     }
 
     fn loop_init(&mut self, src: &LoopSrc, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
@@ -794,6 +941,7 @@ impl Engine {
                 }
             }
             Expr::Neg(inner) => Value::Num(-self.num(inner, ex, host)?),
+            Expr::Call(id, args) => self.call_value(*id, args, ex, host)?,
             Expr::LoopValue(d) => ex.loops.get(*d).map(LoopFrame::value).unwrap_or(Value::None),
             Expr::LoopIndex(d) => ex.loops.get(*d).map(LoopFrame::index).unwrap_or(Value::None),
             Expr::LoopIter(d) => ex
@@ -915,7 +1063,7 @@ impl Engine {
                         LogLevel::Warn,
                         &format!(
                             "{}:{}: 'cancel event' after a wait does nothing (the event already happened)",
-                            ex.trig.file, line
+                            ex.code.file, line
                         ),
                     );
                 } else {
