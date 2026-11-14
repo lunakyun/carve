@@ -102,3 +102,29 @@ uses `opt-level = 3`.
   25 ns per line is reading `{_x}`. The rest is running the instruction and
   storing the result. Expression trees do not dominate, so a bytecode VM would
   add code for little gain.
+
+## v2
+
+v2 added loops, functions, more condition kinds and more types. The bench
+below compares v1 (`3757017`) with v2 on the same machine, as the median of 5
+alternating runs. Case d now always compiles the six v1 example files, so it
+stays comparable as examples are added.
+
+| Case | v1 ns | v2 ns | Change |
+|---|--:|--:|--:|
+| a) join, 20 effects | 4,708 | 4,878 | +3.6% |
+| b) 50x `set {_x}` + 1 | 1,530 | 1,571 | +2.7% |
+| c) if/else-if x10 | 624 | 549 | -12% |
+| d) compile 6 examples | 153,858 | ~171,000 | ~+11% |
+| e) fire, no triggers | 9 | 9 | 0% |
+
+- **Getting there.** The first v2 build was 20–40% slower in b, c and d. Most
+  of it came back by keeping the hot functions (`eval`, `cond`, `effect`) small
+  and moving rare cases out of line. A direct path for `{var} <op> number`
+  comparisons made c faster than v1.
+- **Compiling.** It got about 11% slower (about 3 µs per file) because there
+  are more patterns and expression forms to try. That only happens when
+  scripts load or reload.
+- **Loops.** Each round of a loop costs a few instructions. All of them count
+  towards the 100,000-instruction runaway guard.
+

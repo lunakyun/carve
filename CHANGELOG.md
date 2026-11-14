@@ -7,6 +7,44 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Added (v2)
+
+- Loops: `loop N times`, `loop {list::*}`, `loop all players`, `loop a, b
+  and c`, `while`.
+  - Loop values: `loop-value[-N]`, `loop-player`, `loop-index`,
+    `loop-number`, `loop-iteration`.
+  - Leaving a loop: `exit loop`, `continue`, and `stop` for the whole trigger.
+- Lists: `add`/`remove` items, `size of`, printed as `a, b and c`,
+  `random element of`.
+- Conditions:
+  - `and`, `or`, comma lists and brackets.
+  - `x is a or b`.
+  - `contains`, `starts with` and `ends with`, without case.
+  - `is between`, `chance of N%`.
+  - A condition on its own line stops the trigger when false.
+  - `doesn't`-style wording.
+- Functions with typed parameters, defaults, `return` and recursion (64 deep),
+  across all scripts and checked at load. Options with `{@name}`.
+- Types:
+  - Items (checked against Pumpkin's ids), locations and worlds.
+  - Item effects and checks: `give`, `tool of`, `has`,
+    `inventory contains`.
+  - Locations: `location(...)`, `x/y/z of`, `world of`, `distance between`,
+    teleport to a location.
+  - `uuid of`, `health of`, possessive `'s`.
+- Events: death, damage (`damage`, `attacker`, `victim`), respawn, right and
+  left click with `with`/`on` filters and `clicked block`, `on load`,
+  `every N seconds`.
+- Expressions: `a ? b`, `floor`/`ceil`/`round`/`abs`/`sqrt`/`min`/`max`/`mod`,
+  `random integer/number between`, `parsed as number`, `true`/`false`.
+- Commands: `aliases:`, `usage:` and `executable by:`.
+- Text can hold quotes inside `%...%`, as in `"%f("x")%"`.
+
+### Fixed (v2)
+
+- An option whose value ends with `:` was read as an empty block.
+
+
 ### Fixed
 
 - `on quit`: `player` was `<none>` because Pumpkin removes the player before

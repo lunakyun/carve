@@ -21,7 +21,20 @@ expect, or don't exist yet. Plans for some of them are in the
 
 ## Events
 
-- There are five events: join, quit, chat, break and place.
+- **Events:** join, quit, chat, break, place, death, damage, respawn, clicks,
+  `on load` and `every`. Inventory, GUI, sneaking and other events are not
+  there yet.
+- **Damage:**
+  - `on damage` is for players only.
+  - `attacker` is a player or `<none>`; mobs show as `<none>`.
+  - The damage can't be changed, only cancelled.
+  - For hits from an entity, Carve runs the trigger from Pumpkin's
+    "damage by entity" event. A hit of an entity type (arrow, mob attack, ...)
+    that has no attacking entity therefore doesn't run `on damage`.
+- **Death:**
+  - `on death` has no attacker (Pumpkin doesn't say who did it).
+  - `on death` has no death message.
+  - Cancelling a death leaves the player at 0 health.
 - A block break without a player has no `player`.
 - If the server calls back into Carve while a script is running (a nested
   event), that event is skipped with a warning. Console commands from scripts
@@ -29,13 +42,18 @@ expect, or don't exist yet. Plans for some of them are in the
 
 ## Language
 
-- No loops, functions, options, or `and` / `or` in conditions.
-- No item, location, world or entity types. `teleport` uses the player's
-  current world.
-- No way to loop over a list. `{list::*}` only works with `delete`.
-- Text can only be compared as a whole. There is no "contains" or "starts
-  with".
-- No boolean values in scripts. They can only come from `variables.json`.
+- **Missing values:** no dates or time spans (`now`, `time since`), no
+  vectors, no entities other than players.
+- **Items:** no item names, lore or enchantments. `give` uses Pumpkin's
+  `/give` command, so `give ... named "..."` doesn't exist.
+- **Inventory:** `player has` counts the 36 main slots only.
+- **Lists:** lists can't be passed to or returned from functions. There is
+  no `set {list::*} to a, b and c` yet; add the items one by one.
+- **Effects not there yet:** sounds, game modes, blocks in the world, and
+  `set damage`.
+- **Functions:** a function used as a value can't `wait`. Functions can call
+  each other 64 levels deep.
+- **Commands:** no `cooldown:` entry.
 
 ## Variables
 

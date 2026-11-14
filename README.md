@@ -26,14 +26,21 @@ command /heal [<player>]:
 
 ## Features
 
-- **Events:** join, quit, chat, block break and block place, with `cancel event`.
+- **Events:** join, quit, chat, break, place, death, damage (with `attacker`),
+  respawn, right and left clicks (`on right click with blaze rod on barrel:`),
+  `on load` and `every 5 seconds`. Most can be cancelled.
 - **Commands** with typed arguments (`<text>`, `<number>`, `<player>`),
-  optional arguments, permissions and usage messages.
-- **Effects** for messages, titles, action bars, broadcasts, health,
-  teleporting and console commands.
-- **Variables**, global and local, with `{list::%player%}` names. Globals are
-  saved to `variables.json`.
-- **`wait`** in ticks or seconds, without blocking the server.
+  optional arguments, permissions, aliases and usage messages.
+- **Loops:** `loop N times`, `loop {list::*}`, `loop all players`, `while`,
+  with `exit loop` and `continue`.
+- **Conditions** with `and`, `or` and brackets, `is "a" or "b"`, text checks
+  (`contains`, `starts with`), ranges and inventory checks.
+- **Functions** with typed parameters, defaults and return values, callable
+  from every script. **Options** with `{@name}`.
+- **Types:** numbers, text, players, items (`2 diamonds`), locations and
+  worlds, all saved in `variables.json`.
+- **`wait`** in ticks or seconds, without blocking the server, also inside
+  loops and functions.
 - **Clear errors** with file, line and "did you mean" suggestions.
 - **Safe reloads:** if a script has an error, the old scripts keep running.
 - **Fast:** players are looked up once per run, and constants are worked out
@@ -98,11 +105,10 @@ Runtime errors stop only that run and are logged with the file and line.
 
 Planned, not available yet:
 
-- loops over lists and numbers
-- `and` / `or` in conditions, and text checks like "contains"
-- more events (death, damage, respawn, interact)
-- items, locations and worlds
-- functions and options
+- dates and time spans (`now`, `time since`, `wait 1 minute` is fine, but
+  there are no date values yet)
+- sounds, game modes, blocks in the world (`set block at`), item names and lore
+- inventory and GUI events
 - adding new commands on reload, once Pumpkin's API allows it
 
 Ideas and votes are welcome in the issues.
