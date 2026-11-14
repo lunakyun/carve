@@ -77,7 +77,8 @@ async function join (name) {
   return bot
 }
 
-const has = (kind, s) => (e) => (!kind || e.kind === kind) && e.text.includes(s)
+// `s` may be a list: every part must be in the text (formatted messages arrive split up).
+const has = (kind, s) => (e) => (!kind || e.kind === kind) && [].concat(s).every((x) => e.text.includes(x))
 
 function setup () {
   for (const f of [EXE, WASM]) {
@@ -100,8 +101,9 @@ async function reload (bot, expect) {
 }
 
 async function phase1 (srv) {
-  const loaded = await srv.waitLog(/\[Carve\] loaded \d+ script/, 1000)
-  check('plugin loads with every script', /0 error\(s\)/.test(loaded || ''), loaded ? loaded.replace(/^.*\[Carve\] /, '') : 'no load line')
+  const loaded = await srv.waitLog(/\[Carve\] Loaded \d+ scripts? with a total of/, 1000)
+  const loadErr = srv.lines.some((l) => /while loading the scripts/.test(l))
+  check('plugin loads with every script', !!loaded && !loadErr, loaded ? loaded.replace(/^.*\[Carve\] /, '') : 'no load line')
 
   const tester = await join('Tester')
   srv.console('op Tester')
@@ -172,14 +174,14 @@ async function phase1 (srv) {
   t = Date.now()
   tester.command('tvar')
   check('global variable', !!await tester.waitFor(has('system', 't:counter 1'), 4000, t))
-  check('/carve reload', !!await reload(tester, 'Reloaded'))
+  check('/carve reload', !!await reload(tester, 'Successfully reloaded'))
   t = Date.now()
   tester.command('tvar')
   check('variable survives reload', !!await tester.waitFor(has('system', 't:counter 2'), 4000, t))
 
   fs.writeFileSync(path.join(SCRIPTS, 'broken.carve'), 'on join:\n    blorp the player\n')
-  const err = await reload(tester, 'old scripts kept')
-  const errLine = err && tester.log.find((e) => e.t >= err.t && e.text.includes('broken.carve:2'))
+  const err = await reload(tester, 'while reloading')
+  const errLine = err && tester.log.find((e) => e.t >= err.t && has(null, ['Line 2:', '(broken.carve)'])(e))
   check('broken reload reports file:line', !!err && !!errLine)
   t = Date.now()
   tester.command('tvar')
@@ -201,7 +203,7 @@ async function phase1 (srv) {
   const body = '        set {_x} to 1\n'.repeat(100005)
   fs.writeFileSync(path.join(SCRIPTS, 'runaway.carve'),
     `on chat:\n    if message is "runaway":\n${body}        send "t:runaway finished" to player\n`)
-  const rl = await reload(tester, 'Reloaded')
+  const rl = await reload(tester, 'Successfully reloaded')
   if (!rl) {
     check('runaway guard', false, 'reload with runaway.carve failed')
   } else {
@@ -212,7 +214,7 @@ async function phase1 (srv) {
     check('runaway guard', !!hit && !tester.log.some((e) => e.t >= t && e.text.includes('t:runaway finished')), hit ? '' : 'no guard error in log')
   }
   fs.rmSync(path.join(SCRIPTS, 'runaway.carve'))
-  await reload(tester, 'Reloaded')
+  await reload(tester, 'Successfully reloaded')
 
   // ---- v2 ----
   t = Date.now()
@@ -289,16 +291,16 @@ async function phase1 (srv) {
   check('admin: info', !!await say('carve info', 'Data folder'))
   check('admin: info <script>', !!await say('carve info carve-test', 'double(n: number) :: number'))
   fs.writeFileSync(path.join(SCRIPTS, 'one.carve'), 'on join:\n    blorp\n')
-  const bad = await say('carve reload one', 'its old version is kept')
-  check('admin: reload <script> with error keeps old', !!bad && !!await tester.waitFor(has('system', 'one.carve:2'), 2000, bad.t))
-  check('admin: errors', !!await say('carve errors one', 'one.carve:2'))
+  const bad = await say('carve reload one', 'while reloading')
+  check('admin: reload <script> with error keeps old', !!bad && !!await tester.waitFor(has('system', ['Line 2:', '(one.carve)']), 2000, bad.t))
+  check('admin: errors', !!await say('carve errors one', ['Line 2:', '(one.carve)']))
   fs.writeFileSync(path.join(SCRIPTS, 'one.carve'),
     'command /tvar2:\n    trigger:\n        send "x"\non chat:\n    if message is "one?":\n        send "t:one" to player\n')
-  check('admin: reload <script>', !!await say('carve reload one', 'Reloaded one.carve'))
+  check('admin: reload <script>', !!await say('carve reload one', ['Successfully reloaded', 'one.carve']))
   t = Date.now()
   tester.chat('one?')
   check('admin: reloaded script runs', !!await tester.waitFor(has('system', 't:one'), 4000, t))
-  check('admin: disable', !!await say('carve disable one', 'Disabled one.carve'))
+  check('admin: disable', !!await say('carve disable one', ['Successfully disabled', 'one.carve']))
   check('admin: disabled file renamed', fs.existsSync(path.join(SCRIPTS, '-one.carve')))
   t = Date.now()
   tester.chat('one?')
@@ -306,13 +308,13 @@ async function phase1 (srv) {
   check('admin: enable (restart note for its command)', !!await say('carve enable one', 'need a server restart'))
   check('admin: list disabled', !!await say('carve list disabled', 'Disabled (0)'))
   fs.rmSync(path.join(SCRIPTS, 'one.carve'))
-  await say('carve reload', 'Reloaded')
+  await say('carve reload', 'Successfully reloaded')
   check('admin: vars set', !!await say('carve vars set t_admin 41', 'Set {t_admin} to 41'))
   t = Date.now()
   tester.command('carve run add 1 to {t_admin}')
   await sleep(300)
   check('admin: run <effect> + vars get', !!await say('carve vars get t_admin', '42'))
-  check('admin: run shows parse errors', !!await say('carve run brodcast "x"', 'did you mean'))
+  check('admin: run shows parse errors', !!await say('carve run brodcast "x"', 'Did you mean'))
   check('admin: vars list', !!await say('carve vars list t_', '{t_admin}'))
   check('admin: vars delete', !!await say('carve vars delete t_admin', 'Deleted 1'))
   await say('carve timings on', 'Timings on')
