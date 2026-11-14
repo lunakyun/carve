@@ -935,6 +935,11 @@ impl Engine {
                 }
                 LoopItems::Values(players.into_iter().map(Value::Player).collect())
             }
+            LoopSrc::Split(t, s) => {
+                let t = self.text(t, ex, host)?;
+                let s = self.text(s, ex, host)?;
+                LoopItems::Values(crate::text_join_split::split_text(&t, &s))
+            }
             LoopSrc::List(v) => {
                 let key = self.key(v, ex, host)?;
                 let prefix = key.strip_suffix('*').unwrap_or(&key);
@@ -1400,6 +1405,24 @@ impl Engine {
                     .map(Value::Num)
                     .unwrap_or(Value::None)
             }
+            Expr::Join(v, sep) => {
+                let items = self.list_items(v, ex, host)?;
+                let sep = self.text(sep, ex, host)?;
+                Value::Text(crate::text_join_split::join_values(&items, &sep))
+            }
+            Expr::Split(..) => {
+                return Err("split makes a list: use 'set {x::*} to split ...' or 'loop split ...'".into());
+            }
+            Expr::Length(e) => {
+                let t = self.text(e, ex, host)?;
+                Value::Num(crate::text_join_split::char_len(&t) as f64)
+            }
+            Expr::Replaced(t, from, to, all) => {
+                let t = self.text(t, ex, host)?;
+                let from = self.text(from, ex, host)?;
+                let to = self.text(to, ex, host)?;
+                Value::Text(crate::text_join_split::replace_text(&t, &from, &to, *all))
+            }
             Expr::RandomOf(v) => {
                 let items = self.list_items(v, ex, host)?;
                 if items.is_empty() {
@@ -1648,6 +1671,38 @@ impl Engine {
                 let val = self.eval(val, ex, host)?;
                 let k = self.key(v, ex, host)?;
                 self.store(v.local, &k, val, ex, host);
+            }
+            Effect::SetSplit(v, t, s) => {
+                let t = self.text(t, ex, host)?;
+                let s = self.text(s, ex, host)?;
+                let key = self.key(v, ex, host)?.into_owned();
+                let prefix = key.strip_suffix('*').unwrap_or(&key);
+                if v.local {
+                    ex.locals.delete(&key);
+                    for x in crate::text_join_split::split_text(&t, &s) {
+                        ex.locals.list_push(prefix, x);
+                    }
+                } else {
+                    self.vars.delete(&key);
+                    for x in crate::text_join_split::split_text(&t, &s) {
+                        self.vars.list_push(prefix, x);
+                    }
+                    self.mark_dirty(host);
+                }
+            }
+            Effect::Replace(v, from, to, all) => {
+                let from = self.text(from, ex, host)?;
+                let to = self.text(to, ex, host)?;
+                let k = self.key(v, ex, host)?.into_owned();
+                let cur = if v.local {
+                    ex.locals.get(&k).cloned()
+                } else {
+                    self.vars.get_ref(&k).cloned()
+                };
+                if let Some(Value::Text(t)) = cur {
+                    let new = crate::text_join_split::replace_text(&t, &from, &to, *all);
+                    self.store(v.local, &k, Value::Text(new), ex, host);
+                }
             }
             Effect::Add(v, n) | Effect::Remove(v, n) => {
                 let n = self.num(n, ex, host)?;

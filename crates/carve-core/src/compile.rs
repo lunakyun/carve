@@ -213,6 +213,10 @@ pub enum Effect {
     /// amount times ticks-per-unit
     Wait(Expr, u64),
     Set(VarRef, Expr),
+    /// `set {x::*} to split <text> at <sep>`.
+    SetSplit(VarRef, Expr, Expr),
+    /// `replace all <from> in {var} with <to>`: var, from, to, all.
+    Replace(VarRef, Expr, Expr, bool),
     Add(VarRef, Expr),
     Remove(VarRef, Expr),
     Delete(VarRef),
@@ -226,6 +230,8 @@ pub enum Effect {
 #[derive(Debug, Clone, PartialEq)]
 pub enum LoopSrc {
     Times(Expr),
+    /// `loop split <text> at <sep>`.
+    Split(Expr, Expr),
     List(VarRef),
     Players,
     Values(Vec<Expr>),
@@ -310,6 +316,10 @@ pub enum EffKind {
     WaitTicks,
     WaitSeconds,
     Set,
+    ReplaceAllIn,
+    ReplaceAllWith,
+    ReplaceFirstIn,
+    ReplaceFirstWith,
     Add,
     Remove,
     Delete,
@@ -339,6 +349,15 @@ pub enum CondKind {
     NotHasItem,
     InvContains,
 }
+
+/// Text effects (`replace ...`). Kept apart from `EFFECT_PATTERNS` so the
+/// text slice stays self-contained; tried after the main list.
+pub const TEXT_EFFECT_PATTERNS: &[(&str, EffKind)] = &[
+    ("replace first %text% in %variable% with %text%", EffKind::ReplaceFirstIn),
+    ("replace first %text% with %text% in %variable%", EffKind::ReplaceFirstWith),
+    ("replace [all] %text% in %variable% with %text%", EffKind::ReplaceAllIn),
+    ("replace [all] %text% with %text% in %variable%", EffKind::ReplaceAllWith),
+];
 
 /// Effect patterns, tried in order (more specific first).
 pub const EFFECT_PATTERNS: &[(&str, EffKind)] = &[
@@ -412,6 +431,7 @@ fn registry() -> &'static Registry {
         // The pattern strings are constants covered by tests; a bad one is skipped.
         effects: EFFECT_PATTERNS
             .iter()
+            .chain(TEXT_EFFECT_PATTERNS)
             .filter_map(|(s, k)| Pattern::new(s, *k).ok())
             .collect(),
         conditions: CONDITION_PATTERNS
@@ -423,7 +443,7 @@ fn registry() -> &'static Registry {
 
 /// Checks every registered pattern compiles. Used by tests.
 pub fn check_registry() -> Result<(), String> {
-    for (s, k) in EFFECT_PATTERNS {
+    for (s, k) in EFFECT_PATTERNS.iter().chain(TEXT_EFFECT_PATTERNS) {
         Pattern::new(s, *k)?;
     }
     for (s, k) in CONDITION_PATTERNS {
@@ -784,6 +804,19 @@ impl Cx<'_> {
                 }
             };
         }
+        if toks.first().is_some_and(|t| t.is_lit("split")) {
+            return match parse_expr(&toks, &self.env) {
+                Ok(Expr::Split(a, b)) => Some((LoopSrc::Split(*a, *b), LoopKind::Values)),
+                Ok(_) => {
+                    self.err(num, "can't understand 'loop split ...'".to_string());
+                    None
+                }
+                Err(e) => {
+                    self.err(num, e);
+                    None
+                }
+            };
+        }
         if let [Tok::Var(raw)] = toks.as_slice() {
             return match parse_varref(raw, &self.env) {
                 Ok(v) if v.is_list() => Some((LoopSrc::List(v), LoopKind::List)),
@@ -1022,7 +1055,7 @@ impl Cx<'_> {
             return;
         }
         let type_err = inner_error(&toks, &self.env).or(type_err);
-        let srcs: Vec<&'static str> = EFFECT_PATTERNS.iter().map(|(s, _)| *s).collect();
+        let srcs: Vec<&'static str> = EFFECT_PATTERNS.iter().chain(TEXT_EFFECT_PATTERNS).map(|(s, _)| *s).collect();
         let mut e = ScriptError::new(
             self.file,
             num,
@@ -1222,7 +1255,17 @@ fn build_effect(kind: EffKind, mut c: Vec<Option<Capture>>) -> Option<Effect> {
         EffKind::Cancel => Effect::Cancel,
         EffKind::WaitTicks => Effect::Wait(take_expr(c, 0)?, 1),
         EffKind::WaitSeconds => Effect::Wait(take_expr(c, 0)?, 20),
-        EffKind::Set => Effect::Set(take_var(c, 0)?, take_expr(c, 1)?),
+        EffKind::Set => {
+            let v = take_var(c, 0)?;
+            match take_expr(c, 1)? {
+                Expr::Split(a, b) if v.is_list() => Effect::SetSplit(v, *a, *b),
+                e => Effect::Set(v, e),
+            }
+        }
+        EffKind::ReplaceAllIn => Effect::Replace(take_var(c, 1)?, take_expr(c, 0)?, take_expr(c, 2)?, true),
+        EffKind::ReplaceFirstIn => Effect::Replace(take_var(c, 1)?, take_expr(c, 0)?, take_expr(c, 2)?, false),
+        EffKind::ReplaceAllWith => Effect::Replace(take_var(c, 2)?, take_expr(c, 0)?, take_expr(c, 1)?, true),
+        EffKind::ReplaceFirstWith => Effect::Replace(take_var(c, 2)?, take_expr(c, 0)?, take_expr(c, 1)?, false),
         EffKind::Add => {
             let v = take_var(c, 1)?;
             let e = take_expr(c, 0)?;
