@@ -187,6 +187,36 @@ fn case_c() -> String {
     s
 }
 
+/// 10,000 `add` to a local list in one run.
+fn case_f() -> String {
+    "on join:\n    loop 10000 times:\n        add loop-number to {_l::*}\n".into()
+}
+
+/// 1,000 calls of a one-line function in one run.
+fn case_g() -> String {
+    concat!(
+        "function benchinc(x: number) :: number:\n",
+        "    return {_x} + 1\n\n",
+        "on join:\n",
+        "    loop 1000 times:\n",
+        "        set {_z} to benchinc(loop-number)\n",
+    )
+    .into()
+}
+
+/// 1,000 passes through a 10-branch chain of negative-literal checks.
+fn case_h() -> String {
+    let mut s = String::from("on join:\n    loop 1000 times:\n");
+    for i in 1..10 {
+        let kw = if i == 1 { "if" } else { "else if" };
+        s.push_str(&format!(
+            "        {kw} loop-number is -{i}:\n            set {{_y}} to {i}\n"
+        ));
+    }
+    s.push_str("        else:\n            set {_y} to 10\n");
+    s
+}
+
 fn main() {
     let mut rows = Vec::new();
 
@@ -198,6 +228,19 @@ fn main() {
         let mut e = engine(&src);
         let mut h = host();
         rows.push(measure(name, 20_000, || {
+            let ctx = h.event_ctx();
+            black_box(e.fire(EventKind::Join, ctx, &mut h));
+        }));
+    }
+
+    for (name, src, iters) in [
+        ("f) 10k list adds", case_f(), 5),
+        ("g) 1k function calls", case_g(), 200),
+        ("h) 1k if-chain, -N", case_h(), 200),
+    ] {
+        let mut e = engine(&src);
+        let mut h = host();
+        rows.push(measure(name, iters, || {
             let ctx = h.event_ctx();
             black_box(e.fire(EventKind::Join, ctx, &mut h));
         }));

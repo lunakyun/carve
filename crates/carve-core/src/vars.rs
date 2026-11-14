@@ -1,6 +1,7 @@
 //! Global variables, kept in memory and saved as JSON.
 
 use std::collections::BTreeMap;
+use std::fmt::Write as _;
 
 use serde_json::{Map, Value as Json, json};
 
@@ -8,63 +9,49 @@ use crate::value::{PlayerRef, Value};
 
 #[derive(Debug, Default, Clone)]
 pub struct Variables {
-    map: BTreeMap<String, Value>,
+    store: Store,
 }
 
 impl Variables {
     pub fn get(&self, key: &str) -> Value {
-        self.map.get(key).cloned().unwrap_or(Value::None)
+        self.store.map.get(key).cloned().unwrap_or(Value::None)
     }
 
     /// The stored value, without cloning. `None` when unset.
     pub fn get_ref(&self, key: &str) -> Option<&Value> {
-        self.map.get(key)
+        self.store.map.get(key)
     }
 
     pub fn set(&mut self, key: String, v: Value) {
-        if v == Value::None {
-            self.map.remove(&key);
-        } else {
-            self.map.insert(key, v);
-        }
+        self.store.set(key, v);
     }
 
     /// Like [`Variables::set`], but only allocates the key when it is new.
     pub fn set_str(&mut self, key: &str, v: Value) {
-        if v == Value::None {
-            self.map.remove(key);
-        } else if let Some(slot) = self.map.get_mut(key) {
-            *slot = v;
-        } else {
-            self.map.insert(key.to_string(), v);
-        }
+        self.store.set_str(key, v);
     }
 
     /// Delete `key`, or every key under `prefix::` when `key` ends with `::*`.
     pub fn delete(&mut self, key: &str) {
-        delete_in(&mut self.map, key);
+        self.store.delete(key);
     }
 
     pub fn len(&self) -> usize {
-        self.map.len()
+        self.store.map.len()
     }
 
     /// Every variable name starting with `prefix`, sorted.
     pub fn keys_with_prefix(&self, prefix: &str) -> Vec<String> {
-        self.map
-            .range(prefix.to_string()..)
-            .take_while(|(k, _)| k.starts_with(prefix))
-            .map(|(k, _)| k.clone())
-            .collect()
+        self.store.under(prefix).map(|(k, _)| k.clone()).collect()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.map.is_empty()
+        self.store.map.is_empty()
     }
 
     pub fn to_json(&self) -> String {
         let mut obj = Map::new();
-        for (k, v) in &self.map {
+        for (k, v) in &self.store.map {
             let j = match v {
                 Value::None | Value::List(_) | Value::Entity(_) | Value::Queue(_) => continue,
                 Value::Num(n) => json!(n),
@@ -103,7 +90,7 @@ impl Variables {
         let Json::Object(obj) = j else {
             return Err("variables.json must hold a JSON object".into());
         };
-        let mut map = BTreeMap::new();
+        let mut store = Store::default();
         for (k, v) in obj {
             let val = match v {
                 Json::Number(n) => Value::Num(n.as_f64().unwrap_or(0.0)),
@@ -115,9 +102,9 @@ impl Variables {
                 },
                 _ => continue,
             };
-            map.insert(k, val);
+            store.set(k, val);
         }
-        Ok(Variables { map })
+        Ok(Variables { store })
     }
 }
 
@@ -216,57 +203,199 @@ fn direct<'a>(it: impl Iterator<Item = (&'a String, &'a Value)>, prefix: &str) -
     out
 }
 
-/// Next free number index of a list, counting from size + 1 like Skript.
-fn next_index(items: &[(String, Value)]) -> String {
-    let mut i = items.len() + 1;
-    while items.iter().any(|(k, _)| k.parse::<usize>() == Ok(i)) {
-        i += 1;
-    }
-    i.to_string()
+/// Per list (`name::`): how many direct items it has, and how many of their
+/// indexes parse as a whole number without being written plainly (`01`, `+2`).
+#[derive(Debug, Default, Clone, Copy)]
+struct Meta {
+    count: usize,
+    odd: usize,
 }
 
-impl Variables {
-    /// Direct items of the list `prefix` (`name::`), sorted by index.
-    pub fn list(&self, prefix: &str) -> Vec<(String, Value)> {
-        direct(
-            self.map
-                .range(prefix.to_string()..)
-                .take_while(|(k, _)| k.starts_with(prefix)),
-            prefix,
-        )
+/// The lists a key is a direct item of, with its index in each: `a::b::c` is
+/// item `c` of `a::b::`. Three colons in a row (`a:::b`) make it an item of
+/// both `a::` and `a:::`, same as a prefix scan finds.
+fn parents(k: &str) -> impl Iterator<Item = (&str, &str)> {
+    let last = k.rfind("::");
+    let a = last.map(|i| (&k[..i + 2], &k[i + 2..]));
+    let b = last
+        .filter(|&i| i > 0 && k.as_bytes()[i - 1] == b':')
+        .map(|i| (&k[..i + 1], &k[i + 1..]));
+    a.into_iter().chain(b)
+}
+
+/// An index that counts as a whole number for `add` but isn't written in
+/// plain decimal form.
+fn odd_index(rest: &str) -> bool {
+    rest.parse::<usize>().is_ok()
+        && !(rest.bytes().all(|b| b.is_ascii_digit()) && (rest.len() == 1 || !rest.starts_with('0')))
+}
+
+/// Sorted variables plus a per-list item count, so `add` and `size of` don't
+/// walk the whole list.
+#[derive(Debug, Default, Clone)]
+struct Store {
+    map: BTreeMap<String, Value>,
+    meta: BTreeMap<String, Meta>,
+}
+
+impl Store {
+    fn added(&mut self, key: &str) {
+        for (p, rest) in parents(key) {
+            let odd = usize::from(odd_index(rest));
+            if let Some(m) = self.meta.get_mut(p) {
+                m.count += 1;
+                m.odd += odd;
+            } else {
+                self.meta.insert(p.to_string(), Meta { count: 1, odd });
+            }
+        }
     }
 
-    /// Every value under the list `prefix` (`name::`), at any depth.
-    pub fn all_under(&self, prefix: &str) -> Vec<(String, Value)> {
+    fn removed(&mut self, key: &str) {
+        for (p, rest) in parents(key) {
+            if let Some(m) = self.meta.get_mut(p) {
+                m.count = m.count.saturating_sub(1);
+                if odd_index(rest) {
+                    m.odd = m.odd.saturating_sub(1);
+                }
+                if m.count == 0 {
+                    self.meta.remove(p);
+                }
+            }
+        }
+    }
+
+    fn set(&mut self, key: String, v: Value) {
+        if matches!(v, Value::None) {
+            self.remove(&key);
+        } else if let Some(slot) = self.map.get_mut(&key) {
+            *slot = v;
+        } else {
+            self.added(&key);
+            self.map.insert(key, v);
+        }
+    }
+
+    fn set_str(&mut self, key: &str, v: Value) {
+        if matches!(v, Value::None) {
+            self.remove(key);
+        } else if let Some(slot) = self.map.get_mut(key) {
+            *slot = v;
+        } else {
+            self.added(key);
+            self.map.insert(key.to_string(), v);
+        }
+    }
+
+    fn remove(&mut self, key: &str) {
+        if self.map.remove(key).is_some() {
+            self.removed(key);
+        }
+    }
+
+    /// Every entry whose key starts with `prefix`, in key order.
+    fn under<'a>(&'a self, prefix: &'a str) -> impl Iterator<Item = (&'a String, &'a Value)> {
+        self.map
+            .range::<str, _>((std::ops::Bound::Included(prefix), std::ops::Bound::Unbounded))
+            .take_while(move |(k, _)| k.starts_with(prefix))
+    }
+
+    fn delete(&mut self, key: &str) {
+        if let Some(prefix) = list_prefix(key) {
+            let keys: Vec<String> = self.under(prefix).map(|(k, _)| k.clone()).collect();
+            for k in keys {
+                self.remove(&k);
+            }
+        } else {
+            self.remove(key);
+        }
+    }
+
+    fn list(&self, prefix: &str) -> Vec<(String, Value)> {
+        direct(self.under(prefix), prefix)
+    }
+
+    fn all_under(&self, prefix: &str) -> Vec<(String, Value)> {
         let mut out: Vec<(String, Value)> = self
-            .map
-            .range(prefix.to_string()..)
-            .take_while(|(k, _)| k.starts_with(prefix))
+            .under(prefix)
             .filter_map(|(k, v)| Some((k.strip_prefix(prefix)?.to_string(), v.clone())))
             .collect();
         out.sort_by(|a, b| path_order(&a.0, &b.0));
         out
     }
 
+    fn list_len(&self, prefix: &str) -> usize {
+        self.meta.get(prefix).map_or(0, |m| m.count)
+    }
+
+    /// The full key of the list's next free number index, counting from
+    /// size + 1 like Skript.
+    fn next_key(&self, prefix: &str) -> String {
+        let m = self.meta.get(prefix).copied().unwrap_or_default();
+        let mut i = m.count + 1;
+        if m.odd > 0 {
+            // Indexes like `01` count as numbers too: check them the slow way.
+            let items = self.list(prefix);
+            while items.iter().any(|(k, _)| k.parse::<usize>() == Ok(i)) {
+                i += 1;
+            }
+            return format!("{prefix}{i}");
+        }
+        let mut key = String::with_capacity(prefix.len() + 8);
+        loop {
+            key.clear();
+            key.push_str(prefix);
+            let _ = write!(key, "{i}");
+            if !self.map.contains_key(&key) {
+                return key;
+            }
+            i += 1;
+        }
+    }
+
+    fn list_push(&mut self, prefix: &str, v: Value) {
+        if matches!(v, Value::None) {
+            return;
+        }
+        // `next_key` only hands out a key that is not in use.
+        let key = self.next_key(prefix);
+        self.added(&key);
+        self.map.insert(key, v);
+    }
+
+    fn list_remove(&mut self, prefix: &str, v: &Value) {
+        let gone: Vec<String> = self
+            .under(prefix)
+            .filter(|(k, item)| k.get(prefix.len()..).is_some_and(|r| !r.contains("::")) && item.loose_eq(v))
+            .map(|(k, _)| k.clone())
+            .collect();
+        for k in gone {
+            self.remove(&k);
+        }
+    }
+}
+
+impl Variables {
+    /// Direct items of the list `prefix` (`name::`), sorted by index.
+    pub fn list(&self, prefix: &str) -> Vec<(String, Value)> {
+        self.store.list(prefix)
+    }
+
+    /// Every value under the list `prefix` (`name::`), at any depth.
+    pub fn all_under(&self, prefix: &str) -> Vec<(String, Value)> {
+        self.store.all_under(prefix)
+    }
+
     pub fn list_len(&self, prefix: &str) -> usize {
-        self.map
-            .range(prefix.to_string()..)
-            .take_while(|(k, _)| k.starts_with(prefix))
-            .filter(|(k, _)| !k.get(prefix.len()..).unwrap_or("").contains("::"))
-            .count()
+        self.store.list_len(prefix)
     }
 
     pub fn list_push(&mut self, prefix: &str, v: Value) {
-        let idx = next_index(&self.list(prefix));
-        self.set(format!("{prefix}{idx}"), v);
+        self.store.list_push(prefix, v);
     }
 
     pub fn list_remove(&mut self, prefix: &str, v: &Value) {
-        for (k, item) in self.list(prefix) {
-            if item.loose_eq(v) {
-                self.map.remove(&format!("{prefix}{k}"));
-            }
-        }
+        self.store.list_remove(prefix, v);
     }
 }
 
@@ -275,77 +404,79 @@ pub(crate) fn list_prefix(key: &str) -> Option<&str> {
     key.strip_suffix('*').filter(|p| p.ends_with("::"))
 }
 
-fn delete_in(map: &mut BTreeMap<String, Value>, key: &str) {
-    if let Some(prefix) = list_prefix(key) {
-        map.retain(|k, _| !k.starts_with(prefix));
-    } else {
-        map.remove(key);
-    }
+/// Local variables of one run. Runs hold few plain locals, so those sit in a
+/// flat list (faster than a map for a handful). List items (keys with a `:`)
+/// go to a sorted store, so big lists stay fast.
+#[derive(Debug, Default, Clone)]
+pub(crate) struct Locals {
+    flat: Vec<(String, Value)>,
+    lists: Store,
 }
 
-/// Local variables of one run. Runs hold few locals, so a flat list is
-/// faster than a map here.
-#[derive(Debug, Default, Clone)]
-pub(crate) struct Locals(Vec<(String, Value)>);
+fn is_list_key(key: &str) -> bool {
+    key.as_bytes().contains(&b':')
+}
 
 impl Locals {
     pub(crate) fn get(&self, key: &str) -> Option<&Value> {
-        self.0.iter().find(|(k, _)| k == key).map(|(_, v)| v)
+        if is_list_key(key) {
+            return self.lists.map.get(key);
+        }
+        self.flat.iter().find(|(k, _)| k == key).map(|(_, v)| v)
     }
 
     pub(crate) fn set(&mut self, key: &str, v: Value) {
-        let pos = self.0.iter().position(|(k, _)| k == key);
+        if is_list_key(key) {
+            self.lists.set_str(key, v);
+            return;
+        }
+        let pos = self.flat.iter().position(|(k, _)| k == key);
         match (pos, v) {
             (Some(i), Value::None) => {
-                self.0.swap_remove(i);
+                self.flat.swap_remove(i);
             }
             (None, Value::None) => {}
             (Some(i), v) => {
-                if let Some(slot) = self.0.get_mut(i) {
+                if let Some(slot) = self.flat.get_mut(i) {
                     slot.1 = v;
                 }
             }
-            (None, v) => self.0.push((key.to_string(), v)),
+            (None, v) => self.flat.push((key.to_string(), v)),
         }
     }
 
+    /// Remove everything, keeping the memory for reuse.
+    pub(crate) fn clear(&mut self) {
+        self.flat.clear();
+        self.lists.map.clear();
+        self.lists.meta.clear();
+    }
+
     pub(crate) fn delete(&mut self, key: &str) {
-        if let Some(prefix) = list_prefix(key) {
-            self.0.retain(|(k, _)| !k.starts_with(prefix));
+        if list_prefix(key).is_some() {
+            self.lists.delete(key);
         } else {
             self.set(key, Value::None);
         }
     }
 
     pub(crate) fn list(&self, prefix: &str) -> Vec<(String, Value)> {
-        direct(self.0.iter().map(|(k, v)| (k, v)), prefix)
+        self.lists.list(prefix)
     }
 
     pub(crate) fn all_under(&self, prefix: &str) -> Vec<(String, Value)> {
-        let mut out: Vec<(String, Value)> = self
-            .0
-            .iter()
-            .filter_map(|(k, v)| Some((k.strip_prefix(prefix)?.to_string(), v.clone())))
-            .collect();
-        out.sort_by(|a, b| path_order(&a.0, &b.0));
-        out
+        self.lists.all_under(prefix)
     }
 
     pub(crate) fn list_len(&self, prefix: &str) -> usize {
-        self.0
-            .iter()
-            .filter(|(k, _)| k.strip_prefix(prefix).is_some_and(|r| !r.contains("::")))
-            .count()
+        self.lists.list_len(prefix)
     }
 
     pub(crate) fn list_push(&mut self, prefix: &str, v: Value) {
-        let idx = next_index(&self.list(prefix));
-        self.set(&format!("{prefix}{idx}"), v);
+        self.lists.list_push(prefix, v);
     }
 
     pub(crate) fn list_remove(&mut self, prefix: &str, v: &Value) {
-        self.0.retain(|(k, item)| {
-            !(k.strip_prefix(prefix).is_some_and(|r| !r.contains("::")) && item.loose_eq(v))
-        });
+        self.lists.list_remove(prefix, v);
     }
 }
