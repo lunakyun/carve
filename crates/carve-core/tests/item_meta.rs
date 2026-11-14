@@ -333,6 +333,18 @@ fn ok_sent(line: &str) -> Vec<String> {
 }
 
 #[test]
+fn with_name_form_and_list_store() {
+    assert_eq!(
+        ok(r#"give player stick with name "N""#),
+        [r#"give Steve minecraft:stick[custom_name="N"] 1"#]
+    );
+    assert_eq!(
+        sent("set {_e::*} to enchantments of player's tool\n    send size of {_e::*}\n    send {_e::1}"),
+        ["2", "sharpness 5"]
+    );
+}
+
+#[test]
 fn bad_syntax_is_an_error() {
     assert!(!compiles("give player diamond sword enchanted with nonsense"));
     assert!(!compiles("give player diamond sword named"));

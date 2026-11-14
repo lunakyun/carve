@@ -496,7 +496,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Is Eating
 - ⬜ Is Edible
 - ⬜ Is Empty
-- ⬜ Is Enchanted
+- ✅ Is Enchanted — `item is enchanted [with sharpness 5]`
 - ⬜ Is Evenly Divisible By
 - ⬜ Is Fire Resistant
 - ⬜ Is Fish Hook in Open Water
@@ -831,12 +831,12 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Inventory Slot ⭐
 - ⬜ Inverse Boolean
 - ✅ IP — `ip of player`
-- 🟡 Item — item literals like `2 diamonds`
-- ⬜ Item Amount
+- ✅ Item — `2 diamonds`, `diamond sword named "x"`
+- ✅ Item Amount — `item amount of x`, `amount of x`
 - ⬜ Item Component - Copy
 - ⬜ Item Cooldown
 - ⬜ Item Display Transform
-- ⬜ Item Enchantments
+- ✅ Item Enchantments — `enchantments of x`
 - ⬜ Item Flags
 - ⬜ Item Model
 - ⬜ Item of an Entity
@@ -844,7 +844,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Item with Custom Model Data
 - ⬜ Item with Enchantment Glint
 - ⬜ Item with Item Flags
-- ⬜ Item with Lore ⭐
+- ✅ Item with Lore ⭐ — `x with lore "a" and "b"`
 - ⬜ Item With Model
 - ⬜ Item with Tooltip
 - ⬜ Items
@@ -886,7 +886,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Loot Table from Key
 - ⬜ Looted Entity of Loot Context
 - ⬜ Looter of Loot Context
-- ⬜ Lore ⭐
+- 🟡 Lore ⭐ — `lore of x` reads it; setting lore of a held item is not done
 - ⬜ Love Time
 - ⬜ Lowest/Highest Solid Block
 - ⬜ Luck of Loot Context
@@ -919,7 +919,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Moved blocks
 - 🟡 Name — `name of player`
 - ✅ Name / Display Name / Tab List Name
-- ⬜ Named Item/Inventory ⭐
+- 🟡 Named Item/Inventory ⭐ — `x named "n"`, `name of x`; no named inventories
 - ⬜ NaN
 - ⬜ Nearest Entity
 - ⬜ Negative Infinity
@@ -955,7 +955,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Picked Item/Block/Entity
 - ⬜ Pickup Delay
 - ✅ Ping ⭐ — `ping of player`
-- ⬜ Plain Item
+- 🟡 Plain Item — `item type of x` (no name, lore or enchantments)
 - ⬜ Player Chat Completions
 - ⬜ Player Input Keys
 - ⬜ Player List Header and Footer
@@ -1243,7 +1243,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Display Billboard
 - ⬜ Display Entity
 - ⬜ Display Text Alignment
-- ⬜ Enchantment
+- 🟡 Enchantment — `sharpness 5` in item expressions and conditions
 - ⬜ Enchantment Offer
 - ⬜ Enchantment Type
 - ⬜ Entity
@@ -1272,7 +1272,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Inventory Action
 - ⬜ Inventory Close Reasons
 - ⬜ Inventory Type
-- 🟡 Item — type + amount; no name, lore or enchantments
+- ✅ Item — type, amount, name, lore, enchantments
 - ⬜ Item Component
 - ⬜ Item Display Transforms
 - ⬜ Item Flag
