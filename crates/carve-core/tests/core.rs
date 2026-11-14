@@ -93,6 +93,18 @@ impl Host for Mock {
     fn log(&mut self, level: LogLevel, msg: &str) {
         self.logs.push((level, msg.to_string()));
     }
+    fn online_players(&mut self) -> Vec<PlayerRef> {
+        let mut v: Vec<PlayerRef> = self
+            .online
+            .iter()
+            .map(|(u, n)| PlayerRef {
+                uuid: u.clone(),
+                name: n.clone(),
+            })
+            .collect();
+        v.sort_by(|a, b| a.name.cmp(&b.name));
+        v
+    }
 }
 
 fn steve() -> PlayerRef {
@@ -951,4 +963,192 @@ fn quit_player_resolves_until_first_wait() {
     let tok = h.waits[0].1;
     e.resume(tok, &mut h);
     assert_eq!(h.take(), ["broadcast later <none>"]);
+}
+
+// ---------- v2: loops and lists ----------
+
+fn with_alex(mut h: Mock) -> Mock {
+    h.online.insert("u2".into(), "Alex".into());
+    h
+}
+
+#[test]
+fn loop_times_and_iteration() {
+    let out = join(
+        "on join:\n    loop 3 times:\n        send \"n=%loop-number% i=%loop-iteration% v=%loop-value%\"\n    send \"done\"\n",
+    );
+    assert_eq!(
+        out,
+        [
+            "send Steve n=1 i=1 v=1",
+            "send Steve n=2 i=2 v=2",
+            "send Steve n=3 i=3 v=3",
+            "send Steve done"
+        ]
+    );
+    // zero and negative counts run nothing
+    assert_eq!(
+        join("on join:\n    loop 0 times:\n        send \"x\"\n    loop -2 times:\n        send \"y\"\n"),
+        Vec::<String>::new()
+    );
+}
+
+#[test]
+fn loop_list_values_and_index_in_number_order() {
+    let out = join(
+        "on join:\n    set {_l::2} to \"b\"\n    set {_l::10} to \"c\"\n    set {_l::1} to \"a\"\n    set {_l::x::deep} to \"skip\"\n    loop {_l::*}:\n        send \"%loop-index%=%loop-value%\"\n",
+    );
+    assert_eq!(out, ["send Steve 1=a", "send Steve 2=b", "send Steve 10=c"]);
+}
+
+#[test]
+fn list_add_remove_size_and_print() {
+    let out = join(
+        r#"on join:
+    add "a" to {_l::*}
+    add "b" to {_l::*}
+    add player to {_l::*}
+    add "a" to {_l::*}
+    send "%size of {_l::*}%: %{_l::*}%"
+    remove "a" from {_l::*}
+    send "%size of {_l::*}%: %{_l::*}%"
+    add 5 to {g::*}
+    if {g::*} is set:
+        send "g set %{g::1}%"
+    if {_empty::*} is not set:
+        send "empty"
+"#,
+    );
+    assert_eq!(
+        out,
+        [
+            "send Steve 4: a, b, Steve and a",
+            "send Steve 2: b and Steve",
+            "send Steve g set 5",
+            "send Steve empty"
+        ]
+    );
+}
+
+#[test]
+fn loop_all_players_and_values() {
+    let mut e = engine(
+        "on join:\n    loop all players:\n        send \"hi %loop-player%\" to loop-player\n    loop 1, 2 and 3:\n        add loop-value to {_sum}\n    send \"%{_sum}%\"\n",
+    );
+    let mut h = with_alex(Mock::with_steve());
+    e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
+    assert_eq!(
+        h.take(),
+        ["send Alex hi Alex", "send Steve hi Steve", "send Steve 6"]
+    );
+}
+
+#[test]
+fn nested_loops_exit_continue_stop() {
+    let out = join(
+        r#"on join:
+    loop 3 times:
+        if loop-number is 2:
+            continue
+        loop "a", "b" and "c":
+            if loop-value is "b":
+                exit loop
+            send "%loop-value-1%%loop-value-2%"
+    set {_i} to 0
+    while {_i} < 5:
+        add 1 to {_i}
+        if {_i} is 4:
+            stop loop
+    send "i=%{_i}%"
+    stop
+    send "never"
+"#,
+    );
+    assert_eq!(out, ["send Steve 1a", "send Steve 3a", "send Steve i=4"]);
+}
+
+#[test]
+fn wait_inside_loop_resumes_loop_state() {
+    let mut e = engine(
+        "on join:\n    loop 3 times:\n        send \"%loop-value%\"\n        wait 1 tick\n    send \"end\"\n",
+    );
+    let mut h = Mock::with_steve();
+    e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
+    for _ in 0..3 {
+        let tok = h.waits.last().unwrap().1;
+        e.resume(tok, &mut h);
+    }
+    assert_eq!(
+        h.take(),
+        ["send Steve 1", "send Steve 2", "send Steve 3", "send Steve end"]
+    );
+    assert_eq!(e.pending_waits(), 0);
+}
+
+#[test]
+fn runaway_guard_stops_infinite_loops() {
+    let mut e = engine("on join:\n    while 1 is 1:\n        add 1 to {_x}\n    send \"never\"\n");
+    let mut h = Mock::with_steve();
+    e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
+    assert!(h.take().is_empty());
+    assert!(
+        h.errors()[0].contains("more than 100000 instructions"),
+        "{:?}",
+        h.errors()
+    );
+    // a huge `loop N times` doesn't allocate N items and is also stopped
+    let mut e = engine("on join:\n    loop 1000000000 times:\n        add 1 to {_x}\n");
+    e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
+    assert_eq!(h.errors().len(), 2);
+    // a wait inside the loop starts a fresh slice each time
+    let mut e = engine(
+        "on join:\n    loop 5 times:\n        set {_a} to 1\n        set {_a} to 2\n        wait 1 tick\n    send \"ok\"\n",
+    );
+    e.max_instructions = 6;
+    let mut h = Mock::with_steve();
+    e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
+    while let Some((_, tok)) = h.waits.pop() {
+        e.resume(tok, &mut h);
+    }
+    assert_eq!(h.take(), ["send Steve ok"]);
+    assert!(h.errors().is_empty(), "{:?}", h.errors());
+}
+
+#[test]
+fn loop_errors() {
+    assert!(
+        errors_of("on join:\n    send \"%loop-value%\"\n")[0]
+            .msg
+            .contains("can't understand")
+    );
+    assert!(
+        errors_of("on join:\n    exit loop\n")[0]
+            .msg
+            .contains("only works inside a loop")
+    );
+    assert!(
+        errors_of("on join:\n    continue\n")[0]
+            .msg
+            .contains("only works inside a loop")
+    );
+    assert!(
+        errors_of("on join:\n    loop {x}:\n        send \"a\"\n")[0]
+            .msg
+            .contains("list variable")
+    );
+    assert!(
+        errors_of("on join:\n    loop \"a\" times:\n        send \"a\"\n")[0]
+            .msg
+            .contains("needs a number")
+    );
+    assert!(
+        errors_of("on join:\n    loop 2 times:\n        send \"%loop-player%\"\n")[0]
+            .msg
+            .contains("can't understand")
+    );
+    assert!(
+        errors_of("on join:\n    add \"x\" to {single}\n")[0]
+            .msg
+            .contains("can't add a text")
+    );
 }

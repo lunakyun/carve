@@ -103,6 +103,70 @@ impl Variables {
     }
 }
 
+/// Compare list indexes the way people expect: numbers by value, then text.
+pub(crate) fn index_order(a: &str, b: &str) -> std::cmp::Ordering {
+    match (a.parse::<f64>(), b.parse::<f64>()) {
+        (Ok(x), Ok(y)) => x.partial_cmp(&y).unwrap_or(std::cmp::Ordering::Equal),
+        (Ok(_), Err(_)) => std::cmp::Ordering::Less,
+        (Err(_), Ok(_)) => std::cmp::Ordering::Greater,
+        _ => a.cmp(b),
+    }
+}
+
+/// The direct items of a list (`prefix` is `name::`), sorted by index.
+fn direct<'a>(it: impl Iterator<Item = (&'a String, &'a Value)>, prefix: &str) -> Vec<(String, Value)> {
+    let mut out: Vec<(String, Value)> = it
+        .filter_map(|(k, v)| {
+            let rest = k.strip_prefix(prefix)?;
+            (!rest.contains("::")).then(|| (rest.to_string(), v.clone()))
+        })
+        .collect();
+    out.sort_by(|a, b| index_order(&a.0, &b.0));
+    out
+}
+
+/// Next free number index of a list, counting from size + 1 like Skript.
+fn next_index(items: &[(String, Value)]) -> String {
+    let mut i = items.len() + 1;
+    while items.iter().any(|(k, _)| k.parse::<usize>() == Ok(i)) {
+        i += 1;
+    }
+    i.to_string()
+}
+
+impl Variables {
+    /// Direct items of the list `prefix` (`name::`), sorted by index.
+    pub fn list(&self, prefix: &str) -> Vec<(String, Value)> {
+        direct(
+            self.map
+                .range(prefix.to_string()..)
+                .take_while(|(k, _)| k.starts_with(prefix)),
+            prefix,
+        )
+    }
+
+    pub fn list_len(&self, prefix: &str) -> usize {
+        self.map
+            .range(prefix.to_string()..)
+            .take_while(|(k, _)| k.starts_with(prefix))
+            .filter(|(k, _)| !k.get(prefix.len()..).unwrap_or("").contains("::"))
+            .count()
+    }
+
+    pub fn list_push(&mut self, prefix: &str, v: Value) {
+        let idx = next_index(&self.list(prefix));
+        self.set(format!("{prefix}{idx}"), v);
+    }
+
+    pub fn list_remove(&mut self, prefix: &str, v: &Value) {
+        for (k, item) in self.list(prefix) {
+            if item.loose_eq(v) {
+                self.map.remove(&format!("{prefix}{k}"));
+            }
+        }
+    }
+}
+
 /// For a list key like `list::*`, the prefix `list::` that every item starts with.
 pub(crate) fn list_prefix(key: &str) -> Option<&str> {
     key.strip_suffix('*').filter(|p| p.ends_with("::"))
@@ -148,5 +212,27 @@ impl Locals {
         } else {
             self.set(key, Value::None);
         }
+    }
+
+    pub(crate) fn list(&self, prefix: &str) -> Vec<(String, Value)> {
+        direct(self.0.iter().map(|(k, v)| (k, v)), prefix)
+    }
+
+    pub(crate) fn list_len(&self, prefix: &str) -> usize {
+        self.0
+            .iter()
+            .filter(|(k, _)| k.strip_prefix(prefix).is_some_and(|r| !r.contains("::")))
+            .count()
+    }
+
+    pub(crate) fn list_push(&mut self, prefix: &str, v: Value) {
+        let idx = next_index(&self.list(prefix));
+        self.set(&format!("{prefix}{idx}"), v);
+    }
+
+    pub(crate) fn list_remove(&mut self, prefix: &str, v: &Value) {
+        self.0.retain(|(k, item)| {
+            !(k.strip_prefix(prefix).is_some_and(|r| !r.contains("::")) && item.loose_eq(v))
+        });
     }
 }

@@ -4,7 +4,7 @@ use std::sync::{Arc, OnceLock};
 
 use crate::blocks::{Line, parse_blocks};
 use crate::error::ScriptError;
-use crate::expr::{Env, Expr, Ty, VarRef, parse_template};
+use crate::expr::{Env, Expr, LoopKind, Ty, VarRef, parse_expr, parse_template, parse_varref};
 use crate::lexer::{Tok, lex};
 use crate::pattern::{Capture, Memo, Pattern, closest};
 
@@ -131,6 +131,19 @@ pub enum Effect {
     Add(VarRef, Expr),
     Remove(VarRef, Expr),
     Delete(VarRef),
+    /// `add x to {list::*}`: append at the next free number index.
+    ListAdd(VarRef, Expr),
+    /// `remove x from {list::*}`: remove every item equal to x.
+    ListRemove(VarRef, Expr),
+}
+
+/// What a `loop` goes over.
+#[derive(Debug, Clone, PartialEq)]
+pub enum LoopSrc {
+    Times(Expr),
+    List(VarRef),
+    Players,
+    Values(Vec<Expr>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -139,6 +152,14 @@ pub enum Instr {
     /// Jump to target when the condition is false.
     JumpIfNot(Cond, usize),
     Jump(usize),
+    /// Start a loop: take a snapshot of its items. Falls through to `LoopNext`.
+    LoopInit(LoopSrc),
+    /// Move to the next item, or end the loop and jump to the target.
+    LoopNext(usize),
+    /// `exit loop`: end the innermost loop and jump to the target.
+    LoopBreak(usize),
+    /// `stop`: end the whole run.
+    Stop,
 }
 
 #[derive(Debug, Clone)]
@@ -208,8 +229,8 @@ pub const EFFECT_PATTERNS: &[(&str, EffKind)] = &[
     ("wait %number% (tick|ticks)", EffKind::WaitTicks),
     ("wait %number% (second|seconds)", EffKind::WaitSeconds),
     ("set %variable% to %object%", EffKind::Set),
-    ("add %number% to %variable%", EffKind::Add),
-    ("remove %number% from %variable%", EffKind::Remove),
+    ("add %object% to %variable%", EffKind::Add),
+    ("remove %object% from %variable%", EffKind::Remove),
     ("delete %variable%", EffKind::Delete),
 ];
 
@@ -300,6 +321,14 @@ fn suggest(toks: &[Tok], srcs: &[&'static str]) -> Vec<String> {
 
 // ---- compiler ----
 
+/// A loop being compiled: where `continue` jumps and which jumps `exit loop` patches.
+struct LoopCx {
+    /// Has a runtime frame (every loop except `while`).
+    frame: bool,
+    next: usize,
+    breaks: Vec<usize>,
+}
+
 struct Cx<'a> {
     file: &'a str,
     env: Env,
@@ -307,6 +336,7 @@ struct Cx<'a> {
     code: Vec<Instr>,
     lines: Vec<usize>,
     errors: Vec<ScriptError>,
+    loops: Vec<LoopCx>,
 }
 
 impl Cx<'_> {
@@ -368,6 +398,11 @@ impl Cx<'_> {
                 i += 1;
                 continue;
             }
+            if (lower.starts_with("loop ") || lower.starts_with("while ")) && line.opens_block() {
+                self.loop_block(line);
+                i += 1;
+                continue;
+            }
             if lower.starts_with("else") {
                 self.err(line.num, "'else' without an 'if' before it");
                 i += 1;
@@ -384,9 +419,166 @@ impl Cx<'_> {
                 i += 1;
                 continue;
             }
+            if self.control(line.num, &lower) {
+                i += 1;
+                continue;
+            }
             self.effect(line.num, &line.text);
             i += 1;
         }
+    }
+
+    /// `stop`, `stop loop` / `exit loop`, `continue`. Returns true if handled.
+    fn control(&mut self, num: usize, lower: &str) -> bool {
+        let words: Vec<&str> = lower.split_whitespace().collect();
+        match words.as_slice() {
+            ["stop"] | ["stop", "trigger"] | ["exit"] => {
+                self.emit(Instr::Stop, num);
+            }
+            ["stop", "loop"] | ["exit", "loop"] | ["exit", "this", "loop"] | ["break"] => {
+                let Some(lp) = self.loops.last() else {
+                    self.err(num, "'exit loop' only works inside a loop");
+                    return true;
+                };
+                let instr = if lp.frame {
+                    Instr::LoopBreak(usize::MAX)
+                } else {
+                    Instr::Jump(usize::MAX)
+                };
+                let at = self.emit(instr, num);
+                if let Some(lp) = self.loops.last_mut() {
+                    lp.breaks.push(at);
+                }
+            }
+            ["continue"] | ["continue", "loop"] => {
+                let Some(next) = self.loops.last().map(|l| l.next) else {
+                    self.err(num, "'continue' only works inside a loop");
+                    return true;
+                };
+                self.emit(Instr::Jump(next), num);
+            }
+            _ => return false,
+        }
+        true
+    }
+
+    fn loop_block(&mut self, line: &Line) {
+        let head = line.head();
+        let lower = head.to_ascii_lowercase();
+        if let Some(cond_text) = head.get(6..).filter(|_| lower.starts_with("while ")) {
+            let start = self.code.len();
+            let jif = self
+                .cond(line.num, cond_text)
+                .map(|c| self.emit(Instr::JumpIfNot(c, usize::MAX), line.num));
+            self.loops.push(LoopCx {
+                frame: false,
+                next: start,
+                breaks: Vec::new(),
+            });
+            self.block(&line.children);
+            self.emit(Instr::Jump(start), line.num);
+            let end = self.code.len();
+            if let Some(j) = jif
+                && let Some(Instr::JumpIfNot(_, t)) = self.code.get_mut(j)
+            {
+                *t = end;
+            }
+            self.finish_loop(end);
+            return;
+        }
+        let rest = head.get(5..).unwrap_or("").trim();
+        let Some((src, kind)) = self.loop_source(line.num, rest) else {
+            return;
+        };
+        self.emit(Instr::LoopInit(src), line.num);
+        let next = self.emit(Instr::LoopNext(usize::MAX), line.num);
+        self.loops.push(LoopCx {
+            frame: true,
+            next,
+            breaks: Vec::new(),
+        });
+        self.env.loops.push(kind);
+        self.block(&line.children);
+        self.env.loops.pop();
+        self.emit(Instr::Jump(next), line.num);
+        let end = self.code.len();
+        if let Some(Instr::LoopNext(t)) = self.code.get_mut(next) {
+            *t = end;
+        }
+        self.finish_loop(end);
+    }
+
+    fn finish_loop(&mut self, end: usize) {
+        if let Some(lp) = self.loops.pop() {
+            for b in lp.breaks {
+                if let Some(Instr::LoopBreak(t) | Instr::Jump(t)) = self.code.get_mut(b) {
+                    *t = end;
+                }
+            }
+        }
+    }
+
+    fn loop_source(&mut self, num: usize, rest: &str) -> Option<(LoopSrc, LoopKind)> {
+        let lower = rest.to_ascii_lowercase();
+        if matches!(
+            lower.as_str(),
+            "all players" | "all online players" | "players" | "online players"
+        ) {
+            return Some((LoopSrc::Players, LoopKind::Players));
+        }
+        let toks = match lex(rest) {
+            Ok(t) => t,
+            Err(e) => {
+                self.err(num, e);
+                return None;
+            }
+        };
+        if let Some((last, body)) = toks.split_last()
+            && last.is_lit("times")
+        {
+            return match parse_expr(body, &self.env) {
+                Ok(e) if Ty::Number.accepts(e.ty(&self.env)) => Some((LoopSrc::Times(e), LoopKind::Times)),
+                Ok(e) => {
+                    self.err(
+                        num,
+                        format!("'loop ... times' needs a number, got {}", e.ty(&self.env).name()),
+                    );
+                    None
+                }
+                Err(e) => {
+                    self.err(num, format!("can't understand the loop count: {e}"));
+                    None
+                }
+            };
+        }
+        if let [Tok::Var(raw)] = toks.as_slice() {
+            return match parse_varref(raw, &self.env) {
+                Ok(v) if v.is_list() => Some((LoopSrc::List(v), LoopKind::List)),
+                Ok(_) => {
+                    self.err(num, format!("'loop {rest}' needs a list variable like {{x::*}}"));
+                    None
+                }
+                Err(e) => {
+                    self.err(num, e);
+                    None
+                }
+            };
+        }
+        // `loop 1, 2 and 3:` / `loop "a" and "b":`
+        let mut items = Vec::new();
+        for part in toks.split(|t| t.is_lit(",") || t.is_lit("and")) {
+            match parse_expr(part, &self.env) {
+                Ok(e) => items.push(e),
+                Err(_) => {
+                    self.err(
+                        num,
+                        format!("can't understand 'loop {rest}' (use 'loop N times', 'loop {{x::*}}', 'loop all players' or 'loop a, b and c')"),
+                    );
+                    return None;
+                }
+            }
+        }
+        Some((LoopSrc::Values(items), LoopKind::Values))
     }
 
     fn cond(&mut self, num: usize, text: &str) -> Option<Cond> {
@@ -438,6 +630,17 @@ impl Cx<'_> {
                     if p.kind == EffKind::Cancel && self.is_command {
                         self.err(num, "commands have no event to cancel");
                         return;
+                    }
+                    if matches!(p.kind, EffKind::Add | EffKind::Remove) {
+                        let not_list = matches!(caps.get(1), Some(Some(Capture::Var(v))) if !v.is_list());
+                        let ty = match caps.first() {
+                            Some(Some(Capture::Expr(e))) => e.ty(&self.env),
+                            _ => Ty::Object,
+                        };
+                        if not_list && !Ty::Number.accepts(ty) {
+                            self.err(num, format!("can't add a {} to a single variable (only numbers; use a list like {{x::*}} for other values)", ty.name()));
+                            return;
+                        }
                     }
                     if let Some(eff) = build_effect(p.kind, caps) {
                         self.emit(Instr::Eff(eff), num);
@@ -546,8 +749,24 @@ fn build_effect(kind: EffKind, mut c: Vec<Option<Capture>>) -> Option<Effect> {
         EffKind::WaitTicks => Effect::Wait(take_expr(c, 0)?, 1),
         EffKind::WaitSeconds => Effect::Wait(take_expr(c, 0)?, 20),
         EffKind::Set => Effect::Set(take_var(c, 0)?, take_expr(c, 1)?),
-        EffKind::Add => Effect::Add(take_var(c, 1)?, take_expr(c, 0)?),
-        EffKind::Remove => Effect::Remove(take_var(c, 1)?, take_expr(c, 0)?),
+        EffKind::Add => {
+            let v = take_var(c, 1)?;
+            let e = take_expr(c, 0)?;
+            if v.is_list() {
+                Effect::ListAdd(v, e)
+            } else {
+                Effect::Add(v, e)
+            }
+        }
+        EffKind::Remove => {
+            let v = take_var(c, 1)?;
+            let e = take_expr(c, 0)?;
+            if v.is_list() {
+                Effect::ListRemove(v, e)
+            } else {
+                Effect::Remove(v, e)
+            }
+        }
         EffKind::Delete => Effect::Delete(take_var(c, 0)?),
     })
 }
@@ -640,6 +859,7 @@ pub fn compile_file(file: &str, src: &str) -> Result<Vec<Trigger>, Vec<ScriptErr
                     has_message: k == EventKind::Chat,
                     arg_types: vec![],
                     trigger_name: format!("'on {}'", k.name()),
+                    ..Env::default()
                 };
                 (TriggerKind::Event(k), &top.children, env, false)
             } else if lower.starts_with("command") {
@@ -699,6 +919,7 @@ pub fn compile_file(file: &str, src: &str) -> Result<Vec<Trigger>, Vec<ScriptErr
                     has_message: false,
                     arg_types,
                     trigger_name: format!("command /{}", def.name),
+                    ..Env::default()
                 };
                 (TriggerKind::Command(def), body, env, true)
             } else {
@@ -719,6 +940,7 @@ pub fn compile_file(file: &str, src: &str) -> Result<Vec<Trigger>, Vec<ScriptErr
             code: Vec::new(),
             lines: Vec::new(),
             errors: Vec::new(),
+            loops: Vec::new(),
         };
         cx.block(body);
         if cx.errors.is_empty() {

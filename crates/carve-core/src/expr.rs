@@ -10,6 +10,7 @@ pub enum Ty {
     Number,
     Text,
     Player,
+    Boolean,
     /// Unknown until runtime (variables).
     Object,
 }
@@ -20,6 +21,7 @@ impl Ty {
             Ty::Number => "number",
             Ty::Text => "text",
             Ty::Player => "player",
+            Ty::Boolean => "boolean",
             Ty::Object => "object",
         }
     }
@@ -56,11 +58,14 @@ pub enum Key {
 pub struct VarRef {
     pub key: Key,
     pub local: bool,
+    /// `{x::*}`: the whole list.
+    pub list: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
     Num(f64),
+    Bool(bool),
     Text(Vec<Part>),
     Var(VarRef),
     Player,
@@ -70,6 +75,23 @@ pub enum Expr {
     NameOf(Box<Expr>),
     Neg(Box<Expr>),
     Bin(Box<Expr>, BinOp, Box<Expr>),
+    /// Current value of the loop at this depth (0 = outermost loop).
+    LoopValue(usize),
+    /// List index (`loop-index`) of the list loop at this depth.
+    LoopIndex(usize),
+    /// 1-based round counter (`loop-iteration`) of the loop at this depth.
+    LoopIter(usize),
+    /// Number of items in a list variable (`size of {x::*}`).
+    Size(VarRef),
+}
+
+/// What a loop goes over. Decides the type of `loop-value`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LoopKind {
+    Times,
+    List,
+    Players,
+    Values,
 }
 
 /// What the current trigger offers to expressions.
@@ -79,12 +101,21 @@ pub struct Env {
     pub arg_types: Vec<Ty>,
     /// `Some("chat")` etc, used in error messages.
     pub trigger_name: String,
+    /// Loops around the current line, outermost first (`while` not included).
+    pub loops: Vec<LoopKind>,
 }
 
 impl Expr {
     pub fn ty(&self, env: &Env) -> Ty {
         match self {
-            Expr::Num(_) | Expr::Neg(_) | Expr::Bin(..) => Ty::Number,
+            Expr::Num(_) | Expr::Neg(_) | Expr::Bin(..) | Expr::LoopIter(_) | Expr::Size(_) => Ty::Number,
+            Expr::LoopIndex(_) => Ty::Text,
+            Expr::Bool(_) => Ty::Boolean,
+            Expr::LoopValue(d) => match env.loops.get(*d) {
+                Some(LoopKind::Times) => Ty::Number,
+                Some(LoopKind::Players) => Ty::Player,
+                _ => Ty::Object,
+            },
             Expr::Text(_) | Expr::Message | Expr::NameOf(_) => Ty::Text,
             Expr::Var(_) => Ty::Object,
             Expr::Player => Ty::Player,
@@ -248,6 +279,8 @@ impl P<'_> {
                 let lw = w.to_ascii_lowercase();
                 match lw.as_str() {
                     "the" => self.primary(),
+                    "true" | "yes" => Ok(Expr::Bool(true)),
+                    "false" | "no" => Ok(Expr::Bool(false)),
                     "player" => Ok(Expr::Player),
                     "message" => {
                         if self.env.has_message {
@@ -260,6 +293,23 @@ impl P<'_> {
                         }
                     }
                     "arg" | "argument" => self.arg(1),
+                    "size" | "amount" | "count" => {
+                        if !matches!(self.peek(), Some(t) if t.is_lit("of")) {
+                            return Err(format!("expected '{lw} of {{list::*}}'"));
+                        }
+                        self.pos += 1;
+                        match self.peek().cloned() {
+                            Some(Tok::Var(v)) => {
+                                self.pos += 1;
+                                let var = parse_varref(&v, self.env)?;
+                                if !var.is_list() {
+                                    return Err(format!("'{lw} of' needs a list variable like {{x::*}}"));
+                                }
+                                Ok(Expr::Size(var))
+                            }
+                            _ => Err(format!("'{lw} of' needs a list variable like {{x::*}}")),
+                        }
+                    }
                     "name" => {
                         if !matches!(self.peek(), Some(t) if t.is_lit("of")) {
                             return Err("expected 'name of <player>'".into());
@@ -272,6 +322,7 @@ impl P<'_> {
                         }
                         Ok(Expr::NameOf(Box::new(inner)))
                     }
+                    _ if lw.starts_with("loop-") => self.loop_expr(&lw),
                     _ => {
                         if let Some(d) = lw.strip_prefix("arg-") {
                             let i: usize = d.parse().map_err(|_| format!("bad argument '{w}'"))?;
@@ -283,6 +334,66 @@ impl P<'_> {
             }
             other => Err(format!("unexpected {}", describe(&other))),
         }
+    }
+
+    /// `loop-value`, `loop-value-2`, `loop-player`, `loop-index`, `loop-number`, `loop-iteration`.
+    fn loop_expr(&self, word: &str) -> Result<Expr, String> {
+        let loops = &self.env.loops;
+        if loops.is_empty() {
+            return Err(format!("'{word}' only works inside a loop"));
+        }
+        let (name, nth) = match word.rsplit_once('-') {
+            Some((head, d)) if d.chars().all(|c| c.is_ascii_digit()) && head.contains('-') => {
+                (head, d.parse::<usize>().ok())
+            }
+            _ => (word, None),
+        };
+        let want: Option<LoopKind> = match name {
+            "loop-value" | "loop-iteration" | "loop-counter" => None,
+            "loop-player" => Some(LoopKind::Players),
+            "loop-index" => Some(LoopKind::List),
+            "loop-number" => Some(LoopKind::Times),
+            _ => {
+                return Err(format!(
+                    "unknown loop value '{word}' (use loop-value, loop-player, loop-index, loop-number or loop-iteration)"
+                ));
+            }
+        };
+        let depth = match nth {
+            Some(n) => {
+                if n == 0 || n > loops.len() {
+                    return Err(format!("'{word}': there are only {} loop(s) here", loops.len()));
+                }
+                n - 1
+            }
+            None => match want {
+                None => loops.len() - 1,
+                Some(k) => match loops.iter().rposition(|l| *l == k) {
+                    Some(d) => d,
+                    None => {
+                        return Err(format!(
+                            "'{word}' needs a surrounding {} loop",
+                            match k {
+                                LoopKind::Players => "'loop all players'",
+                                LoopKind::List => "list ('loop {x::*}')",
+                                LoopKind::Times => "'loop N times'",
+                                LoopKind::Values => "value",
+                            }
+                        ));
+                    }
+                },
+            },
+        };
+        if let (Some(k), Some(got)) = (want, loops.get(depth))
+            && *got != k
+        {
+            return Err(format!("'{word}': loop {} is not that kind of loop", depth + 1));
+        }
+        Ok(match name {
+            "loop-index" => Expr::LoopIndex(depth),
+            "loop-iteration" | "loop-counter" => Expr::LoopIter(depth),
+            _ => Expr::LoopValue(depth),
+        })
     }
 
     fn arg(&self, i: usize) -> Result<Expr, String> {
@@ -368,14 +479,22 @@ pub fn parse_template(s: &str, env: &Env) -> Result<Vec<Part>, String> {
     Ok(parts)
 }
 
+impl VarRef {
+    /// `{x::*}`: the whole list rather than one variable.
+    pub fn is_list(&self) -> bool {
+        self.list
+    }
+}
+
 pub fn parse_varref(raw: &str, env: &Env) -> Result<VarRef, String> {
     let raw = raw.trim();
     let mut parts = parse_template(raw, env)?;
     let local = raw.starts_with('_');
+    let list = raw.ends_with("::*");
     let key = match parts.as_mut_slice() {
         [] => Key::Static(String::new()),
         [Part::Lit(l)] => Key::Static(std::mem::take(l).to_ascii_lowercase()),
         _ => Key::Dynamic(parts),
     };
-    Ok(VarRef { key, local })
+    Ok(VarRef { key, local, list })
 }

@@ -159,6 +159,7 @@ fn parse_seq(
                     "number" => SlotTy::Ty(Ty::Number),
                     "text" => SlotTy::Ty(Ty::Text),
                     "player" => SlotTy::Ty(Ty::Player),
+                    "boolean" => SlotTy::Ty(Ty::Boolean),
                     "object" => SlotTy::Ty(Ty::Object),
                     "variable" => SlotTy::Variable,
                     _ => return Err(format!("pattern: unknown type %{name}%")),

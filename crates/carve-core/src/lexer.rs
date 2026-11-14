@@ -69,7 +69,36 @@ pub fn lex(s: &str) -> Result<Vec<Tok>, String> {
                 let digits: String = c[ds..i].iter().collect();
                 word = format!("arg-{digits}");
             }
+            // `loop-value`, `loop-player`, `loop-value-2`: one word.
+            if word.eq_ignore_ascii_case("loop") && i + 1 < n && c[i] == '-' && c[i + 1].is_alphabetic() {
+                i += 1;
+                let ws = i;
+                while i < n && c[i].is_alphabetic() {
+                    i += 1;
+                }
+                let part: String = c[ws..i].iter().collect();
+                word = format!("loop-{}", part.to_ascii_lowercase());
+                if i + 1 < n && c[i] == '-' && c[i + 1].is_ascii_digit() {
+                    i += 1;
+                    let ds = i;
+                    while i < n && c[i].is_ascii_digit() {
+                        i += 1;
+                    }
+                    let digits: String = c[ds..i].iter().collect();
+                    word = format!("{word}-{digits}");
+                }
+            }
             out.push(Tok::Word(word));
+            continue;
+        }
+        // Possessive `player's`.
+        if ch == '\''
+            && i + 1 < n
+            && (c[i + 1] == 's' || c[i + 1] == 'S')
+            && (i + 2 >= n || !c[i + 2].is_alphanumeric())
+        {
+            out.push(Tok::Sym("'s"));
+            i += 2;
             continue;
         }
         if ch == '"' {

@@ -114,3 +114,12 @@ argument number the command doesn't have is a load error. Only in commands.
 
 The type of each argument comes from the command line: `<number>` gives a
 number, `<player>` a player, `<text>` text.
+
+## Loop values and list size
+
+Inside a loop: `loop-value`, `loop-value-2`, `loop-player`, `loop-index`,
+`loop-number` and `loop-iteration`. See [loops](loops.md).
+
+`size of {list::*}` (also `amount of`, `count of`) is the number of items in a
+list. `{list::*}` itself prints as `a, b and c`.
+

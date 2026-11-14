@@ -166,22 +166,30 @@ set {coins::%player%} to {coins::%player%} * 2
 
 Setting a variable to a value that is not set (`<none>`) deletes it.
 
-### `add %number% to %variable%`
+### `add %object% to %variable%`
 
 ```
 add 1 to {joins::%player%}
+add player to {team::*}
 ```
 
-A variable that is not set counts as 0. Adding to a variable that holds text
-that is not a number is a runtime error.
+On a single variable this adds a number. A variable that is not set counts
+as 0, and adding to a variable that holds text that is not a number is a
+runtime error.
 
-### `remove %number% from %variable%`
+On a list (`{name::*}`) this appends the value at the next free number index,
+like Skript. Any value works there.
+
+### `remove %object% from %variable%`
 
 ```
 remove 5 from {coins::%player%}
+remove player from {team::*}
 ```
 
-Same rules as `add`. The result can go below 0.
+On a single variable this subtracts a number, with the same rules as `add`.
+The result can go below 0. On a list it removes every item equal to the value
+(text compares without case).
 
 ### `delete %variable%`
 
@@ -192,3 +200,18 @@ delete {coins::*}
 
 A name ending in `::*` deletes the whole list: every variable whose name
 starts with the part before the `*`.
+
+## Control flow
+
+These lines change which line runs next. They are not patterns, so they are
+not in the list above.
+
+| Line | What it does |
+|---|---|
+| `stop` | Ends the trigger (or the function) right here. |
+| `exit loop` / `stop loop` / `break` | Leaves the innermost loop. |
+| `continue` | Skips to the next round of the innermost loop. |
+
+Loops themselves (`loop ...:` and `while ...:`) are explained in
+[loops](loops.md).
+

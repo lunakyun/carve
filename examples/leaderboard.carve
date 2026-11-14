@@ -1,0 +1,29 @@
+# /top shows the five players with the most joins, /online lists who is on.
+on join:
+    add 1 to {joins::%player%}
+    if {joins::%player%} is 1:
+        add name of player to {joined::*}
+
+command /online:
+    trigger:
+        set {_names::*} to {_nothing}
+        loop all players:
+            add name of loop-player to {_names::*}
+        send "&aOnline (%size of {_names::*}%): &f%{_names::*}%"
+
+command /top:
+    trigger:
+        set {_shown} to 0
+        # Simple selection: five rounds, each picks the highest count not shown yet.
+        loop 5 times:
+            set {_best} to {_nothing}
+            set {_bestjoins} to 0
+            loop {joined::*}:
+                if {_shown::%loop-value-2%} is not set:
+                    if {joins::%loop-value-2%} > {_bestjoins}:
+                        set {_best} to loop-value-2
+                        set {_bestjoins} to {joins::%loop-value-2%}
+            if {_best} is not set:
+                exit loop
+            set {_shown::%{_best}%} to true
+            send "&e#%loop-number% &f%{_best}% &7(%{_bestjoins}% joins)"

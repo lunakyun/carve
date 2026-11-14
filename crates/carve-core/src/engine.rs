@@ -5,7 +5,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
 use crate::compile::{
-    ArgTy, CmpOp, CommandDef, Cond, Effect, EventKind, Instr, Trigger, TriggerKind, compile_file,
+    ArgTy, CmpOp, CommandDef, Cond, Effect, EventKind, Instr, LoopSrc, Trigger, TriggerKind, compile_file,
 };
 use crate::error::ScriptError;
 use crate::expr::{BinOp, Expr, Key, Part, VarRef};
@@ -88,10 +88,66 @@ pub struct FireOutcome {
     pub cancelled: bool,
 }
 
+/// One running loop. Items are a snapshot taken when the loop starts.
+struct LoopFrame {
+    items: LoopItems,
+    /// Items handed out so far; the current item is `pos - 1`.
+    pos: usize,
+}
+
+enum LoopItems {
+    Times(usize),
+    Values(Vec<Value>),
+    List(Vec<(String, Value)>),
+}
+
+impl LoopFrame {
+    fn len(&self) -> usize {
+        match &self.items {
+            LoopItems::Times(n) => *n,
+            LoopItems::Values(v) => v.len(),
+            LoopItems::List(l) => l.len(),
+        }
+    }
+
+    fn value(&self) -> Value {
+        let i = self.pos.saturating_sub(1);
+        match &self.items {
+            LoopItems::Times(_) => Value::Num(self.pos as f64),
+            LoopItems::Values(v) => v.get(i).cloned().unwrap_or(Value::None),
+            LoopItems::List(l) => l.get(i).map(|(_, v)| v.clone()).unwrap_or(Value::None),
+        }
+    }
+
+    fn index(&self) -> Value {
+        match &self.items {
+            LoopItems::List(l) => l
+                .get(self.pos.saturating_sub(1))
+                .map(|(k, _)| Value::Text(k.clone()))
+                .unwrap_or(Value::None),
+            _ => Value::Num(self.pos as f64),
+        }
+    }
+}
+
+/// `a, b and c`, like Skript prints a list.
+fn join_list(items: &[(String, Value)], out: &mut String) {
+    if items.is_empty() {
+        out.push_str("<none>");
+    }
+    for (i, (_, v)) in items.iter().enumerate() {
+        if i > 0 {
+            out.push_str(if i + 1 == items.len() { " and " } else { ", " });
+        }
+        v.push_to(out);
+    }
+}
+
 struct Exec {
     trig: Arc<Trigger>,
     pc: usize,
     locals: Locals,
+    loops: Vec<LoopFrame>,
     ctx: EventCtx,
     waited: bool,
     cancelled: bool,
@@ -113,6 +169,7 @@ impl Exec {
             trig,
             pc: 0,
             locals: Locals::default(),
+            loops: Vec::new(),
             ctx,
             waited: false,
             cancelled: false,
@@ -372,6 +429,23 @@ impl Engine {
                     Err(e) => Err(e),
                 },
                 Instr::Eff(e) => self.effect(e, ex, host, line),
+                Instr::LoopInit(src) => self.loop_init(src, ex, host).map(|()| None),
+                Instr::LoopNext(end) => {
+                    match ex.loops.last_mut() {
+                        Some(f) if f.pos < f.len() => f.pos += 1,
+                        _ => {
+                            ex.loops.pop();
+                            ex.pc = *end;
+                        }
+                    }
+                    Ok(None)
+                }
+                Instr::LoopBreak(end) => {
+                    ex.loops.pop();
+                    ex.pc = *end;
+                    Ok(None)
+                }
+                Instr::Stop => return Step::Done,
             };
             match r {
                 Ok(None) => {}
@@ -383,6 +457,63 @@ impl Engine {
             }
         }
         Step::Done
+    }
+
+    fn loop_init(&mut self, src: &LoopSrc, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
+        let items = match src {
+            LoopSrc::Times(n) => {
+                let n = self.num(n, ex, host)?;
+                LoopItems::Times(if n.is_finite() && n > 0.0 {
+                    n.floor() as usize
+                } else {
+                    0
+                })
+            }
+            LoopSrc::Values(es) => {
+                let mut v = Vec::with_capacity(es.len());
+                for e in es {
+                    v.push(self.eval(e, ex, host)?);
+                }
+                LoopItems::Values(v)
+            }
+            LoopSrc::Players => {
+                let players = host.online_players();
+                // They are online right now: no need to ask again in this slice.
+                for p in &players {
+                    if !ex.seen.iter().any(|(u, _)| *u == p.uuid) {
+                        ex.seen.push((p.uuid.clone(), Some(p.name.clone())));
+                    }
+                }
+                LoopItems::Values(players.into_iter().map(Value::Player).collect())
+            }
+            LoopSrc::List(v) => {
+                let key = self.key(v, ex, host)?;
+                let prefix = key.strip_suffix('*').unwrap_or(&key);
+                LoopItems::List(if v.local {
+                    ex.locals.list(prefix)
+                } else {
+                    self.vars.list(prefix)
+                })
+            }
+        };
+        ex.loops.push(LoopFrame { items, pos: 0 });
+        Ok(())
+    }
+
+    /// Items of a list variable.
+    fn list_items(
+        &mut self,
+        v: &VarRef,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<Vec<(String, Value)>, String> {
+        let key = self.key(v, ex, host)?;
+        let prefix = key.strip_suffix('*').unwrap_or(&key);
+        Ok(if v.local {
+            ex.locals.list(prefix)
+        } else {
+            self.vars.list(prefix)
+        })
     }
 
     fn cond(&mut self, c: &Cond, ex: &mut Exec, host: &mut dyn Host) -> Result<bool, String> {
@@ -504,6 +635,10 @@ impl Engine {
         match e {
             Expr::Num(n) => push_num(out, *n),
             Expr::Text(parts) => self.write_parts(parts, ex, host, out)?,
+            Expr::Var(v) if v.list => {
+                let items = self.list_items(v, ex, host)?;
+                join_list(&items, out);
+            }
             Expr::Var(v) => {
                 let k = self.key(v, ex, host)?;
                 let val = if v.local {
@@ -528,12 +663,21 @@ impl Engine {
                 Some(v) => v.push_to(out),
                 None => out.push_str("<none>"),
             },
-            Expr::NameOf(_) | Expr::Neg(_) | Expr::Bin(..) => self.eval(e, ex, host)?.push_to(out),
+            _ => self.eval(e, ex, host)?.push_to(out),
         }
         Ok(())
     }
 
     fn get_var(&mut self, v: &VarRef, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
+        if v.list {
+            let items = self.list_items(v, ex, host)?;
+            if items.is_empty() {
+                return Ok(Value::None);
+            }
+            let mut s = String::new();
+            join_list(&items, &mut s);
+            return Ok(Value::Text(s));
+        }
         let k = self.key(v, ex, host)?;
         let val = if v.local {
             ex.locals.get(&k)
@@ -561,6 +705,7 @@ impl Engine {
     fn eval(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
         Ok(match e {
             Expr::Num(n) => Value::Num(*n),
+            Expr::Bool(b) => Value::Bool(*b),
             Expr::Text(parts) => {
                 let mut s = String::new();
                 self.write_parts(parts, ex, host, &mut s)?;
@@ -581,6 +726,22 @@ impl Engine {
                 }
             }
             Expr::Neg(inner) => Value::Num(-self.num(inner, ex, host)?),
+            Expr::LoopValue(d) => ex.loops.get(*d).map(LoopFrame::value).unwrap_or(Value::None),
+            Expr::LoopIndex(d) => ex.loops.get(*d).map(LoopFrame::index).unwrap_or(Value::None),
+            Expr::LoopIter(d) => ex
+                .loops
+                .get(*d)
+                .map(|f| Value::Num(f.pos as f64))
+                .unwrap_or(Value::None),
+            Expr::Size(v) => {
+                let key = self.key(v, ex, host)?;
+                let prefix = key.strip_suffix('*').unwrap_or(&key);
+                Value::Num(if v.local {
+                    ex.locals.list_len(prefix)
+                } else {
+                    self.vars.list_len(prefix)
+                } as f64)
+            }
             Expr::Bin(a, op, b) => {
                 let x = self.num(a, ex, host)?;
                 let y = self.num(b, ex, host)?;
@@ -732,6 +893,24 @@ impl Engine {
                     base - n
                 };
                 self.store(v.local, &k, Value::Num(res), ex, host);
+            }
+            Effect::ListAdd(v, x) | Effect::ListRemove(v, x) => {
+                let val = self.eval(x, ex, host)?;
+                let key = self.key(v, ex, host)?.into_owned();
+                let prefix = key.strip_suffix('*').unwrap_or(&key);
+                let add = matches!(e, Effect::ListAdd(..));
+                match (v.local, add) {
+                    (true, true) => ex.locals.list_push(prefix, val),
+                    (true, false) => ex.locals.list_remove(prefix, &val),
+                    (false, true) => {
+                        self.vars.list_push(prefix, val);
+                        self.mark_dirty(host);
+                    }
+                    (false, false) => {
+                        self.vars.list_remove(prefix, &val);
+                        self.mark_dirty(host);
+                    }
+                }
             }
             Effect::Delete(v) => {
                 let k = self.key(v, ex, host)?;

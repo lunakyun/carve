@@ -31,4 +31,9 @@ pub trait Host {
     /// Milliseconds on any monotonic clock (used for the save debounce).
     fn now(&mut self) -> u64;
     fn log(&mut self, level: LogLevel, msg: &str);
+
+    /// Everyone online, for `loop all players`.
+    fn online_players(&mut self) -> Vec<PlayerRef> {
+        Vec::new()
+    }
 }
