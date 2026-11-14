@@ -99,6 +99,29 @@ const PHRASES: &[(&[&str], ServerQ, WorldArg)] = &[
 /// The phrase that starts at `toks[at]` (whose first word is `first`, lowercase).
 /// Sets `hit_end` when the tokens stop in the middle of a longer phrase.
 pub fn expr_head(toks: &[Tok], at: usize, first: &str, hit_end: &Cell<bool>) -> Option<Head> {
+    // Almost every word is not the start of a phrase: leave at once.
+    if !matches!(
+        first,
+        "online"
+            | "player"
+            | "number"
+            | "amount"
+            | "max"
+            | "maximum"
+            | "motd"
+            | "message"
+            | "server"
+            | "pumpkin"
+            | "version"
+            | "all"
+            | "worlds"
+            | "spawn"
+            | "world"
+            | "border"
+            | "size"
+    ) {
+        return None;
+    }
     let mut found: Option<Head> = None;
     for (words, q, arg) in PHRASES {
         if words.first().copied() != Some(first) {
@@ -272,15 +295,23 @@ pub fn parse_effect(toks: &[Tok], env: &Env) -> Result<Option<Effect>, String> {
     let Some(Tok::Word(first)) = toks.first() else {
         return Ok(None);
     };
-    let fx = match first.to_ascii_lowercase().as_str() {
-        "add" => whitelist_move(toks, env, "to", true)?,
-        "remove" => whitelist_move(toks, env, "from", false)?,
-        "whitelist" => whitelist_word(toks, env, true)?,
-        "unwhitelist" => whitelist_word(toks, env, false)?,
-        "broadcast" => broadcast_world(toks, env),
-        "set" => border_set(toks, env)?,
-        "teleport" => teleport_spawn(toks, env)?,
-        _ => None,
+    let is = |w: &str| first.eq_ignore_ascii_case(w);
+    let fx = if is("add") {
+        whitelist_move(toks, env, "to", true)?
+    } else if is("remove") {
+        whitelist_move(toks, env, "from", false)?
+    } else if is("whitelist") {
+        whitelist_word(toks, env, true)?
+    } else if is("unwhitelist") {
+        whitelist_word(toks, env, false)?
+    } else if is("broadcast") {
+        broadcast_world(toks, env)
+    } else if is("set") {
+        border_set(toks, env)?
+    } else if is("teleport") {
+        teleport_spawn(toks, env)?
+    } else {
+        None
     };
     Ok(fx.map(|f| Effect::Server(Box::new(f))))
 }
