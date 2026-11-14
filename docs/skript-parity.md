@@ -16,17 +16,18 @@ event needs an in-game check. ⛔ items depend on Bukkit plugins (WorldGuard, Va
 
 | Category | Total | ✅ | 🟡 | ⬜ | ⛔ |
 |---|--:|--:|--:|--:|--:|
-| Events | 185 | 101 | 40 | 7 | 37 |
-| Effects | 154 | 39 | 23 | 27 | 65 |
-| Conditions | 170 | 37 | 21 | 74 | 38 |
-| Expressions | 545 | 162 | 82 | 112 | 189 |
-| Sections | 11 | 5 | 2 | 4 | 0 |
-| Structures | 8 | 5 | 2 | 1 | 0 |
-| Functions | 45 | 9 | 5 | 31 | 0 |
-| Types | 126 | 15 | 13 | 91 | 7 |
-| **All** | **1244** | **373** | **188** | **347** | **336** |
+| Events | 186 | 106 | 42 | 1 | 37 |
+| Effects | 154 | 39 | 25 | 26 | 64 |
+| Conditions | 170 | 38 | 22 | 74 | 36 |
+| Expressions | 547 | 165 | 85 | 112 | 185 |
+| Sections | 11 | 6 | 2 | 3 | 0 |
+| Structures | 8 | 5 | 3 | 0 | 0 |
+| Functions | 45 | 37 | 5 | 0 | 3 |
+| Types | 126 | 78 | 26 | 6 | 16 |
+| **All** | **1247** | **474** | **210** | **222** | **341** |
 
-Counting 🟡 as half, Carve covers about **38%** of core Skript by entry count.
+Counting 🟡 as half, Carve covers about **46%** of core Skript by entry count.
+Leaving out the ⛔ entries that Pumpkin does not allow, it covers about **64%** of what can be done on Pumpkin.
 By real-world use the number is much higher: the common core (events, variables, loops, conditions,
 functions, commands) is mostly done, and most ⬜ entries are niche (pandas, brewing stands, loot tables).
 
@@ -69,7 +70,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - **Script command tab completion:** Pumpkin 0.2.2 crashes when it asks a plugin for completions.
 - **New commands after load:** Pumpkin's API only registers commands at load, so new ones need a restart.
 
-## Events (185)
+## Events (186)
 
 - 🟡 At Time — `at 18:00:`, `at 6pm:`, `at noon:`; first world only, no `in world`
 - ⛔ On Anvil Damage — Pumpkin has no anvil damage event
@@ -588,7 +589,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Will Consume Boosting Firework — needs entity values (entities slice), not done here
 - ⬜ Will Despawn — needs entity values (entities slice), not done here
 
-## Expressions (545)
+## Expressions (547)
 
 - ⛔ Absorbed blocks — needs a sponge event; Pumpkin has none
 - ⛔ Active Item — the plugin API cannot see the item being used

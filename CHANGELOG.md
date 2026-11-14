@@ -20,6 +20,33 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   give `Can't find the script 'x'.` and match in any case. Server start logs
   `Loaded N scripts with a total of M structures in S seconds`.
 
+### Added (Skript parity)
+
+- About 120 more events: inventories, items, blocks, movement, vehicles,
+  portals, pistons, weather, worlds, chunks, server list ping, `at 18:00`
+  triggers and more, each wired to Pumpkin where its API fires them.
+- Time: dates, `now`, time spans with math, `time since`, `ago`/`later`, and
+  `wait` with any span.
+- Text and lists: case, substrings, join/split, hashes, sorted/reversed/
+  shuffled lists, `where` filters, sum/min/max, list functions.
+- World: blocks, entities (spawn, kill, push, nearest), particles, potion
+  effects, explosions, lightning, weather, time, game rules, difficulty,
+  world borders, worlds and chunks.
+- Players: game modes, op/kick/ban, tab list names, XP and levels, health
+  and food, flight, visibility, titles, boss bars, scoreboards, chest menus,
+  slots, item names, lore and enchantments.
+- Many more conditions and expressions, built-in math and text functions,
+  `filter` and spawn sections, variables defaults, aliases, inline `if`,
+  `parse if` and local functions.
+- Types: named-value types, colors, vectors, quaternions, time periods,
+  chunks, queues and world borders.
+- SkBee-style syntax: bounds with enter/exit events, text components, NBT,
+  particles and display entities, recipes, advancements, statistics,
+  scoreboard teams, ray traces, Minecraft tags and utilities.
+- Placeholders for other plugins.
+- Every registry event, effect and condition now has a description in the
+  generated syntax reference.
+
 ### Added (v2)
 
 - Loops: `loop N times`, `loop {list::*}`, `loop all players`, `loop a, b

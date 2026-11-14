@@ -28,9 +28,10 @@ command /heal [<player>]:
 
 ## Features
 
-- **Events:** join, quit, chat, break, place, death, damage (with `attacker`),
-  respawn, right and left clicks (`on right click with blaze rod on barrel:`),
-  `on load` and `every 5 seconds`. Most can be cancelled.
+- **Events:** about 150 triggers: join, quit, chat, break, place, death,
+  damage (with `attacker`), clicks (`on right click with blaze rod on barrel:`),
+  inventories, items, movement, vehicles, weather, worlds, `on load`,
+  `every 5 seconds` and `at 18:00`. Most can be cancelled.
 - **Commands** with typed arguments (`<text>`, `<number>`, `<player>`),
   optional arguments, permissions, aliases and usage messages.
 - **Loops:** `loop N times`, `loop {list::*}`, `loop all players`, `while`,
@@ -39,8 +40,14 @@ command /heal [<player>]:
   (`contains`, `starts with`), ranges and inventory checks.
 - **Functions** with typed parameters, defaults and return values, callable
   from every script. **Options** with `{@name}`.
-- **Types:** numbers, text, players, items (`2 diamonds`), locations and
-  worlds, all saved in `variables.json`.
+- **Types:** numbers, text, players, items (`2 diamonds`), locations,
+  worlds, dates and time spans, colors, vectors and more, all saved in
+  `variables.json`.
+- **The world:** blocks, entities, particles, sounds, potion effects,
+  weather and time, game rules, scoreboards, boss bars, chest menus, item
+  names and lore.
+- **SkBee-style extras:** bounds, text components, NBT, display entities,
+  ray traces, recipes, advancements and teams.
 - **`wait`** in ticks or seconds, without blocking the server, also inside
   loops and functions.
 - **Clear errors** with file, line and "did you mean" suggestions.
@@ -125,11 +132,10 @@ Runtime errors stop only that run and are logged with the file and line.
 
 Planned, not available yet:
 
-- dates and time spans (`now`, `time since`, `wait 1 minute` is fine, but
-  there are no date values yet)
-- sounds, game modes, blocks in the world (`set block at`), item names and lore
-- inventory and GUI events
+- the rest of the Skript syntax that Pumpkin's plugin API allows (see the
+  ⬜ rows in the checklist)
 - adding new commands on reload, once Pumpkin's API allows it
+- the ⛔ rows, as Pumpkin adds the events and APIs they need
 
 The full list of every core Skript feature and where Carve stands is in the
 [Skript parity checklist](docs/skript-parity.md).
