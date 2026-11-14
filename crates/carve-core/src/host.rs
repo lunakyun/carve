@@ -242,6 +242,30 @@ pub trait Host {
     /// Sort order in the player list.
     fn set_list_order(&mut self, _player: &PlayerRef, _order: i32) {}
 
+    /// Air left, in ticks (300 is a full breath).
+    fn remaining_air(&mut self, _player: &PlayerRef) -> Option<i64> {
+        None
+    }
+
+    fn set_remaining_air(&mut self, _player: &PlayerRef, _ticks: i64) {}
+
+    /// Where the player respawns (bed or anchor), if known.
+    fn respawn_location(&mut self, _player: &PlayerRef) -> Option<(f64, f64, f64)> {
+        None
+    }
+
+    fn set_respawn_location(&mut self, _player: &PlayerRef, _x: f64, _y: f64, _z: f64) {}
+
+    /// Sea level (block height) of a world by name.
+    fn sea_level(&mut self, _world: &str) -> Option<i64> {
+        None
+    }
+
+    /// Simulation distance of the server, in chunks.
+    fn simulation_distance(&mut self) -> Option<i64> {
+        None
+    }
+
     /// Hurt the player. The default lowers health and kills at zero.
     fn damage(&mut self, player: &PlayerRef, amount: f64) {
         if let Some(h) = self.health(player) {

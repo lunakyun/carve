@@ -184,6 +184,8 @@ pub enum Expr {
     W4(Box<crate::w2_expressions_4::W4>),
     /// Rare wave 2 expressions (numbers, midpoint, metadata, ...), boxed to keep this enum small.
     W5(Box<crate::w2_expressions_5::W5>),
+    /// Rare wave-2 expressions (see `w2_expressions_6.rs`).
+    W6(Box<crate::w2_expressions_6::W6>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -374,6 +376,7 @@ impl Expr {
             Expr::Ext(f, _) => crate::w2_expressions_3::ty(*f),
             Expr::W4(w) => w.ty(),
             Expr::W5(w) => w.ty(),
+            Expr::W6(w) => w.ty(env),
             Expr::ListAgg(Agg::Size | Agg::Sum, _) => Ty::Number,
             Expr::ListAgg(..) => Ty::Object,
             Expr::Default(a, b) => {
@@ -453,16 +456,16 @@ fn describe(t: &Tok) -> String {
 #[path = "w2_expressions_4_parse.rs"]
 mod w4_parse;
 
-struct P<'a> {
-    toks: &'a [Tok],
-    pos: usize,
-    env: &'a Env,
+pub(crate) struct P<'a> {
+    pub(crate) toks: &'a [Tok],
+    pub(crate) pos: usize,
+    pub(crate) env: &'a Env,
     /// Set when the parser asked for a token past the end.
-    hit_end: Cell<bool>,
+    pub(crate) hit_end: Cell<bool>,
 }
 
 impl P<'_> {
-    fn peek(&self) -> Option<&Tok> {
+    pub(crate) fn peek(&self) -> Option<&Tok> {
         let t = self.toks.get(self.pos);
         if t.is_none() {
             self.hit_end.set(true);
@@ -489,8 +492,9 @@ impl P<'_> {
     }
 
     /// `a ? b ? c`: the lowest priority, below math.
-    fn top(&mut self) -> Result<Expr, String> {
+    pub(crate) fn top(&mut self) -> Result<Expr, String> {
         let mut e = self.sum()?;
+        e = self.w6_ternary(e)?;
         while self.eat_sym("?") {
             let b = self.sum()?;
             e = Expr::Default(Box::new(e), Box::new(b));
@@ -498,7 +502,7 @@ impl P<'_> {
         Ok(e)
     }
 
-    fn sum(&mut self) -> Result<Expr, String> {
+    pub(crate) fn sum(&mut self) -> Result<Expr, String> {
         let mut left = self.product()?;
         loop {
             let op = if self.eat_sym("+") {
@@ -569,7 +573,7 @@ impl P<'_> {
         Ok(Expr::Bin(Box::new(l), op, Box::new(r)))
     }
 
-    fn unary(&mut self) -> Result<Expr, String> {
+    pub(crate) fn unary(&mut self) -> Result<Expr, String> {
         if self.eat_sym("-") {
             let inner = self.unary()?;
             if !Ty::Number.accepts(inner.ty(self.env)) {
@@ -583,7 +587,7 @@ impl P<'_> {
         self.primary()
     }
 
-    fn primary(&mut self) -> Result<Expr, String> {
+    pub(crate) fn primary(&mut self) -> Result<Expr, String> {
         let mut e = self.primary_base()?;
         // `5 minutes ago`, `2 hours later`
         if let Some(Tok::Word(w)) = self.toks.get(self.pos)
@@ -632,6 +636,7 @@ impl P<'_> {
         e = self.replaced_postfix(e);
         e = self.in_case(e);
         e = self.w2e3_post(e)?;
+        e = self.w6_postfix(e)?;
         // `now formatted as "yyyy-MM-dd"`
         while matches!(self.toks.get(self.pos), Some(t) if t.is_lit("formatted"))
             && matches!(e.ty(self.env), Ty::Date | Ty::Object)
@@ -666,6 +671,11 @@ impl P<'_> {
             if let Some((ne, np)) = crate::w2_expressions_5::possessive(self.toks, self.pos + 1, &e) {
                 e = ne;
                 self.pos = np;
+                continue;
+            }
+            if let Some((read, n)) = crate::w2_expressions_6::possessive(self.toks, self.pos + 1) {
+                self.pos += 1 + n;
+                e = Expr::W6(Box::new(crate::w2_expressions_6::W6::Read(read, Some(e))));
                 continue;
             }
             let (prop, extra) = match crate::health_food::words_from(self.toks, self.pos + 1) {
@@ -1053,7 +1063,7 @@ impl P<'_> {
         None
     }
 
-    fn primary_base(&mut self) -> Result<Expr, String> {
+    pub(crate) fn primary_base(&mut self) -> Result<Expr, String> {
         let Some(tok) = self.peek().cloned() else {
             return Err("missing expression".into());
         };
@@ -1135,6 +1145,9 @@ impl P<'_> {
                     return Ok(e);
                 }
                 if let Some(e) = self.w4(&lw)? {
+                    return Ok(e);
+                }
+                if let Some(e) = self.w6_word(&lw)? {
                     return Ok(e);
                 }
                 if let Some(e) = self.text_fn(&lw)? {

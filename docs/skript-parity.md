@@ -986,68 +986,68 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Progress
 - ⬜ Projectile Critical State
 - ⬜ Projectile Force
-- ⛔ Protocol Version — the plugin API does not give the client version
+- ⛔ Protocol Version — the plugin API does not give the client protocol version of Java players
 - ⬜ Queue (Experimental)
 - ⬜ Queue Start/End (Experimental)
-- ⬜ Quit Message ⭐
-- ⬜ Quit Reason
+- 🟡 Quit Message ⭐ — `quit message` in `on quit`, read only
+- ⛔ Quit Reason — the leave event has no reason field
 - 🟡 Random — `random element of {list::*}`, `random N elements of {list::*}`
-- ⬜ Random Character
+- ✅ Random Character — `a random character`, `random alphanumeric character`, `random character between "a" and "z"`
 - ✅ Random Numbers
-- ⬜ Random UUID ⭐
+- ✅ Random UUID ⭐ — `random uuid`
 - ⬜ Raw Name
-- ⬜ Raw String
+- 🟡 Raw String — `raw "&aHi"` stops colour codes and tags from turning into colours by adding an invisible character, so it does not compare equal to the plain text
 - ⬜ Readied Arrow/Bow
-- ⬜ Recursive
-- ⬜ Recursive Size
+- 🟡 Recursive — `recursive {x::*}` in `loop` and `set {y::*} to`
+- ✅ Recursive Size — `recursive size of {x::*}`
 - ⬜ Redstone Block Power
-- ⬜ Reduce
-- ⬜ Reduced Value
+- 🟡 Reduce — `reduce {x::*} with [reduced value + input]` or `{x::*} reduced with [...]`; starts from the first element
+- 🟡 Reduced Value — `reduced value` inside `reduce`; the current item is `input`
 - ⛔ Region — needs WorldGuard
 - ⛔ Region Members & Owners — needs WorldGuard
 - ⛔ Regions At — needs WorldGuard
-- ⬜ Remaining Air
-- ⬜ Repeat String
+- ✅ Remaining Air — `remaining air of player`, set / add / remove with a timespan
+- ✅ Repeat String — `"ab" repeated 3 times`; capped at 1,000,000 characters
 - ⬜ Resolve Text Component
-- ⬜ Resonating Time
+- ⛔ Resonating Time — bell block entity is not exposed
 - ⬜ Respawn Anchor Charges
-- ⬜ Respawn Location
+- ✅ Respawn Location — `respawn location of player`, `set respawn location of player to <location>`
 - ⬜ Respawn Reason
 - ⬜ Result
 - ✅ Reversed List ⭐ — `reversed {x::*}`
-- ⬜ Ringing Time
-- ⬜ Rotated Quaternion/Vector
-- ⬜ Rotation Axis/Angle
+- ⛔ Ringing Time — bell block entity is not exposed
+- ⛔ Rotated Quaternion/Vector — Carve has no vector or quaternion types
+- ⛔ Rotation Axis/Angle — Carve has no vector or quaternion types
 - 🟡 Rounding — as functions
 - ✅ Saturation — read, set, add, remove
 - ⬜ Scale
-- ⬜ Scoreboard Tags
+- ⛔ Scoreboard Tags — no entity tag API in the plugin API
 - 🟡 Script — through `/carve`
 - 🟡 Script Command Cooldown Information — no cooldowns yet
 - ⛔ Script Command Suggestion Input — same Pumpkin crash
 - ⛔ Script Command Suggestions — Pumpkin 0.2.2 crashes on plugin tab completion
-- ⬜ Sea Level
+- 🟡 Sea Level — `sea level of world "x"`, read only
 - ⬜ Sea Pickles
-- ⬜ Seed of Loot Table
+- ⛔ Seed of Loot Table — no loot table data in the plugin API
 - ⬜ Sent Command List
-- ⬜ Server Icon
+- ⛔ Server Icon — the icon is only in the server list ping event, which Carve does not expose
 - ⬜ Sets
 - ⬜ Shooter
 - ✅ Shuffled List ⭐ — `shuffled {x::*}`
-- ⬜ Sign Text
-- ⬜ Simulation Distance
+- ⛔ Sign Text — block entities only expose custom data, not sign text
+- 🟡 Simulation Distance — `simulation distance`, read only
 - ✅ Size — `size of {list::*}`
 - ⬜ Size of World Border
-- ⬜ Skull Owner
-- ⬜ Skull Texture
+- ⛔ Skull Owner — block entities only expose custom data, not skull data
+- ⛔ Skull Texture — block entities only expose custom data, not skull data
 - ⬜ Slot Index
 - 🟡 Sorted List ⭐ — `sorted {x::*}`; no `by` expression
 - ⬜ Source Block
 - ⬜ Spawn ⭐
 - ⬜ Spawn Egg Entity
 - ⬜ Spawn Reason
-- ⬜ Spawner Type
-- ⬜ Special Number
+- ⛔ Spawner Type — spawner block entity is not exposed
+- ✅ Special Number — `pi`, `infinity`, `negative infinity`, `NaN`
 - ⬜ Spectator Target
 - ⛔ Speed (walk and fly speed: no attribute API in the plugin API)
 - ⬜ Stored Enchantments
@@ -1055,17 +1055,17 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Style
 - ✅ Substring ⭐ — `substring of x from a to b`, `first N characters of x`, `last N characters of x`, `character at index N of x`
 - ✅ Tab List Name — `<player>'s tab list name`, same as Player List Name
-- ⬜ Tablisted Players
-- ⬜ Tag
-- ⬜ Tag Namespaced Key
-- ⬜ Tags Contents
-- ⬜ Tags of X
+- 🟡 Tablisted Players — all online players; Pumpkin cannot tell who is hidden from a player's tab list
+- ⛔ Tag — no tag registry in the plugin API
+- ⛔ Tag Namespaced Key — no tag registry in the plugin API
+- ⛔ Tags Contents — no tag registry in the plugin API
+- ⛔ Tags of X — no tag registry in the plugin API
 - ⬜ Tamer
 - ⬜ Target
 - ⬜ Targeted Block ⭐
 - ⬜ Teleport Cause
 - ⬜ Temperature
-- ⬜ Ternary ⭐
+- 🟡 Ternary ⭐ — `a if <condition> else b`; the condition can be a comparison, `contains`, `starts with`, `is set`, joined with `and` / `or`
 - ⬜ Text Display Alignment
 - ⬜ Text Display Line Width
 - ⬜ Text Display Opacity

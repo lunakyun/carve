@@ -234,6 +234,7 @@ mod w2_eval;
 mod x2_eval;
 mod w2e3;
 mod w5_eval;
+mod w6_eval;
 
 fn join_list(items: &[(String, Value)], out: &mut String) {
     if items.is_empty() {
@@ -1779,6 +1780,7 @@ impl Engine {
             Expr::Items(s) => Value::List(self.eval_list(s, ex, host)?),
             Expr::Ext(f, args) => self.eval_ext(*f, args, ex, host)?,
             Expr::W5(w) => self.eval_w5(w, ex, host)?,
+            Expr::W6(w) => self.eval_w6(w, ex, host)?,
             Expr::ListAgg(a, s) => self.eval_agg(*a, s, ex, host)?,
             Expr::W2(w) => self.eval_w2(w, ex, host)?,
             Expr::RandomOf(v) => {
@@ -1980,6 +1982,7 @@ impl Engine {
                 let vals = self.w4_args(&w.args, ex, host)?;
                 crate::w2_expressions_4::run(w.op, &vals, host);
             }
+            Effect::W6(w) => self.exec_w6(w, ex, host)?,
             Effect::Heal(p) => {
                 if let Some(p) = self.player(p, ex, host)? {
                     host.heal(&p);

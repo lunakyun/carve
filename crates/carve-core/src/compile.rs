@@ -260,6 +260,7 @@ pub enum Effect {
     W4(Box<crate::w2_expressions_4::W4Effect>),
     W2e3(Box<crate::w2_effects_3::W2Eff>),
     W2Transform(Box<crate::w2_effects_3::Transform>),
+    W6(Box<crate::w2_expressions_6::W6Effect>),
     SetHealth(Expr, Expr),
     SetGamemode(Expr, Expr),
     /// Experience change; the two expressions are in pattern order.
@@ -398,6 +399,7 @@ pub enum EffKind {
     W2c(crate::w2_expressions_3::PStat, crate::w2_expressions_3::Mode),
     W4(crate::w2_expressions_4::W4Eff),
     W2e3(crate::w2_effects_3::W2Op),
+    W6(crate::w2_expressions_6::W6Op),
     SetHealth,
     SetGamemode,
     Xp(crate::xp_level::XpOp),
@@ -623,6 +625,11 @@ fn registry() -> &'static Registry {
                     .iter()
                     .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
             )
+            .chain(
+                crate::w2_expressions_6::EFFECT_PATTERNS
+                    .iter()
+                    .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
+            )
             .collect(),
         conditions: crate::w2_conditions_2::CONDITION_PATTERNS
             .iter()
@@ -653,6 +660,7 @@ pub fn check_registry() -> Result<(), String> {
         .chain(crate::w2_expressions_4::EFFECT_PATTERNS)
         .chain(crate::w2_effects_3::EFFECT_PATTERNS)
         .chain(crate::w2_expressions_5::EFFECT_PATTERNS)
+        .chain(crate::w2_expressions_6::EFFECT_PATTERNS)
     {
         Pattern::new(s, *k)?;
     }
@@ -1376,6 +1384,7 @@ impl Cx<'_> {
             .chain(crate::w2_expressions_3::EFFECT_PATTERNS)
             .chain(crate::w2_expressions_4::EFFECT_PATTERNS)
             .chain(crate::w2_effects_3::EFFECT_PATTERNS)
+            .chain(crate::w2_expressions_6::EFFECT_PATTERNS)
             .map(|(s, _)| *s)
             .collect();
         let mut e = ScriptError::new(
@@ -1590,6 +1599,7 @@ fn build_effect(kind: EffKind, mut c: Vec<Option<Capture>>) -> Option<Effect> {
         EffKind::W4(op) => return crate::w2_expressions_4::build(op, c),
         EffKind::W2e3(op) => return crate::w2_effects_3::build(op, c),
         EffKind::W5(op) => return crate::w2_expressions_5::build(op, c),
+        EffKind::W6(op) => return crate::w2_expressions_6::build(op, c),
         EffKind::Heal => Effect::Heal(take_expr(c, 0)?),
         EffKind::SetHealth => Effect::SetHealth(take_expr(c, 0)?, take_expr(c, 1)?),
         EffKind::SetGamemode => Effect::SetGamemode(take_expr(c, 0)?, take_expr(c, 1)?),

@@ -684,6 +684,38 @@ impl WasmHost<'_> {
         }
     }
 
+    fn remaining_air(&mut self, p: &PlayerRef) -> Option<i64> {
+        self.get(p).map(|pl| i64::from(pl.as_entity().get_remaining_air()))
+    }
+
+    fn set_remaining_air(&mut self, p: &PlayerRef, ticks: i64) {
+        if let Some(pl) = self.get(p) {
+            let e = pl.as_entity();
+            let max = i64::from(e.get_max_air());
+            e.set_remaining_air(ticks.clamp(0, max.max(1)) as i32);
+        }
+    }
+
+    fn respawn_location(&mut self, p: &PlayerRef) -> Option<(f64, f64, f64)> {
+        self.get(p)?.get_respawn_location()
+    }
+
+    fn set_respawn_location(&mut self, p: &PlayerRef, x: f64, y: f64, z: f64) {
+        if let Some(pl) = self.get(p) {
+            pl.set_respawn_location((x, y, z));
+        }
+    }
+
+    fn sea_level(&mut self, world: &str) -> Option<i64> {
+        self.server
+            .get_world_by_name(world)
+            .map(|w| i64::from(w.get_sea_level()))
+    }
+
+    fn simulation_distance(&mut self) -> Option<i64> {
+        Some(i64::from(self.server.get_simulation_distance()))
+    }
+
     fn log(&mut self, level: LogLevel, msg: &str) {
         let l = match level {
             LogLevel::Info => ApiLevel::Info,
@@ -757,6 +789,12 @@ impl Host for TickHost<'_, '_> {
         eject_passengers(p: &PlayerRef);
         set_name_visible(p: &PlayerRef, visible: bool);
         send_resource_pack(p: &PlayerRef, url: &str, hash: &str, id: &str);
+        remaining_air(p: &PlayerRef) -> Option<i64>;
+        set_remaining_air(p: &PlayerRef, ticks: i64);
+        respawn_location(p: &PlayerRef) -> Option<(f64, f64, f64)>;
+        set_respawn_location(p: &PlayerRef, x: f64, y: f64, z: f64);
+        sea_level(world: &str) -> Option<i64>;
+        simulation_distance() -> Option<i64>;
     }
     delegate! {
         biome_at(world: &str, x: i32, y: i32, z: i32) -> Option<String>;
@@ -920,7 +958,9 @@ impl EventAccess for PlayerLeaveEvent {
             let u = uuid::to_string(d.player.get_id());
             p.retain(|x| *x != u);
         }
-        EventCtx::player(player_ref(&d.player))
+        let mut c = EventCtx::player(player_ref(&d.player));
+        c.message = Some(d.leave_message.get_text());
+        c
     }
     fn set_cancelled(d: &mut EventData<Self>) {
         d.cancelled = true;
