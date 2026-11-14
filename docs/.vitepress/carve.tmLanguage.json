@@ -1,0 +1,47 @@
+{
+  "name": "carve",
+  "displayName": "Carve",
+  "aliases": ["sk", "skript"],
+  "scopeName": "source.carve",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#string" },
+    { "include": "#variable" },
+    { "include": "#option" },
+    { "include": "#placeholder" },
+    { "include": "#structure" },
+    { "include": "#keyword" },
+    { "include": "#number" }
+  ],
+  "repository": {
+    "comment": { "name": "comment.line.number-sign.carve", "match": "(^|\\s)#.*$" },
+    "string": {
+      "name": "string.quoted.double.carve",
+      "begin": "\"",
+      "end": "\"(?!\")",
+      "patterns": [
+        { "name": "constant.character.escape.carve", "match": "\"\"|%%" },
+        {
+          "name": "meta.interpolation.carve",
+          "begin": "%",
+          "end": "%",
+          "beginCaptures": { "0": { "name": "punctuation.section.interpolation.carve" } },
+          "endCaptures": { "0": { "name": "punctuation.section.interpolation.carve" } },
+          "patterns": [{ "include": "#variable" }, { "include": "#number" }, { "include": "#keyword" }]
+        }
+      ]
+    },
+    "variable": { "name": "variable.other.carve", "match": "\\{[^{}]*(\\{[^{}]*\\}[^{}]*)*\\}" },
+    "option": { "name": "constant.other.option.carve", "match": "\\{@[\\w-]+\\}" },
+    "placeholder": { "name": "storage.type.placeholder.carve", "match": "%[a-z]+%|<[a-z]+>" },
+    "structure": {
+      "name": "keyword.control.structure.carve",
+      "match": "^(on|every|command|function|options|trigger|permission|description)\\b"
+    },
+    "keyword": {
+      "name": "keyword.control.carve",
+      "match": "\\b(if|else|loop|while|return|stop|exit|continue|break|and|or|not|is|isn't|to|from|of|with|in|at|for|times|cancel|event)\\b"
+    },
+    "number": { "name": "constant.numeric.carve", "match": "\\b-?\\d+(\\.\\d+)?\\b" }
+  }
+}

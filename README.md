@@ -2,6 +2,8 @@
 
 Simple, readable scripts for the Pumpkin Minecraft server.
 
+**[Documentation](https://void1z2.github.io/carve/)** · [Syntax reference](https://void1z2.github.io/carve/reference/)
+
 [![CI](https://github.com/void1z2/carve/actions/workflows/ci.yml/badge.svg)](https://github.com/void1z2/carve/actions/workflows/ci.yml)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 [![Pumpkin plugin API v0.1](https://img.shields.io/badge/Pumpkin%20API-v0.1-orange.svg)](https://github.com/Pumpkin-MC/Pumpkin)
