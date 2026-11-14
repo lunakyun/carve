@@ -12,7 +12,7 @@ use pumpkin_plugin_api::command::{
     ArgumentType, Command, CommandError, CommandNode, CommandSender, ConsumedArgs, StringType,
 };
 use pumpkin_plugin_api::commands::CommandHandler;
-use pumpkin_plugin_api::common::Hand;
+use pumpkin_plugin_api::common::{GameMode, Hand};
 use pumpkin_plugin_api::events::{
     BlockBreakEvent, BlockPlaceEvent, EntityDamageByEntityEvent, EntityDamageEvent, EventData, EventHandler,
     EventPriority, FromIntoEvent, InteractAction, PlayerChatEvent, PlayerDeathEvent, PlayerInteractEvent,
@@ -273,6 +273,30 @@ impl WasmHost<'_> {
         self.get(p).map(|pl| f64::from(pl.get_health()))
     }
 
+    fn gamemode(&mut self, p: &PlayerRef) -> Option<String> {
+        self.get(p).map(|pl| {
+            match pl.get_gamemode() {
+                GameMode::Survival => "survival",
+                GameMode::Creative => "creative",
+                GameMode::Adventure => "adventure",
+                GameMode::Spectator => "spectator",
+            }
+            .to_string()
+        })
+    }
+
+    fn set_gamemode(&mut self, p: &PlayerRef, mode: &str) {
+        let m = match mode {
+            "creative" => GameMode::Creative,
+            "adventure" => GameMode::Adventure,
+            "spectator" => GameMode::Spectator,
+            _ => GameMode::Survival,
+        };
+        if let Some(pl) = self.get(p) {
+            pl.set_gamemode(m);
+        }
+    }
+
     fn log(&mut self, level: LogLevel, msg: &str) {
         let l = match level {
             LogLevel::Info => ApiLevel::Info,
@@ -317,6 +341,8 @@ impl Host for TickHost<'_, '_> {
         held_item(p: &PlayerRef) -> Option<(String, u32)>;
         count_item(p: &PlayerRef, id: &str) -> u32;
         health(p: &PlayerRef) -> Option<f64>;
+        gamemode(p: &PlayerRef) -> Option<String>;
+        set_gamemode(p: &PlayerRef, mode: &str);
     }
 
     fn schedule_wait(&mut self, ticks: u64, token: u64) {

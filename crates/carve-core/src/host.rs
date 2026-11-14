@@ -97,4 +97,15 @@ pub trait Host {
         let cmd = crate::sounds::stop_command(&player.name, sound);
         self.execute_command(&cmd);
     }
+
+    /// Current game mode name (`survival`, `creative`, ...).
+    fn gamemode(&mut self, _player: &PlayerRef) -> Option<String> {
+        None
+    }
+
+    /// Set the game mode. `mode` is already a canonical name. The default runs
+    /// the vanilla `gamemode` command as the console.
+    fn set_gamemode(&mut self, player: &PlayerRef, mode: &str) {
+        self.execute_command(&format!("gamemode {mode} {}", player.name));
+    }
 }

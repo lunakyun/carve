@@ -793,7 +793,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Furnace Slot
 - ⬜ Furnace Times
 - ⬜ Game Effects with Data
-- ⬜ Game Mode ⭐
+- ✅ Game Mode ⭐ — `gamemode of player`, `set gamemode of player to creative`
 - ⬜ Gamerule Value
 - ⬜ Gliding State
 - ⬜ Glowing
@@ -1261,7 +1261,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Frog Variant
 - ✅ Function
 - ⬜ Game Effect
-- ⬜ Game Mode ⭐
+- ✅ Game Mode ⭐ — `survival`, `creative`, `adventure`, `spectator`
 - ⬜ Gamerule
 - ⬜ Gamerule Value
 - ⬜ Gene
