@@ -35,6 +35,8 @@ pub enum EventKind {
     Ext2(crate::w2_events_2::Ev),
     /// Extra events, see `w2_events_3`.
     Ext3(crate::w2_events_3::Ev3),
+    /// Events of `w2_events_4`.
+    Ext4(crate::w2_events_4::ExtEvent),
 }
 
 impl EventKind {
@@ -58,6 +60,7 @@ impl EventKind {
             EventKind::Ext(e) => e.name(),
             EventKind::Ext2(e) => crate::w2_events_2::spec(e).names[0],
             EventKind::Ext3(e) => e.name(),
+            EventKind::Ext4(e) => e.name(),
         }
     }
 
@@ -84,8 +87,9 @@ impl EventKind {
             "sprint toggle" | "toggle sprint" | "player toggle sprint" => EventKind::SprintToggle,
             "flight toggle" | "toggle flight" | "player toggle flight" => EventKind::FlightToggle,
             _ => {
-                return crate::w2_events_1::ExtEvent::parse(s)
-                    .map(EventKind::Ext)
+                return crate::w2_events_4::ExtEvent::parse(s)
+                    .map(EventKind::Ext4)
+                    .or_else(|| crate::w2_events_1::ExtEvent::parse(s).map(EventKind::Ext))
                     .or_else(|| crate::w2_events_2::parse(s).map(EventKind::Ext2))
                     .or_else(|| crate::w2_events_3::Ev3::parse(s).map(EventKind::Ext3));
             }
@@ -97,6 +101,7 @@ impl EventKind {
         match self {
             EventKind::Ext(e) => e.cancellable(),
             EventKind::Ext2(e) => crate::w2_events_2::spec(e).cancel,
+            EventKind::Ext4(e) => e.cancellable(),
             _ => !matches!(self, EventKind::Respawn | EventKind::Load),
         }
     }
@@ -248,6 +253,8 @@ pub enum Effect {
     SetGamemode(Expr, Expr),
     /// Experience change; the two expressions are in pattern order.
     Xp(crate::xp_level::XpOp, Expr, Expr),
+    /// Effects of `w2_events_4`.
+    Ext4(Box<crate::w2_events_4::ExtEffect>),
     Kill(Expr),
     Teleport(Expr, Expr, Expr, Expr),
     TeleportTo(Expr, Expr),
@@ -1206,6 +1213,19 @@ impl Cx<'_> {
         if self.call_stmt(num, &toks) {
             return;
         }
+        if self.env.ext4.is_some() {
+            match crate::w2_events_4::parse_effect(&toks, &self.env) {
+                Some(Ok(eff)) => {
+                    self.emit(Instr::Eff(eff), num);
+                    return;
+                }
+                Some(Err(e)) => {
+                    self.err(num, e);
+                    return;
+                }
+                None => {}
+            }
+        }
         let ops_first = toks.first().is_some_and(|t| t.is_lit("sort"))
             || (toks.first().is_some_and(|t| t.is_lit("set"))
                 && toks.get(3..).is_some_and(|r| crate::list_ops::looks_like_list_op(r, &self.env)));
@@ -2032,6 +2052,7 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                 arg_types: vec![],
                 trigger_name: format!("'on {}'", k.name()),
                 no_player: k == EventKind::Load || matches!(k, EventKind::Ext(e) if !e.has_player() && !e.maybe_player()) || matches!(k, EventKind::Ext3(e) if !e.has_player()),
+                ext4: if let EventKind::Ext4(e) = k { Some(e) } else { None },
                 ev_fields: if let EventKind::Ext(e) = k { e.fields() } else { &[] },
                 has_damage: k == EventKind::Damage || matches!(k, EventKind::Ext3(e) if e.has_number()),
                 has_attacker: matches!(k, EventKind::Damage | EventKind::Death),
@@ -2042,6 +2063,15 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                 crate::w2_events_2::apply_env(&mut env, e);
             }
             click_filters.extend(filters);
+            (TriggerKind::Event(k), &top.children, env, false)
+        } else if let Some(minute) = crate::w2_events_4::parse_at_real_time(&lower) {
+            let k = EventKind::Ext4(crate::w2_events_4::ExtEvent::SystemTime(minute));
+            let env = Env {
+                trigger_name: format!("'at {:02}:{:02} in real time'", minute / 60, minute % 60),
+                no_player: true,
+                ext4: Some(crate::w2_events_4::ExtEvent::SystemTime(minute)),
+                ..Env::default()
+            };
             (TriggerKind::Event(k), &top.children, env, false)
         } else if let Some(rest) = lower.strip_prefix("at ") {
             let Some(t) = crate::w2_events_1::parse_at_time(rest.trim().trim_end_matches(':')) else {

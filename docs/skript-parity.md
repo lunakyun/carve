@@ -212,49 +212,49 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ On Riptide — Pumpkin has no riptide event
 - 🟡 On Script Load/Unload — `on load` only
 - ✅ On Send Command List — `on send command list` — `player`, `event-text` (command); can be cancelled
-- ⬜ On Server List Ping
+- ✅ On Server List Ping — `on server list ping:`; `event-motd`, `event-max-players`, `event-players` can be set
 - 🟡 On Server Start/Stop — `on load` runs at start; no stop
-- ⬜ On Sheep Regrow Wool
-- ⬜ On Shoot
-- ⬜ On Sign Change
-- ⬜ On Slime Split
-- ⬜ On Smelt
+- 🟡 On Sheep Regrow Wool — wired, but Pumpkin does not fire this event yet
+- 🟡 On Shoot — `on shoot:`; Pumpkin fires it only for mob bows and crossbows
+- ✅ On Sign Change — `on sign change:`; `event-line-1` to `event-line-4` can be set
+- 🟡 On Slime Split — wired, but Pumpkin does not fire this event yet
+- ✅ On Smelt — `on smelt:`; `event-source`, `event-result`, `event-block`
 - ✅ On Sneak Toggle ⭐
 - ⬜ On Spawn ⭐
-- ⬜ On Spawn Change
-- ⬜ On Spectate
-- ⬜ On Sponge Absorb
-- ⬜ On Spread
+- 🟡 On Spawn Change — `on spawn change:`; Pumpkin fires it only for `/setworldspawn`
+- ⛔ On Spectate — the plugin API has no such event
+- ✅ On Sponge Absorb — `on sponge absorb:`
+- 🟡 On Spread — `on spread:`; Pumpkin fires it for fire spreading only
 - ✅ On Sprint Toggle
-- ⬜ On Start Smelt
-- ⬜ On Stonecutter Recipe Select
-- ⬜ On Stop Using Item
-- ⬜ On Swim Toggle
-- ⬜ On System Time
-- ⬜ On Tame
-- ⬜ On Target
+- ✅ On Start Smelt — `on start smelt:`; `event-time` can be set
+- ⛔ On Stonecutter Recipe Select — the plugin API has no such event
+- ⛔ On Stop Using Item — the plugin API has no such event
+- ✅ On Swim Toggle — `on swim toggle:`; `player` when a player swims, `event-swimming`
+- ✅ On System Time — `at 14:30 in real time:` (clock is UTC)
+- ✅ On Tame — `on tame:`; `player` is the new owner
+- ✅ On Target — `on target:`; `event-entity`, `event-target`
 - ⬜ On Teleport ⭐
-- ⬜ On Throwing of an Egg
-- ⬜ On Tool Change
-- ⬜ On Unknown Command Execution
-- ⬜ On Vault Display Item
-- ⬜ On Vehicle Collision
-- ⬜ On Vehicle Create
-- ⬜ On Vehicle Damage
-- ⬜ On Vehicle Destroy
-- ⬜ On Vehicle Enter
-- ⬜ On Vehicle Exit
-- ⬜ On Vehicle Move
-- ⬜ On Villager Career Change
-- ⬜ On Weather Change
-- ⬜ On World Border Bounds Change
-- ⬜ On World Border Bounds Finish Change
-- ⬜ On World Border Center Change
-- ⬜ On World Init
-- ⬜ On World Load
-- ⬜ On World Save
-- ⬜ On World Unload
-- ⬜ On Zombie Break Door
+- ✅ On Throwing of an Egg — `on throwing of an egg:`; `event-hatching` and `event-hatches` can be set
+- 🟡 On Tool Change — `on tool change:`; gives the hotbar slots only, not the items
+- ⛔ On Unknown Command Execution — the plugin API has no such event
+- 🟡 On Vault Display Item — wired, but Pumpkin does not fire this event yet
+- ✅ On Vehicle Collision — `on vehicle collision:`; `event-entity` or `event-block`
+- ✅ On Vehicle Create — `on vehicle create:`
+- ✅ On Vehicle Damage — `on vehicle damage:`
+- ✅ On Vehicle Destroy — `on vehicle destroy:`
+- ✅ On Vehicle Enter — `on vehicle enter:`
+- ✅ On Vehicle Exit — `on vehicle exit:`
+- ✅ On Vehicle Move — `on vehicle move:`; `event-from`, `event-to`
+- 🟡 On Villager Career Change — wired, but Pumpkin does not fire this event yet
+- ✅ On Weather Change — `on weather change:` and `on weather change to rain:` / `to clear:`
+- ⛔ On World Border Bounds Change — the plugin API has no world border events
+- ⛔ On World Border Bounds Finish Change — the plugin API has no world border events
+- ⛔ On World Border Center Change — the plugin API has no world border events
+- ✅ On World Init — `on world init:`
+- ✅ On World Load — `on world load:`
+- ✅ On World Save — `on world save:`
+- ✅ On World Unload — `on world unload:`
+- 🟡 On Zombie Break Door — `on zombie break door:`; runs for any mob that breaks a door
 - ✅ Periodical — `every 5 seconds:`
 
 ## Effects (154)

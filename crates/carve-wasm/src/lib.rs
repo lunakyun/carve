@@ -1,6 +1,8 @@
 //! Carve as a Pumpkin WASM plugin. All game access goes through
 //! [`WasmHost`], which implements the core's `Host` trait.
 
+mod w2_events_4;
+
 use std::collections::BTreeSet;
 use std::sync::Mutex;
 
@@ -52,6 +54,8 @@ struct State {
     /// entity id -> player uuid, rebuilt at most once per tick on a miss.
     entity_players: Vec<(i32, String)>,
     entity_map_tick: u64,
+    /// Last wall-clock minute handled by `at HH:MM in real time` triggers.
+    last_minute: i64,
     /// Victim of the damage event being handled, and whether scripts already ran
     /// for it (the by-entity event that may follow must not run them twice).
     damage_pending: Option<(i32, bool, u64)>,
@@ -1361,6 +1365,7 @@ fn tick(server: Server) {
                 true
             }
         });
+        w2_events_4::poll_clock(st, host);
         due.sort();
         for (_, tok) in due {
             let mut th = TickHost {
@@ -1583,6 +1588,7 @@ impl Plugin for Carve {
         w2_events_3::register_all(&context, &|ev| {
             engine.table().has_event(EventKind::Ext3(ev))
         });
+        w2_events_4::register_all(&context);
         for r in [
             context.register_event_handler::<PlayerInteractEvent, _>(OnInteract, EventPriority::Normal, true),
             context.register_event_handler::<EntityDamageEvent, _>(OnDamage, EventPriority::Normal, true),
@@ -1611,6 +1617,7 @@ impl Plugin for Carve {
                 registered,
                 entity_players: Vec::new(),
                 entity_map_tick: u64::MAX,
+                last_minute: 0,
                 damage_pending: None,
             });
         }

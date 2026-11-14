@@ -123,6 +123,8 @@ pub enum Expr {
     Distance(Box<Expr>, Box<Expr>),
     /// `random integer between a and b` (true) / `random number between a and b`.
     Random(bool, Box<Expr>, Box<Expr>),
+    /// `event-<name>` of a `w2_events_4` event: index into the event values.
+    Ev4Val(u8),
     /// `damage` in `on damage`.
     Damage,
     /// A value of one of the extra events (`w2_events_2`).
@@ -320,6 +322,8 @@ pub struct Env {
     pub ev_fields: &'static [(&'static str, Ty)],
     /// Set inside the extra events of `w2_events_2`.
     pub ext_event: Option<crate::w2_events_2::Ev>,
+    /// The trigger is an event of `w2_events_4` (gives `event-<name>`).
+    pub ext4: Option<crate::w2_events_4::ExtEvent>,
 }
 
 impl Expr {
@@ -339,6 +343,7 @@ impl Expr {
             Expr::Distance(..) | Expr::Random(..) | Expr::Damage => Ty::Number,
             Expr::Attacker => Ty::Player,
             Expr::Ev2Val(s) => s.ty(),
+            Expr::Ev4Val(_) => Ty::Object,
             Expr::Math(..) | Expr::ParseNum(_) => Ty::Number,
             Expr::Color(..) => Ty::Text,
             Expr::RandomOf(_) | Expr::Split(..) | Expr::Elem(..) => Ty::Object,
@@ -948,6 +953,21 @@ impl P<'_> {
                     {
                         let i = crate::w2_events_1::field_index(self.env.ev_fields, w).map_or(0, |f| f.0);
                         Ok(Expr::EventVal(i))
+                    }
+                    w if w.starts_with("event-") && !self.env.in_function && self.env.ext4.is_some() => {
+                        let ev = self.env.ext4.unwrap_or(crate::w2_events_4::ExtEvent::WorldInit);
+                        match ev.slot_index(&w["event-".len()..]) {
+                            Some(i) => Ok(Expr::Ev4Val(i as u8)),
+                            None => Err(format!(
+                                "'on {}' has no value '{w}' (it has: {})",
+                                ev.name(),
+                                if ev.slots().is_empty() {
+                                    "none".to_string()
+                                } else {
+                                    ev.slots().iter().map(|(n, _)| format!("event-{n}")).collect::<Vec<_>>().join(", ")
+                                }
+                            )),
+                        }
                     }
                     "clicked" | "event-block"
                         if self.env.has_block
