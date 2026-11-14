@@ -937,7 +937,8 @@ impl P<'_> {
                     "me" | "myself" => Ok(Expr::Player),
                     "player" => Ok(Expr::Player),
                     "victim" if self.env.has_damage || self.env.has_attacker => Ok(Expr::Player),
-                    "damage" if self.env.has_damage && !self.env.in_function => Ok(Expr::Damage),
+                    "damage" | "event-number" if self.env.has_damage && !self.env.in_function => Ok(Expr::Damage),
+                    "event-text" if self.env.has_message && !self.env.in_function => Ok(Expr::Message),
                     "attacker" | "damager" if self.env.has_attacker && !self.env.in_function => {
                         Ok(Expr::Attacker)
                     }

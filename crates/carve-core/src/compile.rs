@@ -33,6 +33,8 @@ pub enum EventKind {
     Ext(crate::w2_events_1::ExtEvent),
     /// The extra events of `w2_events_2`.
     Ext2(crate::w2_events_2::Ev),
+    /// Extra events, see `w2_events_3`.
+    Ext3(crate::w2_events_3::Ev3),
 }
 
 impl EventKind {
@@ -55,6 +57,7 @@ impl EventKind {
             EventKind::FlightToggle => "flight toggle",
             EventKind::Ext(e) => e.name(),
             EventKind::Ext2(e) => crate::w2_events_2::spec(e).names[0],
+            EventKind::Ext3(e) => e.name(),
         }
     }
 
@@ -83,7 +86,8 @@ impl EventKind {
             _ => {
                 return crate::w2_events_1::ExtEvent::parse(s)
                     .map(EventKind::Ext)
-                    .or_else(|| crate::w2_events_2::parse(s).map(EventKind::Ext2));
+                    .or_else(|| crate::w2_events_2::parse(s).map(EventKind::Ext2))
+                    .or_else(|| crate::w2_events_3::Ev3::parse(s).map(EventKind::Ext3));
             }
         })
     }
@@ -2007,7 +2011,7 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                         file,
                         top.num,
                         format!(
-                            "unknown event '{ev}', known: join, quit, chat, break, place, death, damage, respawn, click, right click, left click, sneak toggle, sprint toggle, flight toggle, load, {} (and 'every N seconds:')",
+                            "unknown event '{ev}', known: join, quit, chat, break, place, death, damage, respawn, click, right click, left click, sneak toggle, sprint toggle, flight toggle, load, {}, and the extra events in docs/syntax/w2-events-3.md (and 'every N seconds:')",
                             crate::w2_events_2::known_names()
                         ),
                     ));
@@ -2024,12 +2028,12 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                 continue;
             }
             let mut env = Env {
-                has_message: k == EventKind::Chat,
+                has_message: k == EventKind::Chat || matches!(k, EventKind::Ext3(e) if e.has_text()),
                 arg_types: vec![],
                 trigger_name: format!("'on {}'", k.name()),
-                no_player: k == EventKind::Load || matches!(k, EventKind::Ext(e) if !e.has_player() && !e.maybe_player()),
+                no_player: k == EventKind::Load || matches!(k, EventKind::Ext(e) if !e.has_player() && !e.maybe_player()) || matches!(k, EventKind::Ext3(e) if !e.has_player()),
                 ev_fields: if let EventKind::Ext(e) = k { e.fields() } else { &[] },
-                has_damage: k == EventKind::Damage,
+                has_damage: k == EventKind::Damage || matches!(k, EventKind::Ext3(e) if e.has_number()),
                 has_attacker: matches!(k, EventKind::Damage | EventKind::Death),
                 has_block: matches!(k, EventKind::Click | EventKind::RightClick | EventKind::LeftClick),
                 ..Env::default()
