@@ -35,6 +35,8 @@ pub struct EventCtx {
     pub attacker: Option<PlayerRef>,
     /// `clicked block` in click events (block id without `minecraft:`).
     pub block: Option<String>,
+    /// Values of the extra events in `w2_events_2`.
+    pub ext: Option<Box<crate::w2_events_2::ExtVals>>,
 }
 
 impl EventCtx {
@@ -47,6 +49,7 @@ impl EventCtx {
             damage: None,
             attacker: None,
             block: None,
+            ext: None,
         }
     }
 
@@ -60,6 +63,7 @@ impl EventCtx {
             damage: None,
             attacker: None,
             block: None,
+            ext: None,
         }
     }
 
@@ -1554,6 +1558,7 @@ impl Engine {
             Expr::Console => Value::Console,
             Expr::Message => ex.ctx.message.clone().map(Value::Text).unwrap_or(Value::None),
             Expr::Damage => ex.ctx.damage.map(Value::Num).unwrap_or(Value::None),
+            Expr::EventVal(s) => crate::w2_events_2::read(&ex.ctx, *s),
             Expr::Attacker => match ex.ctx.attacker.clone() {
                 Some(a) => online(&Value::Player(a), &mut ex.seen, host)
                     .map(Value::Player)

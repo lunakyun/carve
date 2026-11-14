@@ -29,6 +29,8 @@ pub enum EventKind {
     SneakToggle,
     SprintToggle,
     FlightToggle,
+    /// The extra events of `w2_events_2`.
+    Ext(crate::w2_events_2::Ev),
 }
 
 impl EventKind {
@@ -49,6 +51,7 @@ impl EventKind {
             EventKind::SneakToggle => "sneak toggle",
             EventKind::SprintToggle => "sprint toggle",
             EventKind::FlightToggle => "flight toggle",
+            EventKind::Ext(e) => crate::w2_events_2::spec(e).names[0],
         }
     }
 
@@ -74,13 +77,16 @@ impl EventKind {
             "sneak toggle" | "toggle sneak" | "player toggle sneak" => EventKind::SneakToggle,
             "sprint toggle" | "toggle sprint" | "player toggle sprint" => EventKind::SprintToggle,
             "flight toggle" | "toggle flight" | "player toggle flight" => EventKind::FlightToggle,
-            _ => return None,
+            _ => return crate::w2_events_2::parse(s).map(EventKind::Ext),
         })
     }
 
     /// Whether `cancel event` means anything here.
     pub fn cancellable(self) -> bool {
-        !matches!(self, EventKind::Respawn | EventKind::Load)
+        match self {
+            EventKind::Ext(e) => crate::w2_events_2::spec(e).cancel,
+            _ => !matches!(self, EventKind::Respawn | EventKind::Load),
+        }
     }
 }
 
@@ -1983,7 +1989,8 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                         file,
                         top.num,
                         format!(
-                            "unknown event '{ev}', known: join, quit, chat, break, place, death, damage, respawn, click, right click, left click, sneak toggle, sprint toggle, flight toggle, load (and 'every N seconds:')"
+                            "unknown event '{ev}', known: join, quit, chat, break, place, death, damage, respawn, click, right click, left click, sneak toggle, sprint toggle, flight toggle, load, {} (and 'every N seconds:')",
+                            crate::w2_events_2::known_names()
                         ),
                     ));
                 continue;
@@ -1998,7 +2005,7 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                 ));
                 continue;
             }
-            let env = Env {
+            let mut env = Env {
                 has_message: k == EventKind::Chat,
                 arg_types: vec![],
                 trigger_name: format!("'on {}'", k.name()),
@@ -2008,6 +2015,9 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                 has_block: matches!(k, EventKind::Click | EventKind::RightClick | EventKind::LeftClick),
                 ..Env::default()
             };
+            if let EventKind::Ext(e) = k {
+                crate::w2_events_2::apply_env(&mut env, e);
+            }
             click_filters.extend(filters);
             (TriggerKind::Event(k), &top.children, env, false)
         } else if let Some(rest) = lower.strip_prefix("every ") {
