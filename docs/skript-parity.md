@@ -833,80 +833,85 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Initiator Inventory — inventory move events are not in the plugin API
 - ⬜ Input
 - ⬜ Interaction Height/Width
+- ⬜ Indices of Value
+- ⬜ Infinity
+- ⬜ Initiator Inventory
+- ⛔ Input — the API gives no player input (WASD, jump) state
+- ⛔ Interaction Height/Width — Pumpkin's API has no interaction entities
 - ⬜ Inventory ⭐
 - ⬜ Inventory Action
 - ⬜ Inventory Close Reason
 - ⬜ Inventory Holder/Viewers/Rows/Slots
 - ⬜ Inventory Slot ⭐
-- ⬜ Inverse Boolean
+- ✅ Inverse Boolean — `not x`
 - ⬜ IP
 - 🟡 Item — item literals like `2 diamonds`
-- ⬜ Item Amount
-- ⬜ Item Component - Copy
-- ⬜ Item Cooldown
-- ⬜ Item Display Transform
+- ✅ Item Amount — `item amount of <item>` (read only)
+- ⛔ Item Component - Copy — the API only exposes raw component bytes, not typed access
+- ✅ Item Cooldown — `cooldown of <item> for <player>`, `set`/`reset cooldown of ...`
+- ⛔ Item Display Transform — Pumpkin's API has no display entities with transforms to set from scripts
 - ⬜ Item Enchantments
 - ⬜ Item Flags
-- ⬜ Item Model
-- ⬜ Item of an Entity
-- ⬜ Item Rarity
-- ⬜ Item with Custom Model Data
-- ⬜ Item with Enchantment Glint
-- ⬜ Item with Item Flags
+- ⛔ Item Model — the API only exposes raw component bytes, not typed access
+- ⛔ Item of an Entity — the API cannot read the stack held by an item entity
+- ⛔ Item Rarity — the API only exposes raw component bytes, not typed access
+- ⛔ Item with Custom Model Data — the API only exposes raw component bytes, not typed access
+- ⛔ Item with Enchantment Glint — the API only exposes raw component bytes, not typed access
+- ⛔ Item with Item Flags — the API only exposes raw component bytes, not typed access
 - ⬜ Item with Lore ⭐
-- ⬜ Item With Model
-- ⬜ Item with Tooltip
-- ⬜ Items
+- ⛔ Item With Model — the API only exposes raw component bytes, not typed access
+- ⛔ Item with Tooltip — the API only exposes raw component bytes, not typed access
+- ⛔ Items — needs item entities or inventories, which the API cannot read as lists here
 - ⬜ Items In ⭐
 - ✅ Join & Split ⭐
-- ⬜ Join Message ⭐
+- ✅ Join Message ⭐ — `join message`, `set join message to "..."` in `on join`
 - ⬜ Key Of Boss Bar
-- ⬜ Keyed
+- 🟡 Keyed — `key of <item>` gives `minecraft:id`; items only
 - ⬜ Kick Message
-- ⬜ Language
-- ⬜ Last Attacker
+- ✅ Language — `language of <player>`, `locale of <player>`
+- 🟡 Last Attacker — `last attacker of <player>`; players only, remembered since the plugin loaded
 - ⬜ Last Caught Errors
-- ⬜ Last Color
-- ⬜ Last Damage
-- ⬜ Last Damage Cause
-- ⬜ Last Death Location
-- ⬜ Last Interaction Date
-- ⬜ Last Interaction Player
-- ⬜ Last Loaded Server Icon
-- ⬜ Last Resource Pack Response
+- ✅ Last Color — `last color of <text>`: a color name like `red`, or `#rrggbb`
+- 🟡 Last Damage — `last damage of <player>`; remembered since the plugin loaded
+- 🟡 Last Damage Cause — `last damage cause of <player>`: text like `fall` or `player_attack`
+- ✅ Last Death Location — `last death location of <player>`; remembered since the plugin loaded
+- ⛔ Last Interaction Date — Pumpkin's API has no interaction entities
+- ⛔ Last Interaction Player — Pumpkin's API has no interaction entities
+- ⛔ Last Loaded Server Icon — the API gives no server list ping data to read back
+- 🟡 Last Resource Pack Response — `[last] resource pack response [of <player>]`: status text from Pumpkin
 - ⬜ Last Spawned Entity
-- ⬜ Last/First Login Time
-- ⬜ Leash Holder
+- ⛔ Last/First Login Time — the API has no player history; Carve can't know past logins
+- ⛔ Leash Holder — the API has leash events but no way to read the holder
 - ✅ Length ⭐
 - ✅ Level ⭐ — `level of player`, set/add/remove/give
 - ✅ Level Progress — read, set, add, remove (0 to 1)
-- ⬜ Light Level
-- ⬜ Loaded Plugins
+- ✅ Light Level — `light level at <loc>`, `block light level at`, `sky light level at`
+- ⛔ Loaded Plugins — the API has no plugin list
 - 🟡 Location — `location of player`
-- ⬜ Location At ⭐
-- ⬜ Location with Yaw/Pitch
+- ✅ Location At ⭐ — `location at (x, y, z) [in <world>]`
+- ⛔ Location with Yaw/Pitch — Carve locations hold x, y, z and world only; rotation is not stored
 - ✅ Loop Iteration
 - ✅ Loop value — `loop-value[-N]`, `loop-player`, `loop-index`, `loop-number`
-- ⬜ Loot
-- ⬜ Loot Context
-- ⬜ Loot Location of Loot Context
-- ⬜ Loot of Loot Table
-- ⬜ Loot Table
-- ⬜ Loot Table from Key
-- ⬜ Looted Entity of Loot Context
-- ⬜ Looter of Loot Context
+- ⛔ Loot — the API cannot roll or read loot tables
+- ⛔ Loot Context — the API cannot roll or read loot tables
+- ⛔ Loot Location of Loot Context — the API cannot roll or read loot tables
+- ⛔ Loot of Loot Table — the API cannot roll or read loot tables
+- ⛔ Loot Table — the API cannot roll or read loot tables
+- ⛔ Loot Table from Key — the API cannot roll or read loot tables
+- ⛔ Looted Entity of Loot Context — the API cannot roll or read loot tables
+- ⛔ Looter of Loot Context — the API cannot roll or read loot tables
 - ⬜ Lore ⭐
-- ⬜ Love Time
-- ⬜ Lowest/Highest Solid Block
-- ⬜ Luck of Loot Context
-- ⬜ Max Durability
+- ⛔ Love Time — the API has breed events but no love timer
+- 🟡 Lowest/Highest Solid Block — `highest|lowest [solid] block at <loc>`: gives a location; plants and liquids count as not solid
+- ⛔ Luck of Loot Context — the API cannot roll or read loot tables
+- 🟡 Max Durability — `max durability of <item>`: built-in table of tools, armor and a few more
 - ✅ Max Health ⭐ — read, set, add, remove
-- ⬜ Max Item Use Time
-- ⬜ Max Minecart Speed
+- 🟡 Max Item Use Time — `max item use time of <item>`: built-in table (bow, food, shield, ...)
+- ⛔ Max Minecart Speed — the API has no minecart speed
 - ⬜ Max Players
-- ⬜ Maximum Double Value
-- ⬜ Maximum Float Value
-- ⬜ Maximum Freeze Time
+- ✅ Maximum Double Value — `maximum double value`
+- ✅ Maximum Float Value — `maximum float value`
+- 🟡 Maximum Freeze Time — `max freeze time of <entity>`: always 7 seconds (vanilla value)
 - ⬜ Maximum Integer Value
 - ⬜ Maximum Long Value
 - ⬜ Maximum Stack Size
@@ -1285,7 +1290,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Item Component
 - ⬜ Item Display Transforms
 - ⬜ Item Flag
-- ⬜ Item Rarity
+- ⛔ Item Rarity — the API only exposes raw component bytes, not typed access
 - 🟡 Item Type — Minecraft ids, checked at load
 - ⬜ Living Entity
 - ✅ Location — no yaw/pitch

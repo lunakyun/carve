@@ -180,6 +180,8 @@ pub enum Expr {
     W2(Box<crate::w2_expressions_1::W2>),
     /// Player stats, hashes, memory, uuid lookups and friends (see `w2_expressions_3`).
     Ext(crate::w2_expressions_3::ExtFn, Vec<Expr>),
+    /// A rare expression from `w2_expressions_4`.
+    W4(Box<crate::w2_expressions_4::W4>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -368,6 +370,7 @@ impl Expr {
             Expr::Items(_) => Ty::List,
             Expr::W2(w) => w.ty(),
             Expr::Ext(f, _) => crate::w2_expressions_3::ty(*f),
+            Expr::W4(w) => w.ty(),
             Expr::ListAgg(Agg::Size | Agg::Sum, _) => Ty::Number,
             Expr::ListAgg(..) => Ty::Object,
             Expr::Default(a, b) => {
@@ -443,6 +446,9 @@ fn describe(t: &Tok) -> String {
         Tok::Sym(s) => format!("'{s}'"),
     }
 }
+
+#[path = "w2_expressions_4_parse.rs"]
+mod w4_parse;
 
 struct P<'a> {
     toks: &'a [Tok],
@@ -741,7 +747,7 @@ impl P<'_> {
                 ext(ExtFn::PlayerFromUuid, vec![u])
             }
             "highest" | "top"
-                if (next(1) == "block" && next(2) == "at")
+                if (lw == "top" && next(1) == "block" && next(2) == "at")
                     || (next(1) == "solid" && next(2) == "block" && next(3) == "at") =>
             {
                 self.pos = start + if next(1) == "solid" { 4 } else { 3 };
@@ -1107,6 +1113,9 @@ impl P<'_> {
                     return Ok(e);
                 }
                 if let Some(e) = self.w2e3_head(&lw)? {
+                    return Ok(e);
+                }
+                if let Some(e) = self.w4(&lw)? {
                     return Ok(e);
                 }
                 if let Some(e) = self.text_fn(&lw)? {

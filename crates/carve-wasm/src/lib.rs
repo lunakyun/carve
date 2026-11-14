@@ -36,6 +36,7 @@ use pumpkin_plugin_api::{
 
 mod w2_events_2;
 mod w2_expressions_3;
+mod w4;
 
 const SCRIPTS_DIR: &str = "scripts";
 const VARS_FILE: &str = "variables.json";
@@ -46,6 +47,7 @@ struct HostState {
     tick: u64,
     /// (due tick, resume token)
     pending: Vec<(u64, u64)>,
+    w4: w4::W4State,
 }
 
 struct State {
@@ -188,11 +190,14 @@ struct OnPackStatus;
 impl EventHandler<pumpkin_plugin_api::events::PlayerResourcePackStatusEvent> for OnPackStatus {
     fn handle(
         &self,
-        _server: Server,
+        server: Server,
         data: EventData<pumpkin_plugin_api::events::PlayerResourcePackStatusEvent>,
     ) -> EventData<pumpkin_plugin_api::events::PlayerResourcePackStatusEvent> {
         let uuid = uuid::to_string(data.player.get_id());
         let status = data.status.to_lowercase();
+        let _ = with_state(&server, None, |st, _| {
+            st.hs.w4.packs.insert(uuid.clone(), status.clone());
+        });
         if let Ok(mut p) = PACKS.lock() {
             p.retain(|u| *u != uuid);
             if status.contains("success") || status.contains("loaded") {
@@ -726,6 +731,35 @@ impl Host for TickHost<'_, '_> {
         self.inner.top_block_y_impl(world, x, z)
     }
 
+    delegate! {
+        player_locale(p: &PlayerRef) -> Option<String>;
+        item_cooldown(p: &PlayerRef, item: &str) -> Option<i64>;
+        set_item_cooldown(p: &PlayerRef, item: &str, ticks: i64);
+        solid_block_y(world: &str, x: i32, z: i32, highest: bool) -> Option<i32>;
+        light_level(world: &str, x: i32, y: i32, z: i32, kind: u8) -> Option<u8>;
+    }
+
+    fn last_death_location(&mut self, p: &PlayerRef) -> Option<(f64, f64, f64, String)> {
+        self.hs.w4.deaths.get(&p.uuid).cloned()
+    }
+
+    fn last_damage(&mut self, p: &PlayerRef) -> Option<carve_core::w2_expressions_4::DamageInfo> {
+        self.hs.w4.hits.get(&p.uuid).cloned()
+    }
+
+    fn join_message(&mut self) -> Option<String> {
+        self.hs.w4.join_msg.clone()
+    }
+
+    fn set_join_message(&mut self, text: &str) {
+        self.hs.w4.join_msg = Some(text.to_string());
+        self.hs.w4.join_set = Some(text.to_string());
+    }
+
+    fn resource_pack_status(&mut self, p: &PlayerRef) -> Option<String> {
+        self.hs.w4.packs.get(&p.uuid).cloned()
+    }
+
     fn schedule_wait(&mut self, ticks: u64, token: u64) {
         self.hs.pending.push((self.hs.tick + ticks, token));
     }
@@ -791,11 +825,22 @@ struct OnEvent<E>(EventKind, std::marker::PhantomData<fn() -> E>);
 trait EventAccess: FromIntoEvent {
     fn ctx(data: &EventData<Self>) -> EventCtx;
     fn set_cancelled(data: &mut EventData<Self>);
+    /// Called for every event, even when no script listens.
+    fn observe(_data: &EventData<Self>, _hs: &mut HostState) {}
+    /// A message a script set during the event (`set join message to`).
+    fn set_message(_data: &mut EventData<Self>, _msg: &str) {}
 }
 
 impl EventAccess for PlayerJoinEvent {
     fn ctx(d: &EventData<Self>) -> EventCtx {
         EventCtx::player(player_ref(&d.player))
+    }
+    fn observe(d: &EventData<Self>, hs: &mut HostState) {
+        hs.w4.join_msg = Some(d.join_message.get_text());
+        hs.w4.join_set = None;
+    }
+    fn set_message(d: &mut EventData<Self>, msg: &str) {
+        d.join_message = text(msg);
     }
     fn set_cancelled(d: &mut EventData<Self>) {
         d.cancelled = true;
@@ -852,6 +897,12 @@ impl EventAccess for PlayerDeathEvent {
         let mut ctx = EventCtx::player(player_ref(&d.player));
         ctx.death_message = Some(d.death_message.get_text());
         ctx
+    }
+    fn observe(d: &EventData<Self>, hs: &mut HostState) {
+        let (x, y, z) = d.player.get_position();
+        hs.w4
+            .deaths
+            .insert(uuid::to_string(d.player.get_id()), (x, y, z, d.player.get_world().get_name()));
     }
     fn set_cancelled(d: &mut EventData<Self>) {
         d.cancelled = true;
@@ -1020,6 +1071,7 @@ struct OnDamage;
 impl EventHandler<EntityDamageEvent> for OnDamage {
     fn handle(&self, server: Server, mut data: EventData<EntityDamageEvent>) -> EventData<EntityDamageEvent> {
         let cancelled = with_state(&server, None, |st, host| {
+            st.track_hit(host, data.entity_id, data.damage, Some(data.damage_type), None);
             if !st.engine.table().has_event(EventKind::Damage) {
                 return false;
             }
@@ -1050,6 +1102,7 @@ impl EventHandler<EntityDamageByEntityEvent> for OnDamageByEntity {
         mut data: EventData<EntityDamageByEntityEvent>,
     ) -> EventData<EntityDamageByEntityEvent> {
         let cancelled = with_state(&server, None, |st, host| {
+            st.track_hit(host, data.entity_id, data.damage, None, Some(data.damager_id));
             if !st.engine.table().has_event(EventKind::Damage) {
                 return false;
             }
@@ -1078,19 +1131,27 @@ impl EventHandler<EntityDamageByEntityEvent> for OnDamageByEntity {
 impl<E: EventAccess> EventHandler<E> for OnEvent<E> {
     fn handle(&self, server: Server, mut data: EventData<E>) -> EventData<E> {
         let kind = self.0;
-        let cancelled = with_state(&server, None, |st, host| {
+        let result = with_state(&server, None, |st, host| {
+            E::observe(&data, &mut st.hs);
             if !st.engine.table().has_event(kind) {
-                return false;
+                return (false, None);
             }
             let ctx = E::ctx(&data);
             let mut th = TickHost {
                 inner: host,
                 hs: &mut st.hs,
             };
-            st.engine.fire(kind, ctx, &mut th).cancelled
+            let cancelled = st.engine.fire(kind, ctx, &mut th).cancelled;
+            st.hs.w4.join_msg = None;
+            (cancelled, st.hs.w4.join_set.take())
         });
-        if cancelled == Some(true) {
-            E::set_cancelled(&mut data);
+        if let Some((cancelled, msg)) = result {
+            if cancelled {
+                E::set_cancelled(&mut data);
+            }
+            if let Some(m) = msg {
+                E::set_message(&mut data, &m);
+            }
         }
         data
     }
@@ -1837,6 +1898,7 @@ impl Plugin for Carve {
                 hs: HostState {
                     tick: 0,
                     pending: Vec::new(),
+                    w4: w4::W4State::default(),
                 },
                 data_dir,
                 registered,
