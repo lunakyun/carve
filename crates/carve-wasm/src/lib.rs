@@ -517,6 +517,38 @@ impl WasmHost<'_> {
         }
     }
 
+    fn board_show(&mut self, p: &PlayerRef, title: &str, lines: &[String]) {
+        use pumpkin_plugin_api::wit::pumpkin::plugin::scoreboard::{DisplaySlot, NumberFormat, RenderType};
+        const BOARD: &str = "carve_board";
+        let Some(pl) = self.get(p) else {
+            return;
+        };
+        let Some(java) = pl.as_java() else {
+            return;
+        };
+        let sb = java.get_scoreboard();
+        // Redraw from scratch: the sidebar has no "set line" call.
+        sb.remove_objective(BOARD);
+        sb.add_objective(BOARD, text(title), RenderType::Integer, Some(NumberFormat::Blank));
+        sb.set_display_slot(DisplaySlot::Sidebar, BOARD);
+        let n = lines.len();
+        for (i, line) in lines.iter().enumerate() {
+            // Each holder name must be unique, so pad with invisible resets.
+            let mut name = carve_core::colors::colorize(line);
+            name.push_str(&"\u{a7}r".repeat(i + 1));
+            sb.update_score(&name, BOARD, (n - i) as i32, Some(NumberFormat::Blank));
+        }
+    }
+
+    fn board_clear(&mut self, p: &PlayerRef) {
+        if let Some(pl) = self.get(p)
+            && let Some(java) = pl.as_java()
+        {
+            let sb = java.get_scoreboard();
+            sb.remove_objective("carve_board");
+        }
+    }
+
     fn ping(&mut self, p: &PlayerRef) -> Option<f64> {
         self.get(p).map(|pl| f64::from(pl.get_ping()))
     }
@@ -613,6 +645,8 @@ impl Host for TickHost<'_, '_> {
         clear_effects(p: &PlayerRef, effect: Option<&str>);
         has_effect(p: &PlayerRef, effect: &str) -> bool;
         set_fire(p: &PlayerRef, ticks: i32);
+        board_show(p: &PlayerRef, title: &str, lines: &[String]);
+        board_clear(p: &PlayerRef);
     }
 
     fn schedule_wait(&mut self, ticks: u64, token: u64) {

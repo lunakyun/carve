@@ -86,7 +86,7 @@ pub fn looks_like_list_op(toks: &[Tok], env: &Env) -> bool {
             return true;
         }
     }
-    toks.iter().any(|t| t.is_lit("where"))
+    crate::skbee_scoreboard_teams::is_list_expr(toks) || toks.iter().any(|t| t.is_lit("where"))
 }
 
 impl Cur<'_> {

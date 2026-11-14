@@ -351,6 +351,8 @@ pub struct Engine {
     pub errors: Vec<ScriptError>,
     /// Per-trigger run times while `/carve timings on`.
     pub timings: Option<BTreeMap<String, Timing>>,
+    /// Sidebar boards by player uuid (not saved).
+    pub(crate) boards: crate::skbee_scoreboard_teams::Boards,
 }
 
 impl Default for Engine {
@@ -438,6 +440,7 @@ impl Engine {
             sources: BTreeMap::new(),
             errors: Vec::new(),
             timings: None,
+            boards: Default::default(),
         }
     }
 
@@ -1178,6 +1181,7 @@ impl Engine {
                 Ok(crate::op_kick_ban::check(host, *kind, &name, p.as_ref()) != *negate)
             }
             Cond::World(w) => self.world_cond(w, ex, host),
+            Cond::Sb(c, negate) => Ok(self.sb_cond(c, ex, host)? != *negate),
             Cond::HasPerm { player, node, negate } => {
                 let p = self.eval(player, ex, host)?;
                 let node = self.text(node, ex, host)?;
@@ -1460,7 +1464,7 @@ impl Engine {
         }
     }
 
-    fn mark_dirty(&mut self, host: &mut dyn Host) {
+    pub(crate) fn mark_dirty(&mut self, host: &mut dyn Host) {
         if self.dirty_since.is_none() {
             self.dirty_since = Some(host.now());
         }
@@ -1700,6 +1704,7 @@ impl Engine {
             },
             Expr::Items(s) => Value::List(self.eval_list(s, ex, host)?),
             Expr::ListAgg(a, s) => self.eval_agg(*a, s, ex, host)?,
+            Expr::Sb(s) => self.sb_eval(s, ex, host)?,
             Expr::RandomOf(v) => {
                 let items = self.list_items(v, ex, host)?;
                 if items.is_empty() {
@@ -2043,6 +2048,7 @@ impl Engine {
                 }
             }
             Effect::World(w) => self.world_effect(w, ex, host)?,
+            Effect::Sb(s) => self.sb_effect(s, ex, host)?,
             Effect::Cancel => {
                 if ex.waited {
                     host.log(
