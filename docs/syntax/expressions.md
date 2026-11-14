@@ -154,3 +154,10 @@ set {_name} to {nick::%uuid of player%} ? name of player
 
 A script function with the same name wins over these.
 
+## Converting and picking
+
+- `%text% parsed as number`: the number in a text, or `<none>` if it isn't one.
+  Handy for `arg-1` of a `<text>` argument.
+- `random element of {list::*}`: one random item of a list, or `<none>` when
+  the list is empty.
+

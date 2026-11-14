@@ -116,6 +116,10 @@ pub enum Expr {
     Default(Box<Expr>, Box<Expr>),
     /// `floor(x)`, `max(a, b)`, ...
     Math(MathFn, Vec<Expr>),
+    /// `x parsed as number`: the number, or `<none>`.
+    ParseNum(Box<Expr>),
+    /// `random element of {list::*}`.
+    RandomOf(VarRef),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -246,7 +250,8 @@ impl Expr {
             Expr::WorldNamed(_) => Ty::World,
             Expr::Distance(..) | Expr::Random(..) | Expr::Damage => Ty::Number,
             Expr::Attacker => Ty::Player,
-            Expr::Math(..) => Ty::Number,
+            Expr::Math(..) | Expr::ParseNum(_) => Ty::Number,
+            Expr::RandomOf(_) => Ty::Object,
             Expr::Default(a, b) => {
                 let (x, y) = (a.ty(env), b.ty(env));
                 if x == y { x } else { Ty::Object }
@@ -412,6 +417,26 @@ impl P<'_> {
 
     fn primary(&mut self) -> Result<Expr, String> {
         let mut e = self.primary_base()?;
+        // `arg-1 parsed as number`
+        if matches!(self.toks.get(self.pos), Some(t) if t.is_lit("parsed")) && self.pos + 1 >= self.toks.len()
+        {
+            self.hit_end.set(true);
+        }
+        if matches!(self.toks.get(self.pos), Some(t) if t.is_lit("parsed"))
+            && matches!(self.toks.get(self.pos + 1), Some(t) if t.is_lit("as"))
+        {
+            match self.toks.get(self.pos + 2) {
+                Some(t) if t.is_lit("number") || t.is_lit("integer") || t.is_lit("num") => {
+                    self.pos += 3;
+                    e = Expr::ParseNum(Box::new(e));
+                }
+                Some(_) => return Err("only 'parsed as number' is supported".into()),
+                None => {
+                    self.hit_end.set(true);
+                    return Err("expected 'parsed as number'".into());
+                }
+            }
+        }
         // `player's location`, `player's world`, ...
         while matches!(self.toks.get(self.pos), Some(Tok::Sym("'s"))) {
             let Some(Tok::Word(w)) = self.toks.get(self.pos + 1) else {
@@ -616,6 +641,38 @@ impl P<'_> {
                     "world" if matches!(self.peek(), Some(Tok::Str(_))) => {
                         let name = self.primary()?;
                         Ok(Expr::WorldNamed(Box::new(name)))
+                    }
+                    "random" if matches!(self.peek(), Some(t) if t.is_lit("element")) => {
+                        self.pos += 1;
+                        if !matches!(self.peek(), Some(t) if t.is_lit("of")) {
+                            return Err("expected 'random element of {list::*}'".into());
+                        }
+                        self.pos += 1;
+                        match self.peek().cloned() {
+                            Some(Tok::Var(v)) => {
+                                self.pos += 1;
+                                let var = parse_varref(&v, self.env)?;
+                                if !var.is_list() {
+                                    return Err(
+                                        "'random element of' needs a list variable like {x::*}".into()
+                                    );
+                                }
+                                Ok(Expr::RandomOf(var))
+                            }
+                            _ => Err("'random element of' needs a list variable like {x::*}".into()),
+                        }
+                    }
+                    "x" | "y" | "z"
+                        if matches!(self.peek(), Some(t) if t.is_lit("-") || t.is_lit("coordinate"))
+                            && matches!(self.toks.get(self.pos + 1), Some(t) if t.is_lit("coordinate") || t.is_lit("of")) =>
+                    {
+                        // `x-coordinate of` / `x coordinate of`
+                        self.eat_sym("-");
+                        if matches!(self.peek(), Some(t) if t.is_lit("coordinate")) {
+                            self.pos += 1;
+                        }
+                        let prop = Prop::from_word(&lw).ok_or("unknown property")?;
+                        self.prop_of(prop)
                     }
                     "random" if matches!(self.peek(), Some(Tok::Word(w)) if matches!(w.to_ascii_lowercase().as_str(), "integer" | "number" | "int")) =>
                     {

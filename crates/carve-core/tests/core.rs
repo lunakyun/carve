@@ -1749,3 +1749,14 @@ fn command_aliases_usage_and_executable_by() {
     );
     assert_eq!(h.take(), ["send Steve home x"]);
 }
+
+#[test]
+fn coordinates_parsed_as_and_random_element() {
+    let out = join(
+        "on join:\n    send \"%x-coordinate of player% %y coordinate of player% %floor(z-coordinate of player)%\"\n    set {_n} to \"12\" parsed as number\n    send \"%{_n} + 1% %\"\"abc\"\" parsed as number%\"\n    add \"only\" to {_l::*}\n    send \"%random element of {_l::*}%\"\n",
+    );
+    assert_eq!(
+        out,
+        ["send Steve 1.5 64 -3", "send Steve 13 <none>", "send Steve only"]
+    );
+}

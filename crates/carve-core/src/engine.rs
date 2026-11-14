@@ -1153,6 +1153,24 @@ impl Engine {
                     _ => Value::None,
                 }
             }
+            Expr::ParseNum(e) => {
+                let t = self.text(e, ex, host)?;
+                t.trim()
+                    .parse::<f64>()
+                    .ok()
+                    .filter(|n| n.is_finite())
+                    .map(Value::Num)
+                    .unwrap_or(Value::None)
+            }
+            Expr::RandomOf(v) => {
+                let items = self.list_items(v, ex, host)?;
+                if items.is_empty() {
+                    Value::None
+                } else {
+                    let i = ((self.next_random(host) * items.len() as f64) as usize).min(items.len() - 1);
+                    items.into_iter().nth(i).map(|(_, v)| v).unwrap_or(Value::None)
+                }
+            }
             Expr::Default(a, b) => match self.eval(a, ex, host)? {
                 Value::None => self.eval(b, ex, host)?,
                 v => v,

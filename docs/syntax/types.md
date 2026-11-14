@@ -42,7 +42,7 @@ in front is the amount: `16 oak logs`.
 | `location(x, y, z)` | No world: when used for a teleport, the player stays in their world. |
 | `location(x, y, z, world "name")` | With a world. |
 | `location of %player%`, `%player%'s location` | Includes the world. |
-| `x of %location%`, `y of ...`, `z of ...` | Also works on a player: `y of player`. |
+| `x of %location%`, `y of ...`, `z of ...` | Also `x-coordinate of`. Works on a player too: `y of player`. |
 | `world of %location%` | `<none>` when the location has no world. |
 | `distance between %location% and %location%` | A number. A player works as a location. |
 
