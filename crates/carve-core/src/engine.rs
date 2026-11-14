@@ -226,6 +226,7 @@ impl LoopFrame {
 }
 
 /// `a, b and c`, like Skript prints a list.
+mod ext_eval;
 mod list_eval;
 mod w2_run;
 mod w2;
@@ -1406,6 +1407,10 @@ impl Engine {
                 Expr::Indices(v) => {
                     out.extend(self.list_items(v, ex, host)?.into_iter().map(|(k, _)| Value::Text(k)));
                 }
+                Expr::Ext(..) => match self.eval(e, ex, host)? {
+                    Value::List(v) => out.extend(v),
+                    v => out.push(v),
+                },
                 _ => out.push(self.eval(e, ex, host)?),
             }
         }
@@ -1588,6 +1593,9 @@ impl Engine {
             });
         }
         let Value::Date(d) = first else {
+            if let (Value::Timespan { millis }, DateOp::Format, 1) = (&first, op, args.len()) {
+                return Ok(Value::Text(crate::w2_expressions_3::clock_text(*millis)));
+            }
             return Ok(Value::None);
         };
         Ok(match op {
@@ -1745,6 +1753,7 @@ impl Engine {
                 _ => Value::None,
             },
             Expr::Items(s) => Value::List(self.eval_list(s, ex, host)?),
+            Expr::Ext(f, args) => self.eval_ext(*f, args, ex, host)?,
             Expr::ListAgg(a, s) => self.eval_agg(*a, s, ex, host)?,
             Expr::W2(w) => self.eval_w2(w, ex, host)?,
             Expr::RandomOf(v) => {
@@ -1936,6 +1945,12 @@ impl Engine {
                 }
             }
             Effect::W2(w) => self.run_w2(w, ex, host)?,
+            Effect::W2c(w) => {
+                let v = self.eval(&w.value, ex, host)?;
+                if let Some(p) = self.player(&w.player, ex, host)? {
+                    crate::w2_expressions_3::run(w, &v, &p, host);
+                }
+            }
             Effect::Heal(p) => {
                 if let Some(p) = self.player(p, ex, host)? {
                     host.heal(&p);

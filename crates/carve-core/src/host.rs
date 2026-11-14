@@ -193,6 +193,40 @@ pub trait Host {
     /// Point the player's compass at a place. Hosts that cannot do it ignore it.
     fn set_compass_target(&mut self, _player: &PlayerRef, _x: f64, _y: f64, _z: f64, _world: Option<&str>) {}
 
+    /// Read a number or yes/no (as 0 or 1) state of a player: exhaustion,
+    /// fall distance, fire/freeze ticks, hotbar slot, yaw, pitch, ...
+    fn pstat(&mut self, _player: &PlayerRef, _stat: crate::w2_expressions_3::PStat) -> Option<f64> {
+        None
+    }
+
+    /// Write one of those states. The core has already clamped it.
+    fn set_pstat(&mut self, _player: &PlayerRef, _stat: crate::w2_expressions_3::PStat, _value: f64) {}
+
+    /// Eye position and world name. The default is the feet position plus 1.62.
+    fn eye_location(&mut self, player: &PlayerRef) -> Option<(f64, f64, f64, String)> {
+        self.player_location(player).map(|(x, y, z, w)| (x, y + 1.62, z, w))
+    }
+
+    /// Slot number of the first empty slot in the player's inventory.
+    fn first_empty_slot(&mut self, _player: &PlayerRef) -> Option<u32> {
+        None
+    }
+
+    /// Can `viewer` see `other` (not hidden from them)?
+    fn can_see(&mut self, _viewer: &PlayerRef, _other: &PlayerRef) -> bool {
+        true
+    }
+
+    /// Machine memory in bytes: total and used.
+    fn system_memory(&mut self) -> Option<(u64, u64)> {
+        None
+    }
+
+    /// Y of the highest non-air block in a column. `world` `None` means the default world.
+    fn top_block_y(&mut self, _world: Option<&str>, _x: i32, _z: i32) -> Option<i32> {
+        None
+    }
+
     /// Hurt the player. The default lowers health and kills at zero.
     fn damage(&mut self, player: &PlayerRef, amount: f64) {
         if let Some(h) = self.health(player) {

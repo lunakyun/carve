@@ -65,6 +65,20 @@ fn legacy_rgb(c: char) -> Option<(u8, u8, u8)> {
     LEGACY.iter().find(|(k, _)| *k == c).map(|(_, v)| *v)
 }
 
+/// RGB of a named chat color (`red`, `dark blue`, ...) or a `#rrggbb` hex code.
+pub fn name_rgb(name: &str) -> Option<(u8, u8, u8)> {
+    let n = name.trim().to_ascii_lowercase().replace([' ', '-'], "_");
+    if let Some((_, c)) = NAMES.iter().find(|(k, _)| *k == n) {
+        return legacy_rgb(*c);
+    }
+    let h = n.strip_prefix('#').unwrap_or(&n);
+    if h.len() == 6 && h.chars().all(|c| c.is_ascii_hexdigit()) {
+        let v = u32::from_str_radix(h, 16).ok()?;
+        return Some(((v >> 16) as u8, (v >> 8) as u8, v as u8));
+    }
+    None
+}
+
 #[derive(Clone, Copy)]
 enum Flag {
     Bold,

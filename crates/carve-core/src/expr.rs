@@ -178,6 +178,8 @@ pub enum Expr {
     ListAgg(Agg, Box<ListSrc>),
     /// Rare expressions of `w2_expressions_1` (eternity, biome, armor, block entities, ...).
     W2(Box<crate::w2_expressions_1::W2>),
+    /// Player stats, hashes, memory, uuid lookups and friends (see `w2_expressions_3`).
+    Ext(crate::w2_expressions_3::ExtFn, Vec<Expr>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -365,6 +367,7 @@ impl Expr {
             },
             Expr::Items(_) => Ty::List,
             Expr::W2(w) => w.ty(),
+            Expr::Ext(f, _) => crate::w2_expressions_3::ty(*f),
             Expr::ListAgg(Agg::Size | Agg::Sum, _) => Ty::Number,
             Expr::ListAgg(..) => Ty::Object,
             Expr::Default(a, b) => {
@@ -608,6 +611,7 @@ impl P<'_> {
         }
         e = self.replaced_postfix(e);
         e = self.in_case(e);
+        e = self.w2e3_post(e)?;
         // `now formatted as "yyyy-MM-dd"`
         while matches!(self.toks.get(self.pos), Some(t) if t.is_lit("formatted"))
             && matches!(e.ty(self.env), Ty::Date | Ty::Object)
@@ -630,6 +634,13 @@ impl P<'_> {
             if lw == "compass" && matches!(self.toks.get(self.pos + 2), Some(t) if t.is_lit("target")) {
                 self.pos += 3;
                 e = Self::x2(W2Op::CompassTarget, vec![e]);
+                continue;
+            }
+            if let Some((f, n)) = crate::w2_expressions_3::of_head(self.toks, self.pos + 1)
+                && matches!(e.ty(self.env), Ty::Player | Ty::Object)
+            {
+                self.pos += 1 + n;
+                e = Expr::Ext(f, vec![e]);
                 continue;
             }
             let (prop, extra) = match crate::health_food::words_from(self.toks, self.pos + 1) {
@@ -655,6 +666,197 @@ impl P<'_> {
                 self.pos += 1;
             }
             e = self.prop(prop, e)?;
+        }
+        Ok(e)
+    }
+
+    /// Heads of the expressions in `w2_expressions_3`. `None` when the words
+    /// do not match one of them, with the position untouched.
+    fn w2e3_head(&mut self, lw: &str) -> Result<Option<Expr>, String> {
+        use crate::w2_expressions_3::{ExtFn, IndexSel, MemKind};
+        let start = self.pos - 1;
+        let ext = |f: ExtFn, args: Vec<Expr>| Ok(Some(Expr::Ext(f, args)));
+        if let Some((_, n)) = crate::w2_expressions_3::of_head(self.toks, start) {
+            // More tokens could still complete `<words> of <player>`.
+            if start + n >= self.toks.len() {
+                self.hit_end.set(true);
+            }
+        }
+        if let Some((f, n)) = crate::w2_expressions_3::of_head(self.toks, start)
+            && matches!(self.toks.get(start + n), Some(t) if t.is_lit("of"))
+        {
+            self.pos = start + n + 1;
+            let inner = self.primary()?;
+            if !matches!(inner.ty(self.env), Ty::Player | Ty::Object) {
+                return Err(format!("'{lw}' needs a player, got {}", inner.ty(self.env).name()));
+            }
+            return ext(f, vec![inner]);
+        }
+        let (toks, hit_end) = (self.toks, &self.hit_end);
+        let next = |k: usize| {
+            if start + k >= toks.len() {
+                hit_end.set(true);
+            }
+            match toks.get(start + k) {
+                Some(Tok::Word(w)) => w.to_ascii_lowercase(),
+                _ => String::new(),
+            }
+        };
+        match lw {
+            "infinity" => {
+                if next(1) == "value" {
+                    self.pos += 1;
+                }
+                ext(ExtFn::Infinity(false), Vec::new())
+            }
+            "negative" if next(1) == "infinity" => {
+                self.pos += 1;
+                if next(2) == "value" {
+                    self.pos += 1;
+                }
+                ext(ExtFn::Infinity(true), Vec::new())
+            }
+            "final" if next(1) == "damage" => {
+                self.pos += 1;
+                Ok(Some(Expr::Damage))
+            }
+            "free" | "max" | "maximum" | "total" if matches!(next(1).as_str(), "memory" | "ram") => {
+                self.pos += 1;
+                let k = match lw {
+                    "free" => MemKind::Free,
+                    "total" => MemKind::Total,
+                    _ => MemKind::Max,
+                };
+                ext(ExtFn::Memory(k), Vec::new())
+            }
+            "player" | "entity" | "world" if next(1) == "from" && next(2) == "uuid" => {
+                if lw == "world" {
+                    return Err("worlds can't be looked up by UUID".into());
+                }
+                self.pos += 2;
+                let u = self.primary_base()?;
+                if !matches!(u.ty(self.env), Ty::Text | Ty::Object) {
+                    return Err("'player from uuid' needs the UUID as text".into());
+                }
+                ext(ExtFn::PlayerFromUuid, vec![u])
+            }
+            "highest" | "top"
+                if (next(1) == "block" && next(2) == "at")
+                    || (next(1) == "solid" && next(2) == "block" && next(3) == "at") =>
+            {
+                self.pos = start + if next(1) == "solid" { 4 } else { 3 };
+                let at = self.primary()?;
+                if !matches!(at.ty(self.env), Ty::Location | Ty::Player | Ty::Object) {
+                    return Err("'highest solid block at' needs a location".into());
+                }
+                ext(ExtFn::Highest, vec![at])
+            }
+            "first" if next(1) == "empty" && next(2) == "slot" && matches!(next(3).as_str(), "of" | "in") => {
+                self.pos = start + 4;
+                if self.is_word(0, "inventory") && self.is_word(1, "of") {
+                    self.pos += 2;
+                }
+                let who = self.primary_base()?;
+                if matches!(self.toks.get(self.pos), Some(Tok::Sym("'s"))) && self.is_word(1, "inventory") {
+                    self.pos += 2;
+                }
+                if !matches!(who.ty(self.env), Ty::Player | Ty::Object) {
+                    return Err("'first empty slot of' needs a player".into());
+                }
+                ext(ExtFn::FirstEmptySlot, vec![who])
+            }
+            "first" | "last" | "indices" | "indexes" | "all" => {
+                let (sel, kw) = match (lw, next(1).as_str()) {
+                    ("first", "index") => (IndexSel::First, 2),
+                    ("last", "index") => (IndexSel::Last, 2),
+                    ("indices" | "indexes", _) => (IndexSel::All, 1),
+                    ("all", "indices" | "indexes") => (IndexSel::All, 2),
+                    _ => return Ok(None),
+                };
+                let mut at = kw + 1;
+                if next(kw) != "of" {
+                    return Ok(None);
+                }
+                if next(at) == "the" {
+                    at += 1;
+                }
+                if next(at) != "value" {
+                    return Ok(None);
+                }
+                self.pos = start + at + 1;
+                let v = self.primary()?;
+                if !self.is_word(0, "in") {
+                    return Err("expected 'index of value <x> in {list::*}'".into());
+                }
+                self.pos += 1;
+                let list = match self.peek().cloned() {
+                    Some(Tok::Var(raw)) => {
+                        self.pos += 1;
+                        parse_varref(&raw, self.env)?
+                    }
+                    _ => return Err("'index of value' needs a list variable like {x::*}".into()),
+                };
+                if !list.is_list() {
+                    return Err("'index of value' needs a list variable like {x::*}".into());
+                }
+                ext(ExtFn::IndexOf(sel), vec![v, Expr::Var(list)])
+            }
+            "exact" if next(1) == "item" && next(2) == "of" => {
+                self.pos = start + 3;
+                let it = self.primary()?;
+                if !matches!(it.ty(self.env), Ty::Item | Ty::Object) {
+                    return Err("'exact item of' needs an item".into());
+                }
+                ext(ExtFn::ExactItem, vec![it])
+            }
+            "id" if next(1) == "of" => {
+                self.pos = start + 2;
+                let it = self.primary()?;
+                if !matches!(it.ty(self.env), Ty::Item | Ty::Object) {
+                    return Err("'id of' needs an item".into());
+                }
+                ext(ExtFn::ItemId, vec![it])
+            }
+            "hex" if next(1) == "code" && next(2) == "of" => {
+                self.pos = start + 3;
+                let c = self.primary()?;
+                if !matches!(c.ty(self.env), Ty::Text | Ty::Object) {
+                    return Err("'hex code of' needs a color name or hex text".into());
+                }
+                ext(ExtFn::HexCode, vec![c])
+            }
+            _ => Ok(None),
+        }
+    }
+
+    /// `<x> hashed with MD5`, `<timespan> formatted`.
+    fn w2e3_post(&mut self, e: Expr) -> Result<Expr, String> {
+        use crate::w2_expressions_3::ExtFn;
+        if matches!(self.toks.get(self.pos), Some(t) if t.is_lit("hashed") || t.is_lit("hash"))
+            && self.pos + 1 >= self.toks.len()
+        {
+            self.hit_end.set(true);
+        }
+        if matches!(self.toks.get(self.pos), Some(t) if t.is_lit("hashed") || t.is_lit("hash"))
+            && matches!(self.toks.get(self.pos + 1), Some(t) if t.is_lit("with"))
+        {
+            return match crate::w2_expressions_3::alg_at(self.toks, self.pos + 2) {
+                Some((alg, n)) => {
+                    self.pos += 2 + n;
+                    Ok(Expr::Ext(ExtFn::Hash(alg), vec![e]))
+                }
+                None => {
+                    // `SHA - 256` is three tokens, so a short span may still complete.
+                    if self.pos + 5 > self.toks.len() {
+                        self.hit_end.set(true);
+                    }
+                    Err("unknown hash: use MD5, SHA-1, SHA-256 or SHA-512".into())
+                }
+            };
+        }
+        if matches!(self.toks.get(self.pos), Some(t) if t.is_lit("formatted")) && e.ty(self.env) == Ty::Timespan {
+            self.pos += 1;
+            return Ok(Expr::Ext(ExtFn::Clock, vec![e]));
         }
         Ok(e)
     }
@@ -902,6 +1104,9 @@ impl P<'_> {
                     }
                 }
                 if let Some(e) = self.x2_fn(&lw)? {
+                    return Ok(e);
+                }
+                if let Some(e) = self.w2e3_head(&lw)? {
                     return Ok(e);
                 }
                 if let Some(e) = self.text_fn(&lw)? {

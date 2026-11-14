@@ -35,6 +35,7 @@ use pumpkin_plugin_api::{
 };
 
 mod w2_events_2;
+mod w2_expressions_3;
 
 const SCRIPTS_DIR: &str = "scripts";
 const VARS_FILE: &str = "variables.json";
@@ -437,6 +438,7 @@ impl WasmHost<'_> {
             // Vanilla: fully frozen at 140 ticks.
             PlayerFlag::Frozen => pl.get_freeze_ticks() >= 140,
             PlayerFlag::Gliding => e.is_fall_flying(),
+            PlayerFlag::Glowing => e.is_glowing(),
             PlayerFlag::Invisible => e.is_invisible(),
             PlayerFlag::Invulnerable => e.is_invulnerable(),
             PlayerFlag::ResourcePack => PACKS.lock().is_ok_and(|p| p.contains(&pl_uuid)),
@@ -694,6 +696,34 @@ impl Host for TickHost<'_, '_> {
         block_entity_nbt(world: &str, x: i32, y: i32, z: i32) -> Option<Vec<u8>>;
         compass_target(p: &PlayerRef) -> Option<(f64, f64, f64, Option<String>)>;
         set_compass_target(p: &PlayerRef, x: f64, y: f64, z: f64, world: Option<&str>);
+    }
+
+    fn pstat(&mut self, p: &PlayerRef, s: carve_core::w2_expressions_3::PStat) -> Option<f64> {
+        self.inner.pstat_impl(p, s)
+    }
+
+    fn set_pstat(&mut self, p: &PlayerRef, s: carve_core::w2_expressions_3::PStat, v: f64) {
+        self.inner.set_pstat_impl(p, s, v);
+    }
+
+    fn eye_location(&mut self, p: &PlayerRef) -> Option<(f64, f64, f64, String)> {
+        self.inner.eye_location_impl(p)
+    }
+
+    fn first_empty_slot(&mut self, p: &PlayerRef) -> Option<u32> {
+        self.inner.first_empty_slot_impl(p)
+    }
+
+    fn can_see(&mut self, viewer: &PlayerRef, other: &PlayerRef) -> bool {
+        self.inner.can_see_impl(viewer, other)
+    }
+
+    fn system_memory(&mut self) -> Option<(u64, u64)> {
+        self.inner.system_memory_impl()
+    }
+
+    fn top_block_y(&mut self, world: Option<&str>, x: i32, z: i32) -> Option<i32> {
+        self.inner.top_block_y_impl(world, x, z)
     }
 
     fn schedule_wait(&mut self, ticks: u64, token: u64) {
