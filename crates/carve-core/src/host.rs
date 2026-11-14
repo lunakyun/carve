@@ -1,6 +1,7 @@
 use crate::player_flags::PlayerFlag;
 use crate::value::{PlayerRef, Recipient};
 use crate::xp_level::XpField;
+use crate::world_effects::{FxPos, ParticleFx};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LogLevel {
@@ -244,5 +245,60 @@ pub trait Host {
     /// The player's IP address.
     fn ip(&mut self, _player: &PlayerRef) -> Option<String> {
         None
+    }
+
+    /// Lightning at a point. `effect_only`: no fire or damage.
+    /// The default runs `/summon`.
+    fn strike_lightning(&mut self, at: &FxPos, _effect_only: bool) {
+        self.execute_command(&format!(
+            "summon minecraft:lightning_bolt {} {} {}",
+            at.x, at.y, at.z
+        ));
+    }
+
+    /// An explosion. Pumpkin has no command for it, so the default only warns.
+    fn explode(&mut self, _at: &FxPos, _power: f64, _fire: bool) {
+        self.log(LogLevel::Warn, "explosions are not supported on this server");
+    }
+
+    /// The default runs `/particle`.
+    fn spawn_particle(&mut self, p: &ParticleFx) {
+        self.execute_command(&format!(
+            "particle minecraft:{} {} {} {} {sp} {sp} {sp} {} {}",
+            p.name,
+            p.at.x,
+            p.at.y,
+            p.at.z,
+            p.speed,
+            p.count,
+            sp = p.spread,
+        ));
+    }
+
+    /// Give a potion effect (`effect` is a vanilla id like `speed`).
+    /// The default runs `/effect give`.
+    fn add_effect(&mut self, player: &PlayerRef, effect: &str, ticks: u32, amplifier: u8) {
+        self.execute_command(&format!(
+            "effect give {} minecraft:{effect} {} {amplifier} false",
+            player.name,
+            ticks.div_ceil(20).max(1)
+        ));
+    }
+
+    /// Remove one potion effect, or all of them. The default runs `/effect clear`.
+    fn clear_effects(&mut self, player: &PlayerRef, effect: Option<&str>) {
+        match effect {
+            Some(e) => self.execute_command(&format!("effect clear {} minecraft:{e}", player.name)),
+            None => self.execute_command(&format!("effect clear {}", player.name)),
+        }
+    }
+
+    fn has_effect(&mut self, _player: &PlayerRef, _effect: &str) -> bool {
+        false
+    }
+
+    /// Set the player on fire for this many ticks; 0 puts the fire out.
+    fn set_fire(&mut self, _player: &PlayerRef, _ticks: i32) {
+        self.log(LogLevel::Warn, "setting fire is not supported on this server");
     }
 }

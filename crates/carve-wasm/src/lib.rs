@@ -5,10 +5,14 @@ use std::collections::BTreeSet;
 use std::sync::Mutex;
 
 use carve_core::health_food::Vital;
+use carve_core::world_effects::{FxPos, ParticleFx};
 use carve_core::{
     CommandOutcome, Engine, EventCtx, EventKind, Host, LogLevel, PlayerFlag, PlayerRef, Recipient, ScriptError, Variables,
 };
 use pumpkin_plugin_api::DamageType;
+use pumpkin_plugin_api::World;
+use pumpkin_plugin_api::wit::pumpkin::plugin::status_effect::StatusEffectInstance;
+use pumpkin_plugin_api::world::ExplosionInteraction;
 use pumpkin_plugin_api::command::{
     ArgumentType, Command, CommandError, CommandNode, CommandSender, ConsumedArgs, StringType,
 };
@@ -27,6 +31,8 @@ use pumpkin_plugin_api::text::TextComponent;
 use pumpkin_plugin_api::{
     Context, Player, Plugin, PluginMetadata, Server, permissions, register_plugin, uuid,
 };
+
+mod fx;
 
 const SCRIPTS_DIR: &str = "scripts";
 const VARS_FILE: &str = "variables.json";
@@ -389,6 +395,74 @@ impl WasmHost<'_> {
         }
     }
 
+    fn strike_lightning(&mut self, at: &FxPos, effect_only: bool) {
+        if let Some(w) = self.fx_world(at) {
+            w.strike_lightning((at.x, at.y, at.z), effect_only);
+        }
+    }
+
+    fn explode(&mut self, at: &FxPos, power: f64, fire: bool) {
+        if let Some(w) = self.fx_world(at) {
+            w.create_explosion((at.x, at.y, at.z), power as f32, fire, ExplosionInteraction::Tnt);
+        }
+    }
+
+    fn spawn_particle(&mut self, p: &ParticleFx) {
+        let Some(kind) = fx::particle(&p.name) else {
+            return;
+        };
+        if let Some(w) = self.fx_world(&p.at) {
+            let s = p.spread;
+            w.spawn_particle(kind, (p.at.x, p.at.y, p.at.z), (s, s, s), p.speed as f32, p.count as i32);
+        }
+    }
+
+    fn add_effect(&mut self, p: &PlayerRef, effect: &str, ticks: u32, amplifier: u8) {
+        let Some(effect_type) = fx::effect(effect) else {
+            return;
+        };
+        if let Some(pl) = self.get(p) {
+            pl.add_effect(StatusEffectInstance {
+                effect_type,
+                duration: ticks,
+                amplifier,
+                ambient: false,
+                show_particles: true,
+                show_icon: true,
+            });
+        }
+    }
+
+    fn clear_effects(&mut self, p: &PlayerRef, effect: Option<&str>) {
+        let kind = effect.map(fx::effect);
+        if let Some(pl) = self.get(p) {
+            match kind {
+                Some(Some(k)) => pl.remove_effect(k),
+                Some(None) => {}
+                None => pl.clear_effects(),
+            }
+        }
+    }
+
+    fn has_effect(&mut self, p: &PlayerRef, effect: &str) -> bool {
+        let Some(kind) = fx::effect(effect) else {
+            return false;
+        };
+        self.get(p).is_some_and(|pl| pl.has_effect(kind))
+    }
+
+    fn set_fire(&mut self, p: &PlayerRef, ticks: i32) {
+        if let Some(pl) = self.get(p) {
+            let e = pl.as_entity();
+            if ticks > 0 {
+                e.set_fire_ticks(ticks);
+            } else {
+                e.set_fire_ticks(0);
+                e.set_on_fire(false);
+            }
+        }
+    }
+
     fn vital(&mut self, p: &PlayerRef, v: Vital) -> Option<f64> {
         self.get(p).map(|pl| match v {
             Vital::Health => f64::from(pl.get_health()),
@@ -461,6 +535,26 @@ impl WasmHost<'_> {
     }
 }
 
+impl WasmHost<'_> {
+    /// The world a position is in; with no world named, the world of the first
+    /// player online, else the one called `world`.
+    fn fx_world(&mut self, at: &FxPos) -> Option<World> {
+        let found = match at.world.as_deref() {
+            Some(name) => self.server.get_world_by_name(name),
+            None => self
+                .server
+                .get_all_players()
+                .first()
+                .map(Player::get_world)
+                .or_else(|| self.server.get_world_by_name("world")),
+        };
+        if found.is_none() {
+            plog(ApiLevel::Warn, "no world found for this effect");
+        }
+        found
+    }
+}
+
 /// The `Host` the engine sees: game calls go to `WasmHost`, waits and the
 /// clock use the plugin's own tick counter.
 struct TickHost<'a, 'b> {
@@ -512,6 +606,13 @@ impl Host for TickHost<'_, '_> {
         set_tab_list_name(p: &PlayerRef, name: Option<&str>);
         ping(p: &PlayerRef) -> Option<f64>;
         ip(p: &PlayerRef) -> Option<String>;
+        strike_lightning(at: &FxPos, effect_only: bool);
+        explode(at: &FxPos, power: f64, fire: bool);
+        spawn_particle(p: &ParticleFx);
+        add_effect(p: &PlayerRef, effect: &str, ticks: u32, amplifier: u8);
+        clear_effects(p: &PlayerRef, effect: Option<&str>);
+        has_effect(p: &PlayerRef, effect: &str) -> bool;
+        set_fire(p: &PlayerRef, ticks: i32);
     }
 
     fn schedule_wait(&mut self, ticks: u64, token: u64) {

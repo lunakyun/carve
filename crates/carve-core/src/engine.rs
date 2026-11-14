@@ -219,7 +219,7 @@ struct Frame {
     loops: Vec<LoopFrame>,
 }
 
-struct Exec {
+pub(crate) struct Exec {
     /// The trigger this run started from (for timings).
     root: Arc<Code>,
     /// The code running now (a trigger or a function body).
@@ -234,7 +234,7 @@ struct Exec {
     cancelled: bool,
     /// uuid -> current name (None = offline), for the current run slice only.
     /// Cleared at every wait, because a player can leave while a run waits.
-    seen: Vec<(String, Option<String>)>,
+    pub(crate) seen: Vec<(String, Option<String>)>,
 }
 
 impl Exec {
@@ -311,7 +311,11 @@ fn resolve<'c>(
 }
 
 /// Resolve a value to an online player, or None.
-fn online(v: &Value, seen: &mut Vec<(String, Option<String>)>, host: &mut dyn Host) -> Option<PlayerRef> {
+pub(crate) fn online(
+    v: &Value,
+    seen: &mut Vec<(String, Option<String>)>,
+    host: &mut dyn Host,
+) -> Option<PlayerRef> {
     match v {
         Value::Player(p) => resolve(seen, &p.uuid, host).map(|name| PlayerRef {
             uuid: p.uuid.clone(),
@@ -1173,6 +1177,7 @@ impl Engine {
                 let (name, p) = self.admin_target(&v, ex, host);
                 Ok(crate::op_kick_ban::check(host, *kind, &name, p.as_ref()) != *negate)
             }
+            Cond::World(w) => self.world_cond(w, ex, host),
             Cond::HasPerm { player, node, negate } => {
                 let p = self.eval(player, ex, host)?;
                 let node = self.text(node, ex, host)?;
@@ -1190,7 +1195,7 @@ impl Engine {
         Ok(s)
     }
 
-    fn num(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<f64, String> {
+    pub(crate) fn num(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<f64, String> {
         match e {
             Expr::Num(n) => return Ok(*n),
             Expr::Var(var) => {
@@ -1218,7 +1223,12 @@ impl Engine {
         to_num_opt(&v).ok_or_else(|| format!("expected a number, got {} ({})", v.type_name(), v))
     }
 
-    fn player(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<Option<PlayerRef>, String> {
+    pub(crate) fn player(
+        &mut self,
+        e: &Expr,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<Option<PlayerRef>, String> {
         if let Expr::Player = e {
             return Ok(ex.ctx.player.as_ref().and_then(|p| {
                 resolve(&mut ex.seen, &p.uuid, host).map(|name| PlayerRef {
@@ -1459,7 +1469,7 @@ impl Engine {
     /// Common expressions here; the rest in `eval_rare`. Keeping this
     /// function small keeps its stack frame small, which matters because it
     /// runs for nearly every value.
-    fn eval(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
+    pub(crate) fn eval(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
         match e {
             Expr::Num(n) => Ok(Value::Num(*n)),
             Expr::Bool(b) => Ok(Value::Bool(*b)),
@@ -2032,6 +2042,7 @@ impl Engine {
                     }
                 }
             }
+            Effect::World(w) => self.world_effect(w, ex, host)?,
             Effect::Cancel => {
                 if ex.waited {
                     host.log(

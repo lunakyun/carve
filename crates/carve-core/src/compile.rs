@@ -201,6 +201,8 @@ pub enum Cond {
     },
     /// `player is op`, `player is banned`.
     Admin(AdminCond, Expr, bool),
+    /// `player has potion effect speed`.
+    World(Box<crate::world_effects::WorldCond>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -276,6 +278,8 @@ pub enum Effect {
     SortList(VarRef, bool),
     /// op, kick, ban, names: target and an optional text (reason or name).
     Admin(AdminEff, Expr, Option<Expr>),
+    /// Lightning, explosions, particles, potion effects, fire.
+    World(Box<crate::world_effects::WorldFx>),
 }
 
 /// What a `loop` goes over.
@@ -1073,6 +1077,9 @@ impl Cx<'_> {
     }
 
     fn single_cond(&self, toks: &[Tok]) -> Option<Cond> {
+        if let Some(c) = crate::world_effects::parse_cond(toks, &self.env) {
+            return Some(c);
+        }
         let mut memo = Memo::default();
         registry()
             .conditions
@@ -1215,6 +1222,17 @@ impl Cx<'_> {
                 return;
             }
             None => {}
+        }
+        match crate::world_effects::parse_effect(&toks, &self.env) {
+            Ok(Some(eff)) => {
+                self.emit(Instr::Eff(eff), num);
+                return;
+            }
+            Ok(None) => {}
+            Err(msg) => {
+                self.err(num, msg);
+                return;
+            }
         }
         let mut type_err = None;
         let mut memo = Memo::default();

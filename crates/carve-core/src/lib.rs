@@ -10,6 +10,7 @@ pub mod error;
 pub mod expr;
 pub mod gamemode;
 pub mod health_food;
+pub mod fx_names;
 pub mod host;
 pub mod items;
 pub mod lexer;
@@ -27,6 +28,7 @@ pub mod timespans;
 pub mod value;
 pub mod vars;
 pub mod xp_level;
+pub mod world_effects;
 
 pub use compile::{CommandDef, EventKind};
 pub use engine::{CommandOutcome, Engine, EventCtx, FireOutcome, LoadSummary};
