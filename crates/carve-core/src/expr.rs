@@ -487,8 +487,12 @@ impl P<'_> {
     /// Longest run of words that names an item, like `diamond sword`. Plural
     /// `diamonds` and `torches` work too.
     fn item(&mut self, first: &str) -> Option<Expr> {
+        let lower = first.to_ascii_lowercase();
+        if !crate::items::could_start(&lower) {
+            return None;
+        }
         let start = self.pos - 1;
-        let mut words = vec![first.to_ascii_lowercase()];
+        let mut words = vec![lower];
         let mut i = self.pos;
         while let Some(Tok::Word(w)) = self.toks.get(i) {
             if words.len() >= 5 {

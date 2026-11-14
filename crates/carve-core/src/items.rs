@@ -1823,3 +1823,13 @@ pub const NAMES: &[&str] = &[
 pub fn is_known(id: &str) -> bool {
     NAMES.binary_search(&id).is_ok()
 }
+
+/// Could a name start with `word` (as its first part), or is `word` a plural
+/// of a name? Cheap check before trying longer word runs.
+pub fn could_start(word: &str) -> bool {
+    let i = NAMES.partition_point(|n| *n < word);
+    if NAMES.get(i).is_some_and(|n| n.starts_with(word)) {
+        return true;
+    }
+    word.strip_suffix('s').is_some_and(is_known) || word.strip_suffix("es").is_some_and(is_known)
+}

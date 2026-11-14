@@ -813,7 +813,54 @@ impl Engine {
         })
     }
 
+    #[inline(always)]
     fn cond(&mut self, c: &Cond, ex: &mut Exec, host: &mut dyn Host) -> Result<bool, String> {
+        if let Cond::Cmp(a, op, b) = c {
+            // Fast path: `{var} = 5`, `{var} > 2`... read the variable in place.
+            if let (Expr::Var(v), Expr::Num(n)) = (a, b)
+                && !v.list
+            {
+                let k = self.key(v, ex, host)?;
+                let cur = if v.local {
+                    ex.locals.get(&k)
+                } else {
+                    self.vars.get_ref(&k)
+                };
+                if let Some(Value::Num(x)) = cur {
+                    let (x, y) = (*x, *n);
+                    return Ok(match op {
+                        CmpOp::Eq => (x - y).abs() < 1e-9,
+                        CmpOp::Ne => (x - y).abs() >= 1e-9,
+                        CmpOp::Gt => x > y,
+                        CmpOp::Lt => x < y,
+                        CmpOp::Ge => x >= y,
+                        CmpOp::Le => x <= y,
+                    });
+                }
+            }
+            let a = self.eval(a, ex, host)?;
+            let b = self.eval(b, ex, host)?;
+            return Ok(match op {
+                CmpOp::Eq => a.loose_eq(&b),
+                CmpOp::Ne => !a.loose_eq(&b),
+                _ => {
+                    let (Some(x), Some(y)) = (to_num_opt(&a), to_num_opt(&b)) else {
+                        return Ok(false);
+                    };
+                    match op {
+                        CmpOp::Gt => x > y,
+                        CmpOp::Lt => x < y,
+                        CmpOp::Ge => x >= y,
+                        _ => x <= y,
+                    }
+                }
+            });
+        }
+        self.cond_rare(c, ex, host)
+    }
+
+    #[inline(never)]
+    fn cond_rare(&mut self, c: &Cond, ex: &mut Exec, host: &mut dyn Host) -> Result<bool, String> {
         match c {
             Cond::Cmp(a, op, b) => {
                 let a = self.eval(a, ex, host)?;
@@ -1049,13 +1096,7 @@ impl Engine {
 
     fn get_var(&mut self, v: &VarRef, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
         if v.list {
-            let items = self.list_items(v, ex, host)?;
-            if items.is_empty() {
-                return Ok(Value::None);
-            }
-            let mut s = String::new();
-            join_list(&items, &mut s);
-            return Ok(Value::Text(s));
+            return self.list_text(v, ex, host);
         }
         let k = self.key(v, ex, host)?;
         let val = if v.local {
@@ -1064,6 +1105,18 @@ impl Engine {
             self.vars.get_ref(&k)
         };
         Ok(val.cloned().unwrap_or(Value::None))
+    }
+
+    /// `{x::*}` used as a value: `a, b and c`, or `<none>` when empty.
+    #[inline(never)]
+    fn list_text(&mut self, v: &VarRef, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
+        let items = self.list_items(v, ex, host)?;
+        if items.is_empty() {
+            return Ok(Value::None);
+        }
+        let mut s = String::new();
+        join_list(&items, &mut s);
+        Ok(Value::Text(s))
     }
 
     fn store(&mut self, local: bool, key: &str, val: Value, ex: &mut Exec, host: &mut dyn Host) {
@@ -1081,7 +1134,40 @@ impl Engine {
         }
     }
 
+    /// Common expressions here; the rest in `eval_rare`. Keeping this
+    /// function small keeps its stack frame small, which matters because it
+    /// runs for nearly every value.
     fn eval(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
+        match e {
+            Expr::Num(n) => Ok(Value::Num(*n)),
+            Expr::Bool(b) => Ok(Value::Bool(*b)),
+            Expr::Var(v) => self.get_var(v, ex, host),
+            Expr::Bin(a, op, b) => {
+                let x = self.num(a, ex, host)?;
+                let y = self.num(b, ex, host)?;
+                Ok(Value::Num(match op {
+                    BinOp::Add => x + y,
+                    BinOp::Sub => x - y,
+                    BinOp::Mul => x * y,
+                    BinOp::Div => {
+                        if y == 0.0 {
+                            return Err("division by zero".into());
+                        }
+                        x / y
+                    }
+                }))
+            }
+            Expr::Text(parts) => {
+                let mut s = String::new();
+                self.write_parts(parts, ex, host, &mut s)?;
+                Ok(Value::Text(s))
+            }
+            _ => self.eval_rare(e, ex, host),
+        }
+    }
+
+    #[inline(never)]
+    fn eval_rare(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
         Ok(match e {
             Expr::Num(n) => Value::Num(*n),
             Expr::Bool(b) => Value::Bool(*b),
@@ -1259,6 +1345,23 @@ impl Engine {
 
     /// Ok(Some(ticks)) means: pause for that many ticks.
     fn effect(
+        &mut self,
+        e: &Effect,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+        line: usize,
+    ) -> Result<Option<u64>, String> {
+        if let Effect::Set(v, val) = e {
+            let val = self.eval(val, ex, host)?;
+            let k = self.key(v, ex, host)?;
+            self.store(v.local, &k, val, ex, host);
+            return Ok(None);
+        }
+        self.effect_rare(e, ex, host, line)
+    }
+
+    #[inline(never)]
+    fn effect_rare(
         &mut self,
         e: &Effect,
         ex: &mut Exec,

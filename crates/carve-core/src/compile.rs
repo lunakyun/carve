@@ -588,6 +588,11 @@ impl Cx<'_> {
 
     /// `stop`, `stop loop` / `exit loop`, `continue`. Returns true if handled.
     fn control(&mut self, num: usize, lower: &str) -> bool {
+        // Most lines are effects: check the first word before collecting all.
+        let first = lower.split_whitespace().next().unwrap_or("");
+        if !matches!(first, "stop" | "exit" | "break" | "continue" | "return") {
+            return false;
+        }
         let words: Vec<&str> = lower.split_whitespace().collect();
         match words.as_slice() {
             ["stop"] | ["stop", "trigger"] | ["exit"] => {
@@ -858,6 +863,14 @@ impl Cx<'_> {
                 .ok()
                 .filter(|e| Ty::Number.accepts(e.ty(&self.env)))
                 .map(Cond::Chance);
+        }
+        // Most conditions are a single check: try that first when there is
+        // nothing to split on.
+        let joins = toks
+            .iter()
+            .any(|t| t.is_lit("or") || t.is_lit("and") || t.is_lit(","));
+        if !joins {
+            return self.single_cond(toks);
         }
         if let Some(parts) = self.split_conds(toks, &["or"]) {
             return Some(Cond::Any(parts));
