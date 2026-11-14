@@ -985,7 +985,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 Random — `random element of {list::*}`, `random N elements of {list::*}`
 - ⬜ Random Character
 - ✅ Random Numbers
-- ⬜ Random UUID ⭐
+- ✅ Random UUID ⭐ — `random uuid` (version 4, as text)
 - ⬜ Raw Name
 - ⬜ Raw String
 - ⬜ Readied Arrow/Bow
@@ -1009,7 +1009,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Ringing Time
 - ⬜ Rotated Quaternion/Vector
 - ⬜ Rotation Axis/Angle
-- 🟡 Rounding — as functions
+- 🟡 Rounding — as functions, plus `n rounded to N decimal places`
 - ✅ Saturation — read, set, add, remove
 - ⬜ Scale
 - ⬜ Scoreboard Tags

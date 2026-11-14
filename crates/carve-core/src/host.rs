@@ -182,6 +182,11 @@ pub trait Host {
         }
     }
 
+    /// A client property of an online player as text (view distance as digits).
+    fn player_info(&mut self, _player: &PlayerRef, _info: crate::skbee_utilities::Info) -> Option<String> {
+        None
+    }
+
     // ---- admin: op, kick, ban, names, ping ----
 
     /// Is the player an operator (permission level above zero)?
