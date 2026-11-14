@@ -233,6 +233,7 @@ mod w2;
 mod w2_eval;
 mod x2_eval;
 mod w2e3;
+mod w5_eval;
 
 fn join_list(items: &[(String, Value)], out: &mut String) {
     if items.is_empty() {
@@ -384,6 +385,7 @@ pub struct Engine {
     pub timings: Option<BTreeMap<String, Timing>>,
     /// Event values changed by the run in progress (`w2_events_4`).
     ext_out: Vec<(u8, Value)>,
+    w5: crate::w2_expressions_5::State,
 }
 
 impl Default for Engine {
@@ -472,6 +474,7 @@ impl Engine {
             errors: Vec::new(),
             timings: None,
             ext_out: Vec::new(),
+            w5: Default::default(),
         }
     }
 
@@ -1717,12 +1720,13 @@ impl Engine {
             }
             Expr::ParseNum(e) => {
                 let t = self.text(e, ex, host)?;
-                t.trim()
-                    .parse::<f64>()
-                    .ok()
-                    .filter(|n| n.is_finite())
-                    .map(Value::Num)
-                    .unwrap_or(Value::None)
+                match t.trim().parse::<f64>().ok().filter(|n| n.is_finite()) {
+                    Some(n) => Value::Num(n),
+                    None => {
+                        self.w5.last_parse_error = Some(format!("'{t}' is not a number"));
+                        Value::None
+                    }
+                }
             }
             Expr::Join(v, sep) => {
                 let items = self.list_items(v, ex, host)?;
@@ -1774,6 +1778,7 @@ impl Engine {
             },
             Expr::Items(s) => Value::List(self.eval_list(s, ex, host)?),
             Expr::Ext(f, args) => self.eval_ext(*f, args, ex, host)?,
+            Expr::W5(w) => self.eval_w5(w, ex, host)?,
             Expr::ListAgg(a, s) => self.eval_agg(*a, s, ex, host)?,
             Expr::W2(w) => self.eval_w2(w, ex, host)?,
             Expr::RandomOf(v) => {
@@ -2008,6 +2013,7 @@ impl Engine {
                     self.ext_out.push((i as u8, v));
                 }
             },
+            Effect::W5(w) => self.run_w5_effect(w, ex, host)?,
             Effect::Xp(op, a, b) => {
                 let (pe, ne) = if op.num_first { (b, a) } else { (a, b) };
                 let n = self.num(ne, ex, host)?;

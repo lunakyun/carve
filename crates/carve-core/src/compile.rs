@@ -266,6 +266,7 @@ pub enum Effect {
     Xp(crate::xp_level::XpOp, Expr, Expr),
     /// Effects of `w2_events_4`.
     Ext4(Box<crate::w2_events_4::ExtEffect>),
+    W5(Box<crate::w2_expressions_5::W5Effect>),
     Kill(Expr),
     Teleport(Expr, Expr, Expr, Expr),
     TeleportTo(Expr, Expr),
@@ -400,6 +401,7 @@ pub enum EffKind {
     SetHealth,
     SetGamemode,
     Xp(crate::xp_level::XpOp),
+    W5(crate::w2_expressions_5::W5Op),
     Kill,
     Teleport,
     TeleportTo,
@@ -616,6 +618,11 @@ fn registry() -> &'static Registry {
                     .iter()
                     .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
             )
+            .chain(
+                crate::w2_expressions_5::EFFECT_PATTERNS
+                    .iter()
+                    .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
+            )
             .collect(),
         conditions: crate::w2_conditions_2::CONDITION_PATTERNS
             .iter()
@@ -645,6 +652,7 @@ pub fn check_registry() -> Result<(), String> {
         .chain(crate::w2_expressions_3::EFFECT_PATTERNS)
         .chain(crate::w2_expressions_4::EFFECT_PATTERNS)
         .chain(crate::w2_effects_3::EFFECT_PATTERNS)
+        .chain(crate::w2_expressions_5::EFFECT_PATTERNS)
     {
         Pattern::new(s, *k)?;
     }
@@ -1581,6 +1589,7 @@ fn build_effect(kind: EffKind, mut c: Vec<Option<Capture>>) -> Option<Effect> {
         }
         EffKind::W4(op) => return crate::w2_expressions_4::build(op, c),
         EffKind::W2e3(op) => return crate::w2_effects_3::build(op, c),
+        EffKind::W5(op) => return crate::w2_expressions_5::build(op, c),
         EffKind::Heal => Effect::Heal(take_expr(c, 0)?),
         EffKind::SetHealth => Effect::SetHealth(take_expr(c, 0)?, take_expr(c, 1)?),
         EffKind::SetGamemode => Effect::SetGamemode(take_expr(c, 0)?, take_expr(c, 1)?),

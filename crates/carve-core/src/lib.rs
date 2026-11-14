@@ -39,6 +39,7 @@ pub mod w2_expressions_2;
 pub mod w2_expressions_3;
 pub mod w2_expressions_4;
 pub mod w2_effects_3;
+pub mod w2_expressions_5;
 pub mod xp_level;
 
 pub use compile::{CommandDef, EventKind};

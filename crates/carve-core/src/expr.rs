@@ -182,6 +182,8 @@ pub enum Expr {
     Ext(crate::w2_expressions_3::ExtFn, Vec<Expr>),
     /// A rare expression from `w2_expressions_4`.
     W4(Box<crate::w2_expressions_4::W4>),
+    /// Rare wave 2 expressions (numbers, midpoint, metadata, ...), boxed to keep this enum small.
+    W5(Box<crate::w2_expressions_5::W5>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -371,6 +373,7 @@ impl Expr {
             Expr::W2(w) => w.ty(),
             Expr::Ext(f, _) => crate::w2_expressions_3::ty(*f),
             Expr::W4(w) => w.ty(),
+            Expr::W5(w) => w.ty(),
             Expr::ListAgg(Agg::Size | Agg::Sum, _) => Ty::Number,
             Expr::ListAgg(..) => Ty::Object,
             Expr::Default(a, b) => {
@@ -595,6 +598,17 @@ impl P<'_> {
             self.pos += 1;
             e = Expr::TBin(Box::new(Expr::Date(DateOp::Now, Vec::new())), op, Box::new(e));
         }
+        // `10% of x`
+        if matches!(self.toks.get(self.pos), Some(t) if t.is_lit("%") || t.is_lit("percent"))
+            && self.pos + 2 >= self.toks.len()
+        {
+            self.hit_end.set(true);
+        }
+        if crate::w2_expressions_5::percent_follows(self.toks, self.pos) && Ty::Number.accepts(e.ty(self.env)) {
+            self.pos += 2;
+            let of = self.primary_base()?;
+            e = crate::w2_expressions_5::percent(e, of);
+        }
         // `arg-1 parsed as number`
         if matches!(self.toks.get(self.pos), Some(t) if t.is_lit("parsed")) && self.pos + 1 >= self.toks.len()
         {
@@ -647,6 +661,11 @@ impl P<'_> {
             {
                 self.pos += 1 + n;
                 e = Expr::Ext(f, vec![e]);
+                continue;
+            }
+            if let Some((ne, np)) = crate::w2_expressions_5::possessive(self.toks, self.pos + 1, &e) {
+                e = ne;
+                self.pos = np;
                 continue;
             }
             let (prop, extra) = match crate::health_food::words_from(self.toks, self.pos + 1) {
@@ -1120,6 +1139,21 @@ impl P<'_> {
                 }
                 if let Some(e) = self.text_fn(&lw)? {
                     return Ok(e);
+                }
+                match crate::w2_expressions_5::parse_word(self.toks, self.pos, self.env, &lw) {
+                    Ok(Some((e, end))) => {
+                        self.pos = end;
+                        return Ok(e);
+                    }
+                    Ok(None) => {
+                        if crate::w2_expressions_5::may_continue(&lw) && self.pos + 4 > self.toks.len() {
+                            self.hit_end.set(true);
+                        }
+                    }
+                    Err(m) => {
+                        self.hit_end.set(true);
+                        return Err(m);
+                    }
                 }
                 match lw.as_str() {
                     "the" => self.primary(),

@@ -829,7 +829,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Index Of — `[first|last] index of a in b`
 - ✅ Indices of List ⭐ — `indices of {list::*}`, also in `loop` and `set`
 - ✅ Indices of Value — `first index of value x in {l::*}`, `last index ...`, `indices of value x in {l::*}`
-- ✅ Infinity — `infinity`, `negative infinity`
+- ✅ Infinity — `infinity`, `positive infinity`, `negative infinity`
 - ⛔ Initiator Inventory — inventory move events are not in the plugin API
 - ⛔ Input — the API gives no player input (WASD, jump) state
 - ⛔ Interaction Height/Width — Pumpkin's API has no interaction entities
@@ -907,47 +907,47 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Maximum Double Value — `maximum double value`
 - ✅ Maximum Float Value — `maximum float value`
 - 🟡 Maximum Freeze Time — `max freeze time of <entity>`: always 7 seconds (vanilla value)
-- ⬜ Maximum Integer Value
-- ⬜ Maximum Long Value
-- ⬜ Maximum Stack Size
+- ✅ Maximum Integer Value — `maximum integer value`
+- ✅ Maximum Long Value — `maximum long value` (a number, so it loses the last digits)
+- 🟡 Maximum Stack Size — `max stack size of <item>`; built-in table of vanilla sizes, not read from the server
 - ✅ Me ⭐ — `me`, `myself`
-- ⬜ Mending Repair Amount
+- ⛔ Mending Repair Amount — needs the `on item mend` event, which is not wired
 - ✅ Message — `send ... [to ...]`
 - ⬜ Message of the Day
-- ⬜ Metadata
-- ⬜ Middle of Location
-- ⬜ Midpoint
-- ⬜ Minecart Derailed / Flying Velocity
-- ⬜ Minimum Double Value
-- ⬜ Minimum Float Value
-- ⬜ Minimum Integer Value
-- ⬜ Minimum Long Value
+- 🟡 Metadata — `metadata value "key" of <player|world|item>`; kept in memory, lost on restart; players, worlds and item types only
+- ✅ Middle of Location — `middle of <location>` (centre of the block)
+- ✅ Midpoint — `midpoint of <a> and <b>`
+- ⛔ Minecart Derailed / Flying Velocity — the plugin API has no minecart access
+- ✅ Minimum Double Value — `minimum double value`
+- ✅ Minimum Float Value — `minimum float value`
+- ✅ Minimum Integer Value — `minimum integer value`
+- ✅ Minimum Long Value — `minimum long value`
 - ⬜ Minimum/Maximum Enchantment Level
 - ⛔ Money — needs an economy plugin
-- ⬜ Moon Phase
-- ⬜ Moved blocks
+- ✅ Moon Phase — `moon phase of <world|location|player>`, gives text like `full moon`
+- ⛔ Moved blocks — needs the piston events, which are not wired
 - 🟡 Name — `name of player`
 - 🟡 Name / Display Name / Tab List Name — name only
 - ⬜ Named Item/Inventory ⭐
-- ⬜ NaN
+- ✅ NaN — `nan`
 - ⬜ Nearest Entity
 - ✅ Negative Infinity — `negative infinity`
 - ✅ New Line ⭐ — `nl`, `new line`
 - ⬜ New Potion Effect
-- ⬜ No Damage Ticks
-- ⬜ No Damage Time
-- ⬜ Node
+- ⛔ No Damage Ticks — the plugin API cannot read hurt immunity ticks
+- ⛔ No Damage Time — the plugin API cannot read hurt immunity time
+- ⛔ Node — Carve has no config node tree
 - ✅ Now ⭐
 - ✅ Number Of — `number of {list::*}` (also `size of`, `amount of`)
-- ⬜ Number of Characters
-- ⬜ Numbers
-- ⬜ Offline players ⭐
+- ✅ Number of Characters — `number of uppercase letters in <text>` (also lowercase, digits, spaces)
+- ✅ Numbers — `numbers from 1 to 5`, `integers from 1 to 5`; works in `loop`, `set {x::*} to`; at most a million
+- ⛔ Offline players — the plugin API has no offline player lookup
 - ⬜ On-Screen Kick Message
 - ⬜ Online Player Count ⭐
 - ⬜ Opened Inventory
-- ⬜ Panda Gene
+- ⛔ Panda Gene — the plugin API has no panda access
 - 🟡 Parse — `parsed as number` only
-- ⬜ Parse Error
+- ✅ Parse Error — `parse error` after a failed `parsed as number`
 - ⬜ Particle Count
 - ⬜ Particle Distribution
 - ⬜ Particle Offset
@@ -955,26 +955,26 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Particle with Offset/Distribution/Velocity
 - ⬜ Particle with Speed/Extra Value
 - ⬜ Particles with Data
-- ⬜ Passenger
-- ⬜ Pathfinding Target Entity
-- ⬜ Pathfinding Target Location
-- ⬜ Percent of
-- ⬜ Persistent Data Value
-- ⬜ Pi
-- ⬜ Picked Item/Block/Entity
-- ⬜ Pickup Delay
+- ⛔ Passenger — the plugin API has no passenger access
+- ⛔ Pathfinding Target Entity — the plugin API has no pathfinding access
+- ⛔ Pathfinding Target Location — the plugin API has no pathfinding access
+- ✅ Percent of — `10% of 200`, `{_x}% of 3`, `25 percent of {_y}`
+- 🟡 Persistent Data Value — `persistent data value "key" of <player|world|item>`; saved with the variables file, not in the entity
+- ✅ Pi — `pi`
+- ⛔ Picked Item/Block/Entity — no pick-item event in the plugin API
+- ⛔ Pickup Delay — the plugin API has no item entity access
 - ⬜ Ping ⭐
-- ⬜ Plain Item
-- ⬜ Player Chat Completions
-- ⬜ Player Input Keys
+- 🟡 Plain Item — `plain <item>`; items carry no extra data yet, so it returns the item as is
+- ⛔ Player Chat Completions — the plugin API cannot change chat completions
+- ⛔ Player Input Keys — only an input event exists, no way to read the current keys
 - ⬜ Player List Header and Footer
-- ⬜ Player List Name
-- ⬜ Player List Priority
-- ⬜ Player Protocol Version
+- ✅ Player List Name — `player list name of <player>`, `<player>'s tab list name`; set and reset
+- 🟡 Player List Priority — `set player list priority of <player> to <number>`; write only
+- ⛔ Player Protocol Version — the plugin API does not give the client version
 - ⬜ Player Skull
 - ⬜ Player Weather
-- ⬜ Portal
-- ⬜ Portal Cooldown
+- ⛔ Portal — the plugin API has no portal access
+- ⛔ Portal Cooldown — the plugin API has no portal cooldown
 - ⬜ Potion (item)
 - ⬜ Potion Effect - Amplifier
 - ⬜ Potion Effect - Duration
@@ -986,7 +986,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Progress
 - ⬜ Projectile Critical State
 - ⬜ Projectile Force
-- ⬜ Protocol Version
+- ⛔ Protocol Version — the plugin API does not give the client version
 - ⬜ Queue (Experimental)
 - ⬜ Queue Start/End (Experimental)
 - ⬜ Quit Message ⭐
@@ -1054,7 +1054,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ String Colors — `&a` codes, `§a` codes and `<red>` tags in sent messages
 - ⬜ Style
 - ✅ Substring ⭐ — `substring of x from a to b`, `first N characters of x`, `last N characters of x`, `character at index N of x`
-- ⬜ Tab List Name
+- ✅ Tab List Name — `<player>'s tab list name`, same as Player List Name
 - ⬜ Tablisted Players
 - ⬜ Tag
 - ⬜ Tag Namespaced Key

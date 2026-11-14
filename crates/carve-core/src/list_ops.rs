@@ -91,7 +91,7 @@ pub fn looks_like_list_op(toks: &[Tok], env: &Env) -> bool {
             return true;
         }
     }
-    crate::w2_expressions_2::starts_list(toks) || toks.iter().any(|t| t.is_lit("where") || t.is_lit("except"))
+    crate::w2_expressions_2::starts_list(toks) || crate::w2_expressions_5::is_numbers_loop(toks) || toks.iter().any(|t| t.is_lit("where") || t.is_lit("except"))
 }
 
 impl Cur<'_> {
