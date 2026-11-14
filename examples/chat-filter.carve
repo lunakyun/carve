@@ -1,0 +1,18 @@
+# Blocks a few words in chat and warns the player.
+# After 3 warnings the player is kicked and the count starts over.
+# Carve compares the whole message (ignoring case), so this catches
+# messages that are exactly one of the words.
+
+on chat:
+    if message is "badword":
+        set {_blocked} to 1
+    else if message is "spam":
+        set {_blocked} to 1
+    if {_blocked} is set:
+        cancel event
+        add 1 to {warnings::%player%}
+        if {warnings::%player%} >= 3:
+            delete {warnings::%player%}
+            execute console command "kick %player% Please keep the chat friendly"
+        else:
+            send "&cPlease keep the chat friendly. Warning %{warnings::%player%}% of 3." to player

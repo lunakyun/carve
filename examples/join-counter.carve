@@ -1,0 +1,21 @@
+# Counts joins per player and for the whole server.
+#   /joins             shows your own count
+#   /joins <player>    shows someone else's
+
+on join:
+    add 1 to {visits::%player%}
+    add 1 to {stats::total-joins}
+    if {visits::%player%} is 1:
+        add 1 to {stats::players}
+        broadcast "&e%player% joined for the first time! Player number %{stats::players}%."
+    else:
+        send action bar "Welcome back! Visit number %{visits::%player%}%" to player
+
+command /joins [<player>]:
+    description: Show how often a player joined
+    trigger:
+        if arg is set:
+            send "%arg% joined %{visits::%arg%}% time(s)."
+        else if player is set:
+            send "You joined %{visits::%player%}% time(s)."
+        send "Server: %{stats::players}% players, %{stats::total-joins}% joins in total."

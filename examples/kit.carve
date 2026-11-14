@@ -1,0 +1,25 @@
+# A starter kit that each player can take once.
+#   /kit                  gives the kit
+#   /resetkit <player>    lets a player take it again (ops only)
+# Carve has no items yet, so the kit is given with console commands.
+
+command /kit:
+    description: Get the starter kit (once)
+    trigger:
+        if player is not set:
+            send "Only players can take a kit."
+        else if {kit::%player%} is set:
+            send "&cYou already took your kit."
+        else:
+            execute console command "give %player% minecraft:stone_sword 1"
+            execute console command "give %player% minecraft:bread 16"
+            set {kit::%player%} to 1
+            send title "Starter kit" with subtitle "Good luck out there!" to player
+
+command /resetkit <player>:
+    permission: resetkit
+    description: Let a player take the starter kit again
+    trigger:
+        delete {kit::%arg-1%}
+        send "%arg-1% can take the kit again."
+        send "&aYou can take /kit again." to arg-1

@@ -1,125 +1,116 @@
 # Carve
 
-A small scripting language for the [Pumpkin](https://github.com/Pumpkin-MC/Pumpkin) Minecraft server, in the spirit of Skript. It looks like Skript but it is not compatible with it.
+Simple, readable scripts for the Pumpkin Minecraft server.
+
+[![CI](https://github.com/OWNER/carve/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/carve/actions/workflows/ci.yml)
+[![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
+[![Pumpkin plugin API v0.1](https://img.shields.io/badge/Pumpkin%20API-v0.1-orange.svg)](https://github.com/Pumpkin-MC/Pumpkin)
+
+Carve is a scripting plugin for [Pumpkin](https://github.com/Pumpkin-MC/Pumpkin),
+in the spirit of Skript. You write what should happen in almost-plain English,
+save the file, and reload. No Rust, no compiling.
 
 ```
 on join:
-    send title "Welcome, %player%!" to player
     add 1 to {joins::%player%}
+    if {joins::%player%} is 1:
+        broadcast "&eSay hi to %player%, they are new!"
+    else:
+        send title "Welcome back!" to player
 
 command /heal [<player>]:
     permission: heal
     trigger:
-        if arg is set:
-            heal arg
-        else:
-            heal player
+        heal player
 ```
 
-## Install
+## Features
 
-1. Build it (see below) or take `carve.wasm` from a release.
-2. Copy `carve.wasm` into the Pumpkin server's `plugins/` folder.
-3. Start the server. It asks once to allow the `fs.read.data` and `fs.write.data` permissions. Carve needs them to read scripts and save variables.
-4. Put your `*.carve` files in the plugin's data folder under `scripts/`. Pumpkin creates that folder next to the plugin.
-5. Run `/carve reload` (or `/cv reload`) after editing scripts. You need the `carve:admin` permission, which op level 2 has by default.
+- **Events:** join, quit, chat, block break and block place, with `cancel event`.
+- **Commands** with typed arguments (`<text>`, `<number>`, `<player>`),
+  optional arguments, permissions and usage messages.
+- **Effects** for messages, titles, action bars, broadcasts, health,
+  teleporting and console commands.
+- **Variables**, global and local, with `{list::%player%}` names. Globals are
+  saved to `variables.json`.
+- **`wait`** in ticks or seconds, without blocking the server.
+- **Clear errors** with file, line and "did you mean" suggestions.
+- **Safe reloads:** if a script has an error, the old scripts keep running.
+- **Fast:** players are looked up once per run, and constants are worked out
+  at load time. See [performance](docs/performance.md).
 
-The plugin is not signed. Pumpkin loads unsigned plugins by default (`allow_unsigned = true`) and shows a warning.
+## Quick install
 
-## Build
+1. Download `carve.wasm` from a release, or build it (below).
+2. Put it in your Pumpkin server's `plugins/` folder and start the server.
+   Allow the `fs.read.data` and `fs.write.data` permissions when asked.
+3. Put `*.carve` files in the plugin's `scripts/` folder.
+4. Run `/carve reload` (`carve:admin`, ops have it by default).
+
+The full walkthrough is in [getting started](docs/getting-started.md).
+
+### Build from source
 
 ```
 rustup target add wasm32-wasip2
 cargo build -p carve-wasm --release --target wasm32-wasip2
 # -> target/wasm32-wasip2/release/carve.wasm
-cargo test -p carve-core
 ```
 
-## Files
+## Documentation
 
-- `scripts/*.carve`: your scripts. Indent with tabs or spaces, but use one style per file. `#` starts a comment.
-- `variables.json`: global variables. It is saved about 5 seconds after a change and again when the server stops.
+- [Getting started](docs/getting-started.md)
+- Syntax: [triggers](docs/syntax/triggers.md), [effects](docs/syntax/effects.md),
+  [conditions](docs/syntax/conditions.md), [expressions](docs/syntax/expressions.md)
+- [Variables](docs/variables.md)
+- [Commands](docs/commands.md)
+- [Reading errors](docs/errors.md)
+- [Known limits](docs/limits.md)
+- [Architecture](docs/architecture.md)
+- [Performance](docs/performance.md)
+- [Examples](examples/): economy, starter kit, chat filter, join counter, heal, welcome
 
-## Syntax
+## FAQ
 
-### Triggers
+**Is it Skript compatible?**
+No. Carve looks a lot like Skript, but it is its own language with far fewer
+features. Most Skript scripts will not load without changes.
 
-| Trigger | Notes |
-|---|---|
-| `on join:` | also `on login:` |
-| `on quit:` | also `on leave:`, `on disconnect:` |
-| `on chat:` | `message` is the chat text |
-| `on break:` | also `on mine:`, `on block break:` |
-| `on place:` | also `on block place:` |
-| `command /name <text> [<number>]:` | Arguments can be `<text>`, `<number>` or `<player>`. `[...]` makes an argument optional, and optional arguments must come last. The last text argument takes the rest of the line. The command has the entries `permission: node`, `description: text` and `trigger:` (the code). |
+**Why does my new command need a restart?**
+Pumpkin lets a plugin register commands only while the plugin loads, and it
+has no way to remove them. `/carve reload` updates the code of commands that
+already exist. New commands show up after a restart. See
+[commands](docs/commands.md#reloading-and-restarting).
 
-### Effects
+**My permission doesn't work, even for ops.**
+Pumpkin denies permission nodes that were never registered. Carve registers
+the `carve:` nodes used in commands when it loads, so a node added later needs
+a restart. See [permissions](docs/commands.md#permissions).
 
-```
-send %text% [to %player%]          # no "to": goes to the player or command sender
-broadcast %text%
-send title %text% [with subtitle %text%] to %player%
-send action bar %text% to %player%
-heal %player%
-set health of %player% to %number%
-kill %player%
-teleport %player% to %number%, %number%, %number%
-execute console command %text%
-cancel [the] event
-wait %number% (tick|ticks|second|seconds)
-set {var} to %object%
-add %number% to {var}
-remove %number% from {var}
-delete {var}                       # {list::*} deletes the whole list
-```
+**Does a broken script crash the server?**
+No. Load errors skip the broken file (or, on reload, keep the old scripts).
+Runtime errors stop only that run and are logged with the file and line.
 
-### Conditions
+## Roadmap
 
-```
-if %object% (is|=) %object%:
-else if %object% (is not|!=) %object%:
-else:
-%number% > %number%   (also <, >=, <=)
-%player% has permission %text%
-%player% does not have permission %text%
-%object% is set / %object% is not set
-```
+Planned, not available yet:
 
-Text comparison ignores case. A player also equals text that matches their name.
+- loops over lists and numbers
+- `and` / `or` in conditions, and text checks like "contains"
+- more events (death, damage, respawn, interact)
+- items, locations and worlds
+- functions and options
+- adding new commands on reload, once Pumpkin's API allows it
 
-### Expressions
+Ideas and votes are welcome in the issues.
 
-- `player`, `name of %player%`
-- `message` (only in `on chat`)
-- `arg` / `arg-1`, `arg-2`, ... (commands)
-- numbers `5`, `-2.5`, math `+ - * /` with brackets
-- text `"hi %player%, you have %{coins::%player%}% coins"`. `%expr%` inserts a value, `%%` is a literal `%` and `""` is a quote. `&a`-style color codes work.
-- variables: `{global}`, `{_local}` (lives for one run), `{list::%player%}`
+## Contributing
 
-### Errors
+Bug reports, ideas and pull requests are welcome. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for how to build, test and add new syntax.
+Changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
-Load errors show `file:line` and the three closest patterns, for example:
+## License
 
-```
-bad.carve:3: can't understand this effect: 'sned "hi" to player' (did you mean: send %text% [to %player%] | ...)
-```
-
-## How it works
-
-- `crates/carve-core` is pure Rust and has no Pumpkin dependency. Each trigger compiles to a flat instruction list with jumps. The game is reached only through the `Host` trait.
-- `crates/carve-wasm` is the Pumpkin plugin, built on `pumpkin-plugin-api` (WIT v0.1, pinned to Pumpkin commit `058f7ec`). It registers one handler per event type and dispatches to the current script table.
-- `wait` saves the run state (position, locals, event data) and continues it from the plugin's tick task. After a run's first `wait`, `cancel event` does nothing and logs a warning, because the event already happened.
-- Players are stored as handles (UUID). If the player is offline when the handle is used, it resolves to `<none>` and the effect is skipped.
-- Each run slice is limited to 100,000 instructions. A run that hits the limit stops with an error.
-- If a reload has an error, all the old scripts stay active and the errors go to the sender. Runs that are waiting finish on the code they started with.
-
-## Known limits
-
-- **New commands need a restart.** Pumpkin's plugin API registers commands only while the plugin loads, and it can't unregister them. A reload updates the code of existing script commands. A new command needs a restart, and a removed command answers "no longer in any script" until the next restart. Permission nodes for script commands are also registered only at load.
-- Permission nodes without a namespace are put in the plugin's namespace (`heal` becomes `carve:heal`). Pumpkin denies any node that was never registered, even for ops, unless it is granted to the player directly. A node from another plugin (`other:x`) works only if that plugin registered it.
-- Five events in v1: join, quit, chat, break, place. A block break without a player has no `player`.
-- If the server calls back into Carve while a script is running (a nested event), that event is skipped with a warning. Console commands from scripts run after the script finishes, which avoids this problem.
-- When a console command run reaches a `wait`, messages sent to the console after the wait go to the server log.
-- No loops, functions, options, item, location or world types yet. `teleport` uses the player's current world.
-- Variable names are lowercased. A player in a variable name is written as the player's name, not UUID.
-- If `variables.json` is broken, the plugin moves it to `variables.json.broken` and starts with no variables.
+Carve is dual-licensed under [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE),
+at your option.

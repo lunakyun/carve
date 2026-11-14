@@ -1,0 +1,32 @@
+# A tiny economy. Everyone starts with 100 coins.
+#   /balance                  shows your coins
+#   /pay <player> <number>    gives coins to another player
+
+on join:
+    if {money::%player%} is not set:
+        set {money::%player%} to 100
+
+command /balance:
+    description: Show how many coins you have
+    trigger:
+        if player is not set:
+            send "Only players have coins."
+        else:
+            send "&aYou have %{money::%player%}% coins."
+
+command /pay <player> <number>:
+    description: Give coins to another player
+    trigger:
+        if player is not set:
+            send "Only players can pay."
+        else if arg-2 <= 0:
+            send "&cPay at least 1 coin."
+        else if arg-1 is player:
+            send "&cYou can't pay yourself."
+        else if arg-2 > {money::%player%}:
+            send "&cYou only have %{money::%player%}% coins."
+        else:
+            remove arg-2 from {money::%player%}
+            add arg-2 to {money::%arg-1%}
+            send "&aYou paid %arg-2% coins to %arg-1%."
+            send "&a%player% paid you %arg-2% coins." to arg-1

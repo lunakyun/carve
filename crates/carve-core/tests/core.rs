@@ -728,12 +728,105 @@ fn runaway_guard() {
 
 #[test]
 fn examples_compile() {
-    for f in ["welcome.carve", "heal.carve"] {
-        let path = format!("{}/../../examples/{f}", env!("CARGO_MANIFEST_DIR"));
-        let src = std::fs::read_to_string(&path).unwrap();
-        let errs = errors_of(&src);
-        assert!(errs.is_empty(), "{f}: {errs:?}");
+    let dir = format!("{}/../../examples", env!("CARGO_MANIFEST_DIR"));
+    let mut names = Vec::new();
+    for entry in std::fs::read_dir(&dir).unwrap() {
+        let path = entry.unwrap().path();
+        if path.extension().is_some_and(|x| x == "carve") {
+            let src = std::fs::read_to_string(&path).unwrap();
+            let name = path.file_name().unwrap().to_string_lossy().into_owned();
+            let errs = errors_of(&src);
+            assert!(errs.is_empty(), "{name}: {errs:?}");
+            names.push(name);
+        }
     }
+    names.sort();
+    for want in [
+        "chat-filter.carve",
+        "economy.carve",
+        "heal.carve",
+        "join-counter.carve",
+        "kit.carve",
+        "welcome.carve",
+    ] {
+        assert!(
+            names.iter().any(|n| n == want),
+            "missing example {want}, found {names:?}"
+        );
+    }
+    // All examples together must load as one script set (no duplicate commands).
+    let files: Vec<(String, String)> = names
+        .iter()
+        .map(|n| (n.clone(), std::fs::read_to_string(format!("{dir}/{n}")).unwrap()))
+        .collect();
+    let (_, errs) = Engine::default().load(&files);
+    assert!(errs.is_empty(), "{errs:?}");
+}
+
+#[test]
+fn docs_list_every_pattern() {
+    let root = format!("{}/../..", env!("CARGO_MANIFEST_DIR"));
+    let effects = std::fs::read_to_string(format!("{root}/docs/syntax/effects.md")).unwrap();
+    let conditions = std::fs::read_to_string(format!("{root}/docs/syntax/conditions.md")).unwrap();
+    for (pat, _) in EFFECT_PATTERNS {
+        assert!(
+            effects.contains(pat),
+            "docs/syntax/effects.md is missing the pattern `{pat}`"
+        );
+    }
+    for (pat, _) in CONDITION_PATTERNS {
+        assert!(
+            conditions.contains(pat),
+            "docs/syntax/conditions.md is missing the pattern `{pat}`"
+        );
+    }
+}
+
+#[test]
+fn economy_example_runs() {
+    let src = std::fs::read_to_string(format!(
+        "{}/../../examples/economy.carve",
+        env!("CARGO_MANIFEST_DIR")
+    ))
+    .unwrap();
+    let mut e = engine(&src);
+    let mut h = Mock::with_steve();
+    h.online.insert("u2".into(), "Alex".into());
+    let alex = PlayerRef {
+        uuid: "u2".into(),
+        name: "Alex".into(),
+    };
+    e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
+    e.fire(EventKind::Join, EventCtx::player(alex.clone()), &mut h);
+    let me = Recipient::Player(steve());
+    assert_eq!(
+        e.run_command("pay", me.clone(), "alex 30", &mut h),
+        CommandOutcome::Ran
+    );
+    assert_eq!(
+        e.run_command("pay", me.clone(), "alex 500", &mut h),
+        CommandOutcome::Ran
+    );
+    assert_eq!(
+        e.run_command("pay", me.clone(), "steve 1", &mut h),
+        CommandOutcome::Ran
+    );
+    assert_eq!(e.run_command("balance", me, "", &mut h), CommandOutcome::Ran);
+    assert_eq!(
+        e.run_command("balance", Recipient::Player(alex), "", &mut h),
+        CommandOutcome::Ran
+    );
+    assert_eq!(
+        h.take(),
+        [
+            "send Steve &aYou paid 30 coins to Alex.",
+            "send Alex &aSteve paid you 30 coins.",
+            "send Steve &cYou only have 70 coins.",
+            "send Steve &cYou can't pay yourself.",
+            "send Steve &aYou have 70 coins.",
+            "send Alex &aYou have 130 coins.",
+        ]
+    );
 }
 
 // ---------- performance semantics ----------
@@ -802,4 +895,42 @@ fn constant_folding_keeps_meaning() {
     let mut h = Mock::with_steve();
     e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
     assert!(h.errors()[0].starts_with("test.carve:2: division by zero"));
+}
+
+#[test]
+fn chat_filter_example_runs() {
+    let src = std::fs::read_to_string(format!(
+        "{}/../../examples/chat-filter.carve",
+        env!("CARGO_MANIFEST_DIR")
+    ))
+    .unwrap();
+    let mut e = engine(&src);
+    let mut h = Mock::with_steve();
+    assert!(
+        !e.fire(EventKind::Chat, EventCtx::chat(steve(), "hello"), &mut h)
+            .cancelled
+    );
+    for _ in 0..2 {
+        assert!(
+            e.fire(EventKind::Chat, EventCtx::chat(steve(), "SPAM"), &mut h)
+                .cancelled
+        );
+    }
+    assert!(
+        !e.fire(EventKind::Chat, EventCtx::chat(steve(), "hi again"), &mut h)
+            .cancelled
+    );
+    assert!(
+        e.fire(EventKind::Chat, EventCtx::chat(steve(), "badword"), &mut h)
+            .cancelled
+    );
+    assert_eq!(
+        h.take(),
+        [
+            "send Steve &cPlease keep the chat friendly. Warning 1 of 3.",
+            "send Steve &cPlease keep the chat friendly. Warning 2 of 3.",
+            "cmd kick Steve Please keep the chat friendly",
+        ]
+    );
+    assert_eq!(e.vars.get("warnings::steve"), Value::None);
 }
