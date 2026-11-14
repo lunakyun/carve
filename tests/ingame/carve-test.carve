@@ -107,7 +107,7 @@ command /tloc:
         send "t:loc %x of player% %y of player% %z of player% %world of player%"
         teleport player to location(5, 90, 5)
 
-on damage:
+on damage of player:
     send "t:dmg %damage% by %attacker%" to victim
 
 on death:

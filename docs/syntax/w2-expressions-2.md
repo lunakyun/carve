@@ -69,7 +69,7 @@ reset player's compass target           # points at 0, 0, 0
 
 | Expression | Where | Notes |
 | --- | --- | --- |
-| `death message` | `on death` | Read only. |
+| `death message` | `on death` | Settable: `set death message to "..."`. |
 | `damage cause` | `on damage` | Read only. Text such as `fall` or `player_attack`. |
 | `chat recipients` | `on chat` | A list of players. `size of chat recipients` works. |
 

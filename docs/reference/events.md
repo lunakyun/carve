@@ -426,16 +426,16 @@ Since **unreleased** · Guide: [events-items](../syntax/events-items.md)
 
 ```carve
 on damage
-on damage of player
+on damage of %entity type%
 on player damage
 ```
 
-A player takes damage. Has `damage`, `attacker` (`<none>` for mobs and falls) and `victim`. Can be cancelled.
+A player or mob takes damage. `on damage of player` / `on damage of zombie` run for that victim type only. Has `damage` (settable), `damage cause`, `attacker` (a player or entity, `<none>` for falls and the like) and `victim`; `player` is `<none>` when the victim is a mob. Can be cancelled.
 
 ```carve
-on damage:
-    if damage > 10:
-        cancel event
+on damage of zombie:
+    if attacker is a player:
+        add 2 to damage
 ```
 
 Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
@@ -448,7 +448,7 @@ on death of player
 on player death
 ```
 
-A player dies. Has `player` and `victim`; `attacker` is always `<none>` here. Cancelling stops Pumpkin's death handling but leaves 0 health.
+A player dies. Has `player`, `victim`, `death message` (settable) and `attacker`: the last player or entity that hit them in the 5 seconds before, else `<none>`. Cancelling stops Pumpkin's death handling but leaves 0 health.
 
 ```carve
 on death of player:

@@ -16,17 +16,17 @@ event needs an in-game check. ⛔ items depend on Bukkit plugins (WorldGuard, Va
 
 | Category | Total | ✅ | 🟡 | ⬜ | ⛔ |
 |---|--:|--:|--:|--:|--:|
-| Events | 186 | 106 | 42 | 1 | 37 |
+| Events | 186 | 107 | 41 | 1 | 37 |
 | Effects | 154 | 39 | 25 | 26 | 64 |
 | Conditions | 170 | 38 | 22 | 74 | 36 |
-| Expressions | 547 | 165 | 85 | 112 | 185 |
+| Expressions | 547 | 167 | 83 | 112 | 185 |
 | Sections | 11 | 6 | 2 | 3 | 0 |
 | Structures | 8 | 5 | 3 | 0 | 0 |
 | Functions | 45 | 37 | 5 | 0 | 3 |
 | Types | 126 | 78 | 26 | 6 | 16 |
-| **All** | **1247** | **474** | **210** | **222** | **341** |
+| **All** | **1247** | **477** | **207** | **222** | **341** |
 
-Counting 🟡 as half, Carve covers about **46%** of core Skript by entry count.
+Counting 🟡 as half, Carve covers about **47%** of core Skript by entry count.
 Leaving out the ⛔ entries that Pumpkin does not allow, it covers about **64%** of what can be done on Pumpkin.
 By real-world use the number is much higher: the common core (events, variables, loops, conditions,
 functions, commands) is mostly done, and most ⬜ entries are niche (pandas, brewing stands, loot tables).
@@ -114,8 +114,8 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ On Consume ⭐
 - 🟡 On Craft — recipe id only
 - ⛔ On Creeper Power — Pumpkin never fires it
-- 🟡 On Damage — players only; `damage`, `attacker`, `victim`; can't change the damage
-- 🟡 On Death — players only; no attacker or death message
+- ✅ On Damage — any living entity, `on damage of <type>`; `damage` (settable), `attacker`, `victim`
+- 🟡 On Death — players only (Carve has no mob death trigger yet); `attacker` from the last hit within 5 seconds, settable `death message`
 - 🟡 On Dispense — `event-location`, `event-item` (name); the item can't be changed
 - ✅ On Drop ⭐
 - ✅ On Egg Throw — `event-boolean` hatching, `event-number` hatches, `event-text` type
@@ -627,7 +627,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Arrows Stuck — needs the arrow-body-count-change event wired; not done yet
 - ⛔ Attack Cooldown — the plugin API has no attack cooldown
 - ✅ Attacked — `victim`
-- 🟡 Attacker — players only
+- ✅ Attacker — the attacking player or entity; in `on death` the last hit within 5 seconds
 - ⛔ Banner Pattern — the banner block entity API has no patterns
 - ⛔ Banner Pattern Item — the banner block entity API has no patterns
 - ⛔ Banner Patterns — the banner block entity API has no patterns
@@ -697,7 +697,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Cursor Slot
 - 🟡 Custom Chest Inventory ⭐ — `open chest with N rows [named "x"] to player`, then `set slot`; no inventory value you can fill first and open later
 - 🟡 Custom Model Data — get, set and reset on `player's tool` only
-- ✅ Damage — read only
+- ✅ Damage — settable: `set damage to`, `add ... to damage`, `remove ... from damage`
 - ⬜ Damage Amount of World Border
 - ⬜ Damage Buffer of World Border
 - 🟡 Damage Cause — `damage cause` in `on damage` (read only, like `fall`, `player_attack`)
@@ -712,7 +712,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Damaged Item
 - ✅ Date Ago/Later ⭐ — `5 minutes ago`, `2 hours later`
 - ⛔ De-queue Queue (Experimental) — Carve has no queue type
-- 🟡 Death Message ⭐ — `death message` in `on death` (read only; WIT lets us read it)
+- ✅ Death Message ⭐ — `death message` in `on death`; `set death message to "..."` with colors
 - ⛔ Debug Info — Skript internals only, no meaning in Carve
 - ✅ Default Value — `a ? b`
 - ✅ Difference — `difference between 3 and 10`, also dates and timespans

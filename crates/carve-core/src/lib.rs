@@ -5,6 +5,7 @@ pub mod admin;
 pub mod block_ops;
 pub mod blocks;
 pub mod colors;
+pub mod combat;
 pub mod compile;
 pub mod docs_meta;
 pub mod engine;

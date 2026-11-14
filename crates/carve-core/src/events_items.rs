@@ -114,12 +114,13 @@ pub const NAMES: &str =
 /// Splits `spawn of zombie` and `gamemode change to creative` into the event
 /// name and a filter `(what, text)`. Other names come back unchanged.
 pub fn split_filter(ev: &str) -> (&str, Option<(&'static str, String)>) {
-    for (what, marker) in [("entity", " of "), ("mode", " to ")] {
+    for (what, marker) in [("entity", " of "), ("mode", " to "), ("victim", " of ")] {
         let Some(i) = ev.find(marker) else { continue };
         let base = ev.get(..i).unwrap_or(ev).trim();
         let rest = ev.get(i + marker.len()..).unwrap_or("").trim();
         let right_base = match what {
             "entity" => base.ends_with("spawn"),
+            "victim" => base == "damage",
             _ => base.ends_with("change") && base.contains("game"),
         };
         if right_base && !rest.is_empty() {
@@ -134,6 +135,7 @@ pub fn filter_ok(k: EventKind, what: &str) -> bool {
     match what {
         "with" | "on" => matches!(k, EventKind::Click | EventKind::RightClick | EventKind::LeftClick),
         "entity" => k == EventKind::MobSpawn,
+        "victim" => k == EventKind::Damage,
         "mode" => k == EventKind::GamemodeChange,
         "prefix" => k == EventKind::Ext4(crate::w2_events_4::ExtEvent::PlaceholderRequest),
         "command" => k == EventKind::Mv(crate::w4_events_movement::MvEvent::Command),
@@ -154,6 +156,14 @@ pub fn filter_rhs(what: &str, text: &str) -> Option<Expr> {
             t.replace(' ', "_")
         }
         "mode" => crate::gamemode::normalize(t)?.to_string(),
+        "victim" => {
+            let t = t
+                .strip_prefix("a ")
+                .or_else(|| t.strip_prefix("an "))
+                .unwrap_or(t);
+            let t = t.strip_prefix("minecraft:").unwrap_or(t);
+            crate::entities::kind_of(&t.replace(' ', "_"))?.to_string()
+        }
         "prefix" => t.to_ascii_lowercase(),
         _ => return None,
     };
@@ -164,6 +174,7 @@ pub fn filter_rhs(what: &str, text: &str) -> Option<Expr> {
 pub fn filter_lhs(what: &str) -> Option<Expr> {
     match what {
         "entity" => Some(Expr::EventVal(EventVal::Entity)),
+        "victim" => Some(crate::entities::victim_type()),
         "mode" => Some(Expr::EventVal(EventVal::NewMode)),
         "prefix" => Some(Expr::Ev4Val(2)),
         _ => None,

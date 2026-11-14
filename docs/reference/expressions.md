@@ -195,11 +195,11 @@ attacker
 victim
 ```
 
-In `on damage` and `on death`: the damage of the hit, the attacking player and the hurt player.
+In `on damage` and `on death`: the damage of the hit, the attacking player or entity and the hurt player or entity. `attacker is a zombie`, `type of attacker` and `name of attacker` (the custom name, else the type) work on entities.
 
 ```carve
 on damage:
-    if attacker is set:
+    if attacker is a player:
         send "%attacker% hit you for %damage%" to victim
 ```
 

@@ -438,7 +438,7 @@ impl Expr {
                 crate::weather_time::WtKind::Gamerule(_) => Ty::Object,
             },
             Expr::Distance(..) | Expr::Random(..) | Expr::Damage => Ty::Number,
-            Expr::Attacker => Ty::Player,
+            Expr::Attacker => Ty::Object,
             Expr::Ev2Val(s) => s.ty(),
             Expr::Ev4Val(_) => Ty::Object,
             Expr::Math(..) | Expr::ParseNum(_) => Ty::Number,
@@ -1846,6 +1846,9 @@ impl P<'_> {
                     )),
                     "me" | "myself" => Ok(Expr::Player),
                     "player" => Ok(Expr::Player),
+                    "victim" if self.env.has_damage && self.env.has_attacker && !self.env.in_function => {
+                        Ok(Self::x2(W2Op::Victim, Vec::new()))
+                    }
                     "victim" if self.env.has_damage || self.env.has_attacker => Ok(Expr::Player),
                     "damage" | "event-number" if self.env.has_damage && !self.env.in_function => {
                         Ok(Expr::Damage)

@@ -6,8 +6,8 @@ on load:
     if {spawn} is not set:
         set {spawn} to location(0, 64, 0)
 
-on damage:
-    if attacker is set:
+on damage of player:
+    if attacker is a player:
         if distance between victim and {spawn} < {@safe-radius}:
             cancel event
             send "&cNo fighting near spawn." to attacker

@@ -88,6 +88,7 @@ impl Engine {
                 }
             }
             W2Op::DeathMessage => ex.ctx.death_message.clone().map_or(Value::None, Value::Text),
+            W2Op::Victim => crate::combat::victim(ex, host),
             W2Op::DamageCause => ex.ctx.damage_cause.clone().map_or(Value::None, Value::Text),
             W2Op::ChatRecipients => match &ex.ctx.recipients {
                 Some(r) => Value::List(r.iter().cloned().map(Value::Player).collect()),
