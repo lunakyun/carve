@@ -29,6 +29,8 @@ pub enum EventKind {
     SneakToggle,
     SprintToggle,
     FlightToggle,
+    /// Events of `w2_events_4`.
+    Ext(crate::w2_events_4::ExtEvent),
 }
 
 impl EventKind {
@@ -49,6 +51,7 @@ impl EventKind {
             EventKind::SneakToggle => "sneak toggle",
             EventKind::SprintToggle => "sprint toggle",
             EventKind::FlightToggle => "flight toggle",
+            EventKind::Ext(e) => e.name(),
         }
     }
 
@@ -74,13 +77,16 @@ impl EventKind {
             "sneak toggle" | "toggle sneak" | "player toggle sneak" => EventKind::SneakToggle,
             "sprint toggle" | "toggle sprint" | "player toggle sprint" => EventKind::SprintToggle,
             "flight toggle" | "toggle flight" | "player toggle flight" => EventKind::FlightToggle,
-            _ => return None,
+            _ => return crate::w2_events_4::ExtEvent::parse(s).map(EventKind::Ext),
         })
     }
 
     /// Whether `cancel event` means anything here.
     pub fn cancellable(self) -> bool {
-        !matches!(self, EventKind::Respawn | EventKind::Load)
+        match self {
+            EventKind::Ext(e) => e.cancellable(),
+            _ => !matches!(self, EventKind::Respawn | EventKind::Load),
+        }
     }
 }
 
@@ -229,6 +235,8 @@ pub enum Effect {
     SetGamemode(Expr, Expr),
     /// Experience change; the two expressions are in pattern order.
     Xp(crate::xp_level::XpOp, Expr, Expr),
+    /// Effects of `w2_events_4`.
+    Ext(Box<crate::w2_events_4::ExtEffect>),
     Kill(Expr),
     Teleport(Expr, Expr, Expr, Expr),
     TeleportTo(Expr, Expr),
@@ -1180,6 +1188,19 @@ impl Cx<'_> {
         if self.call_stmt(num, &toks) {
             return;
         }
+        if self.env.ext.is_some() {
+            match crate::w2_events_4::parse_effect(&toks, &self.env) {
+                Some(Ok(eff)) => {
+                    self.emit(Instr::Eff(eff), num);
+                    return;
+                }
+                Some(Err(e)) => {
+                    self.err(num, e);
+                    return;
+                }
+                None => {}
+            }
+        }
         let ops_first = toks.first().is_some_and(|t| t.is_lit("sort"))
             || (toks.first().is_some_and(|t| t.is_lit("set"))
                 && toks.get(3..).is_some_and(|r| crate::list_ops::looks_like_list_op(r, &self.env)));
@@ -2002,13 +2023,23 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                 has_message: k == EventKind::Chat,
                 arg_types: vec![],
                 trigger_name: format!("'on {}'", k.name()),
-                no_player: k == EventKind::Load,
+                no_player: k == EventKind::Load || matches!(k, EventKind::Ext(e) if !e.has_player()),
+                ext: if let EventKind::Ext(e) = k { Some(e) } else { None },
                 has_damage: k == EventKind::Damage,
                 has_attacker: matches!(k, EventKind::Damage | EventKind::Death),
                 has_block: matches!(k, EventKind::Click | EventKind::RightClick | EventKind::LeftClick),
                 ..Env::default()
             };
             click_filters.extend(filters);
+            (TriggerKind::Event(k), &top.children, env, false)
+        } else if let Some(minute) = crate::w2_events_4::parse_at_real_time(&lower) {
+            let k = EventKind::Ext(crate::w2_events_4::ExtEvent::SystemTime(minute));
+            let env = Env {
+                trigger_name: format!("'at {:02}:{:02} in real time'", minute / 60, minute % 60),
+                no_player: true,
+                ext: Some(crate::w2_events_4::ExtEvent::SystemTime(minute)),
+                ..Env::default()
+            };
             (TriggerKind::Event(k), &top.children, env, false)
         } else if let Some(rest) = lower.strip_prefix("every ") {
             let Some(ticks) = parse_every(rest) else {

@@ -188,3 +188,5 @@ The timer counts server ticks from when the plugin loaded (20 ticks = 1
 second). A `wait` inside `every` doesn't delay the next round; rounds can
 overlap if the wait is longer than the period.
 
+More events (server list ping, sign change, vehicles, worlds, weather, smelting and
+more) are in [w2-events-4.md](w2-events-4.md).

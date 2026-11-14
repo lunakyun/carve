@@ -152,6 +152,8 @@ pub enum CommandOutcome {
 #[derive(Debug, Clone, PartialEq)]
 pub struct FireOutcome {
     pub cancelled: bool,
+    /// Values changed with `set event-<name> to ...` (slot, new value).
+    pub set: Vec<(u8, Value)>,
 }
 
 /// One running loop. Items are a snapshot taken when the loop starts.
@@ -347,6 +349,8 @@ pub struct Engine {
     pub errors: Vec<ScriptError>,
     /// Per-trigger run times while `/carve timings on`.
     pub timings: Option<BTreeMap<String, Timing>>,
+    /// Event values changed by the run in progress (`w2_events_4`).
+    ext_out: Vec<(u8, Value)>,
 }
 
 impl Default for Engine {
@@ -434,6 +438,7 @@ impl Engine {
             sources: BTreeMap::new(),
             errors: Vec::new(),
             timings: None,
+            ext_out: Vec::new(),
         }
     }
 
@@ -550,6 +555,7 @@ impl Engine {
     pub fn fire(&mut self, kind: EventKind, ctx: EventCtx, host: &mut dyn Host) -> FireOutcome {
         let table = self.table.clone();
         let mut cancelled = false;
+        self.ext_out.clear();
         let trigs = table.events.get(&kind).map(Vec::as_slice).unwrap_or_default();
         let mut ctx = Some(ctx);
         for (i, trig) in trigs.iter().enumerate() {
@@ -565,7 +571,10 @@ impl Engine {
                 cancelled |= c;
             }
         }
-        FireOutcome { cancelled }
+        FireOutcome {
+            cancelled,
+            set: std::mem::take(&mut self.ext_out),
+        }
     }
 
     /// Run a script command. `raw_args` is everything after the command name.
@@ -1567,6 +1576,7 @@ impl Engine {
                 },
                 None => Value::None,
             },
+            Expr::EventVal(i) => ex.ctx.args.get(usize::from(*i)).cloned().unwrap_or(Value::None),
             Expr::Arg(i) => ex.ctx.args.get(i.wrapping_sub(1)).cloned().unwrap_or(Value::None),
             Expr::NameOf(inner) => {
                 let v = self.eval(inner, ex, host)?;
@@ -1879,6 +1889,17 @@ impl Engine {
                     host.set_gamemode(&p, mode);
                 }
             }
+            Effect::Ext(x) => match &**x {
+                crate::w2_events_4::ExtEffect::SetVal(i, e) => {
+                    let v = self.eval(e, ex, host)?;
+                    let i = usize::from(*i);
+                    if ex.ctx.args.len() <= i {
+                        ex.ctx.args.resize(i + 1, Value::None);
+                    }
+                    ex.ctx.args[i] = v.clone();
+                    self.ext_out.push((i as u8, v));
+                }
+            },
             Effect::Xp(op, a, b) => {
                 let (pe, ne) = if op.num_first { (b, a) } else { (a, b) };
                 let n = self.num(ne, ex, host)?;
