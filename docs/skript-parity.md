@@ -361,7 +361,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Play Dead
 - ⬜ Play Effect
 - ⬜ Play or Draw an Effect ⭐
-- ⬜ Play Sound ⭐
+- 🟡 Play Sound ⭐ (volume, pitch, location, via `playsound`; no categories)
 - ⬜ Player Info Visibility
 - ⬜ Player Visibility
 - ⬜ Poison/Cure
@@ -391,7 +391,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Spawn ⭐
 - ⬜ Sprinting
 - ⬜ Stop Server
-- ⬜ Stop Sound ⭐
+- 🟡 Stop Sound ⭐ (one sound or all, via `stopsound`; no categories)
 - ⬜ Strider Shivering
 - ⬜ Suppress Type Hints (Experimental)
 - ⬜ Swing Hand
