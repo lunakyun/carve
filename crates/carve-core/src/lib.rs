@@ -11,6 +11,7 @@ pub mod host;
 pub mod items;
 pub mod lexer;
 pub mod pattern;
+pub mod text_case_substring;
 pub mod value;
 pub mod vars;
 

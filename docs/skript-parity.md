@@ -661,7 +661,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Brushing Stage
 - ⬜ Buried Item
 - ⬜ Burn/Cook Time
-- ⬜ Case Text ⭐
+- ✅ Case Text ⭐ — `uppercase of x`, `x in lower case`, `capitalized x`, `x in proper case`
 - ⬜ Center of World Border
 - ⬜ Character Codepoint
 - ⬜ Character from Codepoint
@@ -817,7 +817,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Hover List
 - ⬜ Humidity
 - ⬜ Id
-- ⬜ Index Of
+- ✅ Index Of — `[first|last] index of a in b`
 - ⬜ Indices of List ⭐
 - ⬜ Indices of Value
 - ⬜ Infinity
@@ -923,7 +923,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ NaN
 - ⬜ Nearest Entity
 - ⬜ Negative Infinity
-- ⬜ New Line ⭐
+- ✅ New Line ⭐ — `nl`, `new line`
 - ⬜ New Potion Effect
 - ⬜ No Damage Ticks
 - ⬜ No Damage Time
@@ -1044,7 +1044,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Stored Enchantments
 - ⬜ String Colors
 - ⬜ Style
-- ⬜ Substring ⭐
+- ✅ Substring ⭐ — `substring of x from a to b`, `first N characters of x`, `last N characters of x`, `character at index N of x`
 - ⬜ Tab List Name
 - ⬜ Tablisted Players
 - ⬜ Tag
