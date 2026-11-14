@@ -274,7 +274,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Cancel Command Cooldown
 - ⬜ Cancel Drops
 - ✅ Cancel Event — before the first wait
-- 🟡 Change: Set/Add/Remove/Remove All/Delete/Reset ⭐ — set/add/remove/delete on variables and lists; no `remove all`, `reset`, or changing other expressions (health is separate)
+- 🟡 Change: Set/Add/Remove/Remove All/Delete/Reset ⭐ — set/add/remove/delete on variables and lists, including list literals like `set {x::*} to 1, 2 and 3`; no `remove all`, `reset`, or changing other expressions (health is separate)
 - ⬜ Charge Creeper
 - ⬜ Charge Entity
 - ⬜ Clear Entity Storage
@@ -436,7 +436,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Chance — `chance of 25%`
 - ⬜ Changed Sign Side
 - ✅ Comparison — is, is not, <, >, <=, >=, between, `is a or b`
-- 🟡 Contains — text, lists, inventories
+- ✅ Contains — text, lists, inventories
 - ⬜ Contains (Property)
 - ⬜ Damage Cause
 - ⬜ Damage Source - Does Scale With Difficulty
@@ -732,7 +732,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Dropped Item Thrower
 - ⬜ Drops
 - ⬜ Drops Of Block
-- ⬜ Elements
+- 🟡 Elements — `first element of`, `last element of`, `element N of {list::*}`; no `first N elements`
 - ⬜ Enchant Item
 - ⬜ Enchanting Experience Cost
 - ⬜ Enchantment Bonus
@@ -818,7 +818,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Humidity
 - ⬜ Id
 - ⬜ Index Of
-- ⬜ Indices of List ⭐
+- ✅ Indices of List ⭐ — `indices of {list::*}`, also in `loop` and `set`
 - ⬜ Indices of Value
 - ⬜ Infinity
 - ⬜ Initiator Inventory
@@ -929,7 +929,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ No Damage Time
 - ⬜ Node
 - ⬜ Now ⭐
-- 🟡 Number Of — lists only
+- ✅ Number Of — `number of {list::*}` (also `size of`, `amount of`)
 - ⬜ Number of Characters
 - ⬜ Numbers
 - ⬜ Offline players ⭐

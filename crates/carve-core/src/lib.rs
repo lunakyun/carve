@@ -10,6 +10,7 @@ pub mod expr;
 pub mod host;
 pub mod items;
 pub mod lexer;
+pub mod list_literals;
 pub mod pattern;
 pub mod value;
 pub mod vars;
