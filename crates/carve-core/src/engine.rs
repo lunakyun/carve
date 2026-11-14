@@ -198,6 +198,7 @@ impl LoopFrame {
 
 /// `a, b and c`, like Skript prints a list.
 mod list_eval;
+mod w2e3;
 
 fn join_list(items: &[(String, Value)], out: &mut String) {
     if items.is_empty() {
@@ -2127,6 +2128,8 @@ impl Engine {
             }
             Effect::SetList(v, s) => self.exec_set_list(v, s, ex, host)?,
             Effect::SortList(v, desc) => self.exec_sort_list(v, *desc, ex, host)?,
+            Effect::W2(w) => self.exec_w2(w, ex, host)?,
+            Effect::W2Transform(t) => self.exec_transform(t, ex, host)?,
             Effect::Delete(v) => {
                 let k = self.key(v, ex, host)?;
                 if v.local {

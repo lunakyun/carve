@@ -225,6 +225,8 @@ pub enum Effect {
     },
     Heal(Expr),
     Hf(Box<crate::health_food::HfEffect>),
+    W2(Box<crate::w2_effects_3::W2Eff>),
+    W2Transform(Box<crate::w2_effects_3::Transform>),
     SetHealth(Expr, Expr),
     SetGamemode(Expr, Expr),
     /// Experience change; the two expressions are in pattern order.
@@ -354,6 +356,7 @@ pub enum EffKind {
     Broadcast,
     Heal,
     Hf(crate::health_food::HfOp),
+    W2(crate::w2_effects_3::W2Op),
     SetHealth,
     SetGamemode,
     Xp(crate::xp_level::XpOp),
@@ -539,6 +542,11 @@ fn registry() -> &'static Registry {
                     .iter()
                     .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
             )
+            .chain(
+                crate::w2_effects_3::EFFECT_PATTERNS
+                    .iter()
+                    .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
+            )
             .collect(),
         conditions: crate::senders::SENDER_CONDITION_PATTERNS
             .iter()
@@ -559,6 +567,7 @@ pub fn check_registry() -> Result<(), String> {
         .chain(crate::sounds::SOUND_PATTERNS)
         .chain(TEXT_EFFECT_PATTERNS)
         .chain(crate::health_food::EFFECT_PATTERNS)
+        .chain(crate::w2_effects_3::EFFECT_PATTERNS)
     {
         Pattern::new(s, *k)?;
     }
@@ -1183,7 +1192,9 @@ impl Cx<'_> {
         let ops_first = toks.first().is_some_and(|t| t.is_lit("sort"))
             || (toks.first().is_some_and(|t| t.is_lit("set"))
                 && toks.get(3..).is_some_and(|r| crate::list_ops::looks_like_list_op(r, &self.env)));
-        let parsed = if ops_first {
+        let parsed = if let Some(t) = crate::w2_effects_3::parse_transform(&toks, &self.env) {
+            Some(t)
+        } else if ops_first {
             crate::list_ops::parse_effect(&toks, &self.env)
                 .or_else(|| crate::list_literals::parse_list_effect(&toks, &self.env))
         } else {
@@ -1254,6 +1265,7 @@ impl Cx<'_> {
             .iter()
             .chain(TEXT_EFFECT_PATTERNS)
             .chain(crate::health_food::EFFECT_PATTERNS)
+            .chain(crate::w2_effects_3::EFFECT_PATTERNS)
             .map(|(s, _)| *s)
             .collect();
         let mut e = ScriptError::new(
@@ -1448,6 +1460,7 @@ fn build_effect(kind: EffKind, mut c: Vec<Option<Capture>>) -> Option<Effect> {
         },
         EffKind::Broadcast => Effect::Broadcast(take_expr(c, 0)?),
         EffKind::Hf(op) => return crate::health_food::build(op, c),
+        EffKind::W2(op) => return crate::w2_effects_3::build(op, c),
         EffKind::Heal => Effect::Heal(take_expr(c, 0)?),
         EffKind::SetHealth => Effect::SetHealth(take_expr(c, 0)?, take_expr(c, 1)?),
         EffKind::SetGamemode => Effect::SetGamemode(take_expr(c, 0)?, take_expr(c, 1)?),
