@@ -198,6 +198,7 @@ impl LoopFrame {
 
 /// `a, b and c`, like Skript prints a list.
 mod list_eval;
+mod w5_eval;
 
 fn join_list(items: &[(String, Value)], out: &mut String) {
     if items.is_empty() {
@@ -347,6 +348,7 @@ pub struct Engine {
     pub errors: Vec<ScriptError>,
     /// Per-trigger run times while `/carve timings on`.
     pub timings: Option<BTreeMap<String, Timing>>,
+    w5: crate::w2_expressions_5::State,
 }
 
 impl Default for Engine {
@@ -434,6 +436,7 @@ impl Engine {
             sources: BTreeMap::new(),
             errors: Vec::new(),
             timings: None,
+            w5: Default::default(),
         }
     }
 
@@ -1617,12 +1620,13 @@ impl Engine {
             }
             Expr::ParseNum(e) => {
                 let t = self.text(e, ex, host)?;
-                t.trim()
-                    .parse::<f64>()
-                    .ok()
-                    .filter(|n| n.is_finite())
-                    .map(Value::Num)
-                    .unwrap_or(Value::None)
+                match t.trim().parse::<f64>().ok().filter(|n| n.is_finite()) {
+                    Some(n) => Value::Num(n),
+                    None => {
+                        self.w5.last_parse_error = Some(format!("'{t}' is not a number"));
+                        Value::None
+                    }
+                }
             }
             Expr::Join(v, sep) => {
                 let items = self.list_items(v, ex, host)?;
@@ -1669,6 +1673,7 @@ impl Engine {
                 _ => Value::None,
             },
             Expr::Items(s) => Value::List(self.eval_list(s, ex, host)?),
+            Expr::W5(w) => self.eval_w5(w, ex, host)?,
             Expr::ListAgg(a, s) => self.eval_agg(*a, s, ex, host)?,
             Expr::RandomOf(v) => {
                 let items = self.list_items(v, ex, host)?;
@@ -1879,6 +1884,7 @@ impl Engine {
                     host.set_gamemode(&p, mode);
                 }
             }
+            Effect::W5(w) => self.run_w5_effect(w, ex, host)?,
             Effect::Xp(op, a, b) => {
                 let (pe, ne) = if op.num_first { (b, a) } else { (a, b) };
                 let n = self.num(ne, ex, host)?;

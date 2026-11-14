@@ -170,6 +170,22 @@ pub trait Host {
         }
     }
 
+    /// Time of day in ticks for a world. `None` when the world is unknown.
+    fn world_time(&mut self, _world: &str) -> Option<u64> {
+        None
+    }
+
+    /// The name shown in the player list (tab list), `None` when not set.
+    fn list_name(&mut self, _player: &PlayerRef) -> Option<String> {
+        None
+    }
+
+    /// Set the player list name, or `None` to go back to the player's name.
+    fn set_list_name(&mut self, _player: &PlayerRef, _name: Option<&str>) {}
+
+    /// Sort order in the player list.
+    fn set_list_order(&mut self, _player: &PlayerRef, _order: i32) {}
+
     /// Hurt the player. The default lowers health and kills at zero.
     fn damage(&mut self, player: &PlayerRef, amount: f64) {
         if let Some(h) = self.health(player) {

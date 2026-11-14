@@ -409,6 +409,26 @@ impl WasmHost<'_> {
         }
     }
 
+    fn world_time(&mut self, world: &str) -> Option<u64> {
+        Some(self.server.get_world_by_name(world)?.get_time_of_day())
+    }
+
+    fn list_name(&mut self, p: &PlayerRef) -> Option<String> {
+        self.get(p)?.get_tab_list_name().map(|t| t.get_text())
+    }
+
+    fn set_list_name(&mut self, p: &PlayerRef, name: Option<&str>) {
+        if let Some(pl) = self.get(p) {
+            pl.set_tab_list_name(name.map(text));
+        }
+    }
+
+    fn set_list_order(&mut self, p: &PlayerRef, order: i32) {
+        if let Some(pl) = self.get(p) {
+            pl.set_tab_list_order(order);
+        }
+    }
+
     fn damage(&mut self, p: &PlayerRef, amount: f64) {
         if let Some(pl) = self.get(p) {
             pl.damage(amount as f32, DamageType::Generic);
@@ -469,6 +489,10 @@ impl Host for TickHost<'_, '_> {
         vital(p: &PlayerRef, v: Vital) -> Option<f64>;
         set_vital(p: &PlayerRef, v: Vital, value: f64);
         damage(p: &PlayerRef, amount: f64);
+        world_time(world: &str) -> Option<u64>;
+        list_name(p: &PlayerRef) -> Option<String>;
+        set_list_name(p: &PlayerRef, name: Option<&str>);
+        set_list_order(p: &PlayerRef, order: i32);
     }
 
     fn schedule_wait(&mut self, ticks: u64, token: u64) {

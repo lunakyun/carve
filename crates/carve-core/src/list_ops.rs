@@ -86,7 +86,7 @@ pub fn looks_like_list_op(toks: &[Tok], env: &Env) -> bool {
             return true;
         }
     }
-    toks.iter().any(|t| t.is_lit("where"))
+    crate::w2_expressions_5::is_numbers_loop(toks) || toks.iter().any(|t| t.is_lit("where"))
 }
 
 impl Cur<'_> {
