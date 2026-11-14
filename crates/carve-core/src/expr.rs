@@ -129,6 +129,8 @@ pub enum Expr {
     Attacker,
     /// `clicked block` in click events (an item value of the block type).
     ClickedBlock,
+    /// `event-block`, `event-location`, ...: the nth value of `EventCtx::ev`.
+    EventVal(u8),
     /// `a ? b`: a, or b when a is not set.
     Default(Box<Expr>, Box<Expr>),
     /// `floor(x)`, `max(a, b)`, ...
@@ -312,6 +314,8 @@ pub struct Env {
     pub has_damage: bool,
     pub has_attacker: bool,
     pub has_block: bool,
+    /// `event-...` values of the current trigger (see `w2_events_1`).
+    pub ev_fields: &'static [(&'static str, Ty)],
 }
 
 impl Expr {
@@ -351,6 +355,7 @@ impl Expr {
                 if x == y { x } else { Ty::Object }
             }
             Expr::ClickedBlock => Ty::Item,
+            Expr::EventVal(i) => env.ev_fields.get(usize::from(*i)).map_or(Ty::Object, |f| f.1),
             Expr::LoopValue(d) => match env.loops.get(*d) {
                 Some(LoopKind::Times) => Ty::Number,
                 Some(LoopKind::Players) => Ty::Player,
@@ -917,6 +922,13 @@ impl P<'_> {
                     "damage" if self.env.has_damage && !self.env.in_function => Ok(Expr::Damage),
                     "attacker" | "damager" if self.env.has_attacker && !self.env.in_function => {
                         Ok(Expr::Attacker)
+                    }
+                    w if w.starts_with("event-")
+                        && !self.env.in_function
+                        && crate::w2_events_1::field_index(self.env.ev_fields, w).is_some() =>
+                    {
+                        let i = crate::w2_events_1::field_index(self.env.ev_fields, w).map_or(0, |f| f.0);
+                        Ok(Expr::EventVal(i))
                     }
                     "clicked" | "event-block"
                         if self.env.has_block

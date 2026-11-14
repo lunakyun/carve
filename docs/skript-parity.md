@@ -71,54 +71,54 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 
 ## Events (185)
 
-- ⬜ At Time
-- ⬜ On Anvil Damage
-- ⬜ On Anvil Prepare
-- ⬜ On AoE Cloud Effect
-- ⬜ On Arm Swing
-- ⬜ On Armor Change
-- ⬜ On Attempt Attack
-- ⬜ On Bat Toggle Sleep
-- ⬜ On Beacon Change Effect
-- ⬜ On Beacon Effect
-- ⬜ On Beacon Toggle
-- ⬜ On Bed Enter
-- ⬜ On Bed Leave
-- ⬜ On Bell Resonate
-- ⬜ On Bell Ring
-- ⬜ On Block Damage
-- ⬜ On Block Drop
-- ⬜ On Block Fertilize
-- ⬜ On Block Growth
-- ⬜ On Book Edit
-- ⬜ On Book Sign
+- 🟡 At Time — `at 18:00:`, `at 6pm:`, `at noon:`; first world only, no `in world`
+- ⛔ On Anvil Damage — Pumpkin has no anvil damage event
+- 🟡 On Anvil Prepare — `event-text` (rename), `event-number` (cost); no result item, can't cancel
+- ⛔ On AoE Cloud Effect — Pumpkin never fires the area effect cloud event
+- ✅ On Arm Swing — `event-text` is the animation type
+- ⛔ On Armor Change — no armor change event in the plugin API
+- ⛔ On Attempt Attack — no pre-attack event in the plugin API
+- ⛔ On Bat Toggle Sleep — Pumpkin never fires it
+- ⛔ On Beacon Change Effect — Pumpkin has no beacon events
+- ⛔ On Beacon Effect — Pumpkin has no beacon events
+- ⛔ On Beacon Toggle — Pumpkin has no beacon events
+- ✅ On Bed Enter — `event-location` is the bed
+- ✅ On Bed Leave — can't be cancelled
+- ⛔ On Bell Resonate — Pumpkin never fires it
+- 🟡 On Bell Ring — `event-location`, `event-number` (entity id), `event-text` (direction); no player
+- ✅ On Block Damage — `event-location`, `event-boolean` (instant break)
+- 🟡 On Block Drop — first dropped item as `event-item`, stack count as `event-number`
+- ✅ On Block Fertilize — `event-number` is the changed block count
+- ✅ On Block Growth — `event-block` new, `event-old-block` old
+- 🟡 On Book Edit — `event-text` title, `event-number` slot, `event-pages` joined by new lines
+- 🟡 On Book Sign — same values as book edit
 - ✅ On Break / Mine — `on break`
-- ⬜ On Brewing Complete
-- ⬜ On Brewing Fuel
-- ⬜ On Brewing Start
-- ⬜ On Broadcast
-- ⬜ On Bucket Catch Entity
-- ⬜ On Bucket Empty
-- ⬜ On Bucket fill
-- ⬜ On Burn
-- ⬜ On Can Build Check
+- ✅ On Brewing Complete — `event-number` is the fuel level
+- ✅ On Brewing Fuel — `event-number` is the fuel power
+- ✅ On Brewing Start — `event-number` is the brewing time in ticks
+- ✅ On Broadcast — `event-text` message, `event-sender`; no player
+- 🟡 On Bucket Catch Entity — `event-item` bucket, `event-number` entity id
+- ✅ On Bucket Empty — `event-location`, `event-item`
+- ✅ On Bucket fill — `event-location`, `event-item`
+- ✅ On Burn — `event-block` burned, `event-igniting-block`
+- 🟡 On Can Build Check — cancel means not buildable; no `set` of the boolean
 - ✅ On Chat — `message`, cancellable
-- ⬜ On Chunk Generate
-- ⬜ On Chunk Load
-- ⬜ On Chunk Unload
+- ✅ On Chunk Generate — `event-chunk-x`, `event-chunk-z`
+- ⛔ On Chunk Load — Pumpkin never fires the chunk load event
+- ✅ On Chunk Unload — `event-chunk-x`, `event-chunk-z`
 - 🟡 On Click — left/right, `with`/`on` filters; no entity clicks
-- ⬜ On Combust
+- 🟡 On Combust — `event-number` entity id, `event-timespan`; the entity is not a value yet
 - ⬜ On Command ⭐
-- ⬜ On Connect
+- ✅ On Connect — cancel refuses the login
 - ⬜ On Consume ⭐
 - ⬜ On Craft
-- ⬜ On Creeper Power
+- ⛔ On Creeper Power — Pumpkin never fires it
 - 🟡 On Damage — players only; `damage`, `attacker`, `victim`; can't change the damage
 - 🟡 On Death — players only; no attacker or death message
-- ⬜ On Dispense
+- 🟡 On Dispense — `event-location`, `event-item` (name); the item can't be changed
 - ⬜ On Drop ⭐
-- ⬜ On Egg Throw
-- ⬜ On Elytra Boost
+- ✅ On Egg Throw — `event-boolean` hatching, `event-number` hatches, `event-text` type
+- ✅ On Elytra Boost — `event-number` is the firework entity id
 - ⬜ On Enchant
 - ⬜ On Enchant Prepare
 - ⬜ On Enderman Enrage

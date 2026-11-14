@@ -29,6 +29,8 @@ pub enum EventKind {
     SneakToggle,
     SprintToggle,
     FlightToggle,
+    /// Events and `at <time>:` triggers of `w2_events_1`.
+    Ext(crate::w2_events_1::ExtEvent),
 }
 
 impl EventKind {
@@ -49,6 +51,7 @@ impl EventKind {
             EventKind::SneakToggle => "sneak toggle",
             EventKind::SprintToggle => "sprint toggle",
             EventKind::FlightToggle => "flight toggle",
+            EventKind::Ext(e) => e.name(),
         }
     }
 
@@ -74,13 +77,16 @@ impl EventKind {
             "sneak toggle" | "toggle sneak" | "player toggle sneak" => EventKind::SneakToggle,
             "sprint toggle" | "toggle sprint" | "player toggle sprint" => EventKind::SprintToggle,
             "flight toggle" | "toggle flight" | "player toggle flight" => EventKind::FlightToggle,
-            _ => return None,
+            _ => return crate::w2_events_1::ExtEvent::parse(s).map(EventKind::Ext),
         })
     }
 
     /// Whether `cancel event` means anything here.
     pub fn cancellable(self) -> bool {
-        !matches!(self, EventKind::Respawn | EventKind::Load)
+        match self {
+            EventKind::Ext(e) => e.cancellable(),
+            _ => !matches!(self, EventKind::Respawn | EventKind::Load),
+        }
     }
 }
 
@@ -2012,7 +2018,8 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                 has_message: k == EventKind::Chat,
                 arg_types: vec![],
                 trigger_name: format!("'on {}'", k.name()),
-                no_player: k == EventKind::Load,
+                no_player: k == EventKind::Load || matches!(k, EventKind::Ext(e) if !e.has_player() && !e.maybe_player()),
+                ev_fields: if let EventKind::Ext(e) = k { e.fields() } else { &[] },
                 has_damage: k == EventKind::Damage,
                 has_attacker: matches!(k, EventKind::Damage | EventKind::Death),
                 has_block: matches!(k, EventKind::Click | EventKind::RightClick | EventKind::LeftClick),
@@ -2020,6 +2027,26 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
             };
             click_filters.extend(filters);
             (TriggerKind::Event(k), &top.children, env, false)
+        } else if let Some(rest) = lower.strip_prefix("at ") {
+            let Some(t) = crate::w2_events_1::parse_at_time(rest.trim().trim_end_matches(':')) else {
+                errors.push(ScriptError::new(
+                    file,
+                    top.num,
+                    format!("can't understand 'at {rest}', use 'at 18:00:', 'at 6:30 pm:', 'at noon:' or 'at midnight:'"),
+                ));
+                continue;
+            };
+            let env = Env {
+                trigger_name: format!("'at {}'", rest.trim().trim_end_matches(':')),
+                no_player: true,
+                ..Env::default()
+            };
+            (
+                TriggerKind::Event(EventKind::Ext(crate::w2_events_1::ExtEvent::At(t))),
+                &top.children,
+                env,
+                false,
+            )
         } else if let Some(rest) = lower.strip_prefix("every ") {
             let Some(ticks) = parse_every(rest) else {
                 errors.push(ScriptError::new(

@@ -35,6 +35,8 @@ pub struct EventCtx {
     pub attacker: Option<PlayerRef>,
     /// `clicked block` in click events (block id without `minecraft:`).
     pub block: Option<String>,
+    /// `event-...` values, in the order of `ExtEvent::fields` (see `w2_events_1`).
+    pub ev: Vec<Value>,
 }
 
 impl EventCtx {
@@ -47,6 +49,7 @@ impl EventCtx {
             damage: None,
             attacker: None,
             block: None,
+            ev: Vec::new(),
         }
     }
 
@@ -60,6 +63,7 @@ impl EventCtx {
             damage: None,
             attacker: None,
             block: None,
+            ev: Vec::new(),
         }
     }
 
@@ -126,6 +130,13 @@ impl ScriptTable {
 
     pub fn function_count(&self) -> usize {
         self.functions.iter().filter(|f| f.is_some()).count()
+    }
+
+    /// Any `at <time>:` trigger.
+    pub fn has_at(&self) -> bool {
+        self.events
+            .keys()
+            .any(|k| matches!(k, EventKind::Ext(crate::w2_events_1::ExtEvent::At(_))))
     }
 
     pub fn has_every(&self) -> bool {
@@ -567,6 +578,21 @@ impl Engine {
             }
         }
         FireOutcome { cancelled }
+    }
+
+    /// Run the `at <time>:` triggers whose time the world clock passed when it
+    /// went from `prev` to `cur` (ticks of the day). Call once per tick when
+    /// `table().has_at()`.
+    pub fn fire_at_time(&mut self, prev: i64, cur: i64, host: &mut dyn Host) {
+        use crate::w2_events_1::{ExtEvent, crossed};
+        let table = self.table.clone();
+        for k in table.events.keys() {
+            if let EventKind::Ext(ExtEvent::At(t)) = k
+                && crossed(prev, cur, *t)
+            {
+                self.fire(*k, EventCtx::console(), host);
+            }
+        }
     }
 
     /// Run a script command. `raw_args` is everything after the command name.
@@ -1561,6 +1587,7 @@ impl Engine {
                     .unwrap_or(Value::None),
                 None => Value::None,
             },
+            Expr::EventVal(i) => ex.ctx.ev.get(usize::from(*i)).cloned().unwrap_or(Value::None),
             Expr::ClickedBlock => match &ex.ctx.block {
                 Some(b) => Value::Item {
                     id: b.clone(),
