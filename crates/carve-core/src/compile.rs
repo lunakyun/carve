@@ -7,6 +7,7 @@ use crate::error::ScriptError;
 use crate::expr::{Env, Expr, LoopKind, Sig, Ty, VarRef, parse_expr, parse_template, parse_varref};
 use crate::lexer::{Tok, lex};
 use crate::list_ops::ListSrc;
+use crate::op_kick_ban::{AdminCond, AdminEff};
 use crate::pattern::{Capture, Memo, Pattern, closest};
 use crate::player_flags::{PLAYER_FLAG_PATTERNS, PlayerFlag};
 
@@ -198,6 +199,8 @@ pub enum Cond {
         console: bool,
         negate: bool,
     },
+    /// `player is op`, `player is banned`.
+    Admin(AdminCond, Expr, bool),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -271,6 +274,8 @@ pub enum Effect {
     SetList(VarRef, ListSrc),
     /// `sort {x::*}` (true: descending).
     SortList(VarRef, bool),
+    /// op, kick, ban, names: target and an optional text (reason or name).
+    Admin(AdminEff, Expr, Option<Expr>),
 }
 
 /// What a `loop` goes over.
@@ -380,6 +385,7 @@ pub enum EffKind {
     PlaySound,
     StopSound,
     StopAllSounds,
+    Admin(AdminEff),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -413,6 +419,8 @@ pub enum CondKind {
     IsNotConsole,
     /// `player is sneaking`; the bool is negation.
     Flag(PlayerFlag, bool),
+    /// negated
+    Admin(AdminCond, bool),
 }
 
 /// Text effects (`replace ...`). Kept apart from `EFFECT_PATTERNS` so the
@@ -506,9 +514,12 @@ fn registry() -> &'static Registry {
     static R: OnceLock<Registry> = OnceLock::new();
     R.get_or_init(|| Registry {
         // The pattern strings are constants covered by tests; a bad one is skipped.
-        effects: crate::xp_level::XP_EFFECT_PATTERNS
+        effects: crate::op_kick_ban::EFFECT_PATTERNS
             .iter()
-            .filter_map(|(s, o)| Pattern::new(s, EffKind::Xp(*o)).ok())
+            .filter_map(|(s, k)| Pattern::new(s, *k).ok())
+            .chain(crate::xp_level::XP_EFFECT_PATTERNS
+            .iter()
+            .filter_map(|(s, o)| Pattern::new(s, EffKind::Xp(*o)).ok()))
             .chain(
                 crate::senders::SENDER_EFFECT_PATTERNS
                     .iter()
@@ -540,8 +551,9 @@ fn registry() -> &'static Registry {
                     .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
             )
             .collect(),
-        conditions: crate::senders::SENDER_CONDITION_PATTERNS
+        conditions: crate::op_kick_ban::CONDITION_PATTERNS
             .iter()
+            .chain(crate::senders::SENDER_CONDITION_PATTERNS)
             .chain(crate::gamemode::CONDITION_PATTERNS)
             .chain(PLAYER_FLAG_PATTERNS)
             .chain(CONDITION_PATTERNS)
@@ -552,8 +564,9 @@ fn registry() -> &'static Registry {
 
 /// Checks every registered pattern compiles. Used by tests.
 pub fn check_registry() -> Result<(), String> {
-    for (s, k) in crate::senders::SENDER_EFFECT_PATTERNS
+    for (s, k) in crate::op_kick_ban::EFFECT_PATTERNS
         .iter()
+        .chain(crate::senders::SENDER_EFFECT_PATTERNS)
         .chain(crate::gamemode::EFFECT_PATTERNS)
         .chain(EFFECT_PATTERNS)
         .chain(crate::sounds::SOUND_PATTERNS)
@@ -565,8 +578,9 @@ pub fn check_registry() -> Result<(), String> {
     for (s, o) in crate::xp_level::XP_EFFECT_PATTERNS {
         Pattern::new(s, EffKind::Xp(*o))?;
     }
-    for (s, k) in crate::senders::SENDER_CONDITION_PATTERNS
+    for (s, k) in crate::op_kick_ban::CONDITION_PATTERNS
         .iter()
+        .chain(crate::senders::SENDER_CONDITION_PATTERNS)
         .chain(crate::gamemode::CONDITION_PATTERNS)
         .chain(PLAYER_FLAG_PATTERNS)
         .chain(CONDITION_PATTERNS)
@@ -1005,8 +1019,9 @@ impl Cx<'_> {
         }
         // A broken template or variable explains the failure best.
         let type_err = inner_error(&toks, &self.env).or(type_err);
-        let srcs: Vec<&'static str> = PLAYER_FLAG_PATTERNS
+        let srcs: Vec<&'static str> = crate::op_kick_ban::CONDITION_PATTERNS
             .iter()
+            .chain(PLAYER_FLAG_PATTERNS)
             .chain(CONDITION_PATTERNS)
             .map(|(s, _)| *s)
             .collect();
@@ -1354,6 +1369,7 @@ fn build_cond(kind: CondKind, mut c: Vec<Option<Capture>>) -> Cond {
                 negate,
             };
         }
+        CondKind::Admin(k, negate) => return Cond::Admin(k, a, negate),
         CondKind::IsSet => return Cond::IsSet(a, true),
         CondKind::NotSet => return Cond::IsSet(a, false),
         CondKind::Ne => CmpOp::Ne,
@@ -1528,6 +1544,7 @@ fn build_effect(kind: EffKind, mut c: Vec<Option<Capture>>) -> Option<Effect> {
             }
         }
         EffKind::Delete => Effect::Delete(take_var(c, 0)?),
+        EffKind::Admin(k) => Effect::Admin(k, take_expr(c, 0)?, take_expr(c, 1)),
     })
 }
 

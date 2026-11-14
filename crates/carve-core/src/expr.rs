@@ -226,6 +226,10 @@ pub enum Prop {
     X,
     Y,
     Z,
+    DisplayName,
+    TabName,
+    Ping,
+    Ip,
 }
 
 impl Prop {
@@ -240,6 +244,9 @@ impl Prop {
             "gamemode" => Prop::Gamemode,
             "level" => Prop::Level,
             "xp" | "exp" | "experience" => Prop::Xp,
+            "nickname" => Prop::DisplayName,
+            "ping" => Prop::Ping,
+            "ip" => Prop::Ip,
             "x" => Prop::X,
             "y" => Prop::Y,
             "z" => Prop::Z,
@@ -251,7 +258,7 @@ impl Prop {
         match self {
             Prop::Location => Ty::Location,
             Prop::World => Ty::World,
-            Prop::Uuid | Prop::Name | Prop::Gamemode => Ty::Text,
+            Prop::Uuid | Prop::Name | Prop::Gamemode | Prop::DisplayName | Prop::TabName | Prop::Ip => Ty::Text,
             Prop::Tool => Ty::Item,
             Prop::Health
             | Prop::MaxHealth
@@ -262,7 +269,8 @@ impl Prop {
             | Prop::LevelProgress
             | Prop::X
             | Prop::Y
-            | Prop::Z => Ty::Number,
+            | Prop::Z
+            | Prop::Ping => Ty::Number,
         }
     }
 
@@ -602,6 +610,11 @@ impl P<'_> {
                 return Err("expected a property after 's, like player's location".into());
             };
             let lw = w.to_ascii_lowercase();
+            if let Some((prop, np)) = self.admin_prop_at(&lw, self.pos + 2) {
+                self.pos = np;
+                e = self.prop(prop, e)?;
+                continue;
+            }
             if self.pos + 2 >= self.toks.len() {
                 self.hit_end.set(true);
             }
@@ -723,6 +736,29 @@ impl P<'_> {
             ));
         }
         Ok(Expr::SpanPart(ms, total, Box::new(inner)))
+    }
+
+    /// The admin properties (`display name`, `nickname`, `tab list name`,
+    /// `ping`, `ip [address]`) when their words start at `at`, with the
+    /// position after them.
+    fn admin_prop_at(&self, first: &str, at: usize) -> Option<(Prop, usize)> {
+        // Running out of words may just mean the span is cut short: say so,
+        // so the matcher tries a longer one.
+        let lit = |i: usize, w: &str| {
+            if i >= self.toks.len() {
+                self.hit_end.set(true);
+            }
+            matches!(self.toks.get(i), Some(t) if t.is_lit(w))
+        };
+        match first {
+            "display" if lit(at, "name") => Some((Prop::DisplayName, at + 1)),
+            "tab" if lit(at, "list") && lit(at + 1, "name") => Some((Prop::TabName, at + 2)),
+            "nickname" => Some((Prop::DisplayName, at)),
+            "ping" => Some((Prop::Ping, at)),
+            "ip" if lit(at, "address") => Some((Prop::Ip, at + 1)),
+            "ip" => Some((Prop::Ip, at)),
+            _ => None,
+        }
     }
 
     fn prop(&self, prop: Prop, of: Expr) -> Result<Expr, String> {
@@ -1177,6 +1213,18 @@ impl P<'_> {
                     "max" | "food" | "hunger" | "saturation" if self.hf_head().is_some() => {
                         let (prop, n) = self.hf_head().ok_or("unknown property")?;
                         self.pos += n - 1;
+                        self.prop_of(prop)
+                    }
+                    "display" | "tab" | "nickname" | "ping" | "ip"
+                        if self.admin_prop_at(&lw, self.pos).is_some_and(|(_, np)| {
+                            if np >= self.toks.len() {
+                                self.hit_end.set(true);
+                            }
+                            matches!(self.toks.get(np), Some(t) if t.is_lit("of"))
+                        }) =>
+                    {
+                        let (prop, np) = self.admin_prop_at(&lw, self.pos).ok_or("unknown property")?;
+                        self.pos = np;
                         self.prop_of(prop)
                     }
                     "name" => {
