@@ -25,6 +25,7 @@ pub mod player_flags;
 pub mod timespans;
 pub mod value;
 pub mod vars;
+pub mod w2_events_1;
 pub mod xp_level;
 
 pub use compile::{CommandDef, EventKind};
