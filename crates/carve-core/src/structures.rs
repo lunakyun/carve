@@ -350,7 +350,7 @@ pub(crate) fn section(cx: &mut Cx, line: &Line, lower: &str) -> bool {
         }
         return true;
     }
-    false
+    crate::w4_sections::section(cx, line, lower)
 }
 
 /// `<effect> if <cond>` or `<effect> unless <cond>`, outside text and
