@@ -5,6 +5,7 @@ use std::collections::BTreeSet;
 use std::sync::Mutex;
 
 use carve_core::health_food::Vital;
+use carve_core::block_ops::BlockPos;
 use carve_core::world_effects::{FxPos, ParticleFx};
 use carve_core::{
     CommandOutcome, Engine, EventCtx, EventKind, Host, LogLevel, PlayerFlag, PlayerRef, Recipient, ScriptError, Variables,
@@ -12,12 +13,12 @@ use carve_core::{
 use pumpkin_plugin_api::DamageType;
 use pumpkin_plugin_api::World;
 use pumpkin_plugin_api::wit::pumpkin::plugin::status_effect::StatusEffectInstance;
-use pumpkin_plugin_api::world::ExplosionInteraction;
+use pumpkin_plugin_api::world::{BlockFlags, ExplosionInteraction};
 use pumpkin_plugin_api::command::{
     ArgumentType, Command, CommandError, CommandNode, CommandSender, ConsumedArgs, StringType,
 };
 use pumpkin_plugin_api::commands::CommandHandler;
-use pumpkin_plugin_api::common::{EntityPose, GameMode, Hand, RgbColor};
+use pumpkin_plugin_api::common::{BlockPos as WitPos, EntityPose, GameMode, Hand, RgbColor};
 use pumpkin_plugin_api::events::{
     BlockBreakEvent, BlockPlaceEvent, EntityDamageByEntityEvent, EntityDamageEvent, EventData, EventHandler,
     EventPriority, FromIntoEvent, InteractAction, PlayerChatEvent, PlayerDeathEvent, PlayerInteractEvent,
@@ -407,6 +408,49 @@ impl WasmHost<'_> {
         }
     }
 
+    fn block_world(&mut self, at: &BlockPos) -> Option<World> {
+        self.fx_world(&FxPos {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+            world: at.world.clone(),
+        })
+    }
+
+    fn block_type(&mut self, at: &BlockPos) -> Option<String> {
+        let w = self.block_world(at)?;
+        let b = w.get_block(WitPos { x: at.x, y: at.y, z: at.z });
+        Some(b.name.strip_prefix("minecraft:").unwrap_or(&b.name).to_string())
+    }
+
+    fn set_block(&mut self, at: &BlockPos, id: &str) {
+        if let Some(w) = self.block_world(at) {
+            let flags = BlockFlags::NOTIFY_NEIGHBORS | BlockFlags::NOTIFY_LISTENERS;
+            let pos = WitPos { x: at.x, y: at.y, z: at.z };
+            if !w.set_block_by_name(pos, &format!("minecraft:{id}"), flags) {
+                plog(ApiLevel::Warn, &format!("set block: unknown block type '{id}'"));
+            }
+        }
+    }
+
+    fn break_block(&mut self, at: &BlockPos) {
+        if let Some(w) = self.block_world(at) {
+            let flags = BlockFlags::NOTIFY_NEIGHBORS | BlockFlags::NOTIFY_LISTENERS;
+            w.set_block_by_name(WitPos { x: at.x, y: at.y, z: at.z }, "minecraft:air", flags);
+        }
+    }
+
+    fn targeted_block(&mut self, p: &PlayerRef, max: f64) -> Option<BlockPos> {
+        let pl = self.get(p)?;
+        let hit = pl.ray_trace_block(max, false)?;
+        Some(BlockPos {
+            x: hit.pos.x,
+            y: hit.pos.y,
+            z: hit.pos.z,
+            world: Some(pl.get_world().get_name()),
+        })
+    }
+
     fn spawn_particle(&mut self, p: &ParticleFx) {
         let Some(kind) = fx::particle(&p.name) else {
             return;
@@ -613,6 +657,10 @@ impl Host for TickHost<'_, '_> {
         clear_effects(p: &PlayerRef, effect: Option<&str>);
         has_effect(p: &PlayerRef, effect: &str) -> bool;
         set_fire(p: &PlayerRef, ticks: i32);
+        block_type(at: &BlockPos) -> Option<String>;
+        set_block(at: &BlockPos, id: &str);
+        break_block(at: &BlockPos);
+        targeted_block(p: &PlayerRef, max: f64) -> Option<BlockPos>;
     }
 
     fn schedule_wait(&mut self, ticks: u64, token: u64) {

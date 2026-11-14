@@ -1,3 +1,4 @@
+use crate::block_ops::BlockPos;
 use crate::player_flags::PlayerFlag;
 use crate::value::{PlayerRef, Recipient};
 use crate::xp_level::XpField;
@@ -300,5 +301,28 @@ pub trait Host {
     /// Set the player on fire for this many ticks; 0 puts the fire out.
     fn set_fire(&mut self, _player: &PlayerRef, _ticks: i32) {
         self.log(LogLevel::Warn, "setting fire is not supported on this server");
+    }
+
+    // ---- blocks ----
+
+    /// Block type at a position (`stone`, no `minecraft:`), `None` when unknown.
+    fn block_type(&mut self, _at: &BlockPos) -> Option<String> {
+        None
+    }
+
+    /// Put a block of this type there. `id` is a plain id like `stone`.
+    /// The default runs `/setblock` (it ignores the world).
+    fn set_block(&mut self, at: &BlockPos, id: &str) {
+        self.execute_command(&format!("setblock {} {} {} minecraft:{id}", at.x, at.y, at.z));
+    }
+
+    /// Break the block like a player would. The default runs `/setblock ... destroy`.
+    fn break_block(&mut self, at: &BlockPos) {
+        self.execute_command(&format!("setblock {} {} {} minecraft:air destroy", at.x, at.y, at.z));
+    }
+
+    /// The block a player looks at, within `max` blocks.
+    fn targeted_block(&mut self, _player: &PlayerRef, _max: f64) -> Option<BlockPos> {
+        None
     }
 }
