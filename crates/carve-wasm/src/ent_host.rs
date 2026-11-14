@@ -22,7 +22,7 @@ fn handle(e: &Entity) -> EntityRef {
 
 impl WasmHost<'_> {
     /// The live entity (or player) with this uuid.
-    fn find_entity(&mut self, id: &str) -> Option<Entity> {
+    pub(super) fn find_entity(&mut self, id: &str) -> Option<Entity> {
         if let Some(p) = self.get_by_uuid(id) {
             return Some(p.as_entity());
         }

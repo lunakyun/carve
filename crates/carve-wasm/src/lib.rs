@@ -60,6 +60,7 @@ mod sb;
 mod w2_events_2;
 mod w2_expressions_3;
 mod w4;
+mod w4_conditions_1;
 
 const SCRIPTS_DIR: &str = "scripts";
 const VARS_FILE: &str = "variables.json";
@@ -1312,6 +1313,10 @@ impl WasmHost<'_> {
         Some(i64::from(self.server.get_simulation_distance()))
     }
 
+    fn w4c1_check(&mut self, c: carve_core::w4_conditions_1::Check, v: &Value) -> Option<bool> {
+        self.w4c1_check_impl(c, v)
+    }
+
     fn w2e7_query(&mut self, q: Query<'_>) -> Option<Value> {
         let num = |n: f64| Some(Value::Num(n));
         match q {
@@ -1585,6 +1590,10 @@ impl Host for TickHost<'_, '_> {
 
     fn w2e7_query(&mut self, q: Query<'_>) -> Option<Value> {
         self.inner.w2e7_query(q)
+    }
+
+    fn w4c1_check(&mut self, c: carve_core::w4_conditions_1::Check, v: &Value) -> Option<bool> {
+        self.inner.w4c1_check(c, v)
     }
 
     sb::sb_host_methods!();

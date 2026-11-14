@@ -1323,6 +1323,14 @@ impl Engine {
                 Ok(is != *negate)
             }
             Cond::Rare3(r) => self.cond_w2(r, ex, host),
+            Cond::Rare4(r) => {
+                let a = self.eval(&r.a, ex, host)?;
+                let b = match &r.b {
+                    Some(b) => Some(self.eval(b, ex, host)?),
+                    None => None,
+                };
+                Ok(crate::w4_conditions_1::check(r.kind, &a, b.as_ref(), ex.cancelled, host).is_some_and(|hit| hit != r.negate))
+            }
             Cond::PlayerFlag { player, flag, negate } => {
                 let p = self.eval(player, ex, host)?;
                 let Some(p) = online(&p, &mut ex.seen, host) else {
