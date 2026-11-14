@@ -71,7 +71,10 @@ impl Variables {
                 Value::Text(t) => json!(t),
                 Value::Bool(b) => json!(b),
                 Value::Player(p) => json!({"player": {"uuid": p.uuid, "name": p.name}}),
-                Value::Item { id, count } => json!({"item": {"id": id, "count": count}}),
+                Value::Item { id, count, meta } => match meta {
+                    Some(m) => json!({"item": {"id": id, "count": count, "meta": m.to_json()}}),
+                    None => json!({"item": {"id": id, "count": count}}),
+                },
                 Value::Location { x, y, z, world } => {
                     json!({"location": {"x": x, "y": y, "z": z, "world": world}})
                 }
@@ -128,6 +131,7 @@ fn object_value(o: &Map<String, Json>) -> Option<Value> {
                 .and_then(Json::as_u64)
                 .and_then(|c| u32::try_from(c).ok())
                 .unwrap_or(1),
+            meta: i.get("meta").and_then(crate::item_meta::ItemMeta::from_json),
         });
     }
     if let Some(l) = o.get("location").and_then(Json::as_object) {

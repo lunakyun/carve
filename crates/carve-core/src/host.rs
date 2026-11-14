@@ -64,6 +64,17 @@ pub trait Host {
         None
     }
 
+    /// Name, lore and enchantments of the item in the player's main hand.
+    fn held_item_meta(&mut self, _player: &PlayerRef) -> Option<crate::item_meta::ItemMeta> {
+        None
+    }
+
+    /// Give an item that has a name, lore or enchantments. The default runs the vanilla
+    /// `give` command with item components as the console.
+    fn give_item_meta(&mut self, player: &PlayerRef, id: &str, count: u32, meta: &crate::item_meta::ItemMeta) {
+        self.execute_command(&crate::item_meta::give_command(&player.name, id, count, meta));
+    }
+
     /// How many of an item the player has in their inventory.
     fn count_item(&mut self, _player: &PlayerRef, _id: &str) -> u32 {
         0

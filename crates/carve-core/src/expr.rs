@@ -113,6 +113,12 @@ pub enum Expr {
         id: String,
         count: u32,
     },
+    /// An item with a name, lore or enchantments added.
+    ItemMeta(Box<crate::item_meta::MetaExpr>),
+    /// `name of <item>`, `lore of <item>`, `amount of <item>` and so on.
+    ItemInfo(crate::item_meta::ItemInfo, Box<Expr>),
+    /// An enchantment written in a script: `sharpness 5`. Reads as text.
+    Enchant(Box<(String, u32)>),
     /// `location of player`, `player's world`, `x of {_loc}` and so on.
     Prop(Prop, Box<Expr>),
     /// `location(x, y, z[, world])`.
@@ -332,7 +338,17 @@ impl Expr {
             Expr::LoopIndex(_) => Ty::Text,
             Expr::Bool(_) => Ty::Boolean,
             Expr::Call(id, _) => env.functions.get(*id).and_then(|s| s.ret).unwrap_or(Ty::Object),
-            Expr::Item { .. } => Ty::Item,
+            Expr::Item { .. } | Expr::ItemMeta(_) => Ty::Item,
+            Expr::ItemInfo(info, _) => {
+                use crate::item_meta::ItemInfo;
+                match info {
+                    ItemInfo::Name => Ty::Text,
+                    ItemInfo::Lore | ItemInfo::Enchants => Ty::List,
+                    ItemInfo::Type => Ty::Item,
+                    ItemInfo::Amount => Ty::Number,
+                }
+            }
+            Expr::Enchant(_) => Ty::Text,
             Expr::Prop(p, _) => p.ty(),
             Expr::Loc(..) => Ty::Location,
             Expr::WorldNamed(_) => Ty::World,
@@ -610,6 +626,13 @@ impl P<'_> {
                 return Err("expected a property after 's, like player's location".into());
             };
             let lw = w.to_ascii_lowercase();
+            if let Some(info) = crate::item_meta::ItemInfo::from_word(&lw)
+                && e.ty(self.env) == Ty::Item
+            {
+                self.pos += 2;
+                e = Expr::ItemInfo(info, Box::new(e));
+                continue;
+            }
             if let Some((prop, np)) = self.admin_prop_at(&lw, self.pos + 2) {
                 self.pos = np;
                 e = self.prop(prop, e)?;
@@ -642,7 +665,94 @@ impl P<'_> {
             }
             e = self.prop(prop, e)?;
         }
+        let meta_next = match self.toks.get(self.pos) {
+            Some(Tok::Word(w)) => {
+                w.eq_ignore_ascii_case("named")
+                    || w.eq_ignore_ascii_case("with")
+                    || w.eq_ignore_ascii_case("enchanted")
+            }
+            Some(_) => false,
+            None => true,
+        };
+        if meta_next && e.ty(self.env) == Ty::Item {
+            e = self.item_meta_postfix(e)?;
+        }
         Ok(e)
+    }
+
+    /// `named "x"`, `with lore "a" and "b"`, `enchanted with sharpness 5 and unbreaking 3`,
+    /// in any order, after an item.
+    #[inline(never)]
+    fn item_meta_postfix(&mut self, e: Expr) -> Result<Expr, String> {
+        let mut meta = crate::item_meta::MetaExpr {
+            base: e,
+            name: None,
+            lore: Vec::new(),
+            enchants: Vec::new(),
+        };
+        let mut any = false;
+        loop {
+            let Some(Tok::Word(w)) = self.toks.get(self.pos) else {
+                if self.pos >= self.toks.len() {
+                    self.hit_end.set(true);
+                }
+                break;
+            };
+            let w = w.to_ascii_lowercase();
+            if self.pos + 1 >= self.toks.len() {
+                self.hit_end.set(true);
+            }
+            let next_is = |p: &Self, n: usize, lit: &str| matches!(p.toks.get(p.pos + n), Some(t) if t.is_lit(lit));
+            if w == "named" || (w == "with" && next_is(self, 1, "name")) {
+                self.pos += if w == "named" { 1 } else { 2 };
+                meta.name = Some(self.primary()?);
+            } else if w == "with" && next_is(self, 1, "lore") {
+                self.pos += 2;
+                meta.lore.push(self.primary()?);
+                while matches!(self.toks.get(self.pos), Some(t) if t.is_lit("and") || t.is_lit(","))
+                    && {
+                        if self.pos + 1 >= self.toks.len() {
+                            self.hit_end.set(true);
+                        }
+                        matches!(self.toks.get(self.pos + 1), Some(Tok::Str(_)))
+                    }
+                {
+                    self.pos += 1;
+                    meta.lore.push(self.primary()?);
+                }
+            } else if w == "enchanted" && next_is(self, 1, "with") {
+                self.pos += 2;
+                let mut first = true;
+                loop {
+                    let Some((id, level, used)) = crate::item_meta::enchant_at(self.toks, self.pos) else {
+                        if first || self.pos >= self.toks.len() {
+                            self.hit_end.set(true);
+                        }
+                        if first {
+                            return Err("expected an enchantment after 'enchanted with', like sharpness 5".into());
+                        }
+                        break;
+                    };
+                    first = false;
+                    self.pos += used;
+                    meta.enchants.push(Expr::Enchant(Box::new((id.to_string(), level))));
+                    if matches!(self.toks.get(self.pos), Some(t) if t.is_lit("and") || t.is_lit(","))
+                        && crate::item_meta::enchant_at(self.toks, self.pos + 1).is_some()
+                    {
+                        self.pos += 1;
+                    } else {
+                        break;
+                    }
+                }
+            } else {
+                break;
+            }
+            any = true;
+        }
+        if !any {
+            return Ok(meta.base);
+        }
+        Ok(Expr::ItemMeta(Box::new(meta)))
     }
 
     /// `<text> with [all|first] "a" replaced (with|by) "b"`. Leaves the
@@ -759,6 +869,32 @@ impl P<'_> {
             "ip" => Some((Prop::Ip, at)),
             _ => None,
         }
+    }
+
+    /// `lore of`, `enchantments of`, `item amount of`, `item type of` after the first word.
+    /// Returns what it reads and the number of extra words (`item type` is one extra).
+    fn item_info_head(&self, first: &str) -> Option<(crate::item_meta::ItemInfo, usize)> {
+        use crate::item_meta::ItemInfo;
+        let is_of = |n: usize| {
+            if self.pos + n >= self.toks.len() {
+                self.hit_end.set(true);
+            }
+            matches!(self.toks.get(self.pos + n), Some(t) if t.is_lit("of"))
+        };
+        if first == "item" {
+            let Some(Tok::Word(w)) = self.toks.get(self.pos) else {
+                self.hit_end.set(true);
+                return None;
+            };
+            let info = match w.to_ascii_lowercase().as_str() {
+                "type" => ItemInfo::Type,
+                "amount" => ItemInfo::Amount,
+                _ => return None,
+            };
+            return is_of(1).then_some((info, 1));
+        }
+        let info = ItemInfo::from_word(first)?;
+        is_of(0).then_some((info, 0))
     }
 
     fn prop(&self, prop: Prop, of: Expr) -> Result<Expr, String> {
@@ -1072,7 +1208,23 @@ impl P<'_> {
                         }
                         Ok(Expr::Elem(ElemSel::Nth(Box::new(n)), self.list_after_of("element N")?))
                     }
-                    "size" | "amount" | "count" => self.size_of(&lw),
+                    "size" | "amount" | "count" => {
+                        if lw == "amount" && matches!(self.peek(), Some(t) if t.is_lit("of")) {
+                            let save = self.pos;
+                            self.pos += 1;
+                            if let Ok(inner) = self.primary()
+                                && inner.ty(self.env) == Ty::Item
+                            {
+                                return Ok(Expr::ItemInfo(crate::item_meta::ItemInfo::Amount, Box::new(inner)));
+                            }
+                            // `amount of player` may still become `amount of player's tool`.
+                            if self.pos >= self.toks.len() {
+                                self.hit_end.set(true);
+                            }
+                            self.pos = save;
+                        }
+                        self.size_of(&lw)
+                    }
                     "sorted" | "reversed" | "shuffled" if self.peek().is_some() => {
                         self.list_expr(self.pos - 1)
                     }
@@ -1234,10 +1386,29 @@ impl P<'_> {
                         self.pos += 1;
                         let inner = self.primary()?;
                         let t = inner.ty(self.env);
+                        if t == Ty::Item {
+                            return Ok(Expr::ItemInfo(crate::item_meta::ItemInfo::Name, Box::new(inner)));
+                        }
                         if !(t == Ty::Player || t == Ty::Object) {
-                            return Err(format!("'name of' needs a player, got {}", t.name()));
+                            return Err(format!("'name of' needs a player or an item, got {}", t.name()));
                         }
                         Ok(Expr::NameOf(Box::new(inner)))
+                    }
+                    "lore" | "enchantments" | "enchants" | "type" | "item"
+                        if self.item_info_head(&lw).is_some() =>
+                    {
+                        let (info, extra) = self.item_info_head(&lw).ok_or("unknown item property")?;
+                        self.pos += extra + 1;
+                        let inner = self.primary()?;
+                        let t = inner.ty(self.env);
+                        if !(t == Ty::Item || t == Ty::Object) {
+                            // `lore of player` may still become `lore of player's tool`.
+                            if self.pos >= self.toks.len() {
+                                self.hit_end.set(true);
+                            }
+                            return Err(format!("this needs an item, got {}", t.name()));
+                        }
+                        Ok(Expr::ItemInfo(info, Box::new(inner)))
                     }
                     _ if lw.starts_with("loop-") => self.loop_expr(&lw),
                     _ if matches!(self.peek(), Some(t) if t.is_lit("("))
@@ -1266,6 +1437,13 @@ impl P<'_> {
                         if let Some(d) = lw.strip_prefix("arg-") {
                             let i: usize = d.parse().map_err(|_| format!("bad argument '{w}'"))?;
                             return self.arg(i);
+                        }
+                        if let Some((id, level, used)) = crate::item_meta::enchant_at(self.toks, self.pos - 1) {
+                            self.pos += used - 1;
+                            if self.pos >= self.toks.len() {
+                                self.hit_end.set(true);
+                            }
+                            return Ok(Expr::Enchant(Box::new((id.to_string(), level))));
                         }
                         if let Some(item) = self.item(&w) {
                             return Ok(item);
