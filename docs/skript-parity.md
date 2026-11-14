@@ -385,7 +385,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Send Block Change — no fake block packet API
 - ✅ Send Resource Pack — `send resource pack "url" [with hash "sha1"] to %player%` (Java players)
 - ⛔ Shear — no shear API
-- ⛔ Shoot — no projectile launch API
+- ⛔ Shoot — no projectile launch API; the section is refused with an error
 - ⛔ Silence Entity — no silent flag in the plugin API
 - ✅ Sort — `sort {x::*}`, `in descending order`; no `by`
 - 🟡 Spawn ⭐ — `spawn [N] <mob> [at <place>]`; no `named`, NBT or mob-specific data
@@ -393,7 +393,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Stop Server — `stop [the] server`
 - 🟡 Stop Sound ⭐ (one sound or all, via `stopsound`; no categories)
 - ⛔ Strider Shivering — no strider API
-- ⛔ Suppress Type Hints (Experimental) — Carve has no type hints
+- 🟡 Suppress Type Hints (Experimental) — runs its body; Carve has no type hints
 - 🟡 Swing Hand — `make %player% swing [main|off] hand`; via the `swing` command
 - ⛔ Tame / Untame — no tame API
 - ✅ Teleport — to x, y, z or a location; entities too
@@ -772,7 +772,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 Facing — `facing of player` as north, south, east, west, up or down; players only
 - ✅ Fall Distance — `fall distance of player`; set, add, remove; players only
 - ⛔ Fertilized Blocks — needs the fertilize event, which is not in the plugin API
-- ✅ Filter ⭐ — `{x::*} where [input > 2]`
+- ✅ Filter ⭐ — `filter {list::*} to match:` with `input` and `input index`
 - 🟡 Final Damage — `final damage` in `on damage`; same value as `damage`
 - ⛔ Firework Effect — firework effects are not in the plugin API
 - ✅ First Empty Slot in Inventory — `first empty slot of player` (0 to 35), `<none>` when full
@@ -1145,14 +1145,14 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 Locally Suppress Warning — accepted and ignored; Carve has no such warnings
 - ✅ Loop — times, lists, all players, values
 - ⬜ Shoot
-- ⬜ Spawn ⭐
+- ✅ Spawn ⭐ — `spawn <mob> at <place>:` with `event-entity` in the body
 - ⬜ Suppress Type Hints (Experimental)
 - ✅ While Loop
 
 ## Structures (8)
 
 - 🟡 Aliases — `aliases:` section replaces a name by any text (an item, say); no plural forms, no variants
-- ⬜ Auto Reload
+- 🟡 Auto Reload — accepted and ignored; Carve reloads only on request
 - ✅ Command — args, permission, aliases, usage, executable by; no cooldown; new commands need a restart
 - ✅ Event — see events
 - ✅ Function — also `local function` (visible in its own file only)
@@ -1163,49 +1163,49 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 ## Functions (45)
 
 - ✅ abs
-- ⬜ acos
-- ⬜ asin
-- ⬜ atan
-- ⬜ atan2
-- ⬜ axisAngle
-- ⬜ calcExperience
+- ✅ acos — see syntax/w4-functions-sections
+- ✅ asin — see syntax/w4-functions-sections
+- ✅ atan — see syntax/w4-functions-sections
+- ✅ atan2 — see syntax/w4-functions-sections
+- ⛔ axisAngle — Carve has no quaternion type
+- ✅ calcExperience — see syntax/w4-functions-sections
 - ✅ ceil
 - ✅ ceiling
-- ⬜ clamp
-- ⬜ combinations
-- ⬜ concat
-- ⬜ cos
+- ✅ clamp — see syntax/w4-functions-sections
+- ✅ combinations — see syntax/w4-functions-sections
+- ✅ concat — see syntax/w4-functions-sections
+- ✅ cos — see syntax/w4-functions-sections
 - ✅ date
-- ⬜ entity
-- ⬜ exp
-- ⬜ factorial
+- ⛔ entity — the plugin API cannot find an entity by UUID
+- ✅ exp — see syntax/w4-functions-sections
+- ✅ factorial — see syntax/w4-functions-sections
 - ✅ floor
-- ⬜ formatNumber
-- ⬜ fromBase
-- ⬜ isNaN
-- ⬜ ln
+- ✅ formatNumber — see syntax/w4-functions-sections
+- ✅ fromBase — see syntax/w4-functions-sections
+- ✅ isNaN — see syntax/w4-functions-sections
+- ✅ ln — see syntax/w4-functions-sections
 - 🟡 location — `location(x, y, z[, world])`, no yaw/pitch
-- ⬜ log
+- ✅ log — see syntax/w4-functions-sections
 - 🟡 max — two numbers, or `max of {x::*}`
 - ✅ mean — `average of {x::*}`
-- ⬜ median
+- ✅ median — see syntax/w4-functions-sections
 - 🟡 min — two numbers, or `min of {x::*}`
 - ✅ mod
-- ⬜ offlineplayer
-- ⬜ permutations
-- ⬜ player
-- ⬜ product
-- ⬜ quaternion
-- ⬜ rgb
-- ⬜ root
+- ✅ offlineplayer — see syntax/w4-functions-sections
+- ✅ permutations — see syntax/w4-functions-sections
+- ✅ player — see syntax/w4-functions-sections
+- ✅ product — see syntax/w4-functions-sections
+- ⛔ quaternion — Carve has no quaternion type
+- ✅ rgb — see syntax/w4-functions-sections
+- ✅ root — see syntax/w4-functions-sections
 - 🟡 round — no decimal places argument
-- ⬜ sin
+- ✅ sin — see syntax/w4-functions-sections
 - ✅ sqrt
 - ✅ sum — `sum of {x::*}`
-- ⬜ tan
-- ⬜ toBase
-- ⬜ uuid
-- ⬜ vector
+- ✅ tan — see syntax/w4-functions-sections
+- ✅ toBase — see syntax/w4-functions-sections
+- ✅ uuid — see syntax/w4-functions-sections
+- ✅ vector — `vector(x, y, z)`
 - 🟡 world — as `world "name"`
 
 ## Types (126)

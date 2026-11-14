@@ -60,7 +60,11 @@ impl Host for Mock {
         self.names.push((e.uuid.clone(), name.unwrap_or("").to_string()));
     }
     fn entity_name(&mut self, e: &EntityRef) -> Option<String> {
-        self.names.iter().rev().find(|n| n.0 == e.uuid).map(|n| n.1.clone())
+        self.names
+            .iter()
+            .rev()
+            .find(|n| n.0 == e.uuid)
+            .map(|n| n.1.clone())
     }
 }
 
@@ -187,7 +191,18 @@ fn bases_and_formatting() {
     ]);
     assert_eq!(
         out,
-        vec!["255", "5", "ff", "101", "1,234,567.89", "0.5", "2.00", "26%", "007", "-$1,234.5"]
+        vec![
+            "255",
+            "5",
+            "ff",
+            "101",
+            "1,234,567.89",
+            "0.5",
+            "2.00",
+            "26%",
+            "007",
+            "-$1,234.5"
+        ]
     );
 }
 
@@ -251,14 +266,16 @@ fn function_argument_errors_are_reported() {
 
 #[test]
 fn user_function_wins_over_builtin() {
-    let out = run("function clamp(a: number, b: number, c: number) :: number:\n\treturn 42\n\non join:\n\tbroadcast clamp(1, 2, 3)\n");
+    let out = run(
+        "function clamp(a: number, b: number, c: number) :: number:\n\treturn 42\n\non join:\n\tbroadcast clamp(1, 2, 3)\n",
+    );
     assert_eq!(out, vec!["42"]);
 }
 
 #[test]
 fn filter_section_keeps_matching() {
     let out = run(
-        "on join:\n\tset {_l::*} to 1, 2, 3, 4, 5, 6\n\tfilter {_l::*} to match:\n\t\tinput > 2\n\t\tinput < 6\n\tbroadcast join \"%{_l::*}%\"\n\tbroadcast size of {_l::*}\n",
+        "on join:\n\tset {_l::*} to 1, 2, 3, 4, 5, 6\n\tfilter {_l::*} to match:\n\t\tinput > 2\n\t\tinput < 6\n\tbroadcast \"%{_l::*}%\"\n\tbroadcast size of {_l::*}\n",
     );
     assert_eq!(out.last().map(String::as_str), Some("4"));
 }
@@ -311,4 +328,28 @@ fn suppress_type_hints_runs_body() {
 fn shoot_section_is_refused_with_a_reason() {
     let e = errors_of("on join:\n\tshoot an arrow from player:\n\t\tbroadcast \"x\"\n");
     assert!(e.iter().any(|m| m.contains("Pumpkin")), "{e:?}");
+}
+
+#[test]
+fn auto_reload_structure_is_accepted() {
+    let out = run("auto reload:
+	interval: 5 seconds
+
+on join:
+	broadcast \"ok\"
+");
+    assert_eq!(out, vec!["ok"]);
+}
+
+#[test]
+fn entity_function_is_refused_at_load() {
+    let mut e = Engine::default();
+    let (_, errs) = e.load(&[(
+        "t.carve".into(),
+        "on join:
+	broadcast entity(\"x\")
+"
+        .into(),
+    )]);
+    assert!(!errs.is_empty());
 }

@@ -27,9 +27,9 @@ fn rewrite(text: &str, from: &str, to: &str) -> String {
         }
         let live = (!in_str || in_pct) && braces == 0;
         if live
-            && chars.get(i..i + from_c.len()).is_some_and(|s| {
-                s.iter().zip(&from_c).all(|(a, b)| a.eq_ignore_ascii_case(b))
-            })
+            && chars
+                .get(i..i + from_c.len())
+                .is_some_and(|s| s.iter().zip(&from_c).all(|(a, b)| a.eq_ignore_ascii_case(b)))
             && (i == 0 || !word(chars[i - 1]))
             && chars.get(i + from_c.len()).is_none_or(|n| !word(*n))
         {
@@ -115,7 +115,10 @@ fn filter(cx: &mut Cx, l: &Line) {
         return;
     }
     if l.children.is_empty() {
-        cx.err(l.num, "'filter ... to match:' needs at least one condition below it");
+        cx.err(
+            l.num,
+            "'filter ... to match:' needs at least one condition below it",
+        );
         return;
     }
     if let Some(bad) = l.children.iter().find(|c| c.opens_block()) {
@@ -126,7 +129,10 @@ fn filter(cx: &mut Cx, l: &Line) {
         return;
     }
     let tmp = format!("{{_w4filter{}::*}}", l.num);
-    let conds = rewrite_lines(&l.children, &[("input index", "loop-index"), ("input", "loop-value")]);
+    let conds = rewrite_lines(
+        &l.children,
+        &[("input index", "loop-index"), ("input", "loop-value")],
+    );
     let mut inner = vec![line(l.num, format!("add loop-value to {list}"), Vec::new())];
     for c in conds.into_iter().rev() {
         inner = vec![line(c.num, format!("if {}:", c.text), inner)];

@@ -26,6 +26,8 @@ pub struct FileStructs {
 fn is_structure(text: &str) -> bool {
     text.eq_ignore_ascii_case("variables:")
         || text.eq_ignore_ascii_case("aliases:")
+        || text.eq_ignore_ascii_case("auto reload:")
+        || text.eq_ignore_ascii_case("auto reload")
         || text.get(..6).is_some_and(|h| h.eq_ignore_ascii_case("using "))
 }
 
@@ -70,6 +72,10 @@ pub fn extract(file: &str, tree: Vec<Line>) -> (Vec<Line>, FileStructs, Vec<Scri
             }
         } else if top.text.eq_ignore_ascii_case("variables:") {
             var_blocks.push(top);
+        } else if top.text.eq_ignore_ascii_case("auto reload:")
+            || top.text.eq_ignore_ascii_case("auto reload")
+        {
+            // `auto reload:` asks Skript to reload on file change; Carve reloads with `/carve reload` only.
         } else if top
             .text
             .get(..6)

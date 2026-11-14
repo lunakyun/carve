@@ -214,7 +214,9 @@ pub fn format_number(n: f64, pattern: &str) -> Option<String> {
         return None;
     }
     let min_int = int_pat.chars().filter(|c| *c == '0').count();
-    let group = int_pat.rfind(',').map(|i| int_pat.get(i + 1..).map_or(0, str::len));
+    let group = int_pat
+        .rfind(',')
+        .map(|i| int_pat.get(i + 1..).map_or(0, str::len));
     let min_frac = frac_pat.chars().filter(|c| *c == '0').count();
     let max_frac = frac_pat.chars().filter(|c| matches!(c, '0' | '#')).count();
     let mut s = format!("{:.*}", max_frac, value.abs());
@@ -265,8 +267,11 @@ fn parse_uuid(s: &str) -> Option<String> {
     if hex.len() != 32 || !hex.chars().all(|c| c.is_ascii_hexdigit()) {
         return None;
     }
-    let dashed_ok =
-        t.len() == 32 || (t.len() == 36 && [8, 13, 18, 23].iter().all(|&i| t.as_bytes().get(i) == Some(&b'-')));
+    let dashed_ok = t.len() == 32
+        || (t.len() == 36
+            && [8, 13, 18, 23]
+                .iter()
+                .all(|&i| t.as_bytes().get(i) == Some(&b'-')));
     dashed_ok.then(|| {
         format!(
             "{}-{}-{}-{}-{}",
@@ -435,7 +440,10 @@ pub fn apply(f: F, a: &[Value], host: &mut dyn Host) -> Result<Value, String> {
         },
         F::OfflinePlayer => match a.first() {
             Some(Value::Text(t)) => Value::Player(find(t, host).unwrap_or_else(|| match parse_uuid(t) {
-                Some(uuid) => PlayerRef { uuid, name: t.clone() },
+                Some(uuid) => PlayerRef {
+                    uuid,
+                    name: t.clone(),
+                },
                 None => PlayerRef {
                     uuid: String::new(),
                     name: t.clone(),
