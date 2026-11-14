@@ -280,6 +280,11 @@ impl LoopFrame {
         }
     }
 
+    /// A `loop N times`, whose value is its counter.
+    fn is_times(&self) -> bool {
+        matches!(self.items, LoopItems::Times(_))
+    }
+
     fn index(&self) -> Value {
         match &self.items {
             LoopItems::List(l) => l
@@ -317,6 +322,20 @@ fn join_list(items: &[(String, Value)], out: &mut String) {
     }
 }
 
+/// Compare two numbers the way `loose_eq` and `cmp_num` do.
+#[inline]
+fn cmp_nums(x: f64, op: CmpOp, y: f64) -> bool {
+    let eq = (x - y).abs() < 1e-9;
+    match op {
+        CmpOp::Eq => eq,
+        CmpOp::Ne => !eq,
+        CmpOp::Gt => x > y,
+        CmpOp::Lt => x < y,
+        CmpOp::Ge => x >= y,
+        CmpOp::Le => x <= y,
+    }
+}
+
 /// A caller's state, saved while a function runs.
 struct Frame {
     code: Arc<Code>,
@@ -345,6 +364,9 @@ pub(crate) struct Exec {
     pub(crate) seen: Vec<(String, Option<String>)>,
     /// `last spawned entity`.
     pub(crate) last_entity: Option<Box<crate::value::EntityRef>>,
+    /// Locals of the last function that returned, emptied, so the next call
+    /// can reuse their memory.
+    spare: Option<Locals>,
 }
 
 impl Exec {
@@ -370,21 +392,12 @@ impl Exec {
             catches: Vec::new(),
             seen,
             last_entity: None,
+            spare: None,
         }
     }
 
-    /// Enter a function body with the given parameter values.
-    fn push_call(&mut self, f: &Function, args: Vec<Value>) {
-        let mut locals = Locals::default();
-        for ((key, _, _), v) in f.sig.params.iter().zip(args) {
-            if let Value::List(items) = v {
-                for (i, x) in items.into_iter().enumerate() {
-                    locals.set(&format!("{key}::{}", i + 1), x);
-                }
-            } else {
-                locals.set(key, v);
-            }
-        }
+    /// Enter a function body whose parameters are already in `locals`.
+    fn push_call(&mut self, f: &Function, locals: Locals) {
         let caller = Frame {
             code: std::mem::replace(&mut self.code, f.code.clone()),
             pc: std::mem::replace(&mut self.pc, 0),
@@ -399,10 +412,14 @@ impl Exec {
         if let Some(f) = self.callers.pop() {
             self.code = f.code;
             self.pc = f.pc;
-            self.locals = f.locals;
+            let mut done = std::mem::replace(&mut self.locals, f.locals);
+            done.clear();
+            self.spare = Some(done);
             self.loops = f.loops;
             let depth = self.callers.len();
-            self.catches.retain(|c| c.depth <= depth);
+            if !self.catches.is_empty() {
+                self.catches.retain(|c| c.depth <= depth);
+            }
         }
     }
 }
@@ -1001,15 +1018,23 @@ impl Engine {
                 "functions called each other more than {MAX_CALL_DEPTH} levels deep (endless recursion?)"
             ));
         }
-        let mut vals = Vec::with_capacity(f.sig.params.len());
-        for (i, d) in f.defaults.iter().enumerate() {
-            vals.push(match (args.get(i), d) {
+        // Arguments are evaluated in the caller, straight into the new locals.
+        let mut locals = ex.spare.take().unwrap_or_default();
+        for (i, (d, (key, _, _))) in f.defaults.iter().zip(&f.sig.params).enumerate() {
+            let v = match (args.get(i), d) {
                 (Some(a), _) => self.eval(a, ex, host)?,
                 (None, Some(d)) => self.eval(d, ex, host)?,
                 (None, None) => Value::None,
-            });
+            };
+            if let Value::List(items) = v {
+                for (i, x) in items.into_iter().enumerate() {
+                    locals.set(&format!("{key}::{}", i + 1), x);
+                }
+            } else {
+                locals.set(key, v);
+            }
         }
-        ex.push_call(&f, vals);
+        ex.push_call(&f, locals);
         Ok(())
     }
 
@@ -1226,16 +1251,15 @@ impl Engine {
                     self.vars.get_ref(&k)
                 };
                 if let Some(Value::Num(x)) = cur {
-                    let (x, y) = (*x, *n);
-                    return Ok(match op {
-                        CmpOp::Eq => (x - y).abs() < 1e-9,
-                        CmpOp::Ne => (x - y).abs() >= 1e-9,
-                        CmpOp::Gt => x > y,
-                        CmpOp::Lt => x < y,
-                        CmpOp::Ge => x >= y,
-                        CmpOp::Le => x <= y,
-                    });
+                    return Ok(cmp_nums(*x, *op, *n));
                 }
+            }
+            // `loop-number is -3`: compare the loop counter without building a value.
+            if let (Expr::LoopValue(d) | Expr::LoopIter(d), Expr::Num(n)) = (a, b)
+                && let Some(f) = ex.loops.get(*d)
+                && (matches!(a, Expr::LoopIter(_)) || f.is_times())
+            {
+                return Ok(cmp_nums(f.pos as f64, *op, *n));
             }
             let a = self.eval(a, ex, host)?;
             let b = self.eval(b, ex, host)?;
