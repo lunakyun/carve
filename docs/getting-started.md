@@ -13,8 +13,21 @@ This guide takes you from nothing to your first working script.
 1. Copy `carve.wasm` into the server's `plugins/` folder.
 2. Start the server. Pumpkin asks once to allow `fs.read.data` and
    `fs.write.data`. Carve needs them to read your scripts and save variables.
-3. Carve creates a `scripts/` folder in its data folder. Your scripts go
-   there.
+3. Carve creates `plugins/data/carve/scripts/`. Your scripts go there.
+
+### Hosted servers
+
+On a host without an interactive console, Pumpkin can't ask, and the log says
+Carve was skipped because "Console readline is not available". Add this to
+`pumpkin.toml` and restart:
+
+```toml
+[plugins.overrides.carve]
+allowed_permissions = ["fs.read.data", "fs.write.data"]
+```
+
+Use dots exactly as shown. Pumpkin compares the text exactly; the
+`fs:read:data` form in Pumpkin's config comment doesn't work.
 
 The plugin is not signed. Pumpkin loads unsigned plugins by default
 (`allow_unsigned = true`) and shows a warning.
@@ -85,6 +98,15 @@ hello.carve:2: can't understand this effect: 'sned "Hi"' (did you mean: send %te
 
 Your old scripts keep running until the new ones load without errors. See
 [errors](errors.md) for more.
+
+### Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| The log says Carve was skipped, "Console readline is not available" | Allow the permissions in `pumpkin.toml` (see [hosted servers](#hosted-servers)). |
+| `/carve` is an unknown command | Carve didn't load. Check the log for the reason above, or for "unsigned" if your server has `allow_unsigned = false`. |
+| A new `command /x` doesn't work after `/carve reload` | Restart the server. Pumpkin only lets plugins add commands while they load. |
+| Scripts aren't found | They must end in `.carve` and be in `plugins/data/carve/scripts/`. |
 
 ## Next steps
 

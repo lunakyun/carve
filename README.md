@@ -51,8 +51,23 @@ command /heal [<player>]:
 1. Download `carve.wasm` from a release, or build it (below).
 2. Put it in your Pumpkin server's `plugins/` folder and start the server.
    Allow the `fs.read.data` and `fs.write.data` permissions when asked.
-3. Put `*.carve` files in the plugin's `scripts/` folder.
+   On a hosted server without an interactive console, allow them in
+   `pumpkin.toml` instead (see below).
+3. Put `*.carve` files in `plugins/data/carve/scripts/`.
 4. Run `/carve reload` (`carve:admin`, ops have it by default).
+
+On hosted servers (panels without a console you can type in), Pumpkin can't
+ask and skips Carve with "Console readline is not available". Allow the
+permissions in `pumpkin.toml`:
+
+```toml
+[plugins.overrides.carve]
+allowed_permissions = ["fs.read.data", "fs.write.data"]
+```
+
+Write them with dots exactly like this. Pumpkin compares the text exactly,
+and the `fs:read:data` form shown in Pumpkin's own config comment doesn't
+match.
 
 The full walkthrough is in [getting started](docs/getting-started.md).
 
