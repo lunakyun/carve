@@ -350,9 +350,9 @@ pub struct Function {
 /// Everything compiled from a set of files.
 #[derive(Debug, Default)]
 pub struct Compiled {
-    /// Triggers per file that compiled without errors.
+    /// Triggers per file: every trigger whose header parsed (broken lines are left out).
     pub files: Vec<(String, Vec<Trigger>)>,
-    /// By function id; `None` when the function's body had errors.
+    /// By function id; `None` when the function's header had errors.
     pub functions: Vec<Option<Arc<Function>>>,
     pub errors: Vec<ScriptError>,
 }
@@ -683,10 +683,11 @@ impl Cx<'_> {
                 let mut ends = Vec::new();
                 let mut cur = line;
                 let mut cond_text = line.head().get(3..).unwrap_or("");
-                loop {
-                    let jif = self
-                        .cond(cur.num, cond_text)
-                        .map(|c| self.emit(Instr::JumpIfNot(c, usize::MAX), cur.num));
+                // Like Skript: a section whose condition fails to parse is
+                // reported and its whole block skipped. The chain ends there,
+                // so a following `else` is reported instead of attaching.
+                while let Some(c) = self.cond(cur.num, cond_text) {
+                    let jif = self.emit(Instr::JumpIfNot(c, usize::MAX), cur.num);
                     self.block(&cur.children);
                     let next = lines.get(i + 1);
                     let next_lower = next.map(|l| l.text.to_ascii_lowercase()).unwrap_or_default();
@@ -696,9 +697,7 @@ impl Cx<'_> {
                         ends.push(self.emit(Instr::Jump(usize::MAX), cur.num));
                     }
                     let here = self.code.len();
-                    if let Some(j) = jif
-                        && let Some(Instr::JumpIfNot(_, t)) = self.code.get_mut(j)
-                    {
+                    if let Some(Instr::JumpIfNot(_, t)) = self.code.get_mut(jif) {
                         *t = here;
                     }
                     if !has_more {
@@ -728,7 +727,10 @@ impl Cx<'_> {
                 continue;
             }
             if lower.starts_with("else") {
-                self.err(line.num, "'else' without an 'if' before it");
+                self.err(
+                    line.num,
+                    "'else' has to be placed just after another 'if' or 'else if' section",
+                );
                 i += 1;
                 continue;
             }
@@ -743,7 +745,7 @@ impl Cx<'_> {
                 i += 1;
                 continue;
             }
-            if self.control(line.num, &lower) {
+            if self.control(line.num, &line.text, &lower) {
                 i += 1;
                 continue;
             }
@@ -753,7 +755,7 @@ impl Cx<'_> {
     }
 
     /// `stop`, `stop loop` / `exit loop`, `continue`. Returns true if handled.
-    fn control(&mut self, num: usize, lower: &str) -> bool {
+    fn control(&mut self, num: usize, text: &str, lower: &str) -> bool {
         // Most lines are effects: check the first word before collecting all.
         let first = lower.split_whitespace().next().unwrap_or("");
         if !matches!(first, "stop" | "exit" | "break" | "continue" | "return") {
@@ -780,7 +782,7 @@ impl Cx<'_> {
                 }
             }
             ["return", ..] => {
-                self.return_stmt(num, lower);
+                self.return_stmt(num, text);
             }
             ["continue"] | ["continue", "loop"] => {
                 let Some(next) = self.loops.last().map(|l| l.next) else {
@@ -794,7 +796,7 @@ impl Cx<'_> {
         true
     }
 
-    fn return_stmt(&mut self, num: usize, lower: &str) {
+    fn return_stmt(&mut self, num: usize, text: &str) {
         let Some(ret) = self.func_ret else {
             self.err(
                 num,
@@ -802,7 +804,7 @@ impl Cx<'_> {
             );
             return;
         };
-        let rest = lower.get(6..).unwrap_or("").trim();
+        let rest = text.get(6..).unwrap_or("").trim();
         if rest.is_empty() {
             if ret.is_some() {
                 self.err(num, "this function must return a value");
@@ -820,7 +822,7 @@ impl Cx<'_> {
         let toks = match lex(rest) {
             Ok(t) => t,
             Err(e) => {
-                self.err(num, e);
+                self.err(num, expr_error(rest, e, "the returned value"));
                 return;
             }
         };
@@ -845,7 +847,7 @@ impl Cx<'_> {
                     e.ty(&self.env).name()
                 ),
             ),
-            Err(e) => self.err(num, format!("can't understand the returned value: {e}")),
+            Err(e) => self.err(num, expr_error(rest, e, "the returned value")),
         }
     }
 
@@ -875,9 +877,11 @@ impl Cx<'_> {
         let lower = head.to_ascii_lowercase();
         if let Some(cond_text) = head.get(6..).filter(|_| lower.starts_with("while ")) {
             let start = self.code.len();
-            let jif = self
-                .cond(line.num, cond_text)
-                .map(|c| self.emit(Instr::JumpIfNot(c, usize::MAX), line.num));
+            // A `while` whose condition fails to parse skips its block.
+            let Some(c) = self.cond(line.num, cond_text) else {
+                return;
+            };
+            let jif = self.emit(Instr::JumpIfNot(c, usize::MAX), line.num);
             self.loops.push(LoopCx {
                 frame: false,
                 next: start,
@@ -886,9 +890,7 @@ impl Cx<'_> {
             self.block(&line.children);
             self.emit(Instr::Jump(start), line.num);
             let end = self.code.len();
-            if let Some(j) = jif
-                && let Some(Instr::JumpIfNot(_, t)) = self.code.get_mut(j)
-            {
+            if let Some(Instr::JumpIfNot(_, t)) = self.code.get_mut(jif) {
                 *t = end;
             }
             self.finish_loop(end);
@@ -954,7 +956,8 @@ impl Cx<'_> {
                     None
                 }
                 Err(e) => {
-                    self.err(num, format!("can't understand the loop count: {e}"));
+                    let body_text = rest.rsplit_once(' ').map_or(rest, |(b, _)| b).trim();
+                    self.err(num, expr_error(body_text, e, "the loop count"));
                     None
                 }
             };
@@ -1320,6 +1323,16 @@ impl Cx<'_> {
     }
 }
 
+/// Skript's wording for an expression that doesn't parse at all; specific
+/// errors (unknown function, wrong type, ...) keep their own text.
+fn expr_error(text: &str, e: String, what: &str) -> String {
+    if e.starts_with("unexpected") {
+        format!("can't understand this expression: '{text}'")
+    } else {
+        format!("can't understand {what}: {e}")
+    }
+}
+
 /// `( ... )` around the whole token list, removed.
 fn strip_parens(toks: &[Tok]) -> &[Tok] {
     let mut t = toks;
@@ -1661,32 +1674,22 @@ pub fn compile_all(files: &[(String, String)]) -> Compiled {
     let mut out = Compiled::default();
     // Pass 1: block structure, options and every function signature.
     let mut parsed: Vec<Parsed> = Vec::new();
-    let mut bad_files: Vec<String> = Vec::new();
     let mut sigs: Vec<Sig> = Vec::new();
     let mut func_src: Vec<(usize, usize)> = Vec::new(); // (parsed index, top line index)
     let mut defaults_src: Vec<Vec<Option<String>>> = Vec::new();
     for (name, src) in files {
-        let tree = match parse_blocks(name, src) {
-            Ok(t) => t,
-            Err(e) => {
-                out.errors.extend(e);
-                bad_files.push(name.clone());
-                continue;
-            }
-        };
+        // Like Skript, errors never stop a file: what is broken is reported
+        // and left out, the rest loads.
+        let (tree, errs) = parse_blocks(name, src);
+        out.errors.extend(errs);
         // Most files have no options; skip the extra pass for them.
         let has_options = src.contains("{@") || tree.iter().any(|t| t.text.eq_ignore_ascii_case("options:"));
-        let tree = match if has_options {
-            apply_options(name, tree)
+        let tree = if has_options {
+            let (t, errs) = apply_options(name, tree);
+            out.errors.extend(errs);
+            t
         } else {
-            Ok(tree)
-        } {
-            Ok(t) => t,
-            Err(e) => {
-                out.errors.extend(e);
-                bad_files.push(name.clone());
-                continue;
-            }
+            tree
         };
         for (ti, top) in tree.iter().enumerate() {
             if top.head().to_ascii_lowercase().starts_with("function ") {
@@ -1714,6 +1717,46 @@ pub fn compile_all(files: &[(String, String)]) -> Compiled {
             tree,
         });
     }
+    // Pass 1b: default values. They are part of the header: a function with a
+    // bad default doesn't load, and calls to it are errors where they are.
+    let mut all_defaults: Vec<Vec<Option<Expr>>> = Vec::with_capacity(func_src.len());
+    {
+        let env = Env {
+            functions: Arc::new(sigs.clone()),
+            in_function: true,
+            ..Env::default()
+        };
+        for (id, &(pi, ti)) in func_src.iter().enumerate() {
+            let mut defaults = Vec::new();
+            let (Some(p), Some(top)) = (parsed.get(pi), parsed.get(pi).and_then(|p| p.tree.get(ti))) else {
+                all_defaults.push(defaults);
+                continue;
+            };
+            let mut bad = false;
+            // Defaults are plain values: compile them without parameters in scope.
+            for d in defaults_src.get(id).map(Vec::as_slice).unwrap_or_default() {
+                defaults.push(match d {
+                    Some(text) => match lex(text).and_then(|t| parse_expr(&t, &env)) {
+                        Ok(e) => Some(e),
+                        Err(e) => {
+                            out.errors.push(ScriptError::new(
+                                &p.name,
+                                top.num,
+                                format!("bad default value '{text}': {e}"),
+                            ));
+                            bad = true;
+                            None
+                        }
+                    },
+                    None => None,
+                });
+            }
+            if bad && let Some(s) = sigs.get_mut(id) {
+                s.failed = true;
+            }
+            all_defaults.push(defaults);
+        }
+    }
     let sigs = Arc::new(sigs);
 
     // Pass 2: function bodies.
@@ -1722,7 +1765,7 @@ pub fn compile_all(files: &[(String, String)]) -> Compiled {
             out.functions.push(None);
             continue;
         };
-        let Some(top) = p.tree.get(ti) else {
+        let Some(top) = p.tree.get(ti).filter(|_| !sig.failed) else {
             out.functions.push(None);
             continue;
         };
@@ -1732,25 +1775,7 @@ pub fn compile_all(files: &[(String, String)]) -> Compiled {
             in_function: true,
             ..Env::default()
         };
-        // Defaults are plain values: compile them without parameters in scope.
-        let mut defaults = Vec::new();
-        let mut errs = Vec::new();
-        for d in defaults_src.get(id).map(Vec::as_slice).unwrap_or_default() {
-            defaults.push(match d {
-                Some(text) => match lex(text).and_then(|t| parse_expr(&t, &env)) {
-                    Ok(e) => Some(e),
-                    Err(e) => {
-                        errs.push(ScriptError::new(
-                            &p.name,
-                            top.num,
-                            format!("bad default value '{text}': {e}"),
-                        ));
-                        None
-                    }
-                },
-                None => None,
-            });
-        }
+        let defaults = all_defaults.get_mut(id).map(std::mem::take).unwrap_or_default();
         let mut cx = Cx {
             file: &p.name,
             env,
@@ -1759,42 +1784,36 @@ pub fn compile_all(files: &[(String, String)]) -> Compiled {
             no_cancel: None,
             code: Vec::new(),
             lines: Vec::new(),
-            errors: errs,
+            errors: Vec::new(),
             loops: Vec::new(),
         };
         cx.block(&top.children);
-        if cx.errors.is_empty() {
-            out.functions.push(Some(Arc::new(Function {
-                sig: sig.clone(),
-                defaults,
-                code: Arc::new(Code {
-                    file: Arc::from(p.name.as_str()),
-                    line: top.num,
-                    instrs: cx.code,
-                    lines: cx.lines,
-                }),
-            })));
-        } else {
-            out.errors.extend(cx.errors);
-            bad_files.push(p.name.clone());
-            out.functions.push(None);
-        }
+        out.errors.append(&mut cx.errors);
+        out.functions.push(Some(Arc::new(Function {
+            sig: sig.clone(),
+            defaults,
+            code: Arc::new(Code {
+                file: Arc::from(p.name.as_str()),
+                line: top.num,
+                instrs: cx.code,
+                lines: cx.lines,
+            }),
+        })));
     }
 
     // Pass 3: triggers.
     for p in &parsed {
         let (trigs, errs) = compile_triggers(&p.name, &p.tree, &sigs);
-        if errs.is_empty() && !bad_files.contains(&p.name) {
-            out.files.push((p.name.clone(), trigs));
-        } else {
-            out.errors.extend(errs);
-        }
+        out.errors.extend(errs);
+        out.files.push((p.name.clone(), trigs));
     }
+    crate::error::fill_code(&mut out.errors, files);
     out
 }
 
 /// Replace `{@name}` with the values from the file's `options:` blocks.
-fn apply_options(file: &str, tree: Vec<Line>) -> Result<Vec<Line>, Vec<ScriptError>> {
+/// A line with a broken option is reported and left out (with its block).
+fn apply_options(file: &str, tree: Vec<Line>) -> (Vec<Line>, Vec<ScriptError>) {
     let mut opts: Vec<(String, String)> = Vec::new();
     let mut rest = Vec::new();
     let mut errors = Vec::new();
@@ -1812,7 +1831,8 @@ fn apply_options(file: &str, tree: Vec<Line>) -> Result<Vec<Line>, Vec<ScriptErr
             rest.push(top);
         }
     }
-    fn fill(line: &mut Line, opts: &[(String, String)], file: &str, errors: &mut Vec<ScriptError>) {
+    /// False when the line itself has a broken option.
+    fn fill(line: &mut Line, opts: &[(String, String)], file: &str, errors: &mut Vec<ScriptError>) -> bool {
         while let Some(start) = line.text.find("{@") {
             let Some(len) = line.text.get(start..).and_then(|t| t.find('}')) else {
                 errors.push(ScriptError::new(
@@ -1820,7 +1840,7 @@ fn apply_options(file: &str, tree: Vec<Line>) -> Result<Vec<Line>, Vec<ScriptErr
                     line.num,
                     "unclosed option: missing '}' after '{@'",
                 ));
-                break;
+                return false;
             };
             let name = line
                 .text
@@ -1836,18 +1856,15 @@ fn apply_options(file: &str, tree: Vec<Line>) -> Result<Vec<Line>, Vec<ScriptErr
                         line.num,
                         format!("unknown option {{@{name}}}"),
                     ));
-                    break;
+                    return false;
                 }
             }
         }
-        for c in &mut line.children {
-            fill(c, opts, file, errors);
-        }
+        line.children.retain_mut(|c| fill(c, opts, file, errors));
+        true
     }
-    for l in &mut rest {
-        fill(l, &opts, file, &mut errors);
-    }
-    if errors.is_empty() { Ok(rest) } else { Err(errors) }
+    rest.retain_mut(|l| fill(l, &opts, file, &mut errors));
+    (rest, errors)
 }
 
 pub fn type_from_name(name: &str) -> Option<Ty> {
@@ -1952,6 +1969,7 @@ fn parse_function_header(
             name: name.to_string(),
             params,
             ret,
+            failed: false,
         },
         defaults,
     ))
@@ -2200,11 +2218,13 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
         cx.env.functions = sigs.clone();
         // `on right click with diamond on stone:` checks first.
         let mut guards = Vec::new();
+        let mut header_ok = true;
         for (what, text) in std::mem::take(&mut click_filters) {
             let item = match lex(&text).and_then(|t| parse_expr(&t, &cx.env)) {
                 Ok(e) if e.ty(&cx.env) == Ty::Item => e,
                 _ => {
                     cx.err(top.num, format!("'{text}' is not an item or block name"));
+                    header_ok = false;
                     continue;
                 }
             };
@@ -2219,6 +2239,11 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
             );
             guards.push(at);
         }
+        // A broken header skips the whole trigger, like Skript.
+        if !header_ok {
+            errors.append(&mut cx.errors);
+            continue;
+        }
         cx.block(body);
         let end = cx.code.len();
         for g in guards {
@@ -2226,21 +2251,18 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                 *t = end;
             }
         }
-        if cx.errors.is_empty() {
-            triggers.push(Trigger {
+        errors.append(&mut cx.errors);
+        triggers.push(Trigger {
+            file: file_arc.clone(),
+            line: top.num,
+            kind,
+            code: Arc::new(Code {
                 file: file_arc.clone(),
                 line: top.num,
-                kind,
-                code: Arc::new(Code {
-                    file: file_arc.clone(),
-                    line: top.num,
-                    instrs: cx.code,
-                    lines: cx.lines,
-                }),
-            });
-        } else {
-            errors.extend(cx.errors);
-        }
+                instrs: cx.code,
+                lines: cx.lines,
+            }),
+        });
     }
     (triggers, errors)
 }

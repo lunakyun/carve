@@ -137,6 +137,8 @@ impl ScriptTable {
 pub struct LoadSummary {
     pub files: usize,
     pub triggers: usize,
+    /// Functions that loaded.
+    pub functions: usize,
     pub commands: Vec<String>,
 }
 
@@ -421,6 +423,7 @@ fn build_table(files: &[(String, String)]) -> (ScriptTable, Vec<ScriptError>) {
             }
         }
     }
+    crate::error::fill_code(&mut errors, files);
     (table, errors)
 }
 
@@ -447,8 +450,9 @@ impl Engine {
     }
 
     /// Reload one file (or unload it with `None`), keeping every other file.
-    /// On any error nothing changes and the errors are returned.
-    pub fn reload_file(&mut self, name: &str, src: Option<String>) -> Result<LoadSummary, Vec<ScriptError>> {
+    /// Like Skript, the new version replaces the old one even with errors: what
+    /// parsed is loaded, the errors (of every file) are returned.
+    pub fn reload_file(&mut self, name: &str, src: Option<String>) -> (LoadSummary, Vec<ScriptError>) {
         let mut candidate = self.sources.clone();
         match src {
             Some(s) => candidate.insert(name.to_string(), s),
@@ -517,32 +521,25 @@ impl Engine {
         LoadSummary {
             files: self.table.files,
             triggers: self.table.triggers,
+            functions: self.table.function_count(),
             commands: self.table.command_names(),
         }
     }
 
-    /// First load: files that compile are used, the rest are reported.
+    /// Load scripts, like Skript: a broken line, section or trigger is
+    /// reported and left out, everything that parsed is used.
     pub fn load(&mut self, files: &[(String, String)]) -> (LoadSummary, Vec<ScriptError>) {
         let (table, errors) = build_table(files);
-        let good: Vec<String> = table.file_info.iter().map(|f| f.name.clone()).collect();
-        self.sources = files.iter().filter(|(n, _)| good.contains(n)).cloned().collect();
+        self.sources = files.iter().cloned().collect();
         self.table = Arc::new(table);
         self.errors = errors.clone();
         (self.summary(), errors)
     }
 
-    /// Reload: all or nothing. On any error the old scripts stay active.
+    /// Reload: replaces the old scripts with what parsed (see [`load`](Self::load)).
     /// Runs that are waiting keep the code they started with.
-    pub fn reload(&mut self, files: &[(String, String)]) -> Result<LoadSummary, Vec<ScriptError>> {
-        let (table, errors) = build_table(files);
-        if !errors.is_empty() {
-            self.errors = errors.clone();
-            return Err(errors);
-        }
-        self.table = Arc::new(table);
-        self.sources = files.iter().cloned().collect();
-        self.errors.clear();
-        Ok(self.summary())
+    pub fn reload(&mut self, files: &[(String, String)]) -> (LoadSummary, Vec<ScriptError>) {
+        self.load(files)
     }
 
     pub fn pending_waits(&self) -> usize {

@@ -5,7 +5,7 @@
 use std::collections::BTreeSet;
 use std::time::Instant;
 
-use crate::engine::Engine;
+use crate::engine::{Engine, LoadSummary};
 use crate::error::ScriptError;
 use crate::host::Host;
 use crate::value::{PlayerRef, Recipient, Value};
@@ -122,14 +122,22 @@ fn can(env: &AdminEnv, node: &str) -> bool {
         || (env.allowed)(node)
 }
 
-/// `heal`, `heal.carve` -> `heal.carve`; also finds `-heal.carve`.
-fn file_name(arg: &str) -> String {
-    let a = arg.trim().trim_start_matches(DISABLED);
-    if a.ends_with(SCRIPT_EXT) {
-        a.to_string()
-    } else {
-        format!("{a}{SCRIPT_EXT}")
+/// The file in `names` that `arg` means: with or without `.carve`, any case,
+/// `/` or `\` for folders.
+fn find_script(arg: &str, names: &[String]) -> Option<String> {
+    let mut want = arg.trim().trim_start_matches(DISABLED).replace('\\', "/").to_ascii_lowercase();
+    if !want.ends_with(SCRIPT_EXT) {
+        want.push_str(SCRIPT_EXT);
     }
+    names
+        .iter()
+        .find(|n| n.replace('\\', "/").to_ascii_lowercase() == want)
+        .cloned()
+}
+
+/// Skript's message for a script that isn't there.
+fn not_found(arg: &str) -> String {
+    format!("Can't find the script &f'{}'&c.", arg.trim())
 }
 
 fn scripts(store: &mut dyn ScriptStore) -> Result<(Vec<String>, Vec<String>), String> {
@@ -159,20 +167,85 @@ fn read_enabled(store: &mut dyn ScriptStore) -> Result<Vec<(String, String)>, St
     Ok(files)
 }
 
+/// `(12ms)`, like Skript.
 fn ms(t: Instant) -> String {
-    format!("{:.1} ms", t.elapsed().as_secs_f64() * 1000.0)
+    format!("({}ms)", t.elapsed().as_millis())
 }
 
+fn plural(n: usize, one: &str) -> String {
+    if n == 1 { format!("{n} {one}") } else { format!("{n} {one}s") }
+}
+
+/// Errors in Skript's layout; at most 10 in chat, the rest are in `/carve errors`.
 fn show_errors(out: &mut AdminOut, errors: &[ScriptError]) {
     for e in errors.iter().take(10) {
-        out.raw(format!("&c  {e}"));
+        let mut lines = e.skript_lines().into_iter();
+        if let Some(head) = lines.next() {
+            out.say(head);
+        }
+        for l in lines {
+            out.raw(l);
+        }
     }
     if errors.len() > 10 {
-        out.raw(format!(
-            "&c  ... and {} more (see the server log or /carve errors)",
+        out.say(format!(
+            "&c... and {} more (see /carve errors or the server log)",
             errors.len() - 10
         ));
     }
+}
+
+/// Errors of `files`, plus the ones elsewhere that are new since `before`
+/// (another script calling a function that is gone, for example).
+fn errors_for(engine: &Engine, files: &[String], before: &[ScriptError]) -> Vec<ScriptError> {
+    engine
+        .errors
+        .iter()
+        .filter(|e| files.contains(&e.file) || !before.contains(e))
+        .cloned()
+        .collect()
+}
+
+/// Skript's closing line: `Successfully reloaded x.` or `Encountered 2 errors while reloading x!`.
+fn finish(out: &mut AdminOut, errors: &[ScriptError], done: &str, doing: &str, what: &str, t0: Instant) {
+    show_errors(out, errors);
+    if errors.is_empty() {
+        out.say(format!("&aSuccessfully {done} &f{what}&a. &7{}", ms(t0)));
+    } else {
+        out.say(format!(
+            "&cEncountered &f{} &c{} while {doing} &f{what}&c! &7{}",
+            errors.len(),
+            if errors.len() == 1 { "error" } else { "errors" },
+            ms(t0)
+        ));
+    }
+}
+
+/// Console lines for the load at server start, like Skript's:
+/// each error, then `Loaded 12 scripts with a total of 56 structures in 0.04 seconds`.
+/// `true` marks error lines.
+pub fn load_report(sum: &LoadSummary, errors: &[ScriptError], secs: f64) -> Vec<(bool, String)> {
+    let mut out = Vec::new();
+    for e in errors {
+        for l in e.plain_lines() {
+            out.push((true, l));
+        }
+    }
+    if !errors.is_empty() {
+        out.push((
+            true,
+            format!("Encountered {} while loading the scripts!", plural(errors.len(), "error")),
+        ));
+    }
+    out.push((
+        false,
+        format!(
+            "Loaded {} with a total of {} in {secs:.2} seconds",
+            plural(sum.files, "script"),
+            plural(sum.triggers + sum.functions, "structure")
+        ),
+    ));
+    out
 }
 
 fn restart_note(out: &mut AdminOut, engine: &Engine, env: &AdminEnv) {
@@ -227,22 +300,7 @@ pub fn admin(
         "enable" | "disable" => toggle(engine, store, env, rest, sub == "enable", &mut out),
         "list" => list(engine, store, rest, &mut out),
         "info" => info(engine, store, env, rest, &mut out),
-        "errors" => {
-            let want = (!rest.is_empty()).then(|| file_name(rest));
-            let errs: Vec<ScriptError> = engine
-                .errors
-                .iter()
-                .filter(|e| want.as_ref().is_none_or(|w| e.file == *w))
-                .cloned()
-                .collect();
-            if errs.is_empty() {
-                out.say("&aNo errors.");
-            } else {
-                out.say(format!("&c{} error(s):", errs.len()));
-                show_errors(&mut out, &errs);
-            }
-            Ok(())
-        }
+        "errors" => errors(engine, store, rest, &mut out),
         "vars" => vars(engine, host, rest, usage, &mut out),
         "run" => {
             if rest.is_empty() {
@@ -251,12 +309,7 @@ pub fn admin(
                 match engine.run_line(rest, env.sender.clone(), host) {
                     Ok(()) => Ok(()),
                     Err(errs) => {
-                        for e in errs {
-                            out.say(format!("&c{}", e.msg));
-                            if !e.suggestions.is_empty() {
-                                out.raw(format!("&7  did you mean: {}", e.suggestions.join(" | ")));
-                            }
-                        }
+                        show_errors(&mut out, &errs);
                         Ok(())
                     }
                 }
@@ -271,6 +324,34 @@ pub fn admin(
     out
 }
 
+fn errors(engine: &Engine, store: &mut dyn ScriptStore, rest: &str, out: &mut AdminOut) -> Result<(), String> {
+    let want = if rest.is_empty() {
+        None
+    } else {
+        let (on, _) = scripts(store)?;
+        let loaded: Vec<String> = engine.errors.iter().map(|e| e.file.clone()).collect();
+        let all: Vec<String> = on.into_iter().chain(loaded).collect();
+        Some(find_script(rest, &all).ok_or_else(|| not_found(rest))?)
+    };
+    let errs: Vec<ScriptError> = engine
+        .errors
+        .iter()
+        .filter(|e| want.as_ref().is_none_or(|w| e.file == *w))
+        .cloned()
+        .collect();
+    let what = want.as_deref().unwrap_or("the scripts");
+    if errs.is_empty() {
+        out.say(format!("&aNo errors in &f{what}&a."));
+    } else {
+        show_errors(out, &errs);
+        out.say(format!(
+            "&f{} &cin &f{what}&c (last load).",
+            plural(errs.len(), "error")
+        ));
+    }
+    Ok(())
+}
+
 fn reload(
     engine: &mut Engine,
     store: &mut dyn ScriptStore,
@@ -279,57 +360,32 @@ fn reload(
     out: &mut AdminOut,
 ) -> Result<(), String> {
     let t0 = Instant::now();
-    if matches!(rest, "" | "all" | "scripts") {
+    if matches!(rest.to_ascii_lowercase().as_str(), "" | "all" | "scripts") {
+        out.say("&7Reloading all scripts...");
         let files = read_enabled(store)?;
-        match engine.reload(&files) {
-            Ok(sum) => {
-                out.say(format!(
-                    "&aReloaded {} script(s), {} trigger(s) in {}.",
-                    sum.files,
-                    sum.triggers,
-                    ms(t0)
-                ));
-                restart_note(out, engine, env);
-                out.loaded = true;
-            }
-            Err(errs) => {
-                out.say(format!("&c{} error(s), old scripts kept:", errs.len()));
-                show_errors(out, &errs);
-            }
-        }
+        let (_, errs) = engine.reload(&files);
+        finish(out, &errs, "reloaded", "reloading", "all scripts", t0);
+        restart_note(out, engine, env);
+        out.loaded = true;
         return Ok(());
     }
-    let name = file_name(rest);
     let (on, off) = scripts(store)?;
-    if off.contains(&name) {
-        return Err(format!(
-            "{name} is disabled. Use /carve enable {}",
-            name.trim_end_matches(SCRIPT_EXT)
-        ));
-    }
-    if !on.contains(&name) {
-        return Err(format!("No script named {name}."));
-    }
-    let src = store.read(&name)?;
-    match engine.reload_file(&name, Some(src)) {
-        Ok(_) => {
-            let n = engine
-                .table()
-                .file_info
-                .iter()
-                .find(|f| f.name == name)
-                .map_or(0, |f| f.triggers.len());
-            out.say(format!("&aReloaded {name} ({n} trigger(s)) in {}.", ms(t0)));
-            restart_note(out, engine, env);
-        }
-        Err(errs) => {
-            out.say(format!(
-                "&c{name}: {} error(s), its old version is kept:",
-                errs.len()
+    let Some(name) = find_script(rest, &on) else {
+        if let Some(name) = find_script(rest, &off) {
+            return Err(format!(
+                "&f{name} &cis disabled. Use &f/carve enable {}&c.",
+                name.trim_end_matches(SCRIPT_EXT)
             ));
-            show_errors(out, &errs);
         }
-    }
+        return Err(not_found(rest));
+    };
+    out.say(format!("&7Reloading &f{name}&7..."));
+    let src = store.read(&name)?;
+    let before = engine.errors.clone();
+    engine.reload_file(&name, Some(src));
+    let errs = errors_for(engine, std::slice::from_ref(&name), &before);
+    finish(out, &errs, "reloaded", "reloading", &name, t0);
+    restart_note(out, engine, env);
     Ok(())
 }
 
@@ -341,6 +397,7 @@ fn toggle(
     enable: bool,
     out: &mut AdminOut,
 ) -> Result<(), String> {
+    let t0 = Instant::now();
     if rest.is_empty() {
         return Err(format!(
             "Usage: /carve {} <script|all>",
@@ -348,10 +405,23 @@ fn toggle(
         ));
     }
     let (on, off) = scripts(store)?;
-    let names: Vec<String> = if rest == "all" {
+    let all = rest.eq_ignore_ascii_case("all");
+    let names: Vec<String> = if all {
         if enable { off.clone() } else { on.clone() }
     } else {
-        vec![file_name(rest)]
+        let (want, other) = if enable { (&off, &on) } else { (&on, &off) };
+        match find_script(rest, want) {
+            Some(n) => vec![n],
+            None => {
+                return Err(match find_script(rest, other) {
+                    Some(n) => format!(
+                        "&f{n} &cis already {}.",
+                        if enable { "enabled" } else { "disabled" }
+                    ),
+                    None => not_found(rest),
+                });
+            }
+        }
     };
     if names.is_empty() {
         out.say(format!(
@@ -359,23 +429,6 @@ fn toggle(
             if enable { "enable" } else { "disable" }
         ));
         return Ok(());
-    }
-    for name in &names {
-        let (ok_now, other) = if enable {
-            (off.contains(name), on.contains(name))
-        } else {
-            (on.contains(name), off.contains(name))
-        };
-        if !ok_now {
-            return Err(if other {
-                format!(
-                    "{name} is already {}.",
-                    if enable { "enabled" } else { "disabled" }
-                )
-            } else {
-                format!("No script named {name}.")
-            });
-        }
     }
     let disabled = |n: &str| format!("{DISABLED}{n}");
     for name in &names {
@@ -385,47 +438,40 @@ fn toggle(
             store.rename(name, &disabled(name))?;
         }
     }
-    // Apply right away.
-    let result = if rest == "all" {
-        let files = read_enabled(store)?;
-        engine.reload(&files)
-    } else if enable {
-        let src = store.read(&names[0])?;
-        engine.reload_file(&names[0], Some(src))
-    } else {
-        engine.reload_file(&names[0], None)
-    };
-    let what = if rest == "all" {
-        format!("{} script(s)", names.len())
+    let what = if all {
+        "all scripts".to_string()
     } else {
         names[0].clone()
     };
-    match result {
-        Ok(_) => {
-            out.say(format!(
-                "&a{} {what}.",
-                if enable { "Enabled" } else { "Disabled" }
-            ));
-            if enable {
-                restart_note(out, engine, env);
-            }
-            out.loaded = rest == "all";
-        }
-        Err(errs) => {
-            if enable {
-                out.say(format!(
-                    "&eEnabled {what}, but it has errors and is not running yet:"
-                ));
-            } else {
-                // Other scripts need it (a function, for example): undo.
-                for name in &names {
-                    store.rename(&disabled(name), name)?;
-                }
-                out.say(format!("&cCan't disable {what}, other scripts need it:"));
-            }
-            show_errors(out, &errs);
-        }
+    if enable {
+        out.say(format!("&7Enabling &f{what}&7..."));
+    } else {
+        out.say(format!("&7Disabling &f{what}&7..."));
     }
+    // Apply right away.
+    let before = engine.errors.clone();
+    if all {
+        let files = read_enabled(store)?;
+        engine.reload(&files);
+    } else if enable {
+        let src = store.read(&names[0])?;
+        engine.reload_file(&names[0], Some(src));
+    } else {
+        engine.reload_file(&names[0], None);
+    }
+    let errs = if enable {
+        errors_for(engine, &names, &before)
+    } else {
+        // Errors that disabling caused elsewhere (calls of its functions, say).
+        errors_for(engine, &[], &before)
+    };
+    if enable {
+        finish(out, &errs, "enabled and loaded", "enabling", &what, t0);
+        restart_note(out, engine, env);
+    } else {
+        finish(out, &errs, "disabled", "disabling", &what, t0);
+    }
+    out.loaded = all;
     Ok(())
 }
 
@@ -445,7 +491,7 @@ fn list(engine: &Engine, store: &mut dyn ScriptStore, rest: &str, out: &mut Admi
             let errors = engine.errors.iter().filter(|e| e.file == *f).count();
             let state = match (triggers, errors) {
                 (Some(t), 0) => format!("&7{t} trigger(s)"),
-                (Some(t), e) => format!("&7{t} trigger(s), &c{e} error(s) in the last reload"),
+                (Some(t), e) => format!("&7{t} trigger(s), &c{e} error(s) in the last load"),
                 (None, e) => format!("&cnot loaded, {e} error(s)"),
             };
             out.raw(format!("&f  {f} {state}"));
@@ -508,9 +554,12 @@ fn info(
         out.raw(format!("&7Data folder: &f{}", env.data_folder));
         return Ok(());
     }
-    let name = file_name(rest);
+    let loaded: Vec<String> = t.file_info.iter().map(|f| f.name.clone()).collect();
+    let Some(name) = find_script(rest, &loaded) else {
+        return Err(not_found(rest));
+    };
     let Some(fi) = t.file_info.iter().find(|f| f.name == name) else {
-        return Err(format!("{name} is not loaded (see /carve list)."));
+        return Err(not_found(rest));
     };
     out.say(format!("&6{name}"));
     out.raw(format!(

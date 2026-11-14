@@ -5,26 +5,31 @@ Some can only be found while a script runs.
 
 ## Load errors
 
-Load errors look like this:
+Load errors look like Skript's:
 
 ```
-welcome.carve:3: can't understand this effect: 'sned "hi" to player' (did you mean: send %text% [to %player%] | set %variable% to %object% | add %number% to %variable%)
+Line 3: (welcome.carve)
+    Can't understand this effect: 'sned "hi" to player'
+    Line: sned "hi" to player
+    Did you mean: send %text% [to %player%] | set %variable% to %object% | add %number% to %variable%
 ```
 
 Read it in parts:
 
 | Part | Meaning |
 |---|---|
-| `welcome.carve:3` | the file and the line number |
-| `can't understand this effect: '...'` | what went wrong, and the line as Carve saw it |
-| `(did you mean: ...)` | the three patterns closest to your line |
+| `Line 3: (welcome.carve)` | the line number and the file |
+| `Can't understand this effect: '...'` | what went wrong |
+| `Line: ...` | the line from your file |
+| `Did you mean: ...` | the three patterns closest to your line |
 
 Carve reports every error in a file, not only the first one.
 
-At server start, files with errors are skipped and the rest load. With
-`/carve reload` it is all or nothing: if any file has an error, the old scripts
-stay active. The errors go to the server log, and the first 10 are also sent
-to whoever ran the reload.
+Like Skript, an error only skips what is broken: the line, the section
+(`if`, `loop`, ...) or the trigger whose first line it is. Everything else
+loads, at server start and on `/carve reload` (the new version replaces the
+old one). See [reloading](admin.md#reloading). At server start the errors go to
+the server log only; on a reload the first 10 are also sent to whoever ran it.
 
 ## Did you mean
 

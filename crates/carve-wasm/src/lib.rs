@@ -8,7 +8,7 @@ use carve_core::health_food::Vital;
 use carve_core::block_ops::BlockPos;
 use carve_core::world_effects::{FxPos, ParticleFx};
 use carve_core::{
-    CommandOutcome, Engine, EventCtx, EventKind, Host, LogLevel, PlayerFlag, PlayerRef, Recipient, ScriptError, Variables,
+    CommandOutcome, Engine, EventCtx, EventKind, Host, LogLevel, PlayerFlag, PlayerRef, Recipient, Variables,
 };
 use pumpkin_plugin_api::DamageType;
 use pumpkin_plugin_api::World;
@@ -715,12 +715,6 @@ fn read_scripts(dir: &str) -> Result<Vec<(String, String)>, String> {
     Ok(files)
 }
 
-fn report(errors: &[ScriptError]) {
-    for e in errors {
-        plog(ApiLevel::Error, &e.to_string());
-    }
-}
-
 // ---------- events ----------
 
 struct OnEvent<E>(EventKind, std::marker::PhantomData<fn() -> E>);
@@ -1257,17 +1251,12 @@ impl Plugin for Carve {
             plog(ApiLevel::Error, &e);
             Vec::new()
         });
+        let t0 = std::time::Instant::now();
         let (sum, errors) = engine.load(&files);
-        report(&errors);
-        plog(
-            ApiLevel::Info,
-            &format!(
-                "loaded {} script(s), {} trigger(s), {} error(s)",
-                sum.files,
-                sum.triggers,
-                errors.len()
-            ),
-        );
+        // Skript-style: errors and the summary go to the console only.
+        for (is_err, line) in carve_core::admin::load_report(&sum, &errors, t0.elapsed().as_secs_f64()) {
+            plog(if is_err { ApiLevel::Error } else { ApiLevel::Info }, &line);
+        }
 
         for (node, desc, default) in [
             (

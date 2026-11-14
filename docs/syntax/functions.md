@@ -63,8 +63,10 @@ it.
 
 ### Reload
 
-Functions are compiled together with all scripts. If any script has an error,
-`/carve reload` keeps the old scripts and the old functions.
+Functions are compiled together with all scripts. A broken line in a function
+is skipped and the rest of it loads. If the function's first line (or a
+default value) is broken, the function doesn't load, and each call to it is
+reported as an error where it is.
 
 ## Options
 
