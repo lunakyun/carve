@@ -2,6 +2,7 @@
 //! game is reached only through the [`Host`] trait.
 
 pub mod admin;
+pub mod block_ops;
 pub mod blocks;
 pub mod colors;
 pub mod compile;

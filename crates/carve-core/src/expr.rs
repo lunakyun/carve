@@ -119,6 +119,8 @@ pub enum Expr {
     Loc(Box<Expr>, Box<Expr>, Box<Expr>, Option<Box<Expr>>),
     /// `world "name"`.
     WorldNamed(Box<Expr>),
+    /// `block at loc`, `block below player`, `targeted block of player`, `type of block ...`.
+    Blk(Box<crate::block_ops::BlockExpr>),
     /// `distance between a and b`.
     Distance(Box<Expr>, Box<Expr>),
     /// `random integer between a and b` (true) / `random number between a and b`.
@@ -336,6 +338,7 @@ impl Expr {
             Expr::Prop(p, _) => p.ty(),
             Expr::Loc(..) => Ty::Location,
             Expr::WorldNamed(_) => Ty::World,
+            Expr::Blk(b) => b.ty(),
             Expr::Distance(..) | Expr::Random(..) | Expr::Damage => Ty::Number,
             Expr::Attacker => Ty::Player,
             Expr::Math(..) | Expr::ParseNum(_) => Ty::Number,
@@ -610,6 +613,13 @@ impl P<'_> {
                 return Err("expected a property after 's, like player's location".into());
             };
             let lw = w.to_ascii_lowercase();
+            if (lw == "targeted" || lw == "target")
+                && matches!(self.toks.get(self.pos + 2), Some(t) if t.is_lit("block"))
+            {
+                self.pos += 3;
+                e = Expr::Blk(Box::new(crate::block_ops::BlockExpr::Targeted(e)));
+                continue;
+            }
             if let Some((prop, np)) = self.admin_prop_at(&lw, self.pos + 2) {
                 self.pos = np;
                 e = self.prop(prop, e)?;
@@ -881,6 +891,9 @@ impl P<'_> {
             Tok::Word(w) => {
                 let lw = w.to_ascii_lowercase();
                 if let Some(e) = self.text_fn(&lw)? {
+                    return Ok(e);
+                }
+                if let Some(e) = self.block_expr(&lw)? {
                     return Ok(e);
                 }
                 match lw.as_str() {
@@ -1325,6 +1338,102 @@ impl P<'_> {
             self.hit_end.set(true);
         }
         format!("expected '{usage}'")
+    }
+
+    /// A place for a block expression: a location, a player or a variable.
+    fn block_place(&mut self, what: &str) -> Result<Expr, String> {
+        let e = self.primary()?;
+        match e.ty(self.env) {
+            Ty::Location | Ty::Player | Ty::Object => Ok(e),
+            t => Err(format!("'{what}' needs a location or player, got a {}", t.name())),
+        }
+    }
+
+    /// Block words: `block at <loc>`, `block below <player>`, `targeted block of <player>`,
+    /// `type of block ...`, `location at x, y, z [in world "w"]`. `Ok(None)` when the words
+    /// are not one of these forms.
+    fn block_expr(&mut self, lw: &str) -> Result<Option<Expr>, String> {
+        use crate::block_ops::{BlockExpr, direction};
+        let blk = |b: BlockExpr| Ok(Some(Expr::Blk(Box::new(b))));
+        match lw {
+            "block" => {
+                if self.is_word(0, "at") || self.is_word(0, "of") {
+                    self.pos += 1;
+                    let at = self.block_place("block at")?;
+                    return blk(BlockExpr::At(at));
+                }
+                if let Some(Tok::Word(d)) = self.toks.get(self.pos)
+                    && let Some((dx, dy, dz)) = direction(&d.to_ascii_lowercase())
+                {
+                    self.pos += 1;
+                    if self.is_word(0, "of") {
+                        self.pos += 1;
+                    }
+                    let at = self.block_place("block above/below")?;
+                    return blk(BlockExpr::Rel(at, dx, dy, dz));
+                }
+                if matches!(self.peek(), Some(Tok::Var(_))) {
+                    let at = self.block_place("block")?;
+                    return blk(BlockExpr::At(at));
+                }
+                Ok(None)
+            }
+            "targeted" | "target" if self.is_word(0, "block") => {
+                self.pos += 1;
+                if self.is_word(0, "of") || self.is_word(0, "for") {
+                    self.pos += 1;
+                    let who = self.primary()?;
+                    if !matches!(who.ty(self.env), Ty::Player | Ty::Object) {
+                        return Err("'targeted block of' needs a player".into());
+                    }
+                    return blk(BlockExpr::Targeted(who));
+                }
+                blk(BlockExpr::Targeted(Expr::Player))
+            }
+            "type" if self.is_word(0, "of") => {
+                let save = self.pos;
+                self.pos += 1;
+                let block_word = self.is_word(0, "block") || self.is_word(0, "targeted");
+                match self.primary() {
+                    Ok(inner)
+                        if (block_word || matches!(inner, Expr::Var(_) | Expr::Blk(_)))
+                            && matches!(inner.ty(self.env), Ty::Location | Ty::Object | Ty::Item) =>
+                    {
+                        blk(BlockExpr::TypeOf(inner))
+                    }
+                    Err(e) if block_word => Err(e),
+                    _ => {
+                        self.pos = save;
+                        Ok(None)
+                    }
+                }
+            }
+            "location" | "position" if self.is_word(0, "at") && !self.has_function("location") => {
+                self.pos += 1;
+                let mut c = vec![self.sum()?];
+                for _ in 0..2 {
+                    if !self.eat_sym(",") {
+                        return Err("expected 'location at x, y, z'".into());
+                    }
+                    c.push(self.sum()?);
+                }
+                if c.iter().any(|e| !Ty::Number.accepts(e.ty(self.env))) {
+                    return Err("location at needs numbers for x, y and z".into());
+                }
+                let world = if self.is_word(0, "in") && self.is_word(1, "world") {
+                    self.pos += 1;
+                    Some(Box::new(self.primary()?))
+                } else {
+                    None
+                };
+                let mut it = c.into_iter();
+                let (Some(x), Some(y), Some(z)) = (it.next(), it.next(), it.next()) else {
+                    return Err("location at x, y, z".into());
+                };
+                Ok(Some(Expr::Loc(Box::new(x), Box::new(y), Box::new(z), world)))
+            }
+            _ => Ok(None),
+        }
     }
 
     /// Text functions that start with a word (`uppercase of x`, `substring of x from 1 to 3`,

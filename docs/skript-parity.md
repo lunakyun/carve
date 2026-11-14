@@ -268,7 +268,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Apply Potion Effect ⭐ — `apply [potion of] speed 2 to player for 10 seconds`
 - 🟡 Ban ⭐ — name, with reason, by IP; works on offline names
 - ⬜ Boss Bar Flags
-- ⬜ Break Block ⭐
+- ✅ Break Block ⭐ — `break block at <loc>`
 - ✅ Broadcast
 - ⬜ Cancel Active Item
 - ⬜ Cancel Command Cooldown
@@ -483,7 +483,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Is Baby
 - ⛔ Is Banned — condition parses, but Pumpkin has no way to read the ban list, so it is always false
 - ⬜ Is Bed/Anchor Spawn
-- ⬜ Is Block
+- ✅ Is Block — `block at <loc> is stone`
 - ⬜ Is Block Redstone Powered
 - ⛔ Is Blocking (no shield state in the plugin API; always false)
 - ⬜ Is Burning
@@ -639,7 +639,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Beehive Target Flower
 - ⬜ Biome
 - ⬜ Blank Equippable Component
-- ⬜ Block ⭐
+- ✅ Block ⭐ — `block at <loc>`, `block below player`
 - ⬜ Block Break Speed
 - ⬜ Block Data
 - ⬜ Block Hardness
@@ -874,7 +874,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Light Level
 - ⬜ Loaded Plugins
 - 🟡 Location — `location of player`
-- ⬜ Location At ⭐
+- ✅ Location At ⭐ — `location at x, y, z [in world "w"]`
 - ⬜ Location with Yaw/Pitch
 - ✅ Loop Iteration
 - ✅ Loop value — `loop-value[-N]`, `loop-player`, `loop-index`, `loop-number`
@@ -1053,7 +1053,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Tags of X
 - ⬜ Tamer
 - ⬜ Target
-- ⬜ Targeted Block ⭐
+- ✅ Targeted Block ⭐ — `targeted block of player`
 - ⬜ Teleport Cause
 - ⬜ Temperature
 - ⬜ Ternary ⭐
@@ -1074,7 +1074,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ TPS (ticks per second)
 - ⬜ Transform Reason
 - ⬜ Transformed List
-- ⬜ Type of
+- 🟡 Type of — blocks only: `type of block at <loc>`
 - ⬜ Unbreakable Items
 - ✅ Unix Date
 - ✅ Unix Timestamp ⭐
@@ -1219,7 +1219,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Banner Pattern
 - ⬜ Banner Pattern Type
 - ⬜ Biome
-- ⬜ Block ⭐
+- 🟡 Block ⭐ — a block is a location with whole numbers
 - ⬜ Block Data
 - ✅ Boolean
 - ⬜ Boss Bar Style

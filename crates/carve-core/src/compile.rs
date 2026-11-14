@@ -203,6 +203,8 @@ pub enum Cond {
     Admin(AdminCond, Expr, bool),
     /// `player has potion effect speed`.
     World(Box<crate::world_effects::WorldCond>),
+    /// `block at loc is stone`.
+    Block(Box<crate::block_ops::BlockCond>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -280,6 +282,8 @@ pub enum Effect {
     Admin(AdminEff, Expr, Option<Expr>),
     /// Lightning, explosions, particles, potion effects, fire.
     World(Box<crate::world_effects::WorldFx>),
+    /// `set block at loc to stone`, `break block at loc`.
+    Block(Box<crate::block_ops::BlockFx>),
 }
 
 /// What a `loop` goes over.
@@ -1080,6 +1084,9 @@ impl Cx<'_> {
         if let Some(c) = crate::world_effects::parse_cond(toks, &self.env) {
             return Some(c);
         }
+        if let Some(c) = crate::block_ops::parse_cond(toks, &self.env) {
+            return Some(c);
+        }
         let mut memo = Memo::default();
         registry()
             .conditions
@@ -1222,6 +1229,17 @@ impl Cx<'_> {
                 return;
             }
             None => {}
+        }
+        match crate::block_ops::parse_effect(&toks, &self.env) {
+            Ok(Some(eff)) => {
+                self.emit(Instr::Eff(eff), num);
+                return;
+            }
+            Ok(None) => {}
+            Err(msg) => {
+                self.err(num, msg);
+                return;
+            }
         }
         match crate::world_effects::parse_effect(&toks, &self.env) {
             Ok(Some(eff)) => {

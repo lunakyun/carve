@@ -867,7 +867,7 @@ impl Engine {
     }
 
     /// A location value, or the location of a player value.
-    fn as_location(
+    pub(crate) fn as_location(
         &mut self,
         v: &Value,
         ex: &mut Exec,
@@ -1178,6 +1178,7 @@ impl Engine {
                 Ok(crate::op_kick_ban::check(host, *kind, &name, p.as_ref()) != *negate)
             }
             Cond::World(w) => self.world_cond(w, ex, host),
+            Cond::Block(b) => self.block_cond(b, ex, host),
             Cond::HasPerm { player, node, negate } => {
                 let p = self.eval(player, ex, host)?;
                 let node = self.text(node, ex, host)?;
@@ -1612,6 +1613,7 @@ impl Engine {
                 count: *count,
             },
             Expr::WorldNamed(n) => Value::World(self.text(n, ex, host)?),
+            Expr::Blk(b) => self.block_eval(b, ex, host)?,
             Expr::Loc(x, y, z, w) => {
                 let (x, y, z) = (
                     self.num(x, ex, host)?,
@@ -2043,6 +2045,7 @@ impl Engine {
                 }
             }
             Effect::World(w) => self.world_effect(w, ex, host)?,
+            Effect::Block(b) => self.block_effect(b, ex, host)?,
             Effect::Cancel => {
                 if ex.waited {
                     host.log(
