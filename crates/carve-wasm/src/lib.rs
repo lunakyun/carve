@@ -624,6 +624,7 @@ impl Host for TickHost<'_, '_> {
         strike_lightning(at: &FxPos, effect_only: bool);
         explode(at: &FxPos, power: f64, fire: bool);
         spawn_particle(p: &ParticleFx);
+        spawn_display(d: &carve_core::skbee_particles_display::DisplaySpec);
         add_effect(p: &PlayerRef, effect: &str, ticks: u32, amplifier: u8);
         clear_effects(p: &PlayerRef, effect: Option<&str>);
         has_effect(p: &PlayerRef, effect: &str) -> bool;

@@ -2,7 +2,7 @@
 
 use carve_core::skbee_particles_display::{DisplayKind, DisplaySpec};
 use pumpkin_plugin_api::display::{BillboardMode, ItemDisplayMode, TextAlignment};
-use pumpkin_plugin_api::entity_types::EntityType;
+use pumpkin_plugin_api::EntityType;
 use pumpkin_plugin_api::{
     BlockTypeExt, DisplayEntityExt, EntityDisplayExt, ItemStack, World,
 };
