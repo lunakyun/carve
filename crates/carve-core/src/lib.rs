@@ -30,6 +30,7 @@ pub mod senders;
 pub mod skbee_bound;
 pub mod skbee_scoreboard_teams;
 pub mod structures;
+pub mod skbee_nbt;
 pub mod player_flags;
 pub mod timespans;
 pub mod value;

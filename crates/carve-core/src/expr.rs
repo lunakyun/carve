@@ -187,6 +187,8 @@ pub enum Expr {
     Wt(Box<crate::weather_time::WtExpr>),
     /// Scoreboard scores, teams and objectives (SkBee style).
     Sb(Box<crate::skbee_scoreboard_teams::SbExpr>),
+    /// SkBee-style NBT and item component expressions.
+    Nbt(Box<crate::skbee_nbt::NbtExpr>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -396,6 +398,7 @@ impl Expr {
             Expr::Items(_) => Ty::List,
             Expr::Bound(b) => b.ty(),
             Expr::Sb(s) => s.ty(),
+            Expr::Nbt(n) => crate::skbee_nbt::expr_ty(n),
             Expr::ListAgg(Agg::Size | Agg::Sum, _) => Ty::Number,
             Expr::ListAgg(..) => Ty::Object,
             Expr::Default(a, b) => {
@@ -1304,6 +1307,14 @@ impl P<'_> {
                         Some(r) => return r,
                         None => self.pos = save,
                     }
+                }
+                if let Some(h) = crate::skbee_nbt::head(self.toks, self.pos - 1) {
+                    self.pos = h.after;
+                    if self.pos >= self.toks.len() {
+                        self.hit_end.set(true);
+                    }
+                    let operand = self.primary()?;
+                    return crate::skbee_nbt::build(&h, operand, self.env);
                 }
                 match lw.as_str() {
                     "the" => self.primary(),

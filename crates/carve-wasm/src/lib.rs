@@ -419,6 +419,36 @@ impl WasmHost<'_> {
         (!meta.is_empty()).then_some(meta)
     }
 
+    fn held_component(&mut self, p: &PlayerRef, c: carve_core::skbee_nbt::ItemComp) -> Option<Vec<u8>> {
+        let stack = self.get(p)?.get_item_in_hand(Hand::Right)?;
+        let want = data_component(c);
+        stack
+            .get_components()
+            .into_iter()
+            .find(|v| v.component == want)
+            .map(|v| v.value)
+    }
+
+    fn set_held_component(
+        &mut self,
+        p: &PlayerRef,
+        c: carve_core::skbee_nbt::ItemComp,
+        bytes: Option<Vec<u8>>,
+    ) -> bool {
+        let Some(pl) = self.get(p) else {
+            return false;
+        };
+        let Some(stack) = pl.get_item_in_hand(Hand::Right) else {
+            return false;
+        };
+        match bytes {
+            Some(b) => stack.set_component(data_component(c), &b),
+            None => stack.remove_component(data_component(c)),
+        }
+        pl.set_item_in_hand(Hand::Right, Some(stack));
+        true
+    }
+
     fn count_item(&mut self, p: &PlayerRef, id: &str) -> u32 {
         self.get(p)
             .map_or(0, |pl| pl.get_inventory().as_inventory().count_item(id))
@@ -876,6 +906,8 @@ impl Host for TickHost<'_, '_> {
         held_item(p: &PlayerRef) -> Option<(String, u32)>;
         held_item_meta(p: &PlayerRef) -> Option<carve_core::item_meta::ItemMeta>;
         count_item(p: &PlayerRef, id: &str) -> u32;
+        held_component(p: &PlayerRef, c: carve_core::skbee_nbt::ItemComp) -> Option<Vec<u8>>;
+        set_held_component(p: &PlayerRef, c: carve_core::skbee_nbt::ItemComp, bytes: Option<Vec<u8>>) -> bool;
         health(p: &PlayerRef) -> Option<f64>;
         gamemode(p: &PlayerRef) -> Option<String>;
         set_gamemode(p: &PlayerRef, mode: &str);
@@ -1833,4 +1865,21 @@ fn rule_enum(name: &str) -> Option<GameRule> {
         "water_source_conversion" => GameRule::WaterSourceConversion,
         _ => return None,
     })
+}
+
+/// Carve's item components as Pumpkin's data component ids.
+fn data_component(
+    c: carve_core::skbee_nbt::ItemComp,
+) -> pumpkin_plugin_api::wit::pumpkin::plugin::data_components::DataComponent {
+    use carve_core::skbee_nbt::ItemComp;
+    use pumpkin_plugin_api::wit::pumpkin::plugin::data_components::DataComponent as D;
+    match c {
+        ItemComp::CustomData => D::CustomData,
+        ItemComp::CustomModelData => D::CustomModelData,
+        ItemComp::Unbreakable => D::Unbreakable,
+        ItemComp::MaxStackSize => D::MaxStackSize,
+        ItemComp::Rarity => D::Rarity,
+        ItemComp::GlintOverride => D::EnchantmentGlintOverride,
+        ItemComp::ItemModel => D::ItemModel,
+    }
 }

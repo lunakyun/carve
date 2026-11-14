@@ -254,6 +254,8 @@ pub enum Cond {
     Wt(Box<crate::weather_time::WtCond>),
     /// `team "x" exists`, `player is in team "x"`; the bool is negation.
     Sb(Box<crate::skbee_scoreboard_teams::SbCond>, bool),
+    /// `{_nbt} has tag "x"`.
+    Nbt(Box<crate::skbee_nbt::NbtCond>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -281,6 +283,8 @@ pub enum Effect {
     },
     Heal(Expr),
     Hf(Box<crate::health_food::HfEffect>),
+    /// NBT and item component changes.
+    Nbt(Box<crate::skbee_nbt::NbtEffect>),
     SetHealth(Expr, Expr),
     SetGamemode(Expr, Expr),
     /// Experience change; the two expressions are in pattern order.
@@ -1214,6 +1218,9 @@ impl Cx<'_> {
         if let Some(c) = crate::skbee_scoreboard_teams::parse_cond(toks, &self.env) {
             return Some(c);
         }
+        if let Some(c) = crate::skbee_nbt::parse_cond(toks, &self.env) {
+            return Some(c);
+        }
         let mut memo = Memo::default();
         registry()
             .conditions
@@ -1391,6 +1398,17 @@ impl Cx<'_> {
             }
         }
         match crate::skbee_scoreboard_teams::parse_effect(&toks, &self.env) {
+            Ok(Some(eff)) => {
+                self.emit(Instr::Eff(eff), num);
+                return;
+            }
+            Ok(None) => {}
+            Err(msg) => {
+                self.err(num, msg);
+                return;
+            }
+        }
+        match crate::skbee_nbt::parse_effect(&toks, &self.env) {
             Ok(Some(eff)) => {
                 self.emit(Instr::Eff(eff), num);
                 return;

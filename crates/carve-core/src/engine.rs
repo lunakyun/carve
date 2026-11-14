@@ -1252,6 +1252,7 @@ impl Engine {
             Cond::Bound(b) => self.bound_cond(b, ex, host),
             Cond::Wt(w) => self.wt_cond(w, ex, host),
             Cond::Sb(c, negate) => Ok(self.sb_cond(c, ex, host)? != *negate),
+            Cond::Nbt(n) => self.nbt_cond(n, ex, host),
             Cond::HasPerm { player, node, negate } => {
                 let p = self.eval(player, ex, host)?;
                 let node = self.text(node, ex, host)?;
@@ -1327,7 +1328,7 @@ impl Engine {
         (name, p)
     }
 
-    fn key<'k>(&mut self, v: &'k VarRef, ex: &mut Exec, host: &mut dyn Host) -> Result<Cow<'k, str>, String> {
+    pub(crate) fn key<'k>(&mut self, v: &'k VarRef, ex: &mut Exec, host: &mut dyn Host) -> Result<Cow<'k, str>, String> {
         match &v.key {
             Key::Static(k) => Ok(Cow::Borrowed(k)),
             Key::Dynamic(parts) => {
@@ -1529,7 +1530,7 @@ impl Engine {
         }
     }
 
-    fn store(&mut self, local: bool, key: &str, val: Value, ex: &mut Exec, host: &mut dyn Host) {
+    pub(crate) fn store(&mut self, local: bool, key: &str, val: Value, ex: &mut Exec, host: &mut dyn Host) {
         if local {
             ex.locals.set(key, val);
         } else {
@@ -1748,6 +1749,7 @@ impl Engine {
                     _ => Value::None,
                 }
             }
+            Expr::Nbt(n) => self.nbt_expr(n, ex, host)?,
             Expr::Date(op, args) => self.eval_date(*op, args, ex, host)?,
             Expr::Wt(w) => self.wt_eval(w, ex, host)?,
             Expr::Color(on, e) => {
@@ -2169,6 +2171,7 @@ impl Engine {
             Effect::Wt(w) => self.wt_effect(w, ex, host)?,
             Effect::Sb(s) => self.sb_effect(s, ex, host)?,
             Effect::Sbt(s) => self.sbt_effect(s, ex, host)?,
+            Effect::Nbt(n) => self.nbt_effect(n, ex, host)?,
             Effect::Cancel => {
                 if ex.waited {
                     host.log(

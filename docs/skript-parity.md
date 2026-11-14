@@ -461,7 +461,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Has Boss Bar Flag
 - ⬜ Has Chat Filtering
 - ⬜ Has Client Weather
-- ⬜ Has Custom Model Data
+- 🟡 Has Custom Model Data — read it with `custom model data of player's tool` (main-hand item only)
 - ⬜ Has Glowing Text
 - ⬜ Has Item Cooldown
 - ⬜ Has Item Tooltips
@@ -554,7 +554,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Is Tamed
 - ⬜ Is Ticking
 - ⬜ Is Transparent
-- ⬜ Is Unbreakable
+- 🟡 Is Unbreakable — `unbreakable of player's tool` (main-hand item only)
 - ⬜ Is Using Experimental Feature
 - ⬜ Is Valid
 - ⬜ Is Wearing
@@ -694,7 +694,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Creature/Entity/Player/Projectile/Villager/Powered Creeper/etc.
 - ⬜ Cursor Slot
 - 🟡 Custom Chest Inventory ⭐ — `open chest with N rows [named "x"] to player`, then `set slot`; no inventory value you can fill first and open later
-- ⬜ Custom Model Data
+- 🟡 Custom Model Data — get, set and reset on `player's tool` only
 - ✅ Damage — read only
 - ⬜ Damage Amount of World Border
 - ⬜ Damage Buffer of World Border
@@ -840,7 +840,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Item Flags
 - ⬜ Item Model
 - ⬜ Item of an Entity
-- ⬜ Item Rarity
+- 🟡 Item Rarity — get, set and reset on `player's tool` only
 - ⬜ Item with Custom Model Data
 - ⬜ Item with Enchantment Glint
 - ⬜ Item with Item Flags
@@ -1075,7 +1075,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Transform Reason
 - ⬜ Transformed List
 - 🟡 Type of — blocks only: `type of block at <loc>`
-- ⬜ Unbreakable Items
+- 🟡 Unbreakable Items — `set unbreakable of player's tool to true` (main-hand item only)
 - ✅ Unix Date
 - ✅ Unix Timestamp ⭐
 - ⬜ Unknown Command Message

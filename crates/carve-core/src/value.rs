@@ -46,6 +46,8 @@ pub enum Value {
     },
     /// A list produced by a list operation or a function. Not stored in variables.
     List(Vec<Value>),
+    /// An NBT compound (`nbt from "{a:1}"`).
+    Nbt(Box<crate::skbee_nbt::Compound>),
 }
 
 impl Value {
@@ -63,6 +65,7 @@ impl Value {
             Value::Console => "console",
             Value::Timespan { .. } => "timespan",
             Value::List(_) => "list",
+            Value::Nbt(_) => "nbt compound",
         }
     }
 
@@ -117,6 +120,7 @@ impl Value {
                     && (aw.is_none() || bw.is_none() || aw == bw)
             }
             (Value::Date(a), Value::Date(b)) => a == b,
+            (Value::Nbt(a), Value::Nbt(b)) => a == b,
             (Value::Timespan { millis: a }, Value::Timespan { millis: b })
             => a == b,
             (Value::World(a), Value::World(b)) => a.eq_ignore_ascii_case(b),
@@ -188,6 +192,7 @@ impl Value {
             Value::Date(d) => out.push_str(&crate::time_dates::format_date(*d, crate::time_dates::DEFAULT_FORMAT)),
             Value::Console => out.push_str("console"),
             Value::Timespan { millis } => crate::timespans::push_span(out, *millis),
+            Value::Nbt(c) => c.push_snbt(out),
             Value::List(items) => {
                 if items.is_empty() {
                     out.push_str("<none>");

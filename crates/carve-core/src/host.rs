@@ -44,6 +44,23 @@ pub trait Host {
             .unwrap_or(0)
     }
 
+    /// Raw bytes of a data component on the player's main-hand item (the
+    /// network format). `None`: no item, or the item does not have it.
+    fn held_component(&mut self, _player: &PlayerRef, _comp: crate::skbee_nbt::ItemComp) -> Option<Vec<u8>> {
+        None
+    }
+
+    /// Set (`Some`) or remove (`None`) a data component on the main-hand item.
+    /// Returns false when the host cannot do it.
+    fn set_held_component(
+        &mut self,
+        _player: &PlayerRef,
+        _comp: crate::skbee_nbt::ItemComp,
+        _bytes: Option<Vec<u8>>,
+    ) -> bool {
+        false
+    }
+
     /// Everyone online, for `loop all players`.
     fn online_players(&mut self) -> Vec<PlayerRef> {
         Vec::new()
