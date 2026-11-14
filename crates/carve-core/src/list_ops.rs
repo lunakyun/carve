@@ -74,6 +74,9 @@ pub fn looks_like_list_op(toks: &[Tok], env: &Env) -> bool {
         if matches!(lw.as_str(), "sorted" | "reversed" | "shuffled") {
             return true;
         }
+        if lw == "worlds" || (lw == "all" && matches!(toks.get(1), Some(t) if t.is_lit("worlds"))) {
+            return true;
+        }
         if lw == "random" && matches!(toks.get(1), Some(Tok::Num(_) | Tok::Var(_))) {
             return true;
         }

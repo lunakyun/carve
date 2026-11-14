@@ -1178,6 +1178,7 @@ impl Engine {
                 Ok(crate::op_kick_ban::check(host, *kind, &name, p.as_ref()) != *negate)
             }
             Cond::World(w) => self.world_cond(w, ex, host),
+            Cond::Server(c) => self.server_cond(c, ex, host),
             Cond::HasPerm { player, node, negate } => {
                 let p = self.eval(player, ex, host)?;
                 let node = self.text(node, ex, host)?;
@@ -1612,6 +1613,7 @@ impl Engine {
                 count: *count,
             },
             Expr::WorldNamed(n) => Value::World(self.text(n, ex, host)?),
+            Expr::Server(q, w) => self.server_expr(*q, w, ex, host)?,
             Expr::Loc(x, y, z, w) => {
                 let (x, y, z) = (
                     self.num(x, ex, host)?,
@@ -2043,6 +2045,7 @@ impl Engine {
                 }
             }
             Effect::World(w) => self.world_effect(w, ex, host)?,
+            Effect::Server(f) => self.server_effect(f, ex, host)?,
             Effect::Cancel => {
                 if ex.waited {
                     host.log(

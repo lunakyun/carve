@@ -301,4 +301,83 @@ pub trait Host {
     fn set_fire(&mut self, _player: &PlayerRef, _ticks: i32) {
         self.log(LogLevel::Warn, "setting fire is not supported on this server");
     }
+    // ---- server info, whitelist, worlds ----
+
+    /// Players online now. The default counts `online_players`.
+    fn player_count(&mut self) -> f64 {
+        self.online_players().len() as f64
+    }
+
+    fn max_players(&mut self) -> Option<f64> {
+        None
+    }
+
+    fn motd(&mut self) -> Option<String> {
+        None
+    }
+
+    fn server_version(&mut self) -> Option<String> {
+        None
+    }
+
+    /// Is this name on the whitelist? Hosts with no way to read it say no.
+    fn is_whitelisted(&mut self, _name: &str) -> bool {
+        false
+    }
+
+    /// Add or remove a player. `uuid` is set when the player is online. The
+    /// default runs the `whitelist add` / `whitelist remove` console command.
+    fn set_whitelisted(&mut self, name: &str, _uuid: Option<&str>, on: bool) {
+        self.execute_command(&format!("whitelist {} {name}", if on { "add" } else { "remove" }));
+    }
+
+    /// Names of all worlds, the main world first.
+    fn world_names(&mut self) -> Vec<String> {
+        Vec::new()
+    }
+
+    /// The world used when a script names none: the main world.
+    fn default_world(&mut self) -> Option<String> {
+        self.world_names().into_iter().next()
+    }
+
+    /// Text for everyone in one world. The default filters `online_players`
+    /// by `player_location`.
+    fn broadcast_world(&mut self, world: &str, text: &str) {
+        for p in self.online_players() {
+            if self
+                .player_location(&p)
+                .is_some_and(|(_, _, _, w)| w.eq_ignore_ascii_case(world))
+            {
+                self.send_message(&Recipient::Player(p), text);
+            }
+        }
+    }
+
+    /// Spawn point of a world, centered on its block.
+    fn world_spawn(&mut self, _world: &str) -> Option<(f64, f64, f64)> {
+        None
+    }
+
+    /// Current diameter of a world's border.
+    fn border_size(&mut self, _world: &str) -> Option<f64> {
+        None
+    }
+
+    /// Set the border diameter, over `seconds` (0: at once). The default runs
+    /// `worldborder set` as the console, which only reaches the main world.
+    fn set_border_size(&mut self, world: &str, size: f64, seconds: f64) {
+        if self.default_world().is_some_and(|d| !d.eq_ignore_ascii_case(world)) {
+            self.log(
+                LogLevel::Warn,
+                "setting the world border of another world is not supported on this server",
+            );
+            return;
+        }
+        if seconds > 0.0 {
+            self.execute_command(&format!("worldborder set {size} {}s", seconds.round() as i64));
+        } else {
+            self.execute_command(&format!("worldborder set {size}"));
+        }
+    }
 }
