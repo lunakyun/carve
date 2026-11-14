@@ -34,6 +34,7 @@ pub mod vars;
 pub mod weather_time;
 pub mod xp_level;
 pub mod inventories;
+pub mod scoreboards_bossbars;
 pub mod world_effects;
 
 pub use compile::{CommandDef, EventKind};

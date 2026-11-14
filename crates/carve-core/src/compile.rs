@@ -337,6 +337,8 @@ pub enum Effect {
     Bound(Box<crate::skbee_bound::BoundEff>),
     /// Time, weather, game rule and difficulty changes.
     Wt(Box<crate::weather_time::WtEffect>),
+    /// Scoreboards, boss bars, timed titles, tab list.
+    Sb(Box<crate::scoreboards_bossbars::SbFx>),
 }
 
 /// What a `loop` goes over.
@@ -1346,6 +1348,17 @@ impl Cx<'_> {
             }
         }
         match crate::skbee_bound::parse_effect(&toks, &self.env) {
+            Ok(Some(eff)) => {
+                self.emit(Instr::Eff(eff), num);
+                return;
+            }
+            Ok(None) => {}
+            Err(msg) => {
+                self.err(num, msg);
+                return;
+            }
+        }
+        match crate::scoreboards_bossbars::parse_effect(&toks, &self.env) {
             Ok(Some(eff)) => {
                 self.emit(Instr::Eff(eff), num);
                 return;

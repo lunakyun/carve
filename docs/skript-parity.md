@@ -259,7 +259,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 
 ## Effects (154)
 
-- ✅ Action Bar
+- ✅ Action Bar — also `send actionbar` and `to all players`
 - ⬜ Allay Duplicate
 - ⬜ Allow / Prevent Leash Drop
 - ⬜ Allow Aging
@@ -267,7 +267,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Apply Fishing Lure
 - ✅ Apply Potion Effect ⭐ — `apply [potion of] speed 2 to player for 10 seconds`
 - 🟡 Ban ⭐ — name, with reason, by IP; works on offline names
-- ⬜ Boss Bar Flags
+- 🟡 Boss Bar Flags — `add darken sky flag to bossbar "id"`, fog, dragon bar; set only, no reading
 - ✅ Break Block ⭐ — `break block at <loc>`
 - ✅ Broadcast
 - ⬜ Cancel Active Item
@@ -399,8 +399,8 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Teleport — to x, y, z or a location
 - ⬜ Text Display Drop Shadow
 - ⬜ Text Display See Through Blocks
-- ⬜ Title - Clear/Reset
-- ✅ Title - Send — title + subtitle
+- ✅ Title - Clear/Reset — `clear title of player`, `reset title of player`
+- ✅ Title - Send — title + subtitle, `for 3 seconds`, fade in and out, `to all players`
 - ⬜ Toggle
 - ⬜ Toggle Custom Name Visibility
 - ⛔ Toggle Flight (no flight ability in the plugin API)
@@ -686,7 +686,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Console ⭐ — `console`, `send ... to console`, `sender is console`
 - ⬜ Consumed Item
 - ✅ Coordinate — `x/y/z of`, `x-coordinate of`
-- ⬜ Create Boss Bar
+- ✅ Create Boss Bar — id, title, color, style, progress; scoreboards and boss bars are in [their own page](syntax/scoreboards-bossbars.md)
 - ⬜ Create Loot Context
 - ⬜ Create WorldBorder
 - ⬜ Created Damage Source
@@ -958,7 +958,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 Plain Item — `item type of x` (no name, lore or enchantments)
 - ⬜ Player Chat Completions
 - ⬜ Player Input Keys
-- ⬜ Player List Header and Footer
+- ✅ Player List Header and Footer — set and reset, for one player or all players; no reading
 - ⬜ Player List Name
 - ⬜ Player List Priority
 - ⬜ Player Protocol Version
@@ -1222,8 +1222,8 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 Block ⭐ — a block is a location with whole numbers
 - ⬜ Block Data
 - ✅ Boolean
-- ⬜ Boss Bar Style
-- ⬜ BossBar
+- 🟡 Boss Bar Style — set and create with a style; no reading
+- 🟡 BossBar — bars are named by a text id; there is no bar value to keep in a variable
 - ⬜ Cat Type
 - ⬜ Chicken Variant
 - ⬜ Chunk

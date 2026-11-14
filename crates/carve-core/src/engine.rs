@@ -2117,6 +2117,7 @@ impl Engine {
             Effect::Inv(i) => self.inv_effect(i, ex, host)?,
             Effect::Bound(b) => self.bound_effect(b, ex, host)?,
             Effect::Wt(w) => self.wt_effect(w, ex, host)?,
+            Effect::Sb(s) => self.sb_effect(s, ex, host)?,
             Effect::Cancel => {
                 if ex.waited {
                     host.log(
