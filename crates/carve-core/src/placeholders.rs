@@ -70,7 +70,10 @@ pub fn parse_word(toks: &[Tok], pos: usize, env: &Env, lw: &str) -> Result<Optio
             }
             let (name, p) = parse_sum_at(toks, pos, env)?;
             if !Ty::Text.accepts(name.ty(env)) {
-                return Err(format!("placeholder name must be text, got {}", name.ty(env).name()));
+                return Err(format!(
+                    "placeholder name must be text, got {}",
+                    name.ty(env).name()
+                ));
             }
             let (pl, end) = player_tail(toks, p, env)?;
             Ok(Some((Expr::Ph(Box::new(Ph::Get(name, pl))), end)))
@@ -81,7 +84,10 @@ pub fn parse_word(toks: &[Tok], pos: usize, env: &Env, lw: &str) -> Result<Optio
             }
             let (text, p) = parse_sum_at(toks, pos + 2, env)?;
             if !Ty::Text.accepts(text.ty(env)) {
-                return Err(format!("can only parse placeholders in text, got {}", text.ty(env).name()));
+                return Err(format!(
+                    "can only parse placeholders in text, got {}",
+                    text.ty(env).name()
+                ));
             }
             let (pl, end) = player_tail(toks, p, env)?;
             Ok(Some((Expr::Ph(Box::new(Ph::Parse(text, pl))), end)))
@@ -137,7 +143,12 @@ fn hms(millis: i64) -> String {
 
 /// The built-in placeholders. `name` is the text between the percent signs.
 /// `None`: not a built-in, or it needs a player and there is none.
-pub fn builtin(name: &str, player: Option<&PlayerRef>, vars: &Variables, host: &mut dyn Host) -> Option<String> {
+pub fn builtin(
+    name: &str,
+    player: Option<&PlayerRef>,
+    vars: &Variables,
+    host: &mut dyn Host,
+) -> Option<String> {
     if let Some(var) = name.strip_prefix("carve_var_") {
         let v = match vars.get_ref(var) {
             Some(v) => v.clone(),
@@ -269,7 +280,9 @@ pub fn handle_ipc(
         })
     };
     match verb {
-        "carve:parse" => Ok(engine.parse_placeholders(body, player.as_ref(), host).into_bytes()),
+        "carve:parse" => Ok(engine
+            .parse_placeholders(body, player.as_ref(), host)
+            .into_bytes()),
         "carve:get" => engine
             .placeholder(body.trim().trim_matches('%'), player.as_ref(), host)
             .map(String::into_bytes)

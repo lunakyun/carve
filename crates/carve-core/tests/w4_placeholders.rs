@@ -117,7 +117,18 @@ fn builtin_placeholders() {
     assert_eq!(
         run(&mut e),
         [
-            "Steve", "u1", "17.5", "12", "creative", "overworld", "10", "64", "-4", "3", "20", "03:04:05"
+            "Steve",
+            "u1",
+            "17.5",
+            "12",
+            "creative",
+            "overworld",
+            "10",
+            "64",
+            "-4",
+            "3",
+            "20",
+            "03:04:05"
         ]
     );
 }
@@ -131,10 +142,7 @@ fn parse_placeholders_in_text() {
         broadcast parse placeholders in "100%% sure %%player_level%%" for player
 "#,
     );
-    assert_eq!(
-        run(&mut e),
-        ["Hi Steve, 3 online, %nope% stays", "100% sure 12"]
-    );
+    assert_eq!(run(&mut e), ["Hi Steve, 3 online, %nope% stays", "100% sure 12"]);
 }
 
 #[test]
@@ -224,7 +232,10 @@ command /t:
     );
     let out = run(&mut e);
     assert_eq!(out.len(), 1);
-    assert!(out[0].ends_with('+') || out[0].contains("%loop_again%"), "got {out:?}");
+    assert!(
+        out[0].ends_with('+') || out[0].contains("%loop_again%"),
+        "got {out:?}"
+    );
 }
 
 #[test]
