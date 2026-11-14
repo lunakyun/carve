@@ -28,6 +28,12 @@ pub struct EventCtx {
     pub sender: Recipient,
     pub message: Option<String>,
     pub args: Vec<Value>,
+    /// `damage` in `on damage`.
+    pub damage: Option<f64>,
+    /// `attacker` in `on damage` / `on death`, when it is a player.
+    pub attacker: Option<PlayerRef>,
+    /// `clicked block` in click events (block id without `minecraft:`).
+    pub block: Option<String>,
 }
 
 impl EventCtx {
@@ -37,6 +43,22 @@ impl EventCtx {
             player: Some(p),
             message: None,
             args: Vec::new(),
+            damage: None,
+            attacker: None,
+            block: None,
+        }
+    }
+
+    /// No player: `on load`, `every`, or a console run.
+    pub fn console() -> Self {
+        EventCtx {
+            player: None,
+            sender: Recipient::Console,
+            message: None,
+            args: Vec::new(),
+            damage: None,
+            attacker: None,
+            block: None,
         }
     }
 
@@ -52,6 +74,7 @@ pub struct ScriptTable {
     events: HashMap<EventKind, Vec<Arc<Trigger>>>,
     commands: BTreeMap<String, Arc<Trigger>>,
     functions: Vec<Option<Arc<Function>>>,
+    every: Vec<(u64, Arc<Trigger>)>,
     pub files: usize,
     pub triggers: usize,
 }
@@ -64,12 +87,16 @@ impl ScriptTable {
     pub fn command(&self, name: &str) -> Option<&CommandDef> {
         match &self.commands.get(name)?.kind {
             TriggerKind::Command(d) => Some(d),
-            TriggerKind::Event(_) => None,
+            TriggerKind::Event(_) | TriggerKind::Every(_) => None,
         }
     }
 
     pub fn has_event(&self, k: EventKind) -> bool {
         self.events.get(&k).is_some_and(|v| !v.is_empty())
+    }
+
+    pub fn has_every(&self) -> bool {
+        !self.every.is_empty()
     }
 }
 
@@ -180,6 +207,7 @@ impl Exec {
         let seen = ctx
             .player
             .iter()
+            .chain(ctx.attacker.iter())
             .map(|p| (p.uuid.clone(), Some(p.name.clone())))
             .collect();
         Exec {
@@ -289,6 +317,7 @@ fn build_table(files: &[(String, String)]) -> (ScriptTable, Vec<ScriptError>) {
             let t = Arc::new(t);
             match &t.kind {
                 TriggerKind::Event(k) => table.events.entry(*k).or_default().push(t.clone()),
+                TriggerKind::Every(ticks) => table.every.push((*ticks, t.clone())),
                 TriggerKind::Command(d) => {
                     if table.commands.contains_key(&d.name) {
                         errors.push(ScriptError::new(
@@ -405,15 +434,28 @@ impl Engine {
             Ok(a) => a,
             Err(msg) => return CommandOutcome::Usage(msg),
         };
-        let ctx = EventCtx {
-            player,
-            sender,
-            message: None,
-            args,
-        };
+        let mut ctx = EventCtx::console();
+        ctx.player = player;
+        ctx.sender = sender;
+        ctx.args = args;
         let ex = Exec::new(&trig, ctx);
         self.start(ex, host);
         CommandOutcome::Ran
+    }
+
+    /// Call once per server tick with a counter that goes up by one. Runs the
+    /// `every ...:` triggers that are due.
+    pub fn tick(&mut self, tick: u64, host: &mut dyn Host) {
+        if self.table.every.is_empty() {
+            return;
+        }
+        let table = self.table.clone();
+        for (period, trig) in &table.every {
+            if *period > 0 && tick % period == 0 {
+                let ex = Exec::new(trig, EventCtx::console());
+                self.start(ex, host);
+            }
+        }
     }
 
     /// Continue a run that called `wait`.
@@ -1014,6 +1056,20 @@ impl Engine {
                 None => Value::None,
             },
             Expr::Message => ex.ctx.message.clone().map(Value::Text).unwrap_or(Value::None),
+            Expr::Damage => ex.ctx.damage.map(Value::Num).unwrap_or(Value::None),
+            Expr::Attacker => match ex.ctx.attacker.clone() {
+                Some(a) => online(&Value::Player(a), &mut ex.seen, host)
+                    .map(Value::Player)
+                    .unwrap_or(Value::None),
+                None => Value::None,
+            },
+            Expr::ClickedBlock => match &ex.ctx.block {
+                Some(b) => Value::Item {
+                    id: b.clone(),
+                    count: 1,
+                },
+                None => Value::None,
+            },
             Expr::Arg(i) => ex.ctx.args.get(i.wrapping_sub(1)).cloned().unwrap_or(Value::None),
             Expr::NameOf(inner) => {
                 let v = self.eval(inner, ex, host)?;

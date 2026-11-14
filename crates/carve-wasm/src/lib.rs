@@ -7,14 +7,16 @@ use std::sync::Mutex;
 use carve_core::{
     CommandOutcome, Engine, EventCtx, EventKind, Host, LogLevel, PlayerRef, Recipient, ScriptError, Variables,
 };
+use pumpkin_plugin_api::DamageType;
 use pumpkin_plugin_api::command::{
     ArgumentType, Command, CommandError, CommandNode, CommandSender, ConsumedArgs, StringType,
 };
 use pumpkin_plugin_api::commands::CommandHandler;
 use pumpkin_plugin_api::common::Hand;
 use pumpkin_plugin_api::events::{
-    BlockBreakEvent, BlockPlaceEvent, EventData, EventHandler, EventPriority, FromIntoEvent, PlayerChatEvent,
-    PlayerJoinEvent, PlayerLeaveEvent,
+    BlockBreakEvent, BlockPlaceEvent, EntityDamageByEntityEvent, EntityDamageEvent, EventData, EventHandler,
+    EventPriority, FromIntoEvent, InteractAction, PlayerChatEvent, PlayerDeathEvent, PlayerInteractEvent,
+    PlayerJoinEvent, PlayerLeaveEvent, PlayerRespawnEvent,
 };
 use pumpkin_plugin_api::logging::{LogLevel as ApiLevel, log};
 use pumpkin_plugin_api::permission::{Permission, PermissionDefault, PermissionLevel};
@@ -41,6 +43,12 @@ struct State {
     data_dir: String,
     /// Script commands registered with the server (only possible at load).
     registered: BTreeSet<String>,
+    /// entity id -> player uuid, rebuilt at most once per tick on a miss.
+    entity_players: Vec<(i32, String)>,
+    entity_map_tick: u64,
+    /// Victim of the damage event being handled, and whether scripts already ran
+    /// for it (the by-entity event that may follow must not run them twice).
+    damage_pending: Option<(i32, bool, u64)>,
 }
 
 static STATE: Mutex<Option<State>> = Mutex::new(None);
@@ -405,12 +413,7 @@ impl EventAccess for BlockBreakEvent {
     fn ctx(d: &EventData<Self>) -> EventCtx {
         match &d.player {
             Some(p) => EventCtx::player(player_ref(p)),
-            None => EventCtx {
-                player: None,
-                sender: Recipient::Console,
-                message: None,
-                args: Vec::new(),
-            },
+            None => EventCtx::console(),
         }
     }
     fn set_cancelled(d: &mut EventData<Self>) {
@@ -424,6 +427,186 @@ impl EventAccess for BlockPlaceEvent {
     }
     fn set_cancelled(d: &mut EventData<Self>) {
         d.cancelled = true;
+    }
+}
+
+impl EventAccess for PlayerDeathEvent {
+    fn ctx(d: &EventData<Self>) -> EventCtx {
+        EventCtx::player(player_ref(&d.player))
+    }
+    fn set_cancelled(d: &mut EventData<Self>) {
+        d.cancelled = true;
+    }
+}
+
+impl EventAccess for PlayerRespawnEvent {
+    fn ctx(d: &EventData<Self>) -> EventCtx {
+        EventCtx::player(player_ref(&d.player))
+    }
+    fn set_cancelled(_d: &mut EventData<Self>) {}
+}
+
+/// Left and right clicks: runs `on click` and `on right/left click`.
+struct OnInteract;
+
+impl EventHandler<PlayerInteractEvent> for OnInteract {
+    fn handle(
+        &self,
+        server: Server,
+        mut data: EventData<PlayerInteractEvent>,
+    ) -> EventData<PlayerInteractEvent> {
+        let specific = match data.action {
+            InteractAction::RightClickAir | InteractAction::RightClickBlock => EventKind::RightClick,
+            InteractAction::LeftClickAir | InteractAction::LeftClickBlock => EventKind::LeftClick,
+        };
+        let cancelled = with_state(&server, None, |st, host| {
+            let t = st.engine.table();
+            if !t.has_event(EventKind::Click) && !t.has_event(specific) {
+                return false;
+            }
+            let mut ctx = EventCtx::player(player_ref(&data.player));
+            let block = data.block.strip_prefix("minecraft:").unwrap_or(&data.block);
+            ctx.block = Some(if block.is_empty() {
+                "air".to_string()
+            } else {
+                block.to_string()
+            });
+            let mut th = TickHost {
+                inner: host,
+                hs: &mut st.hs,
+            };
+            let a = st.engine.fire(specific, ctx.clone(), &mut th).cancelled;
+            let b = st.engine.fire(EventKind::Click, ctx, &mut th).cancelled;
+            a || b
+        });
+        if cancelled == Some(true) {
+            data.cancelled = true;
+        }
+        data
+    }
+}
+
+/// Damage types that come with an attacking entity. For these, scripts run
+/// from the by-entity event that follows, so `attacker` is known.
+fn has_attacker(t: DamageType) -> bool {
+    matches!(
+        t,
+        DamageType::Arrow
+            | DamageType::Fireball
+            | DamageType::Fireworks
+            | DamageType::MaceSmash
+            | DamageType::MobAttack
+            | DamageType::MobAttackNoAggro
+            | DamageType::MobProjectile
+            | DamageType::PlayerAttack
+            | DamageType::PlayerExplosion
+            | DamageType::SonicBoom
+            | DamageType::Spear
+            | DamageType::Spit
+            | DamageType::Sting
+            | DamageType::Thorns
+            | DamageType::Thrown
+            | DamageType::Trident
+            | DamageType::WindCharge
+            | DamageType::WitherSkull
+    )
+}
+
+impl State {
+    /// The online player with this entity id, if any.
+    fn player_by_entity(&mut self, host: &mut WasmHost, id: i32) -> Option<PlayerRef> {
+        let find = |list: &[(i32, String)]| list.iter().find(|(e, _)| *e == id).map(|(_, u)| u.clone());
+        let uuid = match find(&self.entity_players) {
+            Some(u) => Some(u),
+            None if self.entity_map_tick != self.hs.tick => {
+                self.entity_map_tick = self.hs.tick;
+                self.entity_players = host
+                    .server
+                    .get_all_players()
+                    .iter()
+                    .map(|p| (p.as_entity().get_id() as i32, uuid::to_string(p.get_id())))
+                    .collect();
+                find(&self.entity_players)
+            }
+            None => None,
+        }?;
+        let name = host.resolve_player(&uuid)?;
+        Some(PlayerRef { uuid, name })
+    }
+
+    fn fire_damage(
+        &mut self,
+        host: &mut WasmHost,
+        victim: PlayerRef,
+        damage: f32,
+        attacker: Option<PlayerRef>,
+    ) -> bool {
+        let mut ctx = EventCtx::player(victim);
+        ctx.damage = Some(f64::from(damage));
+        ctx.attacker = attacker;
+        let mut th = TickHost {
+            inner: host,
+            hs: &mut self.hs,
+        };
+        self.engine.fire(EventKind::Damage, ctx, &mut th).cancelled
+    }
+}
+
+struct OnDamage;
+
+impl EventHandler<EntityDamageEvent> for OnDamage {
+    fn handle(&self, server: Server, mut data: EventData<EntityDamageEvent>) -> EventData<EntityDamageEvent> {
+        let cancelled = with_state(&server, None, |st, host| {
+            if !st.engine.table().has_event(EventKind::Damage) {
+                return false;
+            }
+            let Some(victim) = st.player_by_entity(host, data.entity_id) else {
+                return false;
+            };
+            if has_attacker(data.damage_type) {
+                st.damage_pending = Some((data.entity_id, false, st.hs.tick));
+                return false;
+            }
+            st.damage_pending = Some((data.entity_id, true, st.hs.tick));
+            st.fire_damage(host, victim, data.damage, None)
+        });
+        if cancelled == Some(true) {
+            data.cancelled = true;
+        }
+        data
+    }
+}
+
+struct OnDamageByEntity;
+
+impl EventHandler<EntityDamageByEntityEvent> for OnDamageByEntity {
+    fn handle(
+        &self,
+        server: Server,
+        mut data: EventData<EntityDamageByEntityEvent>,
+    ) -> EventData<EntityDamageByEntityEvent> {
+        let cancelled = with_state(&server, None, |st, host| {
+            if !st.engine.table().has_event(EventKind::Damage) {
+                return false;
+            }
+            // Already handled by the plain damage event of this hit.
+            if let Some((id, true, tick)) = st.damage_pending
+                && id == data.entity_id
+                && tick == st.hs.tick
+            {
+                return false;
+            }
+            st.damage_pending = None;
+            let Some(victim) = st.player_by_entity(host, data.entity_id) else {
+                return false;
+            };
+            let attacker = st.player_by_entity(host, data.damager_id);
+            st.fire_damage(host, victim, data.damage, attacker)
+        });
+        if cancelled == Some(true) {
+            data.cancelled = true;
+        }
+        data
     }
 }
 
@@ -551,6 +734,9 @@ impl CommandHandler for ReloadCommand {
         });
         match result {
             Some(Ok(lines)) => {
+                if lines.first().is_some_and(|l| l.starts_with("&aReloaded")) {
+                    fire_load(&server);
+                }
                 for l in lines {
                     sender.send_message(text(&l));
                 }
@@ -588,8 +774,28 @@ fn tick(server: Server) {
             };
             st.engine.resume(tok, &mut th);
         }
+        if st.engine.table().has_every() {
+            let mut th = TickHost {
+                inner: host,
+                hs: &mut st.hs,
+            };
+            st.engine.tick(now, &mut th);
+        }
         if let Some(json) = st.engine.save_due(now * 50) {
             st.save(&json);
+        }
+    });
+}
+
+/// Run `on load` triggers (after the first load and after each good reload).
+fn fire_load(server: &Server) {
+    with_state(server, None, |st, host| {
+        if st.engine.table().has_event(EventKind::Load) {
+            let mut th = TickHost {
+                inner: host,
+                hs: &mut st.hs,
+            };
+            st.engine.fire(EventKind::Load, EventCtx::console(), &mut th);
         }
     });
 }
@@ -725,6 +931,21 @@ impl Plugin for Carve {
         register_event::<PlayerChatEvent>(&context, EventKind::Chat);
         register_event::<BlockBreakEvent>(&context, EventKind::Break);
         register_event::<BlockPlaceEvent>(&context, EventKind::Place);
+        register_event::<PlayerDeathEvent>(&context, EventKind::Death);
+        register_event::<PlayerRespawnEvent>(&context, EventKind::Respawn);
+        for r in [
+            context.register_event_handler::<PlayerInteractEvent, _>(OnInteract, EventPriority::Normal, true),
+            context.register_event_handler::<EntityDamageEvent, _>(OnDamage, EventPriority::Normal, true),
+            context.register_event_handler::<EntityDamageByEntityEvent, _>(
+                OnDamageByEntity,
+                EventPriority::Normal,
+                true,
+            ),
+        ] {
+            if let Err(e) = r {
+                plog(ApiLevel::Error, &format!("could not listen to an event: {e}"));
+            }
+        }
 
         if let Ok(mut g) = STATE.try_lock() {
             *g = Some(State {
@@ -735,9 +956,13 @@ impl Plugin for Carve {
                 },
                 data_dir,
                 registered,
+                entity_players: Vec::new(),
+                entity_map_tick: u64::MAX,
+                damage_pending: None,
             });
         }
         schedule_repeating_task(1, 1, tick);
+        fire_load(&context.get_server());
         Ok(())
     }
 

@@ -1,0 +1,37 @@
+# Combat helpers: kill counts, a no-PvP zone, a magic wand and a timer.
+options:
+    safe-radius: 30
+
+on load:
+    if {spawn} is not set:
+        set {spawn} to location(0, 64, 0)
+
+on damage:
+    if attacker is set:
+        if distance between victim and {spawn} < {@safe-radius}:
+            cancel event
+            send "&cNo fighting near spawn." to attacker
+            stop
+        set {lasthit::%uuid of victim%} to name of attacker
+
+on death:
+    if {lasthit::%uuid of player%} is set:
+        add 1 to {kills::%{lasthit::%uuid of player%}%}
+        broadcast "&c%player% &7was slain by &c%{lasthit::%uuid of player%}%"
+        delete {lasthit::%uuid of player%}
+
+on respawn:
+    send "&7You respawned. Type /kills to see the scoreboard." to player
+
+on right click with blaze rod:
+    teleport player to location(x of player, y of player + 5, z of player)
+    send action bar "&6Whoosh!" to player
+
+command /kills:
+    trigger:
+        loop all players:
+            if {kills::%name of loop-player%} is set:
+                send "&e%loop-player%: &f%{kills::%name of loop-player%}% kills"
+
+every 10 minutes:
+    broadcast "&7Tip: the area around spawn is a no-PvP zone."

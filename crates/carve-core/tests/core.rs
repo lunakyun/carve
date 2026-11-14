@@ -1577,3 +1577,116 @@ fn random_numbers_stay_in_range() {
     e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
     assert_eq!(h.take(), ["send Steve 6"]);
 }
+
+// ---------- v2: more events, on load, every ----------
+
+#[test]
+fn damage_death_respawn_events() {
+    let mut e = engine(
+        "on damage:\n    send \"hit %damage% by %attacker%\" to victim\n    if damage > 5:\n        cancel event\non death of player:\n    broadcast \"%player% was killed by %attacker%\"\non respawn:\n    send \"welcome back\" to player\n",
+    );
+    let mut h = with_alex(Mock::with_steve());
+    let mut ctx = EventCtx::player(steve());
+    ctx.damage = Some(3.0);
+    ctx.attacker = Some(PlayerRef {
+        uuid: "u2".into(),
+        name: "Alex".into(),
+    });
+    assert!(!e.fire(EventKind::Damage, ctx.clone(), &mut h).cancelled);
+    ctx.damage = Some(7.5);
+    ctx.attacker = None;
+    assert!(e.fire(EventKind::Damage, ctx.clone(), &mut h).cancelled);
+    e.fire(EventKind::Death, ctx, &mut h);
+    e.fire(EventKind::Respawn, EventCtx::player(steve()), &mut h);
+    assert_eq!(
+        h.take(),
+        [
+            "send Steve hit 3 by Alex",
+            "send Steve hit 7.5 by <none>",
+            "broadcast Steve was killed by <none>",
+            "send Steve welcome back"
+        ]
+    );
+}
+
+#[test]
+fn click_events_with_filters() {
+    let mut e = engine(
+        "on right click with diamond sword on barrel:\n    send \"open %clicked block%\"\non right click on stone:\n    cancel event\non left click:\n    send \"left %clicked block%\"\non click with stick:\n    send \"any click with a stick\"\n",
+    );
+    let mut h = Mock::with_steve();
+    let mut ctx = EventCtx::player(steve());
+    ctx.block = Some("barrel".into());
+    h.held = Some(("diamond_sword".into(), 1));
+    e.fire(EventKind::RightClick, ctx.clone(), &mut h);
+    e.fire(EventKind::Click, ctx.clone(), &mut h);
+    h.held = Some(("stick".into(), 1));
+    e.fire(EventKind::RightClick, ctx.clone(), &mut h);
+    e.fire(EventKind::Click, ctx.clone(), &mut h);
+    ctx.block = Some("stone".into());
+    assert!(e.fire(EventKind::RightClick, ctx.clone(), &mut h).cancelled);
+    e.fire(EventKind::LeftClick, ctx, &mut h);
+    assert_eq!(
+        h.take(),
+        [
+            "send Steve open barrel",
+            "send Steve any click with a stick",
+            "send Steve left stone"
+        ]
+    );
+}
+
+#[test]
+fn on_load_and_every() {
+    let mut e = engine(
+        "on load:\n    set {booted} to true\n    broadcast \"loaded\"\nevery 2 seconds:\n    add 1 to {beats}\nevery tick:\n    add 1 to {ticks}\n",
+    );
+    let mut h = Mock::default();
+    e.fire(EventKind::Load, EventCtx::console(), &mut h);
+    for t in 1..=100 {
+        e.tick(t, &mut h);
+    }
+    assert_eq!(h.take(), ["broadcast loaded"]);
+    assert_eq!(e.vars.get("beats"), Value::Num(2.0));
+    assert_eq!(e.vars.get("ticks"), Value::Num(100.0));
+    assert!(e.table().has_every());
+}
+
+#[test]
+fn new_event_errors() {
+    assert!(
+        errors_of("on load:\n    send \"%player%\"\n")[0]
+            .msg
+            .contains("doesn't exist in 'on load'")
+    );
+    assert!(
+        errors_of("every 5 seconds:\n    kill player\n")[0]
+            .msg
+            .contains("can't understand")
+    );
+    assert!(
+        errors_of("every 5 lightyears:\n    stop\n")[0]
+            .msg
+            .contains("every 5 seconds")
+    );
+    assert!(
+        errors_of("on respawn:\n    cancel event\n")[0]
+            .msg
+            .contains("can't be cancelled")
+    );
+    assert!(
+        errors_of("on join:\n    send \"%damage%\"\n")[0]
+            .msg
+            .contains("can't understand")
+    );
+    assert!(
+        errors_of("on right click with diamondz:\n    stop\n")[0]
+            .msg
+            .contains("not an item")
+    );
+    assert!(
+        errors_of("on join with stone:\n    stop\n")[0]
+            .msg
+            .contains("only works for click events")
+    );
+}

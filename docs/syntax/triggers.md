@@ -17,6 +17,14 @@ on join:
 | `on chat:` | `on player chat:` | a player sends a chat message |
 | `on break:` | `on block break:`, `on mine:` | a block is broken |
 | `on place:` | `on block place:` | a player places a block |
+| `on death:` | `on death of player:`, `on player death:` | a player dies |
+| `on damage:` | `on damage of player:`, `on player damage:` | a player takes damage |
+| `on respawn:` | `on player respawn:` | a player respawns |
+| `on right click:` | `on rightclick:` | a player right-clicks (air or a block) |
+| `on left click:` | `on leftclick:` | a player left-clicks (air or a block) |
+| `on click:` | | either click |
+| `on load:` | `on script load:`, `on server start:` | scripts were loaded or reloaded |
+| `every 5 seconds:` | `every 20 ticks:`, `every 2 minutes:`, `every second:` | on a timer |
 
 Notes:
 
@@ -24,8 +32,10 @@ Notes:
   `player` (it is `<none>`).
 - `on chat:` also has `message`, the chat text. Using `message` in any other
   trigger is a load error.
-- `cancel event` works in all five, before the first `wait`. Chat, break and
-  place are stopped. What a cancelled join or quit does is up to Pumpkin.
+- `cancel event` works before the first `wait`. Chat, break, place, damage,
+  death and clicks are stopped. What a cancelled join or quit does is up to
+  Pumpkin. Cancelling `on respawn`, `on load` or `every` is a load error.
+- `on load` and `every` have no `player`; using it there is a load error.
 - You can have many triggers for the same event, in one file or many. They
   run in file order (files sorted by name). If any of them cancels the event,
   it is cancelled.
@@ -101,3 +111,77 @@ command /greet <player> [<text>]:
 
 Arguments, permissions and everything else about commands is on the
 [commands](../commands.md) page.
+
+## Damage and death
+
+```
+on damage:
+    if attacker is set:
+        send "%attacker% hit you for %damage%" to victim
+    if damage > 10:
+        cancel event
+
+on death of player:
+    broadcast "%player% died"
+```
+
+| Expression | Where | Meaning |
+|---|---|---|
+| `damage` | `on damage` | Damage of this hit, a number (2 = one heart). |
+| `attacker` | `on damage`, `on death` | The attacking player, or `<none>` for mobs, falls and the like. |
+| `victim` | `on damage`, `on death` | Same as `player`. |
+
+Only players are covered: damage to mobs doesn't run `on damage`. Pumpkin's
+death event has no attacker, so in `on death` it is always `<none>`. Use
+`on damage` and check `health of player` for that.
+
+Cancelling `on death` stops Pumpkin's death handling, but the player keeps 0
+health. Heal them in the same trigger.
+
+## Clicks
+
+```
+on right click with blaze rod:
+    send "Whoosh!" to player
+
+on right click on barrel:
+    cancel event
+    send "This barrel is locked." to player
+
+on left click with stick on stone:
+    send "You poked %clicked block%." to player
+```
+
+- `with <item>` checks the item in the player's main hand.
+- `on <block>` checks the clicked block.
+- Both can be used, in any order. They are checked before the first line runs.
+- `clicked block` (also `event-block`) is the block type as an item value
+  (`air` when clicking air). It compares with item names:
+  `if clicked block is chest:`.
+
+## `on load`
+
+Runs after the server loads the scripts, and after every successful
+`/carve reload`. Good for setting defaults:
+
+```
+on load:
+    if {spawn} is not set:
+        set {spawn} to location(0, 64, 0)
+```
+
+## `every`
+
+```
+every 5 minutes:
+    broadcast "&eDon't forget to vote!"
+
+every 1 second:
+    loop all players:
+        send action bar "&7Coins: %{coins::%uuid of loop-player%}%" to loop-player
+```
+
+The timer counts server ticks from when the plugin loaded (20 ticks = 1
+second). A `wait` inside `every` doesn't delay the next round; rounds can
+overlap if the wait is longer than the period.
+

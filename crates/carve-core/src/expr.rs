@@ -106,6 +106,12 @@ pub enum Expr {
     Distance(Box<Expr>, Box<Expr>),
     /// `random integer between a and b` (true) / `random number between a and b`.
     Random(bool, Box<Expr>, Box<Expr>),
+    /// `damage` in `on damage`.
+    Damage,
+    /// `attacker` in `on damage` / `on death` (a player, or `<none>`).
+    Attacker,
+    /// `clicked block` in click events (an item value of the block type).
+    ClickedBlock,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -188,6 +194,11 @@ pub struct Env {
     pub functions: std::sync::Arc<Vec<Sig>>,
     /// Inside a function body: no event values (`player`, `message`, `arg`).
     pub in_function: bool,
+    /// The trigger has no player (`on load`, `every`).
+    pub no_player: bool,
+    pub has_damage: bool,
+    pub has_attacker: bool,
+    pub has_block: bool,
 }
 
 impl Expr {
@@ -201,7 +212,9 @@ impl Expr {
             Expr::Prop(p, _) => p.ty(),
             Expr::Loc(..) => Ty::Location,
             Expr::WorldNamed(_) => Ty::World,
-            Expr::Distance(..) | Expr::Random(..) => Ty::Number,
+            Expr::Distance(..) | Expr::Random(..) | Expr::Damage => Ty::Number,
+            Expr::Attacker => Ty::Player,
+            Expr::ClickedBlock => Ty::Item,
             Expr::LoopValue(d) => match env.loops.get(*d) {
                 Some(LoopKind::Times) => Ty::Number,
                 Some(LoopKind::Players) => Ty::Player,
@@ -476,7 +489,27 @@ impl P<'_> {
                     "player" if self.env.in_function => {
                         Err("'player' doesn't exist inside a function; pass the player as a parameter".into())
                     }
+                    "player" | "victim" if self.env.no_player => Err(format!(
+                        "'{lw}' doesn't exist in {}: nobody started it",
+                        self.env.trigger_name
+                    )),
                     "player" => Ok(Expr::Player),
+                    "victim" if self.env.has_damage || self.env.has_attacker => Ok(Expr::Player),
+                    "damage" if self.env.has_damage && !self.env.in_function => Ok(Expr::Damage),
+                    "attacker" | "damager" if self.env.has_attacker && !self.env.in_function => {
+                        Ok(Expr::Attacker)
+                    }
+                    "clicked" | "event-block"
+                        if self.env.has_block
+                            && !self.env.in_function
+                            && (lw == "event-block"
+                                || matches!(self.peek(), Some(t) if t.is_lit("block"))) =>
+                    {
+                        if lw == "clicked" {
+                            self.pos += 1;
+                        }
+                        Ok(Expr::ClickedBlock)
+                    }
                     "message" => {
                         if self.env.has_message && !self.env.in_function {
                             Ok(Expr::Message)

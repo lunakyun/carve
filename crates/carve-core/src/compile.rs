@@ -15,6 +15,15 @@ pub enum EventKind {
     Chat,
     Break,
     Place,
+    Death,
+    Damage,
+    Respawn,
+    /// Any click (left or right).
+    Click,
+    RightClick,
+    LeftClick,
+    /// After scripts load or reload.
+    Load,
 }
 
 impl EventKind {
@@ -25,6 +34,13 @@ impl EventKind {
             EventKind::Chat => "chat",
             EventKind::Break => "break",
             EventKind::Place => "place",
+            EventKind::Death => "death",
+            EventKind::Damage => "damage",
+            EventKind::Respawn => "respawn",
+            EventKind::Click => "click",
+            EventKind::RightClick => "right click",
+            EventKind::LeftClick => "left click",
+            EventKind::Load => "load",
         }
     }
 
@@ -35,8 +51,25 @@ impl EventKind {
             "chat" | "player chat" => EventKind::Chat,
             "break" | "block break" | "mine" => EventKind::Break,
             "place" | "block place" => EventKind::Place,
+            "death" | "death of player" | "player death" => EventKind::Death,
+            "damage" | "damage of player" | "player damage" => EventKind::Damage,
+            "respawn" | "player respawn" => EventKind::Respawn,
+            "click" | "rightclick" | "right click" => {
+                if s == "click" {
+                    EventKind::Click
+                } else {
+                    EventKind::RightClick
+                }
+            }
+            "leftclick" | "left click" => EventKind::LeftClick,
+            "load" | "script load" | "server start" | "skript load" => EventKind::Load,
             _ => return None,
         })
+    }
+
+    /// Whether `cancel event` means anything here.
+    pub fn cancellable(self) -> bool {
+        !matches!(self, EventKind::Respawn | EventKind::Load)
     }
 }
 
@@ -84,6 +117,8 @@ impl CommandDef {
 pub enum TriggerKind {
     Event(EventKind),
     Command(CommandDef),
+    /// `every 5 seconds:`, period in ticks.
+    Every(u64),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -444,6 +479,8 @@ struct Cx<'a> {
     is_command: bool,
     /// Return type of the function being compiled (`Some(None)`: returns nothing).
     func_ret: Option<Option<Ty>>,
+    /// Why `cancel event` is not allowed here, if it isn't.
+    no_cancel: Option<String>,
     code: Vec<Instr>,
     lines: Vec<usize>,
     errors: Vec<ScriptError>,
@@ -919,6 +956,12 @@ impl Cx<'_> {
                         self.err(num, "functions have no event to cancel");
                         return;
                     }
+                    if p.kind == EffKind::Cancel
+                        && let Some(why) = self.no_cancel.clone()
+                    {
+                        self.err(num, why);
+                        return;
+                    }
                     if matches!(p.kind, EffKind::Add | EffKind::Remove) {
                         let not_list = matches!(caps.get(1), Some(Some(Capture::Var(v))) if !v.is_list());
                         let ty = match caps.first() {
@@ -1332,6 +1375,7 @@ pub fn compile_all(files: &[(String, String)]) -> Compiled {
             env,
             is_command: false,
             func_ret: Some(sig.ret),
+            no_cancel: None,
             code: Vec::new(),
             lines: Vec::new(),
             errors: errs,
@@ -1528,11 +1572,61 @@ fn parse_function_header(
     ))
 }
 
+/// `right click with tnt on barrel` -> ("right click", [("with", "tnt"), ("on", "barrel")]).
+fn split_click_filters(ev: &str) -> (&str, Vec<(&'static str, String)>) {
+    let mut base = ev;
+    let mut filters = Vec::new();
+    // Find the first ` with ` / ` on ` and split from there.
+    let first = [" with ", " on "].iter().filter_map(|k| ev.find(k)).min();
+    if let Some(i) = first {
+        base = ev.get(..i).unwrap_or(ev).trim();
+        let mut rest = ev.get(i..).unwrap_or("").trim();
+        while !rest.is_empty() {
+            let (key, after) = if let Some(r) = rest.strip_prefix("with ") {
+                ("with", r)
+            } else if let Some(r) = rest.strip_prefix("on ") {
+                ("on", r)
+            } else {
+                break;
+            };
+            let next = [" with ", " on "]
+                .iter()
+                .filter_map(|k| after.find(k))
+                .min()
+                .unwrap_or(after.len());
+            filters.push((key, after.get(..next).unwrap_or(after).trim().to_string()));
+            rest = after.get(next..).unwrap_or("").trim();
+        }
+    }
+    (base, filters)
+}
+
+/// `5 seconds`, `1 minute`, `20 ticks`, `second` -> ticks.
+fn parse_every(s: &str) -> Option<u64> {
+    let mut parts = s.split_whitespace();
+    let (n, unit) = match (parts.next(), parts.next(), parts.next()) {
+        (Some(n), Some(u), None) => (n.parse::<f64>().ok()?, u),
+        (Some(u), None, None) => (1.0, u),
+        _ => return None,
+    };
+    let per = match unit {
+        "tick" | "ticks" => 1.0,
+        "second" | "seconds" => 20.0,
+        "minute" | "minutes" => 1200.0,
+        "hour" | "hours" => 72000.0,
+        _ => return None,
+    };
+    let ticks = (n * per).round();
+    (ticks >= 1.0 && ticks.is_finite()).then_some(ticks as u64)
+}
+
 fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Trigger>, Vec<ScriptError>) {
     let file_arc: Arc<str> = Arc::from(file);
     let mut triggers = Vec::new();
     let mut errors = Vec::new();
+    let mut click_filters: Vec<(&'static str, String)> = Vec::new();
     for top in tree {
+        click_filters.clear();
         let lower = top.head().to_ascii_lowercase();
         if lower.starts_with("function ") {
             continue;
@@ -1548,109 +1642,175 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
             ));
             continue;
         }
-        let (kind, body, env, is_command): (TriggerKind, &[Line], Env, bool) =
-            if let Some(ev) = lower.strip_prefix("on ") {
-                let Some(k) = EventKind::parse(ev.trim()) else {
-                    errors.push(ScriptError::new(
+        let (kind, body, env, is_command): (TriggerKind, &[Line], Env, bool) = if let Some(ev) =
+            lower.strip_prefix("on ")
+        {
+            let (ev, filters) = split_click_filters(ev.trim());
+            let Some(k) = EventKind::parse(ev) else {
+                errors.push(ScriptError::new(
                         file,
                         top.num,
                         format!(
-                            "unknown event '{}', known: join, quit, chat, break, place",
-                            ev.trim()
+                            "unknown event '{ev}', known: join, quit, chat, break, place, death, damage, respawn, click, right click, left click, load (and 'every N seconds:')"
                         ),
                     ));
-                    continue;
-                };
-                let env = Env {
-                    has_message: k == EventKind::Chat,
-                    arg_types: vec![],
-                    trigger_name: format!("'on {}'", k.name()),
-                    ..Env::default()
-                };
-                (TriggerKind::Event(k), &top.children, env, false)
-            } else if lower.starts_with("command") {
-                let mut def = match parse_command_header(file, top.num, top.head()) {
-                    Ok(d) => d,
-                    Err(e) => {
-                        errors.push(e);
-                        continue;
-                    }
-                };
-                let mut body: Option<&[Line]> = None;
-                for entry in &top.children {
-                    let el = entry.text.to_ascii_lowercase();
-                    if el == "trigger:" {
-                        body = Some(&entry.children);
-                    } else if el.starts_with("permission:") {
-                        let v = entry.text.get("permission:".len()..).unwrap_or("").trim();
-                        def.permission = Some(v.to_string()).filter(|s| !s.is_empty());
-                    } else if el.starts_with("description:") {
-                        def.description = Some(
-                            entry
-                                .text
-                                .get("description:".len()..)
-                                .unwrap_or("")
-                                .trim()
-                                .to_string(),
-                        );
-                    } else {
-                        errors.push(ScriptError::new(
-                            file,
-                            entry.num,
-                            format!(
-                                "unknown command entry '{}', use permission:, description: or trigger:",
-                                entry.text
-                            ),
-                        ));
-                    }
-                }
-                let Some(body) = body else {
-                    errors.push(ScriptError::new(
-                        file,
-                        top.num,
-                        "command has no 'trigger:' section",
-                    ));
-                    continue;
-                };
-                let arg_types = def
-                    .args
-                    .iter()
-                    .map(|a| match a.ty {
-                        ArgTy::Text => Ty::Text,
-                        ArgTy::Number => Ty::Number,
-                        ArgTy::Player => Ty::Player,
-                    })
-                    .collect();
-                let env = Env {
-                    has_message: false,
-                    arg_types,
-                    trigger_name: format!("command /{}", def.name),
-                    ..Env::default()
-                };
-                (TriggerKind::Command(def), body, env, true)
-            } else {
+                continue;
+            };
+            if !filters.is_empty()
+                && !matches!(k, EventKind::Click | EventKind::RightClick | EventKind::LeftClick)
+            {
                 errors.push(ScriptError::new(
                     file,
                     top.num,
-                    format!(
-                        "unknown trigger '{}', expected 'on <event>:' or 'command /name:'",
-                        top.head()
-                    ),
+                    "'on ... with/on <item>' only works for click events",
+                ));
+                continue;
+            }
+            let env = Env {
+                has_message: k == EventKind::Chat,
+                arg_types: vec![],
+                trigger_name: format!("'on {}'", k.name()),
+                no_player: k == EventKind::Load,
+                has_damage: k == EventKind::Damage,
+                has_attacker: matches!(k, EventKind::Damage | EventKind::Death),
+                has_block: matches!(k, EventKind::Click | EventKind::RightClick | EventKind::LeftClick),
+                ..Env::default()
+            };
+            click_filters.extend(filters);
+            (TriggerKind::Event(k), &top.children, env, false)
+        } else if let Some(rest) = lower.strip_prefix("every ") {
+            let Some(ticks) = parse_every(rest) else {
+                errors.push(ScriptError::new(
+                        file,
+                        top.num,
+                        format!("can't understand 'every {rest}', use 'every 5 seconds:', 'every 20 ticks:' or 'every 2 minutes:'"),
+                    ));
+                continue;
+            };
+            let env = Env {
+                trigger_name: format!("'every {rest}'"),
+                no_player: true,
+                ..Env::default()
+            };
+            (TriggerKind::Every(ticks), &top.children, env, false)
+        } else if lower.starts_with("command") {
+            let mut def = match parse_command_header(file, top.num, top.head()) {
+                Ok(d) => d,
+                Err(e) => {
+                    errors.push(e);
+                    continue;
+                }
+            };
+            let mut body: Option<&[Line]> = None;
+            for entry in &top.children {
+                let el = entry.text.to_ascii_lowercase();
+                if el == "trigger:" {
+                    body = Some(&entry.children);
+                } else if el.starts_with("permission:") {
+                    let v = entry.text.get("permission:".len()..).unwrap_or("").trim();
+                    def.permission = Some(v.to_string()).filter(|s| !s.is_empty());
+                } else if el.starts_with("description:") {
+                    def.description = Some(
+                        entry
+                            .text
+                            .get("description:".len()..)
+                            .unwrap_or("")
+                            .trim()
+                            .to_string(),
+                    );
+                } else {
+                    errors.push(ScriptError::new(
+                        file,
+                        entry.num,
+                        format!(
+                            "unknown command entry '{}', use permission:, description: or trigger:",
+                            entry.text
+                        ),
+                    ));
+                }
+            }
+            let Some(body) = body else {
+                errors.push(ScriptError::new(
+                    file,
+                    top.num,
+                    "command has no 'trigger:' section",
                 ));
                 continue;
             };
+            let arg_types = def
+                .args
+                .iter()
+                .map(|a| match a.ty {
+                    ArgTy::Text => Ty::Text,
+                    ArgTy::Number => Ty::Number,
+                    ArgTy::Player => Ty::Player,
+                })
+                .collect();
+            let env = Env {
+                has_message: false,
+                arg_types,
+                trigger_name: format!("command /{}", def.name),
+                ..Env::default()
+            };
+            (TriggerKind::Command(def), body, env, true)
+        } else {
+            errors.push(ScriptError::new(
+                file,
+                top.num,
+                format!(
+                    "unknown trigger '{}', expected 'on <event>:' or 'command /name:'",
+                    top.head()
+                ),
+            ));
+            continue;
+        };
+        let no_cancel = match &kind {
+            TriggerKind::Event(k) if !k.cancellable() => {
+                Some(format!("'on {}' can't be cancelled", k.name()))
+            }
+            TriggerKind::Every(_) => Some("'every' has no event to cancel".to_string()),
+            _ => None,
+        };
         let mut cx = Cx {
             file,
             env,
             is_command,
             func_ret: None,
+            no_cancel,
             code: Vec::new(),
             lines: Vec::new(),
             errors: Vec::new(),
             loops: Vec::new(),
         };
         cx.env.functions = sigs.clone();
+        // `on right click with diamond on stone:` checks first.
+        let mut guards = Vec::new();
+        for (what, text) in std::mem::take(&mut click_filters) {
+            let item = match lex(&text).and_then(|t| parse_expr(&t, &cx.env)) {
+                Ok(e) if e.ty(&cx.env) == Ty::Item => e,
+                _ => {
+                    cx.err(top.num, format!("'{text}' is not an item or block name"));
+                    continue;
+                }
+            };
+            let left = if what == "with" {
+                Expr::Prop(crate::expr::Prop::Tool, Box::new(Expr::Player))
+            } else {
+                Expr::ClickedBlock
+            };
+            let at = cx.emit(
+                Instr::JumpIfNot(Cond::Cmp(left, CmpOp::Eq, item), usize::MAX),
+                top.num,
+            );
+            guards.push(at);
+        }
         cx.block(body);
+        let end = cx.code.len();
+        for g in guards {
+            if let Some(Instr::JumpIfNot(_, t)) = cx.code.get_mut(g) {
+                *t = end;
+            }
+        }
         if cx.errors.is_empty() {
             triggers.push(Trigger {
                 file: file_arc.clone(),
