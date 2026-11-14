@@ -6,6 +6,7 @@ use crate::blocks::{Line, parse_blocks};
 use crate::error::ScriptError;
 use crate::expr::{Env, Expr, LoopKind, Sig, Ty, VarRef, parse_expr, parse_template, parse_varref};
 use crate::lexer::{Tok, lex};
+use crate::list_ops::ListSrc;
 use crate::pattern::{Capture, Memo, Pattern, closest};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -220,6 +221,10 @@ pub enum Effect {
     ListAdd(VarRef, Expr),
     /// `remove x from {list::*}`: remove every item equal to x.
     ListRemove(VarRef, Expr),
+    /// `set {x::*} to sorted {y::*}` and other list expressions.
+    SetList(VarRef, ListSrc),
+    /// `sort {x::*}` (true: descending).
+    SortList(VarRef, bool),
 }
 
 /// What a `loop` goes over.
@@ -227,6 +232,8 @@ pub enum Effect {
 pub enum LoopSrc {
     Times(Expr),
     List(VarRef),
+    /// `loop sorted {x::*}:` and other list expressions.
+    Items(ListSrc),
     Players,
     Values(Vec<Expr>),
 }
@@ -658,6 +665,15 @@ impl Cx<'_> {
                 return;
             }
         };
+        if want == Ty::List {
+            match crate::list_ops::parse_src_all(&toks, &self.env, true) {
+                Ok(s) => {
+                    self.emit(Instr::Return(Some(Expr::Items(Box::new(s)))), num);
+                }
+                Err(e) => self.err(num, format!("can't understand the returned list: {e}")),
+            }
+            return;
+        }
         match parse_expr(&toks, &self.env) {
             Ok(e) if want.accepts(e.ty(&self.env)) => {
                 self.emit(Instr::Return(Some(e)), num);
@@ -780,6 +796,15 @@ impl Cx<'_> {
                 }
                 Err(e) => {
                     self.err(num, format!("can't understand the loop count: {e}"));
+                    None
+                }
+            };
+        }
+        if crate::list_ops::looks_like_list_op(&toks, &self.env) {
+            return match crate::list_ops::parse_src_all(&toks, &self.env, true) {
+                Ok(s) => Some((LoopSrc::Items(s), LoopKind::List)),
+                Err(e) => {
+                    self.err(num, format!("can't understand 'loop {rest}': {e}"));
                     None
                 }
             };
@@ -976,6 +1001,17 @@ impl Cx<'_> {
         };
         if self.call_stmt(num, &toks) {
             return;
+        }
+        match crate::list_ops::parse_effect(&toks, &self.env) {
+            Some(Ok(eff)) => {
+                self.emit(Instr::Eff(eff), num);
+                return;
+            }
+            Some(Err(e)) => {
+                self.err(num, e);
+                return;
+            }
+            None => {}
         }
         let mut type_err = None;
         let mut memo = Memo::default();
@@ -1521,6 +1557,8 @@ pub fn type_from_name(name: &str) -> Option<Ty> {
         "location" => Ty::Location,
         "world" => Ty::World,
         "object" => Ty::Object,
+        "numbers" | "integers" | "texts" | "strings" | "players" | "booleans" | "items" | "itemtypes"
+        | "locations" | "worlds" | "objects" => Ty::List,
         _ => return None,
     })
 }
@@ -1593,7 +1631,7 @@ fn parse_function_header(
             })?;
             let pname = pname.trim().to_ascii_lowercase();
             let ty = type_from_name(pty).ok_or_else(|| {
-                err(format!("unknown type '{}' for parameter {pname} (use text, number, player, boolean, item, location, world or object; lists are not supported)", pty.trim()))
+                err(format!("unknown type '{}' for parameter {pname} (use text, number, player, boolean, item, location, world or object; for lists use numbers, texts, players, objects and so on)", pty.trim()))
             })?;
             if default.is_none() && defaults.iter().any(Option::is_some) {
                 return Err(err(format!(

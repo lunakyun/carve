@@ -196,6 +196,8 @@ impl LoopFrame {
 }
 
 /// `a, b and c`, like Skript prints a list.
+mod list_eval;
+
 fn join_list(items: &[(String, Value)], out: &mut String) {
     if items.is_empty() {
         out.push_str("<none>");
@@ -262,7 +264,13 @@ impl Exec {
     fn push_call(&mut self, f: &Function, args: Vec<Value>) {
         let mut locals = Locals::default();
         for ((key, _, _), v) in f.sig.params.iter().zip(args) {
-            locals.set(key, v);
+            if let Value::List(items) = v {
+                for (i, x) in items.into_iter().enumerate() {
+                    locals.set(&format!("{key}::{}", i + 1), x);
+                }
+            } else {
+                locals.set(key, v);
+            }
         }
         let caller = Frame {
             code: std::mem::replace(&mut self.code, f.code.clone()),
@@ -935,6 +943,10 @@ impl Engine {
                 }
                 LoopItems::Values(players.into_iter().map(Value::Player).collect())
             }
+            LoopSrc::Items(s) => {
+                let v = self.eval_list(s, ex, host)?;
+                LoopItems::List(v.into_iter().enumerate().map(|(i, x)| ((i + 1).to_string(), x)).collect())
+            }
             LoopSrc::List(v) => {
                 let key = self.key(v, ex, host)?;
                 let prefix = key.strip_suffix('*').unwrap_or(&key);
@@ -1400,6 +1412,8 @@ impl Engine {
                     .map(Value::Num)
                     .unwrap_or(Value::None)
             }
+            Expr::Items(s) => Value::List(self.eval_list(s, ex, host)?),
+            Expr::ListAgg(a, s) => self.eval_agg(*a, s, ex, host)?,
             Expr::RandomOf(v) => {
                 let items = self.list_items(v, ex, host)?;
                 if items.is_empty() {
@@ -1692,6 +1706,8 @@ impl Engine {
                     }
                 }
             }
+            Effect::SetList(v, s) => self.exec_set_list(v, s, ex, host)?,
+            Effect::SortList(v, desc) => self.exec_sort_list(v, *desc, ex, host)?,
             Effect::Delete(v) => {
                 let k = self.key(v, ex, host)?;
                 if v.local {

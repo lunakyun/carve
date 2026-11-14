@@ -34,6 +34,8 @@ pub enum Value {
         world: Option<String>,
     },
     World(String),
+    /// A list produced by a list operation or a function. Not stored in variables.
+    List(Vec<Value>),
 }
 
 impl Value {
@@ -47,6 +49,7 @@ impl Value {
             Value::Item { .. } => "item",
             Value::Location { .. } => "location",
             Value::World(_) => "world",
+            Value::List(_) => "list",
         }
     }
 
@@ -160,6 +163,17 @@ impl Value {
                 }
             }
             Value::World(w) => out.push_str(w),
+            Value::List(items) => {
+                if items.is_empty() {
+                    out.push_str("<none>");
+                }
+                for (i, v) in items.iter().enumerate() {
+                    if i > 0 {
+                        out.push_str(if i + 1 == items.len() { " and " } else { ", " });
+                    }
+                    v.push_to(out);
+                }
+            }
         }
     }
 }

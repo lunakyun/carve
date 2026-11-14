@@ -387,7 +387,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Shear
 - ⬜ Shoot
 - ⬜ Silence Entity
-- ⬜ Sort
+- ✅ Sort — `sort {x::*}`, `in descending order`; no `by`
 - ⬜ Spawn ⭐
 - ⬜ Sprinting
 - ⬜ Stop Server
@@ -772,7 +772,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Facing
 - ⬜ Fall Distance
 - ⬜ Fertilized Blocks
-- ⬜ Filter ⭐
+- ✅ Filter ⭐ — `{x::*} where [input > 2]`
 - ⬜ Final Damage
 - ⬜ Firework Effect
 - ⬜ First Empty Slot in Inventory
@@ -982,7 +982,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Queue Start/End (Experimental)
 - ⬜ Quit Message ⭐
 - ⬜ Quit Reason
-- 🟡 Random — `random element of {list::*}`
+- 🟡 Random — `random element of {list::*}`, `random N elements of {list::*}`
 - ⬜ Random Character
 - ✅ Random Numbers
 - ⬜ Random UUID ⭐
@@ -1005,7 +1005,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Respawn Location
 - ⬜ Respawn Reason
 - ⬜ Result
-- ⬜ Reversed List ⭐
+- ✅ Reversed List ⭐ — `reversed {x::*}`
 - ⬜ Ringing Time
 - ⬜ Rotated Quaternion/Vector
 - ⬜ Rotation Axis/Angle
@@ -1024,7 +1024,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Server Icon
 - ⬜ Sets
 - ⬜ Shooter
-- ⬜ Shuffled List ⭐
+- ✅ Shuffled List ⭐ — `shuffled {x::*}`
 - ⬜ Sign Text
 - ⬜ Simulation Distance
 - ✅ Size — `size of {list::*}`
@@ -1032,7 +1032,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Skull Owner
 - ⬜ Skull Texture
 - ⬜ Slot Index
-- ⬜ Sorted List ⭐
+- 🟡 Sorted List ⭐ — `sorted {x::*}`; no `by` expression
 - ⬜ Source Block
 - ⬜ Spawn ⭐
 - ⬜ Spawn Egg Entity
@@ -1186,10 +1186,10 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ ln
 - 🟡 location — `location(x, y, z[, world])`, no yaw/pitch
 - ⬜ log
-- 🟡 max — two numbers only
-- ⬜ mean
+- 🟡 max — two numbers, or `max of {x::*}`
+- ✅ mean — `average of {x::*}`
 - ⬜ median
-- 🟡 min — two numbers only
+- 🟡 min — two numbers, or `min of {x::*}`
 - ✅ mod
 - ⬜ offlineplayer
 - ⬜ permutations
@@ -1201,7 +1201,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 round — no decimal places argument
 - ⬜ sin
 - ✅ sqrt
-- ⬜ sum
+- ✅ sum — `sum of {x::*}`
 - ⬜ tan
 - ⬜ toBase
 - ⬜ uuid

@@ -24,7 +24,7 @@ impl Tok {
 }
 
 const SYMS2: [&str; 3] = [">=", "<=", "!="];
-const SYMS1: [&str; 13] = [",", "(", ")", "+", "-", "*", "/", "=", "<", ">", ":", "?", "%"];
+const SYMS1: [&str; 15] = [",", "[", "]", "(", ")", "+", "-", "*", "/", "=", "<", ">", ":", "?", "%"];
 
 pub fn lex(s: &str) -> Result<Vec<Tok>, String> {
     let c: Vec<char> = s.chars().collect();
