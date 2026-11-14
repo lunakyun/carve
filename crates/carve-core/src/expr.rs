@@ -179,7 +179,7 @@ pub enum Expr {
     /// `indices of {x::*}`: the index of every item, as text.
     Indices(VarRef),
     /// `first element of {x::*}`, `element 2 of {x::*}`.
-    Elem(ElemSel, VarRef),
+    Elem(Box<(ElemSel, VarRef)>),
     /// `now`, `unix timestamp of d`, `date from unix timestamp n`, `d formatted as f`.
     Date(DateOp, Vec<Expr>),
     /// SkBee-style text components (markup text): see `skbee_text`.
@@ -2059,17 +2059,20 @@ impl P<'_> {
                         } else {
                             ElemSel::Last
                         };
-                        Ok(Expr::Elem(sel, self.list_after_of(&format!("{lw} element"))?))
+                        Ok(Expr::Elem(Box::new((
+                            sel,
+                            self.list_after_of(&format!("{lw} element"))?,
+                        ))))
                     }
                     "element" if !matches!(self.peek(), Some(t) if t.is_lit("of")) => {
                         let n = self.unary()?;
                         if !Ty::Number.accepts(n.ty(self.env)) {
                             return Err("'element N of' needs a number".into());
                         }
-                        Ok(Expr::Elem(
+                        Ok(Expr::Elem(Box::new((
                             ElemSel::Nth(Box::new(n)),
                             self.list_after_of("element N")?,
-                        ))
+                        ))))
                     }
                     "size" | "amount" | "count" => {
                         if lw == "amount" && matches!(self.peek(), Some(t) if t.is_lit("of")) {

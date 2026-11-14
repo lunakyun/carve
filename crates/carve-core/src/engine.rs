@@ -2,6 +2,7 @@
 
 use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap};
+use std::hash::{BuildHasherDefault, Hasher};
 use std::sync::Arc;
 
 use crate::compile::{
@@ -125,9 +126,58 @@ pub fn trigger_label(t: &Trigger) -> String {
     }
 }
 
+/// Hasher for the event map. `EventKind` hashes as one or two small
+/// integers, and SipHash cost more than the rest of an event with no triggers.
+#[derive(Default, Clone, Copy)]
+pub(crate) struct KindHasher(u64);
+
+impl KindHasher {
+    #[inline]
+    fn add(&mut self, x: u64) {
+        self.0 = (self.0.rotate_left(5) ^ x).wrapping_mul(0x517c_c1b7_2722_0a95);
+    }
+}
+
+impl Hasher for KindHasher {
+    #[inline]
+    fn finish(&self) -> u64 {
+        self.0
+    }
+    #[inline]
+    fn write(&mut self, bytes: &[u8]) {
+        for &b in bytes {
+            self.add(u64::from(b));
+        }
+    }
+    #[inline]
+    fn write_u8(&mut self, i: u8) {
+        self.add(u64::from(i));
+    }
+    #[inline]
+    fn write_u16(&mut self, i: u16) {
+        self.add(u64::from(i));
+    }
+    #[inline]
+    fn write_u32(&mut self, i: u32) {
+        self.add(u64::from(i));
+    }
+    #[inline]
+    fn write_u64(&mut self, i: u64) {
+        self.add(i);
+    }
+    #[inline]
+    fn write_usize(&mut self, i: usize) {
+        self.add(i as u64);
+    }
+    #[inline]
+    fn write_isize(&mut self, i: isize) {
+        self.add(i as u64);
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct ScriptTable {
-    events: HashMap<EventKind, Vec<Arc<Trigger>>>,
+    events: HashMap<EventKind, Vec<Arc<Trigger>>, BuildHasherDefault<KindHasher>>,
     commands: BTreeMap<String, Arc<Trigger>>,
     functions: Vec<Option<Arc<Function>>>,
     every: Vec<(u64, Arc<Trigger>)>,
@@ -633,7 +683,7 @@ impl Engine {
     /// Run every trigger for `kind`. Returns whether the event got cancelled
     /// (only `cancel event` before the first `wait` counts).
     pub fn fire(&mut self, kind: EventKind, ctx: EventCtx, host: &mut dyn Host) -> FireOutcome {
-        if self.pending_defaults || kind == EventKind::Join {
+        if self.pending_defaults || (kind == EventKind::Join && !self.table.var_defaults.is_empty()) {
             self.defaults_for(kind, &ctx, host);
         }
         let table = self.table.clone();
@@ -1418,21 +1468,16 @@ impl Engine {
                 };
                 return match val {
                     Some(Value::Num(n)) => Ok(*n),
-                    Some(v @ Value::Date(_)) => {
-                        Err(format!("expected a number, got {} ({})", v.type_name(), v))
-                    }
-                    Some(v) => to_num_opt(v)
-                        .ok_or_else(|| format!("expected a number, got {} ({})", v.type_name(), v)),
-                    None => Err("expected a number, got <none> (<none>)".into()),
+                    other => num_of(other),
                 };
             }
             _ => {}
         }
         let v = self.eval(e, ex, host)?;
-        if matches!(v, Value::Date(_)) {
-            return Err(format!("expected a number, got {} ({})", v.type_name(), v));
+        match v {
+            Value::Num(n) => Ok(n),
+            other => num_of(Some(&other)),
         }
-        to_num_opt(&v).ok_or_else(|| format!("expected a number, got {} ({})", v.type_name(), v))
     }
 
     pub(crate) fn player(
@@ -1662,7 +1707,8 @@ impl Engine {
                 join_list(&keys, &mut s);
                 Ok(Value::Text(s))
             }
-            Expr::Elem(sel, v) => {
+            Expr::Elem(b) => {
+                let (sel, v) = &**b;
                 let n = match sel {
                     ElemSel::Nth(n) => Some(self.num(n, ex, host)?),
                     _ => None,
@@ -1704,9 +1750,13 @@ impl Engine {
             Expr::Bool(b) => Ok(Value::Bool(*b)),
             Expr::Var(v) => self.get_var(v, ex, host),
             Expr::Bin(a, op, b) => {
-                let (x, y) = match (self.num(a, ex, host), self.num(b, ex, host)) {
-                    (Ok(x), Ok(y)) => (x, y),
-                    (Err(err), _) | (_, Err(err)) => return self.bin_time(a, *op, b, err, ex, host),
+                let x = match self.num(a, ex, host) {
+                    Ok(x) => x,
+                    Err(err) => return self.bin_time(a, *op, b, err, ex, host),
+                };
+                let y = match self.num(b, ex, host) {
+                    Ok(y) => y,
+                    Err(err) => return self.bin_time(a, *op, b, err, ex, host),
                 };
                 Ok(Value::Num(match op {
                     BinOp::Add => x + y,
@@ -2233,41 +2283,6 @@ impl Engine {
                     host.send_action_bar(&p, &t);
                 }
             }
-            Effect::W2b(w) => self.run_w2b(w, ex, host)?,
-            Effect::Rtw(w) => {
-                let name = self.eval(&w.name, ex, host)?;
-                crate::w4_skbee_raytrace_world::run_effect(w, &name, host)?;
-            }
-            Effect::Hf(h) => {
-                let amount = match &h.amount {
-                    Some(a) => self.num(a, ex, host)?,
-                    None => 0.0,
-                };
-                if let Some(p) = self.player(&h.player, ex, host)? {
-                    crate::health_food::run(h, amount, &p, host);
-                }
-            }
-            Effect::Admin(kind, target, text) => {
-                let v = self.eval(target, ex, host)?;
-                let text = match text {
-                    Some(t) => Some(self.text(t, ex, host)?),
-                    None => None,
-                };
-                let (name, p) = self.admin_target(&v, ex, host);
-                crate::op_kick_ban::run_effect(host, *kind, &name, p.as_ref(), text.as_deref());
-            }
-            Effect::W2(w) => self.run_w2(w, ex, host)?,
-            Effect::W2c(w) => {
-                let v = self.eval(&w.value, ex, host)?;
-                if let Some(p) = self.player(&w.player, ex, host)? {
-                    crate::w2_expressions_3::run(w, &v, &p, host);
-                }
-            }
-            Effect::W4(w) => {
-                let vals = self.w4_args(&w.args, ex, host)?;
-                crate::w2_expressions_4::run(w.op, &vals, host);
-            }
-            Effect::W6(w) => self.exec_w6(w, ex, host)?,
             Effect::Heal(p) => {
                 if let Some(p) = self.player(p, ex, host)? {
                     host.heal(&p);
@@ -2279,37 +2294,6 @@ impl Engine {
                     host.set_health(&p, n.max(0.0));
                 }
             }
-            Effect::SetGamemode(p, m) => {
-                let m = self.text(m, ex, host)?;
-                let Some(mode) = crate::gamemode::normalize(&m) else {
-                    return Err(format!(
-                        "'{m}' is not a game mode (survival, creative, adventure, spectator)"
-                    ));
-                };
-                if let Some(p) = self.player(p, ex, host)? {
-                    host.set_gamemode(&p, mode);
-                }
-            }
-            Effect::Ext4(x) => match &**x {
-                crate::w2_events_4::ExtEffect::SetVal(i, e) => {
-                    let v = self.eval(e, ex, host)?;
-                    let i = usize::from(*i);
-                    if ex.ctx.args.len() <= i {
-                        ex.ctx.args.resize(i + 1, Value::None);
-                    }
-                    ex.ctx.args[i] = v.clone();
-                    self.ext_out.push((i as u8, v));
-                }
-            },
-            Effect::W5(w) => self.run_w5_effect(w, ex, host)?,
-            Effect::Xp(op, a, b) => {
-                let (pe, ne) = if op.num_first { (b, a) } else { (a, b) };
-                let n = self.num(ne, ex, host)?;
-                if let Some(p) = self.player(pe, ex, host)? {
-                    crate::xp_level::apply(host, &p, op.field, op.mode, n);
-                }
-            }
-            Effect::X2(k, a) => self.run_x2(*k, a, ex, host)?,
             Effect::Kill(p) => self.kill_any(p, ex, host)?,
             Effect::Teleport(p, x, y, z) => {
                 let (x, y, z) = (
@@ -2352,13 +2336,196 @@ impl Engine {
                     }
                 }
             }
-            Effect::PlaySound {
-                sound,
-                volume,
-                pitch,
-                to,
-                at,
-            } => {
+            Effect::ConsoleCommand(c) => {
+                let c = self.text(c, ex, host)?;
+                host.execute_command(c.trim_start_matches('/'));
+            }
+            Effect::Cancel => {
+                if ex.waited {
+                    host.log(
+                        LogLevel::Warn,
+                        &format!(
+                            "{}:{}: 'cancel event' after a wait does nothing (the event already happened)",
+                            ex.code.file, line
+                        ),
+                    );
+                } else {
+                    ex.cancelled = true;
+                }
+            }
+            Effect::Wait(amount, 0) => {
+                let v = self.eval(amount, ex, host)?;
+                let Value::Timespan { millis } = v else {
+                    return Err(format!(
+                        "can't wait {} ({v}), use a timespan like '5 seconds'",
+                        v.type_name()
+                    ));
+                };
+                if millis < 0 {
+                    return Err(format!("can't wait {v}"));
+                }
+                let ticks = crate::timespans::to_ticks(millis);
+                if ticks > 0 {
+                    return Ok(Some(ticks));
+                }
+            }
+            Effect::Wait(amount, mult) => {
+                let n = self.num(amount, ex, host)?;
+                if !n.is_finite() || n < 0.0 {
+                    return Err(format!("can't wait {}", format_num(n)));
+                }
+                let ticks = (n * *mult as f64).round() as u64;
+                if ticks > 0 {
+                    return Ok(Some(ticks));
+                }
+            }
+            Effect::Set(v, val) => {
+                let val = self.eval(val, ex, host)?;
+                let k = self.key(v, ex, host)?;
+                self.store(v.local, &k, val, ex, host);
+            }
+            Effect::Add(v, n) | Effect::Remove(v, n) => {
+                let n = self.num(n, ex, host)?;
+                let k = self.key(v, ex, host)?;
+                let cur = if v.local {
+                    ex.locals.get(&k)
+                } else {
+                    self.vars.get_ref(&k)
+                };
+                let base = match cur {
+                    None | Some(Value::None) => 0.0,
+                    Some(other) => to_num_opt(other).ok_or_else(|| {
+                        format!(
+                            "can't add to a variable holding {} ({})",
+                            other.type_name(),
+                            other
+                        )
+                    })?,
+                };
+                let res = if matches!(e, Effect::Add(..)) {
+                    base + n
+                } else {
+                    base - n
+                };
+                self.store(v.local, &k, Value::Num(res), ex, host);
+            }
+            Effect::ListAdd(v, x) | Effect::ListRemove(v, x) => {
+                let val = self.eval(x, ex, host)?;
+                let key = self.key(v, ex, host)?.into_owned();
+                let prefix = key.strip_suffix('*').unwrap_or(&key);
+                let add = matches!(e, Effect::ListAdd(..));
+                match (v.local, add) {
+                    (true, true) => ex.locals.list_push(prefix, val),
+                    (true, false) => ex.locals.list_remove(prefix, &val),
+                    (false, true) => {
+                        self.vars.list_push(prefix, val);
+                        self.mark_dirty(host);
+                    }
+                    (false, false) => {
+                        self.vars.list_remove(prefix, &val);
+                        self.mark_dirty(host);
+                    }
+                }
+            }
+            Effect::Delete(v) => {
+                let k = self.key(v, ex, host)?;
+                if v.local {
+                    ex.locals.delete(&k);
+                } else {
+                    self.vars.delete(&k);
+                    self.mark_dirty(host);
+                }
+            }
+            _ => return self.effect_ext(e, ex, host, line),
+        }
+        Ok(None)
+    }
+
+    /// Effects added after v1, kept apart so `effect_rare` keeps a small
+    /// stack frame for the common ones.
+    #[inline(never)]
+    fn effect_ext(
+        &mut self,
+        e: &Effect,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+        _line: usize,
+    ) -> Result<Option<u64>, String> {
+        match e {
+            Effect::W2b(w) => self.run_w2b(w, ex, host)?,
+            Effect::Rtw(w) => {
+                let name = self.eval(&w.name, ex, host)?;
+                crate::w4_skbee_raytrace_world::run_effect(w, &name, host)?;
+            }
+            Effect::Hf(h) => {
+                let amount = match &h.amount {
+                    Some(a) => self.num(a, ex, host)?,
+                    None => 0.0,
+                };
+                if let Some(p) = self.player(&h.player, ex, host)? {
+                    crate::health_food::run(h, amount, &p, host);
+                }
+            }
+            Effect::Admin(kind, target, text) => {
+                let v = self.eval(target, ex, host)?;
+                let text = match text {
+                    Some(t) => Some(self.text(t, ex, host)?),
+                    None => None,
+                };
+                let (name, p) = self.admin_target(&v, ex, host);
+                crate::op_kick_ban::run_effect(host, *kind, &name, p.as_ref(), text.as_deref());
+            }
+            Effect::W2(w) => self.run_w2(w, ex, host)?,
+            Effect::W2c(w) => {
+                let v = self.eval(&w.value, ex, host)?;
+                if let Some(p) = self.player(&w.player, ex, host)? {
+                    crate::w2_expressions_3::run(w, &v, &p, host);
+                }
+            }
+            Effect::W4(w) => {
+                let vals = self.w4_args(&w.args, ex, host)?;
+                crate::w2_expressions_4::run(w.op, &vals, host);
+            }
+            Effect::W6(w) => self.exec_w6(w, ex, host)?,
+            Effect::SetGamemode(p, m) => {
+                let m = self.text(m, ex, host)?;
+                let Some(mode) = crate::gamemode::normalize(&m) else {
+                    return Err(format!(
+                        "'{m}' is not a game mode (survival, creative, adventure, spectator)"
+                    ));
+                };
+                if let Some(p) = self.player(p, ex, host)? {
+                    host.set_gamemode(&p, mode);
+                }
+            }
+            Effect::Ext4(x) => match &**x {
+                crate::w2_events_4::ExtEffect::SetVal(i, e) => {
+                    let v = self.eval(e, ex, host)?;
+                    let i = usize::from(*i);
+                    if ex.ctx.args.len() <= i {
+                        ex.ctx.args.resize(i + 1, Value::None);
+                    }
+                    ex.ctx.args[i] = v.clone();
+                    self.ext_out.push((i as u8, v));
+                }
+            },
+            Effect::W5(w) => self.run_w5_effect(w, ex, host)?,
+            Effect::Xp(op, a, b) => {
+                let (pe, ne) = if op.num_first { (b, a) } else { (a, b) };
+                let n = self.num(ne, ex, host)?;
+                if let Some(p) = self.player(pe, ex, host)? {
+                    crate::xp_level::apply(host, &p, op.field, op.mode, n);
+                }
+            }
+            Effect::X2(k, a) => self.run_x2(*k, a, ex, host)?,
+            Effect::PlaySound(ps) => {
+                let crate::compile::PlaySound {
+                    sound,
+                    volume,
+                    pitch,
+                    to,
+                    at,
+                } = &**ps;
                 let id = crate::sounds::clean_id(&self.text(sound, ex, host)?)?;
                 let volume = match volume {
                     Some(v) => self.num(v, ex, host)?,
@@ -2409,10 +2576,6 @@ impl Engine {
                     host.stop_sound(&p, id.as_deref());
                 }
             }
-            Effect::ConsoleCommand(c) => {
-                let c = self.text(c, ex, host)?;
-                host.execute_command(c.trim_start_matches('/'));
-            }
             Effect::ExecAs(who, c) => {
                 let who = self.eval(who, ex, host)?;
                 let c = self.text(c, ex, host)?;
@@ -2437,50 +2600,6 @@ impl Engine {
             Effect::Ent(f) => self.ent_effect(f, ex, host)?,
             Effect::Skb(s) => self.skb_effect(s, ex, host)?,
             Effect::Server(f) => self.server_effect(f, ex, host)?,
-            Effect::Cancel => {
-                if ex.waited {
-                    host.log(
-                        LogLevel::Warn,
-                        &format!(
-                            "{}:{}: 'cancel event' after a wait does nothing (the event already happened)",
-                            ex.code.file, line
-                        ),
-                    );
-                } else {
-                    ex.cancelled = true;
-                }
-            }
-            Effect::Wait(amount, 0) => {
-                let v = self.eval(amount, ex, host)?;
-                let Value::Timespan { millis } = v else {
-                    return Err(format!(
-                        "can't wait {} ({v}), use a timespan like '5 seconds'",
-                        v.type_name()
-                    ));
-                };
-                if millis < 0 {
-                    return Err(format!("can't wait {v}"));
-                }
-                let ticks = crate::timespans::to_ticks(millis);
-                if ticks > 0 {
-                    return Ok(Some(ticks));
-                }
-            }
-            Effect::Wait(amount, mult) => {
-                let n = self.num(amount, ex, host)?;
-                if !n.is_finite() || n < 0.0 {
-                    return Err(format!("can't wait {}", format_num(n)));
-                }
-                let ticks = (n * *mult as f64).round() as u64;
-                if ticks > 0 {
-                    return Ok(Some(ticks));
-                }
-            }
-            Effect::Set(v, val) => {
-                let val = self.eval(val, ex, host)?;
-                let k = self.key(v, ex, host)?;
-                self.store(v.local, &k, val, ex, host);
-            }
             Effect::SetSplit(v, t, s) => {
                 let t = self.text(t, ex, host)?;
                 let s = self.text(s, ex, host)?;
@@ -2513,49 +2632,6 @@ impl Engine {
                     self.store(v.local, &k, Value::Text(new), ex, host);
                 }
             }
-            Effect::Add(v, n) | Effect::Remove(v, n) => {
-                let n = self.num(n, ex, host)?;
-                let k = self.key(v, ex, host)?;
-                let cur = if v.local {
-                    ex.locals.get(&k)
-                } else {
-                    self.vars.get_ref(&k)
-                };
-                let base = match cur {
-                    None | Some(Value::None) => 0.0,
-                    Some(other) => to_num_opt(other).ok_or_else(|| {
-                        format!(
-                            "can't add to a variable holding {} ({})",
-                            other.type_name(),
-                            other
-                        )
-                    })?,
-                };
-                let res = if matches!(e, Effect::Add(..)) {
-                    base + n
-                } else {
-                    base - n
-                };
-                self.store(v.local, &k, Value::Num(res), ex, host);
-            }
-            Effect::ListAdd(v, x) | Effect::ListRemove(v, x) => {
-                let val = self.eval(x, ex, host)?;
-                let key = self.key(v, ex, host)?.into_owned();
-                let prefix = key.strip_suffix('*').unwrap_or(&key);
-                let add = matches!(e, Effect::ListAdd(..));
-                match (v.local, add) {
-                    (true, true) => ex.locals.list_push(prefix, val),
-                    (true, false) => ex.locals.list_remove(prefix, &val),
-                    (false, true) => {
-                        self.vars.list_push(prefix, val);
-                        self.mark_dirty(host);
-                    }
-                    (false, false) => {
-                        self.vars.list_remove(prefix, &val);
-                        self.mark_dirty(host);
-                    }
-                }
-            }
             Effect::ListSet(..) | Effect::ListAddAll(..) | Effect::ListRemoveAll(..) => {
                 self.list_bulk(e, ex, host)?;
             }
@@ -2563,15 +2639,8 @@ impl Engine {
             Effect::SortList(v, desc) => self.exec_sort_list(v, *desc, ex, host)?,
             Effect::W2e3(w) => self.exec_w2(w, ex, host)?,
             Effect::W2Transform(t) => self.exec_transform(t, ex, host)?,
-            Effect::Delete(v) => {
-                let k = self.key(v, ex, host)?;
-                if v.local {
-                    ex.locals.delete(&k);
-                } else {
-                    self.vars.delete(&k);
-                    self.mark_dirty(host);
-                }
-            }
+            // The v1 effects are handled in `effect_rare`.
+            _ => unreachable!(),
         }
         Ok(None)
     }
@@ -2590,6 +2659,17 @@ impl Engine {
     /// JSON to write now (unload), if anything changed.
     pub fn save_now(&mut self) -> Option<String> {
         self.dirty_since.take().map(|_| self.vars.to_json())
+    }
+}
+
+/// The non-number cases of `num`, out of line to keep the hot path small.
+/// A date is not a number here, although `to_num_opt` accepts one.
+#[inline(never)]
+fn num_of(v: Option<&Value>) -> Result<f64, String> {
+    match v {
+        None => Err("expected a number, got <none> (<none>)".into()),
+        Some(v @ Value::Date(_)) => Err(format!("expected a number, got {} ({})", v.type_name(), v)),
+        Some(v) => to_num_opt(v).ok_or_else(|| format!("expected a number, got {} ({})", v.type_name(), v)),
     }
 }
 

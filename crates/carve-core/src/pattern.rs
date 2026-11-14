@@ -88,6 +88,14 @@ impl<K: Copy> Pattern<K> {
     ) -> Result<Vec<Option<Capture>>, Option<String>> {
         let mut type_err = None;
         for seq in &self.seqs {
+            // A leading or trailing literal must be the first or last token.
+            let edge = |f: Option<&Flat>, t: Option<&Tok>| match f {
+                Some(Flat::Lit(l)) => t.is_some_and(|t| t.is_lit(l)),
+                _ => true,
+            };
+            if !edge(seq.first(), toks.first()) || !edge(seq.last(), toks.last()) {
+                continue;
+            }
             // A literal must be one of the tokens; skip sequences that can't match.
             let impossible = seq
                 .iter()

@@ -385,13 +385,7 @@ pub enum Effect {
     ListAdd(VarRef, Expr),
     /// `remove x from {list::*}`: remove every item equal to x.
     ListRemove(VarRef, Expr),
-    PlaySound {
-        sound: Expr,
-        volume: Option<Expr>,
-        pitch: Option<Expr>,
-        to: Option<Expr>,
-        at: Option<Expr>,
-    },
+    PlaySound(Box<PlaySound>),
     /// sound (None: all sounds), player (None: the event player)
     StopSound(Option<Expr>, Option<Expr>),
     /// `set {x::*} to a, b and c`.
@@ -429,6 +423,16 @@ pub enum Effect {
 }
 
 /// What a `loop` goes over.
+/// `play sound`, boxed to keep [`Effect`] small.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PlaySound {
+    pub sound: Expr,
+    pub volume: Option<Expr>,
+    pub pitch: Option<Expr>,
+    pub to: Option<Expr>,
+    pub at: Option<Expr>,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum LoopSrc {
     Times(Expr),
@@ -2044,13 +2048,13 @@ fn build_effect(kind: EffKind, mut c: Vec<Option<Capture>>) -> Option<Effect> {
             Effect::Give(p, None, take_expr(c, 1)?)
         }
         EffKind::ConsoleCommand => Effect::ConsoleCommand(take_expr(c, 0)?),
-        EffKind::PlaySound => Effect::PlaySound {
+        EffKind::PlaySound => Effect::PlaySound(Box::new(PlaySound {
             sound: take_expr(c, 0)?,
             volume: take_expr(c, 1),
             pitch: take_expr(c, 2),
             to: take_expr(c, 3),
             at: take_expr(c, 4),
-        },
+        })),
         EffKind::StopSound => Effect::StopSound(Some(take_expr(c, 0)?), take_expr(c, 1)),
         EffKind::StopAllSounds => Effect::StopSound(None, take_expr(c, 0)),
         EffKind::ExecAs => {

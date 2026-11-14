@@ -19,6 +19,7 @@ pub(super) struct Catch {
     loops: usize,
 }
 
+#[inline(never)]
 pub(super) fn catch_begin(ex: &mut Exec, end: usize) {
     ex.catches.push(Catch {
         end,
@@ -31,6 +32,7 @@ pub(super) fn catch_begin(ex: &mut Exec, end: usize) {
 impl Engine {
     /// An error happened. If an open section can take it, jump to its end.
     /// `base` is the call depth of the running value-call (0 for the trigger).
+    #[inline(never)]
     pub(super) fn catch_error(&mut self, ex: &mut Exec, e: &str, base: usize) -> bool {
         let msg = if e == SILENT {
             std::mem::take(&mut self.caught_stash)
