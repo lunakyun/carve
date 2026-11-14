@@ -164,6 +164,30 @@ impl WasmHost<'_> {
 /// through the toggle event, so it is tracked here.
 static FLYING: Mutex<Vec<String>> = Mutex::new(Vec::new());
 
+/// UUIDs of players whose resource pack finished loading. Set from the
+/// resource pack status event; cleared when the player leaves.
+static PACKS: Mutex<Vec<String>> = Mutex::new(Vec::new());
+
+struct OnPackStatus;
+
+impl EventHandler<pumpkin_plugin_api::events::PlayerResourcePackStatusEvent> for OnPackStatus {
+    fn handle(
+        &self,
+        _server: Server,
+        data: EventData<pumpkin_plugin_api::events::PlayerResourcePackStatusEvent>,
+    ) -> EventData<pumpkin_plugin_api::events::PlayerResourcePackStatusEvent> {
+        let uuid = uuid::to_string(data.player.get_id());
+        let status = data.status.to_lowercase();
+        if let Ok(mut p) = PACKS.lock() {
+            p.retain(|u| *u != uuid);
+            if status.contains("success") || status.contains("loaded") {
+                p.push(uuid);
+            }
+        }
+        data
+    }
+}
+
 /// Bare permission names live in the plugin's namespace: `vip` -> `carve:vip`.
 fn full_node(node: &str) -> String {
     if node.contains(':') {
@@ -353,6 +377,7 @@ impl WasmHost<'_> {
             return false;
         };
         let e = pl.as_entity();
+        let pl_uuid = p.uuid.clone();
         match flag {
             PlayerFlag::Sneaking => e.is_sneaking(),
             PlayerFlag::Sprinting => e.is_sprinting(),
@@ -366,6 +391,14 @@ impl WasmHost<'_> {
             }
             // No shield-blocking state in the plugin API yet.
             PlayerFlag::Blocking => false,
+            PlayerFlag::Burning => e.is_on_fire(),
+            PlayerFlag::CustomNameVisible => e.is_custom_name_visible(),
+            // Vanilla: fully frozen at 140 ticks.
+            PlayerFlag::Frozen => pl.get_freeze_ticks() >= 140,
+            PlayerFlag::Gliding => e.is_fall_flying(),
+            PlayerFlag::Invisible => e.is_invisible(),
+            PlayerFlag::Invulnerable => e.is_invulnerable(),
+            PlayerFlag::ResourcePack => PACKS.lock().is_ok_and(|p| p.contains(&pl_uuid)),
         }
     }
 
@@ -549,6 +582,10 @@ impl EventAccess for PlayerJoinEvent {
 
 impl EventAccess for PlayerLeaveEvent {
     fn ctx(d: &EventData<Self>) -> EventCtx {
+        if let Ok(mut p) = PACKS.lock() {
+            let u = uuid::to_string(d.player.get_id());
+            p.retain(|x| *x != u);
+        }
         EventCtx::player(player_ref(&d.player))
     }
     fn set_cancelled(d: &mut EventData<Self>) {
@@ -1206,6 +1243,11 @@ impl Plugin for Carve {
         for r in [
             context.register_event_handler::<PlayerInteractEvent, _>(OnInteract, EventPriority::Normal, true),
             context.register_event_handler::<EntityDamageEvent, _>(OnDamage, EventPriority::Normal, true),
+            context.register_event_handler::<pumpkin_plugin_api::events::PlayerResourcePackStatusEvent, _>(
+                OnPackStatus,
+                EventPriority::Lowest,
+                false,
+            ),
             context.register_event_handler::<EntityDamageByEntityEvent, _>(
                 OnDamageByEntity,
                 EventPriority::Normal,

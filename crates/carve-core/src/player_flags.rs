@@ -13,6 +13,13 @@ pub enum PlayerFlag {
     OnGround,
     Blocking,
     Sleeping,
+    Burning,
+    CustomNameVisible,
+    Frozen,
+    Gliding,
+    Invisible,
+    Invulnerable,
+    ResourcePack,
 }
 
 impl PlayerFlag {
@@ -26,6 +33,13 @@ impl PlayerFlag {
             PlayerFlag::OnGround => "on ground",
             PlayerFlag::Blocking => "blocking",
             PlayerFlag::Sleeping => "sleeping",
+            PlayerFlag::Burning => "burning",
+            PlayerFlag::CustomNameVisible => "custom name visible",
+            PlayerFlag::Frozen => "frozen",
+            PlayerFlag::Gliding => "gliding",
+            PlayerFlag::Invisible => "invisible",
+            PlayerFlag::Invulnerable => "invulnerable",
+            PlayerFlag::ResourcePack => "resource pack",
         }
     }
 }

@@ -24,6 +24,7 @@ pub mod senders;
 pub mod player_flags;
 pub mod timespans;
 pub mod value;
+pub mod w2_conditions_2;
 pub mod vars;
 pub mod xp_level;
 
