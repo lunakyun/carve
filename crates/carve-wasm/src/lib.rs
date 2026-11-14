@@ -51,6 +51,10 @@ struct State {
     /// Victim of the damage event being handled, and whether scripts already ran
     /// for it (the by-entity event that may follow must not run them twice).
     damage_pending: Option<(i32, bool, u64)>,
+    /// Extra events (`w2_events_1`) that have a listener on the server.
+    ext_registered: Vec<carve_core::w2_events_1::ExtEvent>,
+    /// World time of the previous tick, for `at <time>:` triggers.
+    at_prev: Option<i64>,
 }
 
 static STATE: Mutex<Option<State>> = Mutex::new(None);
@@ -839,6 +843,331 @@ fn register_event<E: EventAccess + Send + Sync + 'static>(ctx: &Context, kind: E
     }
 }
 
+// ---------- extra events (carve-core `w2_events_1`) ----------
+
+use carve_core::Value;
+use carve_core::w2_events_1::ExtEvent;
+use pumpkin_plugin_api::events as ev;
+
+/// Like `EventAccess`, but the event kind may depend on the data (a book
+/// edit and a book signing are one server event).
+trait ExtAccess: FromIntoEvent {
+    fn kind(d: &EventData<Self>) -> ExtEvent;
+    fn ctx(d: &EventData<Self>) -> EventCtx;
+    fn set_cancelled(d: &mut EventData<Self>);
+}
+
+struct OnExt<E>(std::marker::PhantomData<fn() -> E>);
+
+impl<E: ExtAccess> EventHandler<E> for OnExt<E> {
+    fn handle(&self, server: Server, mut data: EventData<E>) -> EventData<E> {
+        let cancelled = with_state(&server, None, |st, host| {
+            let kind = EventKind::Ext(E::kind(&data));
+            if !st.engine.table().has_event(kind) {
+                return false;
+            }
+            let ctx = E::ctx(&data);
+            let mut th = TickHost {
+                inner: host,
+                hs: &mut st.hs,
+            };
+            st.engine.fire(kind, ctx, &mut th).cancelled
+        });
+        if cancelled == Some(true) {
+            E::set_cancelled(&mut data);
+        }
+        data
+    }
+}
+
+macro_rules! ext_event {
+    ($ty:ty, |$k:ident| $kind:expr, |$d:ident| $ctx:expr, |$c:ident| $cancel:expr) => {
+        impl ExtAccess for $ty {
+            fn kind($k: &EventData<Self>) -> ExtEvent {
+                let _ = $k;
+                $kind
+            }
+            fn ctx($d: &EventData<Self>) -> EventCtx {
+                $ctx
+            }
+            fn set_cancelled($c: &mut EventData<Self>) {
+                let _ = &$c;
+                $cancel
+            }
+        }
+    };
+}
+
+fn ev_ctx(player: Option<&Player>, ev: Vec<Value>) -> EventCtx {
+    let mut c = match player {
+        Some(p) => EventCtx::player(player_ref(p)),
+        None => EventCtx::console(),
+    };
+    c.ev = ev;
+    c
+}
+
+fn at_pos(world: Option<String>, p: &pumpkin_plugin_api::common::BlockPos) -> Value {
+    Value::Location {
+        x: f64::from(p.x),
+        y: f64::from(p.y),
+        z: f64::from(p.z),
+        world,
+    }
+}
+
+fn ev_item(id: &str) -> Value {
+    Value::Item {
+        id: id.strip_prefix("minecraft:").unwrap_or(id).to_string(),
+        count: 1,
+    }
+}
+
+ext_event!(ev::PrepareAnvilEvent, |d| ExtEvent::AnvilPrepare,
+    |d| ev_ctx(Some(&d.player), vec![Value::Text(d.rename_text.clone()), Value::Num(f64::from(d.repair_cost))]),
+    |d| {});
+ext_event!(ev::PlayerAnimationEvent, |d| ExtEvent::ArmSwing,
+    |d| ev_ctx(Some(&d.player), vec![Value::Text(d.animation_type.clone())]),
+    |d| d.cancelled = true);
+ext_event!(ev::PlayerBedEnterEvent, |d| ExtEvent::BedEnter,
+    |d| ev_ctx(Some(&d.player), vec![at_pos(Some(d.player.get_world().get_name()), &d.bed_pos)]),
+    |d| d.cancelled = true);
+ext_event!(ev::PlayerBedLeaveEvent, |d| ExtEvent::BedLeave,
+    |d| ev_ctx(Some(&d.player), vec![at_pos(Some(d.player.get_world().get_name()), &d.bed_pos)]),
+    |d| {});
+ext_event!(ev::BellRingEvent, |d| ExtEvent::BellRing,
+    |d| ev_ctx(None, vec![
+        at_pos(Some(d.target_world.get_name()), &d.block_pos),
+        Value::World(d.target_world.get_name()),
+        d.entity_id.map_or(Value::None, |i| Value::Num(f64::from(i))),
+        d.direction.clone().map_or(Value::None, Value::Text),
+    ]),
+    |d| d.cancelled = true);
+ext_event!(ev::BlockDamageEvent, |d| ExtEvent::BlockDamage,
+    |d| ev_ctx(Some(&d.player), vec![
+        at_pos(Some(d.player.get_world().get_name()), &d.block_pos),
+        Value::Bool(d.insta_break),
+    ]),
+    |d| d.cancelled = true);
+ext_event!(ev::BlockDropItemEvent, |d| ExtEvent::BlockDrop,
+    |d| ev_ctx(d.player.as_ref(), vec![
+        at_pos(Some(d.target_world.get_name()), &d.block_pos),
+        Value::World(d.target_world.get_name()),
+        d.items.first().map_or(Value::None, |s| {
+            let mut v = ev_item(&s.get_registry_key());
+            if let Value::Item { count, .. } = &mut v {
+                *count = u32::from(s.get_count());
+            }
+            v
+        }),
+        Value::Num(d.items.len() as f64),
+    ]),
+    |d| d.cancelled = true);
+ext_event!(ev::BlockFertilizeEvent, |d| ExtEvent::BlockFertilize,
+    |d| ev_ctx(d.player.as_ref(), vec![
+        at_pos(Some(d.target_world.get_name()), &d.block_pos),
+        Value::World(d.target_world.get_name()),
+        Value::Num(d.changed_blocks.len() as f64),
+    ]),
+    |d| d.cancelled = true);
+ext_event!(ev::BlockGrowEvent, |d| ExtEvent::BlockGrowth,
+    |d| ev_ctx(None, vec![
+        at_pos(Some(d.target_world.get_name()), &d.block_pos),
+        Value::World(d.target_world.get_name()),
+        ev_item(&d.new_block),
+        ev_item(&d.old_block),
+    ]),
+    |d| d.cancelled = true);
+ext_event!(ev::PlayerEditBookEvent, |d| if d.signing { ExtEvent::BookSign } else { ExtEvent::BookEdit },
+    |d| ev_ctx(Some(&d.player), vec![
+        d.title.clone().map_or(Value::None, Value::Text),
+        Value::Num(f64::from(d.slot)),
+        Value::Text(d.pages.join("\n")),
+    ]),
+    |d| d.cancelled = true);
+ext_event!(ev::BrewEvent, |d| ExtEvent::BrewingComplete,
+    |d| ev_ctx(None, vec![at_pos(None, &d.block_pos), Value::Num(f64::from(d.fuel_level))]),
+    |d| d.cancelled = true);
+ext_event!(ev::BrewingStandFuelEvent, |d| ExtEvent::BrewingFuel,
+    |d| ev_ctx(None, vec![at_pos(None, &d.block_pos), Value::Num(f64::from(d.fuel_power))]),
+    |d| d.cancelled = true);
+ext_event!(ev::BrewingStartEvent, |d| ExtEvent::BrewingStart,
+    |d| ev_ctx(None, vec![
+        at_pos(Some(d.target_world.get_name()), &d.block_pos),
+        Value::World(d.target_world.get_name()),
+        Value::Num(f64::from(d.brewing_time)),
+    ]),
+    |d| d.cancelled = true);
+ext_event!(ev::ServerBroadcastEvent, |d| ExtEvent::Broadcast,
+    |d| ev_ctx(None, vec![Value::Text(d.message.get_text()), Value::Text(d.sender.get_text())]),
+    |d| d.cancelled = true);
+ext_event!(ev::PlayerBucketEntityEvent, |d| ExtEvent::BucketCatch,
+    |d| ev_ctx(Some(&d.player), vec![ev_item(&d.bucket_item), Value::Num(f64::from(d.entity_id))]),
+    |d| d.cancelled = true);
+ext_event!(ev::PlayerBucketEmptyEvent, |d| ExtEvent::BucketEmpty,
+    |d| ev_ctx(Some(&d.player), vec![
+        at_pos(Some(d.player.get_world().get_name()), &d.block_pos),
+        ev_item(&d.bucket),
+    ]),
+    |d| d.cancelled = true);
+ext_event!(ev::PlayerBucketFillEvent, |d| ExtEvent::BucketFill,
+    |d| ev_ctx(Some(&d.player), vec![
+        at_pos(Some(d.player.get_world().get_name()), &d.block_pos),
+        ev_item(&d.bucket),
+    ]),
+    |d| d.cancelled = true);
+ext_event!(ev::BlockBurnEvent, |d| ExtEvent::Burn,
+    |d| ev_ctx(None, vec![
+        at_pos(Some(d.target_world.get_name()), &d.block_pos),
+        Value::World(d.target_world.get_name()),
+        ev_item(&d.block),
+        ev_item(&d.igniting_block),
+    ]),
+    |d| d.cancelled = true);
+ext_event!(ev::BlockCanBuildEvent, |d| ExtEvent::CanBuild,
+    |d| ev_ctx(Some(&d.player), vec![
+        ev_item(&d.block_to_build),
+        ev_item(&d.block),
+        Value::Bool(d.buildable),
+    ]),
+    |d| {
+        d.cancelled = true;
+        d.buildable = false;
+    });
+ext_event!(ev::ChunkPopulateEvent, |d| ExtEvent::ChunkGenerate,
+    |d| ev_ctx(None, vec![Value::Num(f64::from(d.chunk_x)), Value::Num(f64::from(d.chunk_z))]),
+    |d| d.cancelled = true);
+ext_event!(ev::ChunkUnloadEvent, |d| ExtEvent::ChunkUnload,
+    |d| ev_ctx(None, vec![Value::Num(f64::from(d.chunk_x)), Value::Num(f64::from(d.chunk_z))]),
+    |d| d.cancelled = true);
+ext_event!(ev::EntityCombustEvent, |d| ExtEvent::Combust,
+    |d| ev_ctx(None, vec![
+        Value::Num(f64::from(d.entity_id)),
+        Value::Timespan { millis: (f64::from(d.duration_secs) * 1000.0) as i64 },
+    ]),
+    |d| d.cancelled = true);
+ext_event!(ev::PlayerLoginEvent, |d| ExtEvent::Connect,
+    |d| ev_ctx(Some(&d.player), vec![]),
+    |d| d.cancelled = true);
+ext_event!(ev::BlockDispenseEvent, |d| ExtEvent::Dispense,
+    |d| ev_ctx(None, vec![at_pos(None, &d.block_pos), ev_item(&d.item_name)]),
+    |d| d.cancelled = true);
+ext_event!(ev::PlayerEggThrowEvent, |d| ExtEvent::EggThrow,
+    |d| ev_ctx(Some(&d.player), vec![
+        Value::Bool(d.hatching),
+        Value::Num(f64::from(d.num_hatches)),
+        Value::Text(d.hatching_type.clone()),
+    ]),
+    |d| d.cancelled = true);
+ext_event!(ev::PlayerElytraBoostEvent, |d| ExtEvent::ElytraBoost,
+    |d| ev_ctx(Some(&d.player), vec![Value::Num(f64::from(d.firework_id))]),
+    |d| d.cancelled = true);
+
+/// Attach the listeners for the extra events that the loaded scripts use.
+/// Listeners can only be added at load, so a trigger added by a later
+/// `/carve reload` needs a restart (see [`missing_ext_listeners`]).
+fn register_ext_events(ctx: &Context, engine: &Engine) -> Vec<ExtEvent> {
+    let table = engine.table();
+    let mut done = Vec::new();
+    macro_rules! reg {
+        ($ty:ty, $($k:expr),+) => {{
+            let kinds = [$($k),+];
+            if kinds.iter().any(|k| table.has_event(EventKind::Ext(*k))) {
+                let h = OnExt::<$ty>(std::marker::PhantomData);
+                match ctx.register_event_handler::<$ty, _>(h, EventPriority::Normal, true) {
+                    Ok(_) => done.extend(kinds),
+                    Err(e) => plog(ApiLevel::Error, &format!("could not listen to {}: {e}", kinds[0].name())),
+                }
+            }
+        }};
+    }
+    reg!(ev::PrepareAnvilEvent, ExtEvent::AnvilPrepare);
+    reg!(ev::PlayerAnimationEvent, ExtEvent::ArmSwing);
+    reg!(ev::PlayerBedEnterEvent, ExtEvent::BedEnter);
+    reg!(ev::PlayerBedLeaveEvent, ExtEvent::BedLeave);
+    reg!(ev::BellRingEvent, ExtEvent::BellRing);
+    reg!(ev::BlockDamageEvent, ExtEvent::BlockDamage);
+    reg!(ev::BlockDropItemEvent, ExtEvent::BlockDrop);
+    reg!(ev::BlockFertilizeEvent, ExtEvent::BlockFertilize);
+    reg!(ev::BlockGrowEvent, ExtEvent::BlockGrowth);
+    reg!(ev::PlayerEditBookEvent, ExtEvent::BookEdit, ExtEvent::BookSign);
+    reg!(ev::BrewEvent, ExtEvent::BrewingComplete);
+    reg!(ev::BrewingStandFuelEvent, ExtEvent::BrewingFuel);
+    reg!(ev::BrewingStartEvent, ExtEvent::BrewingStart);
+    reg!(ev::ServerBroadcastEvent, ExtEvent::Broadcast);
+    reg!(ev::PlayerBucketEntityEvent, ExtEvent::BucketCatch);
+    reg!(ev::PlayerBucketEmptyEvent, ExtEvent::BucketEmpty);
+    reg!(ev::PlayerBucketFillEvent, ExtEvent::BucketFill);
+    reg!(ev::BlockBurnEvent, ExtEvent::Burn);
+    reg!(ev::BlockCanBuildEvent, ExtEvent::CanBuild);
+    reg!(ev::ChunkPopulateEvent, ExtEvent::ChunkGenerate);
+    reg!(ev::ChunkUnloadEvent, ExtEvent::ChunkUnload);
+    reg!(ev::EntityCombustEvent, ExtEvent::Combust);
+    reg!(ev::PlayerLoginEvent, ExtEvent::Connect);
+    reg!(ev::BlockDispenseEvent, ExtEvent::Dispense);
+    reg!(ev::PlayerEggThrowEvent, ExtEvent::EggThrow);
+    reg!(ev::PlayerElytraBoostEvent, ExtEvent::ElytraBoost);
+    done
+}
+
+/// Names of used extra events that have no listener (added after startup).
+fn missing_ext_listeners(engine: &Engine, registered: &[ExtEvent]) -> Vec<&'static str> {
+    let table = engine.table();
+    ALL_EXT
+        .iter()
+        .filter(|k| table.has_event(EventKind::Ext(**k)) && !registered.contains(k))
+        .map(|k| k.name())
+        .collect()
+}
+
+const ALL_EXT: [ExtEvent; 27] = [
+    ExtEvent::AnvilPrepare,
+    ExtEvent::ArmSwing,
+    ExtEvent::BedEnter,
+    ExtEvent::BedLeave,
+    ExtEvent::BellRing,
+    ExtEvent::BlockDamage,
+    ExtEvent::BlockDrop,
+    ExtEvent::BlockFertilize,
+    ExtEvent::BlockGrowth,
+    ExtEvent::BookEdit,
+    ExtEvent::BookSign,
+    ExtEvent::BrewingComplete,
+    ExtEvent::BrewingFuel,
+    ExtEvent::BrewingStart,
+    ExtEvent::Broadcast,
+    ExtEvent::BucketCatch,
+    ExtEvent::BucketEmpty,
+    ExtEvent::BucketFill,
+    ExtEvent::Burn,
+    ExtEvent::CanBuild,
+    ExtEvent::ChunkGenerate,
+    ExtEvent::ChunkUnload,
+    ExtEvent::Combust,
+    ExtEvent::Connect,
+    ExtEvent::Dispense,
+    ExtEvent::EggThrow,
+    ExtEvent::ElytraBoost,
+];
+
+/// World clock handling for `at <time>:` triggers, once per tick.
+fn tick_at_time(server: &Server, st: &mut State, host: &mut WasmHost) {
+    if !st.engine.table().has_at() {
+        return;
+    }
+    let Some(w) = server.get_all_worlds().into_iter().next() else {
+        return;
+    };
+    let cur = (w.get_time_of_day() % 24000) as i64;
+    if let Some(prev) = st.at_prev.replace(cur) {
+        let mut th = TickHost {
+            inner: host,
+            hs: &mut st.hs,
+        };
+        st.engine.fire_at_time(prev, cur, &mut th);
+    }
+}
+
 // ---------- commands ----------
 
 fn raw_args(args: &ConsumedArgs) -> String {
@@ -954,7 +1283,14 @@ impl CommandHandler for AdminCommand {
                 inner: host,
                 hs: &mut st.hs,
             };
-            let out = carve_core::admin::admin(&mut st.engine, &mut store, &mut th, &env, &raw);
+            let mut out = carve_core::admin::admin(&mut st.engine, &mut store, &mut th, &env, &raw);
+            let missing = missing_ext_listeners(&st.engine, &st.ext_registered);
+            if out.loaded && !missing.is_empty() {
+                out.lines.push(format!(
+                    "Restart the server to listen to: {}.",
+                    missing.join(", ")
+                ));
+            }
 
             out
         });
@@ -1001,6 +1337,7 @@ fn tick(server: Server) {
             };
             st.engine.tick(now, &mut th);
         }
+        tick_at_time(&server, st, host);
         if let Some(json) = st.engine.save_due(now * 50) {
             st.save(&json);
         }
@@ -1217,8 +1554,11 @@ impl Plugin for Carve {
             }
         }
 
+        let ext_registered = register_ext_events(&context, &engine);
         if let Ok(mut g) = STATE.try_lock() {
             *g = Some(State {
+                ext_registered,
+                at_prev: None,
                 engine,
                 hs: HostState {
                     tick: 0,
