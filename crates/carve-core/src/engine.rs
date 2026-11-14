@@ -1158,6 +1158,7 @@ impl Engine {
                 };
                 Ok(is != *negate)
             }
+            Cond::Rare3(r) => self.cond_w2(r, ex, host),
             Cond::PlayerFlag { player, flag, negate } => {
                 let p = self.eval(player, ex, host)?;
                 let Some(p) = online(&p, &mut ex.seen, host) else {
@@ -2204,4 +2205,127 @@ fn parse_args(def: &CommandDef, raw: &str, host: &mut dyn Host) -> Result<Vec<Va
         return Err(format!("Too many arguments. Usage: {}", def.usage()));
     }
     Ok(out)
+}
+
+/// A location from a value: a location itself, or an online player's position.
+fn w2_loc(
+    v: &Value,
+    seen: &mut Vec<(String, Option<String>)>,
+    host: &mut dyn Host,
+) -> Option<(f64, f64, f64, Option<String>)> {
+    if let Some((x, y, z, w)) = crate::w2_conditions_3::loc_parts(v) {
+        return Some((x, y, z, w.map(str::to_string)));
+    }
+    let p = online(v, seen, host)?;
+    host.player_location(&p).map(|(x, y, z, w)| (x, y, z, Some(w)))
+}
+
+impl Engine {
+    /// The rare conditions of `w2_conditions_3`.
+    #[inline(never)]
+    fn cond_w2(
+        &mut self,
+        c: &crate::w2_conditions_3::W2Cond,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<bool, String> {
+        use crate::w2_conditions_3 as w;
+        use crate::w2_conditions_3::W2Cond as C;
+        Ok(match c {
+            C::Valid(e, negate) => {
+                let v = self.eval(e, ex, host)?;
+                let ok = match &v {
+                    Value::None => false,
+                    Value::Player(_) => online(&v, &mut ex.seen, host).is_some(),
+                    _ => true,
+                };
+                ok != *negate
+            }
+            C::ScriptLoaded(e, negate) => {
+                let name = self.text(e, ex, host)?;
+                self.sources.keys().any(|f| w::script_name_matches(f, &name)) != *negate
+            }
+            C::Regex { text, pattern, whole, negate } => {
+                let t = self.text(text, ex, host)?;
+                let p = self.text(pattern, ex, host)?;
+                w::regex_test(&t, &p, *whole)? != *negate
+            }
+            C::WithinBox { loc, a, b, negate } => {
+                let (l, a, b) = (self.eval(loc, ex, host)?, self.eval(a, ex, host)?, self.eval(b, ex, host)?);
+                let (l, a, b) = (
+                    w2_loc(&l, &mut ex.seen, host),
+                    w2_loc(&a, &mut ex.seen, host),
+                    w2_loc(&b, &mut ex.seen, host),
+                );
+                let ok = match (l, a, b) {
+                    (Some(l), Some(a), Some(b)) => w::in_box(
+                        (l.0, l.1, l.2, l.3.as_deref()),
+                        (a.0, a.1, a.2, a.3.as_deref()),
+                        (b.0, b.1, b.2, b.3.as_deref()),
+                    ),
+                    _ => return Ok(false),
+                };
+                ok != *negate
+            }
+            C::WithinRadius { loc, radius, center, negate } => {
+                let r = self.num(radius, ex, host)?;
+                let (l, m) = (self.eval(loc, ex, host)?, self.eval(center, ex, host)?);
+                let (l, m) = (w2_loc(&l, &mut ex.seen, host), w2_loc(&m, &mut ex.seen, host));
+                let ok = match (l, m) {
+                    (Some(l), Some(m)) => {
+                        w::in_radius((l.0, l.1, l.2, l.3.as_deref()), (m.0, m.1, m.2, m.3.as_deref()), r)
+                    }
+                    _ => return Ok(false),
+                };
+                ok != *negate
+            }
+            C::WithinWorld { loc, world, negate } => {
+                let l = self.eval(loc, ex, host)?;
+                let wv = self.eval(world, ex, host)?;
+                let name = match &wv {
+                    Value::World(n) | Value::Text(n) => n.clone(),
+                    _ => return Ok(false),
+                };
+                let Some((_, _, _, Some(lw))) = w2_loc(&l, &mut ex.seen, host) else {
+                    return Ok(false);
+                };
+                lw.eq_ignore_ascii_case(&name) != *negate
+            }
+            C::State(p, state, negate) => {
+                let v = self.eval(p, ex, host)?;
+                let Some(p) = online(&v, &mut ex.seen, host) else {
+                    return Ok(false);
+                };
+                host.player_state(&p, *state) != *negate
+            }
+            C::Pvp { world, negate } => {
+                let name = match world {
+                    Some(e) => match self.eval(e, ex, host)? {
+                        Value::World(n) | Value::Text(n) => Some(n),
+                        _ => return Ok(false),
+                    },
+                    None => None,
+                };
+                match host.pvp_enabled(name.as_deref()) {
+                    Some(on) => on != *negate,
+                    None => false,
+                }
+            }
+            C::Instant(e, negate) => {
+                let t = self.text(e, ex, host)?;
+                w::is_instant_effect(&t) != *negate
+            }
+            C::Block(e, tr, negate) => {
+                let id = match self.eval(e, ex, host)? {
+                    Value::Item { id, .. } => id,
+                    Value::Text(t) => t,
+                    _ => return Ok(false),
+                };
+                match host.block_trait(&w::norm_id(&id), *tr) {
+                    Some(b) => b != *negate,
+                    None => false,
+                }
+            }
+        })
+    }
 }

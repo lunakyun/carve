@@ -156,6 +156,8 @@ pub enum Cond {
         negate: bool,
     },
     Cmp(Expr, CmpOp, Expr),
+    /// Rare conditions, boxed so this enum stays small.
+    Rare3(Box<crate::w2_conditions_3::W2Cond>),
     HasPerm {
         player: Expr,
         node: Expr,
@@ -413,6 +415,8 @@ pub enum CondKind {
     IsNotConsole,
     /// `player is sneaking`; the bool is negation.
     Flag(PlayerFlag, bool),
+    /// Rare conditions from `w2_conditions_3`.
+    W2(crate::w2_conditions_3::W2Kind),
 }
 
 /// Text effects (`replace ...`). Kept apart from `EFFECT_PATTERNS` so the
@@ -544,6 +548,7 @@ fn registry() -> &'static Registry {
             .iter()
             .chain(crate::gamemode::CONDITION_PATTERNS)
             .chain(PLAYER_FLAG_PATTERNS)
+            .chain(crate::w2_conditions_3::W2_CONDITION_PATTERNS)
             .chain(CONDITION_PATTERNS)
             .filter_map(|(s, k)| Pattern::new(s, *k).ok())
             .collect(),
@@ -569,6 +574,7 @@ pub fn check_registry() -> Result<(), String> {
         .iter()
         .chain(crate::gamemode::CONDITION_PATTERNS)
         .chain(PLAYER_FLAG_PATTERNS)
+            .chain(crate::w2_conditions_3::W2_CONDITION_PATTERNS)
         .chain(CONDITION_PATTERNS)
     {
         Pattern::new(s, *k)?;
@@ -1007,6 +1013,7 @@ impl Cx<'_> {
         let type_err = inner_error(&toks, &self.env).or(type_err);
         let srcs: Vec<&'static str> = PLAYER_FLAG_PATTERNS
             .iter()
+            .chain(crate::w2_conditions_3::W2_CONDITION_PATTERNS)
             .chain(CONDITION_PATTERNS)
             .map(|(s, _)| *s)
             .collect();
@@ -1337,6 +1344,12 @@ fn take_var(caps: &mut [Option<Capture>], i: usize) -> Option<VarRef> {
 }
 
 fn build_cond(kind: CondKind, mut c: Vec<Option<Capture>>) -> Cond {
+    if let CondKind::W2(k) = kind {
+        return match crate::w2_conditions_3::build(k, c) {
+            Some(w) => Cond::Rare3(Box::new(w)),
+            None => Cond::Cmp(Expr::Num(0.0), CmpOp::Eq, Expr::Num(1.0)),
+        };
+    }
     let a = take_expr(&mut c, 0).unwrap_or(Expr::Num(0.0));
     let b = take_expr(&mut c, 1).unwrap_or(Expr::Num(0.0));
     let op = match kind {
@@ -1354,6 +1367,7 @@ fn build_cond(kind: CondKind, mut c: Vec<Option<Capture>>) -> Cond {
                 negate,
             };
         }
+        CondKind::W2(_) => CmpOp::Eq,
         CondKind::IsSet => return Cond::IsSet(a, true),
         CondKind::NotSet => return Cond::IsSet(a, false),
         CondKind::Ne => CmpOp::Ne,

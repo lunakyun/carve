@@ -9,6 +9,8 @@ use carve_core::{
     CommandOutcome, Engine, EventCtx, EventKind, Host, LogLevel, PlayerFlag, PlayerRef, Recipient, ScriptError, Variables,
 };
 use pumpkin_plugin_api::DamageType;
+use pumpkin_plugin_api::wit::pumpkin::plugin::status_effect::StatusEffectType;
+use pumpkin_plugin_api::{Block, GameRule, GameRuleValue};
 use pumpkin_plugin_api::command::{
     ArgumentType, Command, CommandError, CommandNode, CommandSender, ConsumedArgs, StringType,
 };
@@ -369,6 +371,43 @@ impl WasmHost<'_> {
         }
     }
 
+
+    fn player_state(&mut self, p: &PlayerRef, state: carve_core::w2_conditions_3::PlayerState) -> bool {
+        use carve_core::w2_conditions_3::PlayerState;
+        let Some(pl) = self.get(p) else {
+            return false;
+        };
+        match state {
+            PlayerState::Poisoned => pl.has_effect(StatusEffectType::Poison),
+            PlayerState::Silent => pl.as_entity().is_silent(),
+            PlayerState::Riding => pl.as_entity().get_vehicle().is_some(),
+        }
+    }
+
+    fn pvp_enabled(&mut self, world: Option<&str>) -> Option<bool> {
+        let w = match world {
+            Some(name) => self.server.get_world_by_name(name)?,
+            None => self.server.get_all_worlds().into_iter().next()?,
+        };
+        match w.get_game_rule(GameRule::Pvp) {
+            GameRuleValue::Bool(b) => Some(b),
+            GameRuleValue::Int(n) => Some(n != 0),
+        }
+    }
+
+    fn block_trait(&mut self, id: &str, t: carve_core::w2_conditions_3::BlockTrait) -> Option<bool> {
+        use carve_core::w2_conditions_3::BlockTrait;
+        let block = Block::from_name(id)?;
+        match t {
+            BlockTrait::Solid => Some(block.is_solid),
+            BlockTrait::Transparent => {
+                Block::get_default_state_for_id(block.id).map(|s| s.opacity == 0 && !block.is_solid)
+            }
+            BlockTrait::Passable => {
+                Block::get_default_state_for_id(block.id).map(|s| s.collision_shapes.is_empty())
+            }
+        }
+    }
     fn xp_get(&mut self, p: &PlayerRef, field: carve_core::xp_level::XpField) -> Option<f64> {
         use carve_core::xp_level::XpField;
         self.get(p).map(|pl| match field {
@@ -464,6 +503,9 @@ impl Host for TickHost<'_, '_> {
         gamemode(p: &PlayerRef) -> Option<String>;
         set_gamemode(p: &PlayerRef, mode: &str);
         player_flag(p: &PlayerRef, flag: PlayerFlag) -> bool;
+        player_state(p: &PlayerRef, state: carve_core::w2_conditions_3::PlayerState) -> bool;
+        pvp_enabled(world: Option<&str>) -> Option<bool>;
+        block_trait(id: &str, t: carve_core::w2_conditions_3::BlockTrait) -> Option<bool>;
         xp_get(p: &PlayerRef, field: carve_core::xp_level::XpField) -> Option<f64>;
         xp_set(p: &PlayerRef, field: carve_core::xp_level::XpField, value: f64);
         vital(p: &PlayerRef, v: Vital) -> Option<f64>;
