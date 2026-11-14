@@ -66,7 +66,7 @@ fn legacy_rgb(c: char) -> Option<(u8, u8, u8)> {
 }
 
 #[derive(Clone, Copy)]
-enum Flag {
+pub(crate) enum Flag {
     Bold,
     Italic,
     Underlined,
@@ -122,7 +122,7 @@ fn hex6(s: &[char]) -> Option<(u8, u8, u8)> {
 }
 
 /// What a code or tag at some position does to the style.
-enum Change {
+pub(crate) enum Change {
     Reset,
     Color((u8, u8, u8)),
     Flag(Flag, bool),
@@ -191,6 +191,42 @@ fn code_at(c: &[char], i: usize) -> Option<(Change, usize)> {
     flag_of_code(k).map(|f| (Change::Flag(f, true), i + 2))
 }
 
+/// A code or tag at `i`: the change, the index after it, and whether it was a
+/// legacy `&x` code.
+pub(crate) fn next_change(c: &[char], i: usize) -> Option<(Change, usize, bool)> {
+    match *c.get(i)? {
+        '&' | '§' => code_at(c, i).map(|(ch, n)| (ch, n, true)),
+        '<' => tag_at(c, i).map(|(ch, n)| (ch, n, false)),
+        _ => None,
+    }
+}
+
+pub(crate) fn apply_change(style: &mut Style, change: Change, legacy: bool) {
+    match change {
+        Change::Reset => *style = Style::default(),
+        // A legacy color code also clears formatting, like vanilla.
+        Change::Color(rgb) => {
+            if legacy {
+                *style = Style::default();
+            }
+            style.color = Some(rgb);
+        }
+        Change::ClearColor => style.color = None,
+        Change::Flag(f, on) => style.set(f, on),
+    }
+}
+
+/// A color by name (`red`) or hex (`#ff8000`).
+pub(crate) fn color_named(name: &str) -> Option<(u8, u8, u8)> {
+    let n = name.trim().to_ascii_lowercase();
+    if let Some(hex) = n.strip_prefix('#') {
+        let hex: Vec<char> = hex.chars().collect();
+        return hex6(&hex);
+    }
+    let (_, code) = NAMES.iter().find(|(k, _)| *k == n)?;
+    legacy_rgb(*code)
+}
+
 /// Split text into styled runs. Anything that is not a valid code or tag
 /// stays as plain text.
 pub fn parse(s: &str) -> Vec<Span> {
@@ -200,12 +236,7 @@ pub fn parse(s: &str) -> Vec<Span> {
     let mut buf = String::new();
     let mut i = 0;
     while i < c.len() {
-        let hit = match c[i] {
-            '&' | '§' => code_at(&c, i).map(|(ch, n)| (ch, n, true)),
-            '<' => tag_at(&c, i).map(|(ch, n)| (ch, n, false)),
-            _ => None,
-        };
-        let Some((change, next, legacy)) = hit else {
+        let Some((change, next, legacy)) = next_change(&c, i) else {
             buf.push(c[i]);
             i += 1;
             continue;
@@ -213,18 +244,7 @@ pub fn parse(s: &str) -> Vec<Span> {
         if !buf.is_empty() {
             out.push(Span { text: std::mem::take(&mut buf), style });
         }
-        match change {
-            Change::Reset => style = Style::default(),
-            // A legacy color code also clears formatting, like vanilla.
-            Change::Color(rgb) => {
-                if legacy {
-                    style = Style::default();
-                }
-                style.color = Some(rgb);
-            }
-            Change::ClearColor => style.color = None,
-            Change::Flag(f, on) => style.set(f, on),
-        }
+        apply_change(&mut style, change, legacy);
         i = next;
     }
     if !buf.is_empty() {

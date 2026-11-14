@@ -5,6 +5,7 @@ use std::collections::BTreeSet;
 use std::sync::Mutex;
 
 use carve_core::health_food::Vital;
+use carve_core::skbee_text::{Click, Hover, Kind, Part};
 use carve_core::world_effects::{FxPos, ParticleFx};
 use carve_core::{
     CommandOutcome, Engine, EventCtx, EventKind, Host, LogLevel, PlayerFlag, PlayerRef, Recipient, ScriptError, Variables,
@@ -65,10 +66,68 @@ fn plog(level: ApiLevel, msg: &str) {
     log(level, &format!("[Carve] {msg}"));
 }
 
+/// Build a component from parsed SkBee-style markup: hover, click,
+/// insertion, keybinds, translations and per-letter colors.
+fn rich(parts: &[Part]) -> TextComponent {
+    let mut root = TextComponent::text("");
+    for p in parts {
+        root = root.add_child(rich_part(p));
+    }
+    root
+}
+
+fn rich_part(p: &Part) -> TextComponent {
+    let mut c = match &p.kind {
+        Kind::Text(t) => TextComponent::text(t),
+        Kind::Key(k) => TextComponent::keybind(k),
+        Kind::Lang(k, args) => TextComponent::translate(k, args.iter().map(|a| rich(a)).collect()),
+    };
+    let st = p.style;
+    if let Some((r, g, b)) = st.color {
+        c = c.color_rgb(RgbColor { r, g, b });
+    }
+    if st.bold {
+        c = c.bold(true);
+    }
+    if st.italic {
+        c = c.italic(true);
+    }
+    if st.underlined {
+        c = c.underlined(true);
+    }
+    if st.strikethrough {
+        c = c.strikethrough(true);
+    }
+    if st.obfuscated {
+        c = c.obfuscated(true);
+    }
+    if let Some(i) = &p.insertion {
+        c = c.insertion(i);
+    }
+    c = match &p.click {
+        Some(Click::Url(u)) => c.click_open_url(u),
+        Some(Click::Run(u)) => c.click_run_command(u),
+        Some(Click::Suggest(u)) => c.click_suggest_command(u),
+        Some(Click::Copy(u)) => c.click_copy_to_clipboard(u),
+        Some(Click::File(u)) => c.click_open_file(u),
+        Some(Click::Page(n)) => c.click_change_page(*n),
+        None => c,
+    };
+    match p.hover.as_deref() {
+        Some(Hover::Text(t)) => c.hover_show_text(rich(t)),
+        Some(Hover::Item(i)) => c.hover_show_item(i),
+        Some(Hover::Entity { kind, id, name }) => c.hover_show_entity(kind, id, name.as_deref().map(rich)),
+        None => c,
+    }
+}
+
 /// Build a component from `&a` / `§a` codes, `<#rrggbb>` and `<red>` style tags.
 fn text(s: &str) -> TextComponent {
     if !s.contains(['&', '§', '<']) {
         return TextComponent::text(s);
+    }
+    if carve_core::skbee_text::is_rich(s) {
+        return rich(&carve_core::skbee_text::parse(s));
     }
     let mut root = TextComponent::text("");
     for span in carve_core::colors::parse(s) {
