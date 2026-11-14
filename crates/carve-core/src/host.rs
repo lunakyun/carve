@@ -249,4 +249,20 @@ pub trait Host {
             let _ = writeln!(f, "[{ms}] {text}");
         }
     }
+
+    /// Poisoned, silent or riding (players only). Hosts that cannot tell answer `false`.
+    fn player_state(&mut self, _player: &PlayerRef, _state: crate::w2_conditions_3::PlayerState) -> bool {
+        false
+    }
+
+    /// Whether PvP is on in a world (by name), or in the default world with `None`.
+    /// `None` means the host cannot tell.
+    fn pvp_enabled(&mut self, _world: Option<&str>) -> Option<bool> {
+        None
+    }
+
+    /// A property of a block type (`stone`, no namespace). `None` if unknown.
+    fn block_trait(&mut self, _id: &str, _t: crate::w2_conditions_3::BlockTrait) -> Option<bool> {
+        None
+    }
 }

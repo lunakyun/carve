@@ -179,6 +179,8 @@ pub enum Cond {
         negate: bool,
     },
     Cmp(Expr, CmpOp, Expr),
+    /// Rare conditions, boxed so this enum stays small.
+    Rare3(Box<crate::w2_conditions_3::W2Cond>),
     HasPerm {
         player: Expr,
         node: Expr,
@@ -446,6 +448,8 @@ pub enum CondKind {
     Flag(PlayerFlag, bool),
     /// Rare checks from `w2_conditions_2`; the bool is negation.
     W2(crate::w2_conditions_2::W2Kind, bool),
+    /// Rare conditions from `w2_conditions_3`.
+    W3(crate::w2_conditions_3::W2Kind),
 }
 
 /// Text effects (`replace ...`). Kept apart from `EFFECT_PATTERNS` so the
@@ -589,6 +593,7 @@ fn registry() -> &'static Registry {
             .chain(crate::gamemode::CONDITION_PATTERNS)
             .chain(PLAYER_FLAG_PATTERNS)
             .chain(crate::w2_conditions_2::FLAG_PATTERNS)
+            .chain(crate::w2_conditions_3::W2_CONDITION_PATTERNS)
             .chain(CONDITION_PATTERNS)
             .filter_map(|(s, k)| Pattern::new(s, *k).ok())
             .collect(),
@@ -618,6 +623,7 @@ pub fn check_registry() -> Result<(), String> {
         .chain(PLAYER_FLAG_PATTERNS)
         .chain(crate::w2_conditions_2::CONDITION_PATTERNS)
         .chain(crate::w2_conditions_2::FLAG_PATTERNS)
+            .chain(crate::w2_conditions_3::W2_CONDITION_PATTERNS)
         .chain(CONDITION_PATTERNS)
     {
         Pattern::new(s, *k)?;
@@ -1058,6 +1064,7 @@ impl Cx<'_> {
             .iter()
             .chain(crate::w2_conditions_2::CONDITION_PATTERNS)
             .chain(crate::w2_conditions_2::FLAG_PATTERNS)
+            .chain(crate::w2_conditions_3::W2_CONDITION_PATTERNS)
             .chain(CONDITION_PATTERNS)
             .map(|(s, _)| *s)
             .collect();
@@ -1184,6 +1191,7 @@ impl Cx<'_> {
         if toks.is_empty() {
             return None;
         }
+        #[allow(clippy::collapsible_if)]
         if seps.contains(&"or") {
             if let Some(parts) = self.split_conds(strip_parens(toks), &["and", ","]) {
                 return Some(Cond::All(parts));
@@ -1403,6 +1411,12 @@ fn take_var(caps: &mut [Option<Capture>], i: usize) -> Option<VarRef> {
 }
 
 fn build_cond(kind: CondKind, mut c: Vec<Option<Capture>>) -> Cond {
+    if let CondKind::W3(k) = kind {
+        return match crate::w2_conditions_3::build(k, c) {
+            Some(w) => Cond::Rare3(Box::new(w)),
+            None => Cond::Cmp(Expr::Num(0.0), CmpOp::Eq, Expr::Num(1.0)),
+        };
+    }
     let a = take_expr(&mut c, 0).unwrap_or(Expr::Num(0.0));
     let b = take_expr(&mut c, 1).unwrap_or(Expr::Num(0.0));
     let op = match kind {
@@ -1424,6 +1438,7 @@ fn build_cond(kind: CondKind, mut c: Vec<Option<Capture>>) -> Cond {
             let b = (kind_has_b(kind)).then_some(b);
             return Cond::Rare(Box::new(crate::w2_conditions_2::build(kind, negate, a, b)));
         }
+        CondKind::W3(_) => CmpOp::Eq,
         CondKind::IsSet => return Cond::IsSet(a, true),
         CondKind::NotSet => return Cond::IsSet(a, false),
         CondKind::Ne => CmpOp::Ne,

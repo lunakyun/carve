@@ -535,66 +535,66 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Is on Ground
 - ✅ Is Online ⭐
 - ⬜ Is Operator ⭐
-- ⛔ Is Passable — no block shape data in the core
+- 🟡 Is Passable — block type; no collision shape
 - ⛔ Is Pathfinding — no mob AI in the plugin API
 - ⛔ Is Persistent — no entity persistence flag in the plugin API
 - ⛔ Is Playing Dead — axolotls are not reachable
 - 🟡 Is Plugin Enabled — Pumpkin plugins only, not exposed yet
-- ⬜ Is Poisoned
+- 🟡 Is Poisoned — players only (no entity values yet)
 - ⬜ Is Preferred Tool
-- ⬜ Is Pressing Key
-- ⬜ Is Responsive
-- ⬜ Is Riding
-- ⬜ Is Riptiding
-- ⬜ Is Saddled
-- ⬜ Is Screaming
-- ⬜ Is Script Loaded
-- ⬜ Is Silent
+- ⛔ Is Pressing Key — no player input API
+- ⬜ Is Responsive — needs entity values (entities slice), not done here
+- 🟡 Is Riding — players only, any vehicle (no entity type filter)
+- ⬜ Is Riptiding — needs entity values (entities slice), not done here
+- ⬜ Is Saddled — needs entity values (entities slice), not done here
+- ⬜ Is Screaming — needs entity values (entities slice), not done here
+- ✅ Is Script Loaded — `script "shop" is loaded`
+- 🟡 Is Silent — players only (no entity values yet)
 - ✅ Is Sleeping
-- ⬜ Is Slime Chunk
+- ⛔ Is Slime Chunk — the plugin API does not expose the world seed
 - ✅ Is Sneaking ⭐
-- ⬜ Is Solid
+- 🟡 Is Solid — block or item type, from Pumpkin's block registry
 - ⬜ Is Spawnable
 - ✅ Is Sprinting ⭐
 - ⬜ Is Stackable
 - ✅ Is Swimming
-- ⬜ Is Tagged
-- ⬜ Is Tameable
-- ⬜ Is Tamed
-- ⬜ Is Ticking
-- ⬜ Is Transparent
+- ⛔ Is Tagged — no tag registry in the plugin API
+- ⬜ Is Tameable — needs entity values (entities slice), not done here
+- ⬜ Is Tamed — needs entity values (entities slice), not done here
+- ⛔ Is Ticking — no tick manager in the plugin API
+- 🟡 Is Transparent — block type; light opacity of the default state
 - ⬜ Is Unbreakable
-- ⬜ Is Using Experimental Feature
-- ⬜ Is Valid
+- ⛔ Is Using Experimental Feature — Pumpkin has no feature flags
+- ✅ Is Valid — `x is valid` (online player, set value)
 - ⬜ Is Wearing
 - ⬜ Is Whitelisted
-- ⬜ Is Within
-- ⬜ Is Within Radius
+- 🟡 Is Within — two corners, or a world; no chunk or block-entity forms
+- ✅ Is Within Radius — `loc is within 5 blocks of loc`
 - ⬜ Item Has Enchantment Glint Override
-- ⬜ Leash Will Drop
-- ⬜ Left Handed
+- ⬜ Leash Will Drop — needs entity values (entities slice), not done here
+- ⛔ Left Handed — the API gives no client settings from a player handle
 - ⬜ Lid Is Open/Closed
-- ⬜ Matches
-- ⬜ Panda Is On Its Back
-- ⬜ Panda Is Rolling
-- ⬜ Panda Is Scared
-- ⬜ Panda Is Sneezing
+- ✅ Matches — `text matches regex`, `contains regex`; own regex engine, no lookaround or captures
+- ⬜ Panda Is On Its Back — needs entity values (entities slice), not done here
+- ⬜ Panda Is Rolling — needs entity values (entities slice), not done here
+- ⬜ Panda Is Scared — needs entity values (entities slice), not done here
+- ⬜ Panda Is Sneezing — needs entity values (entities slice), not done here
 - ⬜ Potion Effect - Has Icon
 - ⬜ Potion Effect - Has Particles
 - ⬜ Potion Effect - Is Ambient
-- ⬜ Potion Effect Type - Is Instant
-- ⬜ PvP
+- 🟡 Potion Effect Type - Is Instant — effect names as text
+- ✅ PvP — `pvp is enabled [in world]`, from the pvp game rule
 - ⛔ Region Contains — needs WorldGuard
 - ⬜ Resource Pack
-- ⬜ Running Minecraft
+- ⛔ Running Minecraft — the plugin API gives no Minecraft version
 - ✅ Starts/Ends With
-- ⬜ Strider Is Shivering
+- ⬜ Strider Is Shivering — needs entity values (entities slice), not done here
 - ⬜ Text Display Has Drop Shadow
 - ⬜ Text Display Visible Through Blocks
 - ⬜ Time ⭐
 - ⬜ Weather ⭐
-- ⬜ Will Consume Boosting Firework
-- ⬜ Will Despawn
+- ⬜ Will Consume Boosting Firework — needs entity values (entities slice), not done here
+- ⬜ Will Despawn — needs entity values (entities slice), not done here
 
 ## Expressions (545)
 

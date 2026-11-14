@@ -656,7 +656,7 @@ fn timings(engine: &mut Engine, rest: &str, out: &mut AdminOut) -> Result<(), St
                 return Ok(());
             };
             let mut rows: Vec<_> = t.iter().collect();
-            rows.sort_by(|a, b| b.1.total.cmp(&a.1.total));
+            rows.sort_by_key(|r| std::cmp::Reverse(r.1.total));
             out.say(format!("&6Top triggers by total time ({} tracked):", rows.len()));
             for (label, tm) in rows.iter().take(10) {
                 out.raw(format!(
