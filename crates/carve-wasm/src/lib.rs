@@ -11,6 +11,7 @@ use pumpkin_plugin_api::command::{
     ArgumentType, Command, CommandError, CommandNode, CommandSender, ConsumedArgs, StringType,
 };
 use pumpkin_plugin_api::commands::CommandHandler;
+use pumpkin_plugin_api::common::Hand;
 use pumpkin_plugin_api::events::{
     BlockBreakEvent, BlockPlaceEvent, EventData, EventHandler, EventPriority, FromIntoEvent, PlayerChatEvent,
     PlayerJoinEvent, PlayerLeaveEvent,
@@ -215,6 +216,55 @@ impl WasmHost<'_> {
         self.get(p).is_some_and(|pl| pl.has_permission(&node))
     }
 
+    fn online_players(&mut self) -> Vec<PlayerRef> {
+        let mut out = Vec::new();
+        for p in self.server.get_all_players() {
+            let r = player_ref(&p);
+            if !self.players.iter().any(|(u, _)| *u == r.uuid) {
+                self.players.push((r.uuid.clone(), Some(p)));
+            }
+            out.push(r);
+        }
+        out
+    }
+
+    fn player_location(&mut self, p: &PlayerRef) -> Option<(f64, f64, f64, String)> {
+        let pl = self.get(p)?;
+        let (x, y, z) = pl.get_position();
+        Some((x, y, z, pl.get_world().get_name()))
+    }
+
+    fn teleport_to(&mut self, p: &PlayerRef, x: f64, y: f64, z: f64, world: Option<&str>) {
+        let target = world.and_then(|w| self.server.get_world_by_name(w));
+        if world.is_some() && target.is_none() {
+            plog(
+                ApiLevel::Warn,
+                &format!("teleport: no world named '{}'", world.unwrap_or_default()),
+            );
+            return;
+        }
+        if let Some(pl) = self.get(p) {
+            let w = target.unwrap_or_else(|| pl.get_world());
+            pl.teleport((x, y, z), None, None, w);
+        }
+    }
+
+    fn held_item(&mut self, p: &PlayerRef) -> Option<(String, u32)> {
+        let stack = self.get(p)?.get_item_in_hand(Hand::Right)?;
+        let key = stack.get_registry_key();
+        let id = key.strip_prefix("minecraft:").unwrap_or(&key).to_string();
+        Some((id, u32::from(stack.get_count())))
+    }
+
+    fn count_item(&mut self, p: &PlayerRef, id: &str) -> u32 {
+        self.get(p)
+            .map_or(0, |pl| pl.get_inventory().as_inventory().count_item(id))
+    }
+
+    fn health(&mut self, p: &PlayerRef) -> Option<f64> {
+        self.get(p).map(|pl| f64::from(pl.get_health()))
+    }
+
     fn log(&mut self, level: LogLevel, msg: &str) {
         let l = match level {
             LogLevel::Info => ApiLevel::Info,
@@ -253,6 +303,12 @@ impl Host for TickHost<'_, '_> {
         find_player(name: &str) -> Option<PlayerRef>;
         has_permission(p: &PlayerRef, node: &str) -> bool;
         log(level: LogLevel, msg: &str);
+        online_players() -> Vec<PlayerRef>;
+        player_location(p: &PlayerRef) -> Option<(f64, f64, f64, String)>;
+        teleport_to(p: &PlayerRef, x: f64, y: f64, z: f64, world: Option<&str>);
+        held_item(p: &PlayerRef) -> Option<(String, u32)>;
+        count_item(p: &PlayerRef, id: &str) -> u32;
+        health(p: &PlayerRef) -> Option<f64>;
     }
 
     fn schedule_wait(&mut self, ticks: u64, token: u64) {

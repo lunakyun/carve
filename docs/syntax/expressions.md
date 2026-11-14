@@ -123,3 +123,11 @@ Inside a loop: `loop-value`, `loop-value-2`, `loop-player`, `loop-index`,
 `size of {list::*}` (also `amount of`, `count of`) is the number of items in a
 list. `{list::*}` itself prints as `a, b and c`.
 
+## Random numbers
+
+- `random integer between %number% and %number%`: a whole number, both ends
+  included.
+- `random number between %number% and %number%`: a decimal number.
+
+The bounds can come in any order.
+

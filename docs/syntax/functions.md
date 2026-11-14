@@ -30,7 +30,7 @@ command /pay <player> <number>:
 - **Name:** letters, digits and `_`. Names ignore case, and each name can only
   be used once across all scripts.
 - **Parameter types:** `text` (or `string`), `number` (or `integer`),
-  `player`, `boolean` and `object` (anything).
+  `player`, `boolean`, `item`, `location`, `world` and `object` (anything).
 - **Defaults:** a parameter with `= value` can be left out of a call. Every
   parameter after it needs a default too.
 - **Return type:** `:: type` says the function gives back a value. Leave it out

@@ -11,6 +11,9 @@ pub enum Ty {
     Text,
     Player,
     Boolean,
+    Item,
+    Location,
+    World,
     /// Unknown until runtime (variables).
     Object,
 }
@@ -22,6 +25,9 @@ impl Ty {
             Ty::Text => "text",
             Ty::Player => "player",
             Ty::Boolean => "boolean",
+            Ty::Item => "item",
+            Ty::Location => "location",
+            Ty::World => "world",
             Ty::Object => "object",
         }
     }
@@ -85,6 +91,70 @@ pub enum Expr {
     Size(VarRef),
     /// Call of a script function, by id, with its arguments.
     Call(usize, Vec<Expr>),
+    /// Item literal like `diamond sword` or `2 diamonds`.
+    Item {
+        id: String,
+        count: u32,
+    },
+    /// `location of player`, `player's world`, `x of {_loc}` and so on.
+    Prop(Prop, Box<Expr>),
+    /// `location(x, y, z[, world])`.
+    Loc(Box<Expr>, Box<Expr>, Box<Expr>, Option<Box<Expr>>),
+    /// `world "name"`.
+    WorldNamed(Box<Expr>),
+    /// `distance between a and b`.
+    Distance(Box<Expr>, Box<Expr>),
+    /// `random integer between a and b` (true) / `random number between a and b`.
+    Random(bool, Box<Expr>, Box<Expr>),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Prop {
+    Location,
+    World,
+    Uuid,
+    Name,
+    Tool,
+    Health,
+    X,
+    Y,
+    Z,
+}
+
+impl Prop {
+    fn from_word(w: &str) -> Option<Prop> {
+        Some(match w {
+            "location" | "position" => Prop::Location,
+            "world" => Prop::World,
+            "uuid" => Prop::Uuid,
+            "name" | "display" => Prop::Name,
+            "tool" | "held" => Prop::Tool,
+            "health" => Prop::Health,
+            "x" => Prop::X,
+            "y" => Prop::Y,
+            "z" => Prop::Z,
+            _ => return None,
+        })
+    }
+
+    pub fn ty(self) -> Ty {
+        match self {
+            Prop::Location => Ty::Location,
+            Prop::World => Ty::World,
+            Prop::Uuid | Prop::Name => Ty::Text,
+            Prop::Tool => Ty::Item,
+            Prop::Health | Prop::X | Prop::Y | Prop::Z => Ty::Number,
+        }
+    }
+
+    /// Types this property can be read from.
+    fn takes(self, t: Ty) -> bool {
+        t == Ty::Object
+            || match self {
+                Prop::X | Prop::Y | Prop::Z | Prop::World => t == Ty::Player || t == Ty::Location,
+                _ => t == Ty::Player,
+            }
+    }
 }
 
 /// A function's parameters and return type, known to every script at load.
@@ -127,6 +197,11 @@ impl Expr {
             Expr::LoopIndex(_) => Ty::Text,
             Expr::Bool(_) => Ty::Boolean,
             Expr::Call(id, _) => env.functions.get(*id).and_then(|s| s.ret).unwrap_or(Ty::Object),
+            Expr::Item { .. } => Ty::Item,
+            Expr::Prop(p, _) => p.ty(),
+            Expr::Loc(..) => Ty::Location,
+            Expr::WorldNamed(_) => Ty::World,
+            Expr::Distance(..) | Expr::Random(..) => Ty::Number,
             Expr::LoopValue(d) => match env.loops.get(*d) {
                 Some(LoopKind::Times) => Ty::Number,
                 Some(LoopKind::Players) => Ty::Player,
@@ -276,12 +351,113 @@ impl P<'_> {
     }
 
     fn primary(&mut self) -> Result<Expr, String> {
+        let mut e = self.primary_base()?;
+        // `player's location`, `player's world`, ...
+        while matches!(self.toks.get(self.pos), Some(Tok::Sym("'s"))) {
+            let Some(Tok::Word(w)) = self.toks.get(self.pos + 1) else {
+                if self.pos + 1 >= self.toks.len() {
+                    self.hit_end.set(true);
+                }
+                return Err("expected a property after 's, like player's location".into());
+            };
+            let lw = w.to_ascii_lowercase();
+            let prop = match lw.as_str() {
+                "inventory" => return Err("use 'player's inventory contains <item>' as a condition".into()),
+                _ => Prop::from_word(&lw).ok_or_else(|| format!("unknown property '{w}'"))?,
+            };
+            self.pos += 2;
+            if prop == Prop::Tool && matches!(self.peek(), Some(t) if t.is_lit("item")) {
+                self.pos += 1;
+            }
+            e = self.prop(prop, e)?;
+        }
+        Ok(e)
+    }
+
+    fn prop(&self, prop: Prop, of: Expr) -> Result<Expr, String> {
+        let t = of.ty(self.env);
+        if !prop.takes(t) {
+            return Err(format!("can't take the {prop:?} of a {}", t.name()).to_lowercase());
+        }
+        if prop == Prop::Name && t == Ty::Player {
+            return Ok(Expr::NameOf(Box::new(of)));
+        }
+        Ok(Expr::Prop(prop, Box::new(of)))
+    }
+
+    /// `<word> of <value>` for the properties above.
+    fn prop_of(&mut self, prop: Prop) -> Result<Expr, String> {
+        // already past the property word
+        if prop == Prop::Tool && matches!(self.peek(), Some(t) if t.is_lit("item")) {
+            self.pos += 1;
+        }
+        if !matches!(self.peek(), Some(t) if t.is_lit("of")) {
+            return Err("expected 'of'".into());
+        }
+        self.pos += 1;
+        let inner = self.primary()?;
+        self.prop(prop, inner)
+    }
+
+    /// Longest run of words that names an item, like `diamond sword`. Plural
+    /// `diamonds` and `torches` work too.
+    fn item(&mut self, first: &str) -> Option<Expr> {
+        let start = self.pos - 1;
+        let mut words = vec![first.to_ascii_lowercase()];
+        let mut i = self.pos;
+        while let Some(Tok::Word(w)) = self.toks.get(i) {
+            if words.len() >= 5 {
+                break;
+            }
+            words.push(w.to_ascii_lowercase());
+            i += 1;
+        }
+        // More words after the end could make a longer item name.
+        if i >= self.toks.len() && words.len() < 5 {
+            self.hit_end.set(true);
+        }
+        for n in (1..=words.len()).rev() {
+            let joined = words.get(..n).unwrap_or_default().join("_");
+            let mut candidates = vec![joined.clone()];
+            if let Some(s) = joined.strip_suffix("es") {
+                candidates.push(s.to_string());
+            }
+            if let Some(s) = joined.strip_suffix('s') {
+                candidates.push(s.to_string());
+            }
+            if let Some(id) = candidates.into_iter().find(|c| crate::items::is_known(c)) {
+                self.pos = start + n;
+                return Some(Expr::Item { id, count: 1 });
+            }
+        }
+        None
+    }
+
+    fn primary_base(&mut self) -> Result<Expr, String> {
         let Some(tok) = self.peek().cloned() else {
             return Err("missing expression".into());
         };
         self.pos += 1;
         match tok {
-            Tok::Num(n) => Ok(Expr::Num(n)),
+            Tok::Num(n) => {
+                // `2 diamonds`: an amount of an item.
+                if self.pos >= self.toks.len() {
+                    self.hit_end.set(true);
+                }
+                if let Some(Tok::Word(w)) = self.toks.get(self.pos).cloned()
+                    && n >= 1.0
+                    && n.fract() == 0.0
+                    && n <= f64::from(u32::MAX)
+                {
+                    let save = self.pos;
+                    self.pos += 1;
+                    if let Some(Expr::Item { id, .. }) = self.item(&w) {
+                        return Ok(Expr::Item { id, count: n as u32 });
+                    }
+                    self.pos = save;
+                }
+                Ok(Expr::Num(n))
+            }
             Tok::Str(s) => Ok(Expr::Text(parse_template(&s, self.env)?)),
             Tok::Var(v) => Ok(Expr::Var(parse_varref(&v, self.env)?)),
             Tok::Sym("(") => {
@@ -329,6 +505,82 @@ impl P<'_> {
                             _ => Err(format!("'{lw} of' needs a list variable like {{x::*}}")),
                         }
                     }
+                    "location"
+                        if matches!(self.peek(), Some(t) if t.is_lit("("))
+                            && !self.has_function("location") =>
+                    {
+                        self.pos += 1;
+                        let x = self.sum()?;
+                        let mut parts = vec![x];
+                        while self.eat_sym(",") {
+                            parts.push(self.sum()?);
+                        }
+                        if !self.eat_sym(")") {
+                            return Err("missing ')' after location(x, y, z)".into());
+                        }
+                        if !(3..=4).contains(&parts.len()) {
+                            return Err("location(x, y, z) or location(x, y, z, world)".into());
+                        }
+                        for p in parts.iter().take(3) {
+                            if !Ty::Number.accepts(p.ty(self.env)) {
+                                return Err("location() needs numbers for x, y and z".into());
+                            }
+                        }
+                        let mut it = parts.into_iter();
+                        let (Some(x), Some(y), Some(z)) = (it.next(), it.next(), it.next()) else {
+                            return Err("location(x, y, z)".into());
+                        };
+                        let w = it.next().map(Box::new);
+                        Ok(Expr::Loc(Box::new(x), Box::new(y), Box::new(z), w))
+                    }
+                    "world" if matches!(self.peek(), Some(Tok::Str(_))) => {
+                        let name = self.primary()?;
+                        Ok(Expr::WorldNamed(Box::new(name)))
+                    }
+                    "random" if matches!(self.peek(), Some(Tok::Word(w)) if matches!(w.to_ascii_lowercase().as_str(), "integer" | "number" | "int")) =>
+                    {
+                        let int = !matches!(self.peek(), Some(t) if t.is_lit("number"));
+                        self.pos += 1;
+                        if !matches!(self.peek(), Some(t) if t.is_lit("between")) {
+                            return Err("expected 'random integer between <number> and <number>'".into());
+                        }
+                        self.pos += 1;
+                        let a = self.unary()?;
+                        if !matches!(self.peek(), Some(t) if t.is_lit("and")) {
+                            return Err("expected 'random integer between <number> and <number>'".into());
+                        }
+                        self.pos += 1;
+                        let b = self.unary()?;
+                        for side in [&a, &b] {
+                            if !Ty::Number.accepts(side.ty(self.env)) {
+                                return Err("random needs numbers".into());
+                            }
+                        }
+                        Ok(Expr::Random(int, Box::new(a), Box::new(b)))
+                    }
+                    "distance" if matches!(self.peek(), Some(t) if t.is_lit("between")) => {
+                        self.pos += 1;
+                        let a = self.primary()?;
+                        if !matches!(self.peek(), Some(t) if t.is_lit("and")) {
+                            return Err("expected 'distance between <location> and <location>'".into());
+                        }
+                        self.pos += 1;
+                        let b = self.primary()?;
+                        for side in [&a, &b] {
+                            let t = side.ty(self.env);
+                            if !matches!(t, Ty::Location | Ty::Player | Ty::Object) {
+                                return Err(format!("distance needs locations, got a {}", t.name()));
+                            }
+                        }
+                        Ok(Expr::Distance(Box::new(a), Box::new(b)))
+                    }
+                    "location" | "position" | "world" | "uuid" | "tool" | "health" | "x" | "y" | "z"
+                    | "held"
+                        if matches!(self.peek(), Some(t) if t.is_lit("of") || t.is_lit("item")) =>
+                    {
+                        let prop = Prop::from_word(&lw).ok_or("unknown property")?;
+                        self.prop_of(prop)
+                    }
                     "name" => {
                         if !matches!(self.peek(), Some(t) if t.is_lit("of")) {
                             return Err("expected 'name of <player>'".into());
@@ -347,6 +599,9 @@ impl P<'_> {
                         if let Some(d) = lw.strip_prefix("arg-") {
                             let i: usize = d.parse().map_err(|_| format!("bad argument '{w}'"))?;
                             return self.arg(i);
+                        }
+                        if let Some(item) = self.item(&w) {
+                            return Ok(item);
                         }
                         Err(format!("unknown expression '{w}'"))
                     }
@@ -414,6 +669,13 @@ impl P<'_> {
             "loop-iteration" | "loop-counter" => Expr::LoopIter(depth),
             _ => Expr::LoopValue(depth),
         })
+    }
+
+    fn has_function(&self, name: &str) -> bool {
+        self.env
+            .functions
+            .iter()
+            .any(|s| s.name.eq_ignore_ascii_case(name))
     }
 
     /// `name(a, b)`: a call of a script function. The `(` is next.

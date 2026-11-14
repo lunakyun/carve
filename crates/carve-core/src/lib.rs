@@ -7,6 +7,7 @@ pub mod engine;
 pub mod error;
 pub mod expr;
 pub mod host;
+pub mod items;
 pub mod lexer;
 pub mod pattern;
 pub mod value;

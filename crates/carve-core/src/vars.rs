@@ -62,6 +62,11 @@ impl Variables {
                 Value::Text(t) => json!(t),
                 Value::Bool(b) => json!(b),
                 Value::Player(p) => json!({"player": {"uuid": p.uuid, "name": p.name}}),
+                Value::Item { id, count } => json!({"item": {"id": id, "count": count}}),
+                Value::Location { x, y, z, world } => {
+                    json!({"location": {"x": x, "y": y, "z": z, "world": world}})
+                }
+                Value::World(w) => json!({"world": w}),
             };
             obj.insert(k.clone(), j);
         }
@@ -83,24 +88,47 @@ impl Variables {
                 Json::Number(n) => Value::Num(n.as_f64().unwrap_or(0.0)),
                 Json::String(s) => Value::Text(s),
                 Json::Bool(b) => Value::Bool(b),
-                Json::Object(o) => {
-                    let p = o.get("player").and_then(Json::as_object);
-                    let uuid = p.and_then(|p| p.get("uuid")).and_then(Json::as_str);
-                    let name = p.and_then(|p| p.get("name")).and_then(Json::as_str);
-                    match (uuid, name) {
-                        (Some(u), Some(n)) => Value::Player(PlayerRef {
-                            uuid: u.into(),
-                            name: n.into(),
-                        }),
-                        _ => continue,
-                    }
-                }
+                Json::Object(o) => match object_value(&o) {
+                    Some(v) => v,
+                    None => continue,
+                },
                 _ => continue,
             };
             map.insert(k, val);
         }
         Ok(Variables { map })
     }
+}
+
+/// A saved player, item, location or world (`{"player": {...}}` and so on).
+fn object_value(o: &Map<String, Json>) -> Option<Value> {
+    if let Some(p) = o.get("player").and_then(Json::as_object) {
+        return Some(Value::Player(PlayerRef {
+            uuid: p.get("uuid")?.as_str()?.into(),
+            name: p.get("name")?.as_str()?.into(),
+        }));
+    }
+    if let Some(i) = o.get("item").and_then(Json::as_object) {
+        return Some(Value::Item {
+            id: i.get("id")?.as_str()?.into(),
+            count: i
+                .get("count")
+                .and_then(Json::as_u64)
+                .and_then(|c| u32::try_from(c).ok())
+                .unwrap_or(1),
+        });
+    }
+    if let Some(l) = o.get("location").and_then(Json::as_object) {
+        return Some(Value::Location {
+            x: l.get("x")?.as_f64()?,
+            y: l.get("y")?.as_f64()?,
+            z: l.get("z")?.as_f64()?,
+            world: l.get("world").and_then(Json::as_str).map(str::to_string),
+        });
+    }
+    o.get("world")
+        .and_then(Json::as_str)
+        .map(|w| Value::World(w.into()))
 }
 
 /// Compare list indexes the way people expect: numbers by value, then text.

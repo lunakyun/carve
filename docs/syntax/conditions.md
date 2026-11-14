@@ -136,6 +136,29 @@ if message starts with "!":
     cancel event
 ```
 
+## Items
+
+### `%player%'s inventory contains %item%`
+
+### `inventory of %player% contains %item%`
+
+### `%player% has %item%`
+
+### `%player% (does not|doesn't) have %item%`
+
+```
+if player has 3 diamonds:
+    send "You can afford the key."
+if player's inventory contains stone:
+    send "You have some stone."
+if tool of player is diamond pickaxe:
+    send "Nice pickaxe."
+```
+
+An amount (`3 diamonds`) means at least that many. Without an amount, one is
+enough. The 36 main inventory slots count (hotbar included). Armor and the
+off hand don't. An offline player has nothing.
+
 ## Ranges
 
 ### `%number% is between %number% and %number%`

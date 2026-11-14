@@ -9,7 +9,7 @@ use crate::compile::{
     TriggerKind, compile_all,
 };
 use crate::error::ScriptError;
-use crate::expr::{BinOp, Expr, Key, Part, VarRef};
+use crate::expr::{BinOp, Expr, Key, Part, Prop, VarRef};
 use crate::host::{Host, LogLevel};
 use crate::value::{PlayerRef, Recipient, Value, format_num, push_num};
 use crate::vars::{Locals, Variables};
@@ -267,6 +267,8 @@ pub struct Engine {
     dirty_since: Option<u64>,
     /// Instructions left in the current run slice (shared by function calls).
     budget: usize,
+    /// xorshift state for `random`; seeded from the host clock on first use.
+    rng: u64,
 }
 
 impl Default for Engine {
@@ -314,6 +316,7 @@ impl Engine {
             max_instructions: DEFAULT_MAX_INSTRUCTIONS,
             dirty_since: None,
             budget: 0,
+            rng: 0,
         }
     }
 
@@ -607,6 +610,74 @@ impl Engine {
         }
     }
 
+    /// A random number in [0, 1).
+    fn next_random(&mut self, host: &mut dyn Host) -> f64 {
+        if self.rng == 0 {
+            self.rng = host.now().wrapping_mul(0x9E37_79B9_7F4A_7C15) | 1;
+        }
+        let mut x = self.rng;
+        x ^= x << 13;
+        x ^= x >> 7;
+        x ^= x << 17;
+        self.rng = x;
+        (x >> 11) as f64 / (1u64 << 53) as f64
+    }
+
+    /// A location value, or the location of a player value.
+    fn as_location(
+        &mut self,
+        v: &Value,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Option<(f64, f64, f64, Option<String>)> {
+        match v {
+            Value::Location { x, y, z, world } => Some((*x, *y, *z, world.clone())),
+            Value::Player(_) | Value::Text(_) => {
+                let p = online(v, &mut ex.seen, host)?;
+                host.player_location(&p).map(|(x, y, z, w)| (x, y, z, Some(w)))
+            }
+            _ => None,
+        }
+    }
+
+    fn property(&mut self, prop: Prop, v: &Value, ex: &mut Exec, host: &mut dyn Host) -> Value {
+        match prop {
+            Prop::X | Prop::Y | Prop::Z | Prop::Location | Prop::World => {
+                let Some((x, y, z, world)) = self.as_location(v, ex, host) else {
+                    return Value::None;
+                };
+                match prop {
+                    Prop::X => Value::Num(x),
+                    Prop::Y => Value::Num(y),
+                    Prop::Z => Value::Num(z),
+                    Prop::World => world.map(Value::World).unwrap_or(Value::None),
+                    _ => Value::Location { x, y, z, world },
+                }
+            }
+            Prop::Uuid => match v {
+                Value::Player(p) => Value::Text(p.uuid.clone()),
+                Value::Text(_) => online(v, &mut ex.seen, host)
+                    .map(|p| Value::Text(p.uuid))
+                    .unwrap_or(Value::None),
+                _ => Value::None,
+            },
+            Prop::Name => online(v, &mut ex.seen, host)
+                .map(|p| Value::Text(p.name))
+                .unwrap_or(Value::None),
+            Prop::Tool => match online(v, &mut ex.seen, host).and_then(|p| host.held_item(&p)) {
+                Some((id, count)) => Value::Item { id, count },
+                None => Value::Item {
+                    id: "air".into(),
+                    count: 1,
+                },
+            },
+            Prop::Health => online(v, &mut ex.seen, host)
+                .and_then(|p| host.health(&p))
+                .map(Value::Num)
+                .unwrap_or(Value::None),
+        }
+    }
+
     fn loop_init(&mut self, src: &LoopSrc, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
         let items = match src {
             LoopSrc::Times(n) => {
@@ -684,6 +755,17 @@ impl Engine {
                         }
                     }
                 })
+            }
+            Cond::HasItem { player, item, negate } => {
+                let p = self.eval(player, ex, host)?;
+                let item = self.eval(item, ex, host)?;
+                let Some(p) = online(&p, &mut ex.seen, host) else {
+                    return Ok(false);
+                };
+                let Value::Item { id, count } = item else {
+                    return Err(format!("expected an item, got {} ({item})", item.type_name()));
+                };
+                Ok((host.count_item(&p, &id) >= count.max(1)) != *negate)
             }
             Cond::All(parts) => {
                 for p in parts {
@@ -942,6 +1024,57 @@ impl Engine {
             }
             Expr::Neg(inner) => Value::Num(-self.num(inner, ex, host)?),
             Expr::Call(id, args) => self.call_value(*id, args, ex, host)?,
+            Expr::Item { id, count } => Value::Item {
+                id: id.clone(),
+                count: *count,
+            },
+            Expr::WorldNamed(n) => Value::World(self.text(n, ex, host)?),
+            Expr::Loc(x, y, z, w) => {
+                let (x, y, z) = (
+                    self.num(x, ex, host)?,
+                    self.num(y, ex, host)?,
+                    self.num(z, ex, host)?,
+                );
+                let world = match w {
+                    Some(w) => match self.eval(w, ex, host)? {
+                        Value::None => None,
+                        v => Some(v.to_string()),
+                    },
+                    None => None,
+                };
+                Value::Location { x, y, z, world }
+            }
+            Expr::Distance(a, b) => {
+                let a = self.eval(a, ex, host)?;
+                let b = self.eval(b, ex, host)?;
+                match (self.as_location(&a, ex, host), self.as_location(&b, ex, host)) {
+                    (Some((ax, ay, az, aw)), Some((bx, by, bz, bw))) => {
+                        if aw.is_some() && bw.is_some() && aw != bw {
+                            return Err("distance between locations in different worlds".into());
+                        }
+                        Value::Num(((ax - bx).powi(2) + (ay - by).powi(2) + (az - bz).powi(2)).sqrt())
+                    }
+                    _ => Value::None,
+                }
+            }
+            Expr::Random(int, a, b) => {
+                let (a, b) = (self.num(a, ex, host)?, self.num(b, ex, host)?);
+                let (lo, hi) = if a <= b { (a, b) } else { (b, a) };
+                let r = self.next_random(host);
+                Value::Num(if *int {
+                    let (lo, hi) = (lo.ceil(), hi.floor());
+                    if hi < lo {
+                        return Err("no whole number in that range".into());
+                    }
+                    (lo + (r * (hi - lo + 1.0)).floor()).min(hi)
+                } else {
+                    lo + r * (hi - lo)
+                })
+            }
+            Expr::Prop(prop, of) => {
+                let v = self.eval(of, ex, host)?;
+                self.property(*prop, &v, ex, host)
+            }
             Expr::LoopValue(d) => ex.loops.get(*d).map(LoopFrame::value).unwrap_or(Value::None),
             Expr::LoopIndex(d) => ex.loops.get(*d).map(LoopFrame::index).unwrap_or(Value::None),
             Expr::LoopIter(d) => ex
@@ -1051,6 +1184,34 @@ impl Engine {
                 );
                 if let Some(p) = self.player(p, ex, host)? {
                     host.teleport(&p, x, y, z);
+                }
+            }
+            Effect::TeleportTo(p, loc) => {
+                let loc = self.eval(loc, ex, host)?;
+                let Some((x, y, z, world)) = self.as_location(&loc, ex, host) else {
+                    return Err(format!("expected a location, got {} ({loc})", loc.type_name()));
+                };
+                if let Some(p) = self.player(p, ex, host)? {
+                    host.teleport_to(&p, x, y, z, world.as_deref());
+                }
+            }
+            Effect::Give(p, n, item) => {
+                let item = self.eval(item, ex, host)?;
+                let Value::Item { id, count } = item else {
+                    return Err(format!("expected an item, got {} ({item})", item.type_name()));
+                };
+                let count = match n {
+                    Some(n) => {
+                        let n = self.num(n, ex, host)?;
+                        if !n.is_finite() || n < 1.0 {
+                            return Ok(None);
+                        }
+                        n.min(6400.0) as u32
+                    }
+                    None => count,
+                };
+                if let Some(p) = self.player(p, ex, host)? {
+                    host.give_item(&p, &id, count);
                 }
             }
             Effect::ConsoleCommand(c) => {

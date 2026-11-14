@@ -36,4 +36,34 @@ pub trait Host {
     fn online_players(&mut self) -> Vec<PlayerRef> {
         Vec::new()
     }
+
+    /// Position and world name of an online player.
+    fn player_location(&mut self, _player: &PlayerRef) -> Option<(f64, f64, f64, String)> {
+        None
+    }
+
+    /// Teleport, optionally into another world (by name).
+    fn teleport_to(&mut self, player: &PlayerRef, x: f64, y: f64, z: f64, world: Option<&str>) {
+        let _ = world;
+        self.teleport(player, x, y, z);
+    }
+
+    /// Item id and amount in the player's main hand.
+    fn held_item(&mut self, _player: &PlayerRef) -> Option<(String, u32)> {
+        None
+    }
+
+    /// How many of an item the player has in their inventory.
+    fn count_item(&mut self, _player: &PlayerRef, _id: &str) -> u32 {
+        0
+    }
+
+    /// Give items. The default runs the vanilla `give` command as the console.
+    fn give_item(&mut self, player: &PlayerRef, id: &str, count: u32) {
+        self.execute_command(&format!("give {} minecraft:{id} {count}", player.name));
+    }
+
+    fn health(&mut self, _player: &PlayerRef) -> Option<f64> {
+        None
+    }
 }

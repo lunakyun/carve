@@ -105,6 +105,12 @@ pub enum Cond {
         negate: bool,
     },
     IsSet(Expr, bool),
+    /// `player has 2 diamonds`, `player's inventory contains stone`.
+    HasItem {
+        player: Expr,
+        item: Expr,
+        negate: bool,
+    },
     /// Every part is true (`a and b`).
     All(Vec<Cond>),
     /// At least one part is true (`a or b`).
@@ -156,6 +162,9 @@ pub enum Effect {
     SetHealth(Expr, Expr),
     Kill(Expr),
     Teleport(Expr, Expr, Expr, Expr),
+    TeleportTo(Expr, Expr),
+    /// player, amount (None: the item's own amount), item
+    Give(Expr, Option<Expr>, Expr),
     ConsoleCommand(Expr),
     Cancel,
     /// amount times ticks-per-unit
@@ -247,6 +256,10 @@ pub enum EffKind {
     SetHealth,
     Kill,
     Teleport,
+    TeleportTo,
+    Give,
+    GiveCount,
+    GiveTo,
     ConsoleCommand,
     Cancel,
     WaitTicks,
@@ -277,6 +290,9 @@ pub enum CondKind {
     NotEndsWith,
     Between,
     NotBetween,
+    HasItem,
+    NotHasItem,
+    InvContains,
 }
 
 /// Effect patterns, tried in order (more specific first).
@@ -295,6 +311,10 @@ pub const EFFECT_PATTERNS: &[(&str, EffKind)] = &[
         "teleport %player% to %number%, %number%, %number%",
         EffKind::Teleport,
     ),
+    ("teleport %player% to %location%", EffKind::TeleportTo),
+    ("give %number% [of] %item% to %player%", EffKind::GiveCount),
+    ("give %item% to %player%", EffKind::GiveTo),
+    ("give %player% %item%", EffKind::Give),
     ("execute console command %text%", EffKind::ConsoleCommand),
     ("cancel [the] event", EffKind::Cancel),
     ("wait %number% (tick|ticks)", EffKind::WaitTicks),
@@ -316,6 +336,10 @@ pub const CONDITION_PATTERNS: &[(&str, CondKind)] = &[
     ("%number% < %number%", CondKind::Lt),
     ("%player% has permission %text%", CondKind::HasPerm),
     ("%player% does not have permission %text%", CondKind::NotHasPerm),
+    ("%player%'s inventory contains %item%", CondKind::InvContains),
+    ("inventory of %player% contains %item%", CondKind::InvContains),
+    ("%player% has %item%", CondKind::HasItem),
+    ("%player% (does not|doesn't) have %item%", CondKind::NotHasItem),
     ("%number% is between %number% and %number%", CondKind::Between),
     (
         "%number% is not between %number% and %number%",
@@ -1023,6 +1047,20 @@ fn build_cond(kind: CondKind, mut c: Vec<Option<Capture>>) -> Cond {
                 negate: true,
             };
         }
+        CondKind::HasItem | CondKind::InvContains => {
+            return Cond::HasItem {
+                player: a,
+                item: b,
+                negate: false,
+            };
+        }
+        CondKind::NotHasItem => {
+            return Cond::HasItem {
+                player: a,
+                item: b,
+                negate: true,
+            };
+        }
         CondKind::Between | CondKind::NotBetween => {
             let high = take_expr(&mut c, 2).unwrap_or(Expr::Num(0.0));
             return Cond::Between {
@@ -1084,6 +1122,20 @@ fn build_effect(kind: EffKind, mut c: Vec<Option<Capture>>) -> Option<Effect> {
             take_expr(c, 2)?,
             take_expr(c, 3)?,
         ),
+        EffKind::TeleportTo => Effect::TeleportTo(take_expr(c, 0)?, take_expr(c, 1)?),
+        EffKind::GiveCount => {
+            let n = take_expr(c, 0)?;
+            let item = take_expr(c, 1)?;
+            Effect::Give(take_expr(c, 2)?, Some(n), item)
+        }
+        EffKind::GiveTo => {
+            let item = take_expr(c, 0)?;
+            Effect::Give(take_expr(c, 1)?, None, item)
+        }
+        EffKind::Give => {
+            let p = take_expr(c, 0)?;
+            Effect::Give(p, None, take_expr(c, 1)?)
+        }
         EffKind::ConsoleCommand => Effect::ConsoleCommand(take_expr(c, 0)?),
         EffKind::Cancel => Effect::Cancel,
         EffKind::WaitTicks => Effect::Wait(take_expr(c, 0)?, 1),
@@ -1379,6 +1431,9 @@ pub fn type_from_name(name: &str) -> Option<Ty> {
         "number" | "integer" | "int" => Ty::Number,
         "player" | "offline player" | "offlineplayer" => Ty::Player,
         "boolean" | "bool" => Ty::Boolean,
+        "item" | "itemtype" | "item type" | "block" => Ty::Item,
+        "location" => Ty::Location,
+        "world" => Ty::World,
         "object" => Ty::Object,
         _ => return None,
     })
@@ -1452,7 +1507,7 @@ fn parse_function_header(
             })?;
             let pname = pname.trim().to_ascii_lowercase();
             let ty = type_from_name(pty).ok_or_else(|| {
-                err(format!("unknown type '{}' for parameter {pname} (use text, number, player, boolean or object; lists are not supported)", pty.trim()))
+                err(format!("unknown type '{}' for parameter {pname} (use text, number, player, boolean, item, location, world or object; lists are not supported)", pty.trim()))
             })?;
             if default.is_none() && defaults.iter().any(Option::is_some) {
                 return Err(err(format!(

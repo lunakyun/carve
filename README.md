@@ -62,7 +62,8 @@ cargo build -p carve-wasm --release --target wasm32-wasip2
 - [Getting started](docs/getting-started.md)
 - Syntax: [triggers](docs/syntax/triggers.md), [effects](docs/syntax/effects.md),
   [conditions](docs/syntax/conditions.md), [expressions](docs/syntax/expressions.md),
-  [loops](docs/syntax/loops.md), [functions and options](docs/syntax/functions.md)
+  [loops](docs/syntax/loops.md), [functions and options](docs/syntax/functions.md),
+  [types](docs/syntax/types.md)
 - [Variables](docs/variables.md)
 - [Commands](docs/commands.md)
 - [Reading errors](docs/errors.md)

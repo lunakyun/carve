@@ -22,6 +22,18 @@ pub enum Value {
     Text(String),
     Bool(bool),
     Player(PlayerRef),
+    /// An item or block type (`id` without `minecraft:`), with an amount.
+    Item {
+        id: String,
+        count: u32,
+    },
+    Location {
+        x: f64,
+        y: f64,
+        z: f64,
+        world: Option<String>,
+    },
+    World(String),
 }
 
 impl Value {
@@ -32,6 +44,9 @@ impl Value {
             Value::Text(_) => "text",
             Value::Bool(_) => "boolean",
             Value::Player(_) => "player",
+            Value::Item { .. } => "item",
+            Value::Location { .. } => "location",
+            Value::World(_) => "world",
         }
     }
 
@@ -59,6 +74,35 @@ impl Value {
                 .parse::<f64>()
                 .map(|v| (v - n).abs() < 1e-9)
                 .unwrap_or(false),
+            (Value::Item { id: a, .. }, Value::Item { id: b, .. }) => a == b,
+            (Value::Item { id, .. }, Value::Text(t)) | (Value::Text(t), Value::Item { id, .. }) => {
+                let t = t.trim().to_ascii_lowercase();
+                let t = t.strip_prefix("minecraft:").unwrap_or(&t);
+                t.replace(' ', "_") == *id
+            }
+            (
+                Value::Location {
+                    x: ax,
+                    y: ay,
+                    z: az,
+                    world: aw,
+                },
+                Value::Location {
+                    x: bx,
+                    y: by,
+                    z: bz,
+                    world: bw,
+                },
+            ) => {
+                (ax - bx).abs() < 1e-9
+                    && (ay - by).abs() < 1e-9
+                    && (az - bz).abs() < 1e-9
+                    && (aw.is_none() || bw.is_none() || aw == bw)
+            }
+            (Value::World(a), Value::World(b)) => a.eq_ignore_ascii_case(b),
+            (Value::World(w), Value::Text(t)) | (Value::Text(t), Value::World(w)) => {
+                w.eq_ignore_ascii_case(t)
+            }
             _ => false,
         }
     }
@@ -95,18 +139,35 @@ impl Value {
             Value::Text(t) => out.push_str(t),
             Value::Bool(b) => out.push_str(if *b { "true" } else { "false" }),
             Value::Player(p) => out.push_str(&p.name),
+            Value::Item { id, count } => {
+                if *count != 1 {
+                    push_num(out, f64::from(*count));
+                    out.push(' ');
+                }
+                out.push_str(&id.replace('_', " "));
+            }
+            Value::Location { x, y, z, world } => {
+                out.push_str("x: ");
+                push_num(out, *x);
+                out.push_str(", y: ");
+                push_num(out, *y);
+                out.push_str(", z: ");
+                push_num(out, *z);
+                if let Some(w) = world {
+                    out.push_str(" in '");
+                    out.push_str(w);
+                    out.push('\'');
+                }
+            }
+            Value::World(w) => out.push_str(w),
         }
     }
 }
 
 impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Value::None => write!(f, "<none>"),
-            Value::Num(n) => write!(f, "{}", format_num(*n)),
-            Value::Text(t) => write!(f, "{t}"),
-            Value::Bool(b) => write!(f, "{b}"),
-            Value::Player(p) => write!(f, "{}", p.name),
-        }
+        let mut s = String::new();
+        self.push_to(&mut s);
+        f.write_str(&s)
     }
 }

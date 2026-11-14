@@ -1,0 +1,33 @@
+# /sethome, /home and /starter. Shows locations, worlds, items and uuid keys.
+options:
+    prefix: &8[&aHomes&8]&r
+
+command /sethome:
+    trigger:
+        set {home::%uuid of player%} to location of player
+        send "{@prefix} Home set at %player's location%."
+
+command /home:
+    trigger:
+        if {home::%uuid of player%} is not set:
+            send "{@prefix} &cUse /sethome first."
+            stop
+        if world of {home::%uuid of player%} is not world of player:
+            send "{@prefix} &eYour home is in %world of {home::%uuid of player%}%."
+        teleport player to {home::%uuid of player%}
+        send "{@prefix} Welcome home, %distance between player and location(0, 64, 0)% blocks from spawn."
+
+command /starter:
+    trigger:
+        if {starter::%uuid of player%} is set:
+            send "{@prefix} &cYou already got your starter kit."
+            stop
+        set {starter::%uuid of player%} to true
+        give 1 stone sword to player
+        give 16 bread to player
+        give 32 torches to player
+        send "{@prefix} &aEnjoy your kit!"
+
+on join:
+    if tool of player is air and player doesn't have bread:
+        send "{@prefix} Type /starter for a free kit." to player

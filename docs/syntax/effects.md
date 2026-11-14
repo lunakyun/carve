@@ -98,6 +98,33 @@ pick another world yet.
 
 ## Server
 
+### `teleport %player% to %location%`
+
+```
+teleport player to {spawn}
+teleport player to location(0, 100, 0, world "world_nether")
+teleport player to loop-player's location
+```
+
+A location without a world keeps the player in their current world. Locations
+are explained in [types](types.md).
+
+### `give %number% [of] %item% to %player%`
+
+### `give %item% to %player%`
+
+### `give %player% %item%`
+
+```
+give 2 diamonds to player
+give 16 of oak log to player
+give player 1 diamond sword
+```
+
+Item names are checked when the script loads (see [types](types.md)). Carve
+runs Pumpkin's `give` command as the console, so a full inventory drops the
+rest, as with `/give`. The amount is capped at 6400.
+
 ### `execute console command %text%`
 
 ```

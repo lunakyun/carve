@@ -12,6 +12,8 @@ struct Mock {
     now: u64,
     logs: Vec<(LogLevel, String)>,
     resolves: usize,
+    held: Option<(String, u32)>,
+    inv: HashMap<String, u32>,
 }
 
 impl Mock {
@@ -93,6 +95,24 @@ impl Host for Mock {
     fn log(&mut self, level: LogLevel, msg: &str) {
         self.logs.push((level, msg.to_string()));
     }
+    fn player_location(&mut self, p: &PlayerRef) -> Option<(f64, f64, f64, String)> {
+        self.online
+            .contains_key(&p.uuid)
+            .then(|| (1.5, 64.0, -3.0, "world".to_string()))
+    }
+    fn teleport_to(&mut self, p: &PlayerRef, x: f64, y: f64, z: f64, world: Option<&str>) {
+        self.calls
+            .push(format!("tp {} {x} {y} {z} {}", p.name, world.unwrap_or("-")));
+    }
+    fn held_item(&mut self, _p: &PlayerRef) -> Option<(String, u32)> {
+        self.held.clone()
+    }
+    fn count_item(&mut self, _p: &PlayerRef, id: &str) -> u32 {
+        self.inv.get(id).copied().unwrap_or(0)
+    }
+    fn health(&mut self, _p: &PlayerRef) -> Option<f64> {
+        Some(17.0)
+    }
     fn online_players(&mut self) -> Vec<PlayerRef> {
         let mut v: Vec<PlayerRef> = self
             .online
@@ -168,8 +188,13 @@ fn every_effect_pattern_parses() {
         "add 1 to {x}",
         "remove 2 from {x}",
         "delete {x}",
+        "teleport player to location(1, 2, 3)",
+        "give 2 of diamond to player",
+        "give 2 diamonds to player",
+        "give diamond sword to player",
+        "give player 3 golden apples",
     ];
-    assert_eq!(lines.len(), EFFECT_PATTERNS.len() + 5);
+    assert_eq!(lines.len(), EFFECT_PATTERNS.len() + 6);
     for l in lines {
         let src = format!("on join:\n    {l}\n");
         let errs = errors_of(&src);
@@ -201,8 +226,13 @@ fn every_condition_pattern_parses() {
         r#"{x} does not start with "a""#,
         r#"{x} ends with "a""#,
         r#"{x} doesn't end with "a""#,
+        "player's inventory contains stone",
+        "inventory of player contains 2 stone",
+        "player has diamond",
+        "player does not have diamond",
+        "player doesn't have diamond",
     ];
-    assert_eq!(conds.len(), CONDITION_PATTERNS.len() + 3);
+    assert_eq!(conds.len(), CONDITION_PATTERNS.len() + 4);
     for c in conds {
         let src = format!("on join:\n    if {c}:\n        send \"y\"\n");
         let errs = errors_of(&src);
@@ -1410,4 +1440,140 @@ fn reload_with_broken_function_keeps_old_scripts() {
     let mut h = Mock::with_steve();
     e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
     assert_eq!(h.take(), ["send Steve v1"]);
+}
+
+// ---------- v2: items, locations, worlds ----------
+
+#[test]
+fn item_literals_give_and_print() {
+    let out = join(
+        r#"on join:
+    give 2 diamonds to player
+    give player 1 diamond sword
+    give stone to player
+    give 3 of oak log to player
+    set {_i} to diamond sword
+    send "%{_i}% / %5 torches%"
+    if {_i} is "diamond_sword" and {_i} is diamond sword:
+        send "same"
+"#,
+    );
+    assert_eq!(
+        out,
+        [
+            "cmd give Steve minecraft:diamond 2",
+            "cmd give Steve minecraft:diamond_sword 1",
+            "cmd give Steve minecraft:stone 1",
+            "cmd give Steve minecraft:oak_log 3",
+            "send Steve diamond sword / 5 torch",
+            "send Steve same",
+        ]
+    );
+    assert!(
+        errors_of("on join:\n    give 2 diamondz to player\n")[0]
+            .msg
+            .contains("can't understand")
+    );
+}
+
+#[test]
+fn tool_and_inventory() {
+    let src = "on join:\n    if tool of player is diamond sword:\n        send \"sword\"\n    if player's tool is air:\n        send \"empty hand\"\n    if player has 3 diamonds:\n        send \"rich\"\n    if player's inventory contains stone:\n        send \"stone\"\n    if player doesn't have stone:\n        send \"no stone\"\n";
+    let mut e = engine(src);
+    let mut h = Mock::with_steve();
+    h.held = Some(("diamond_sword".into(), 1));
+    h.inv.insert("diamond".into(), 5);
+    e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
+    assert_eq!(
+        h.take(),
+        ["send Steve sword", "send Steve rich", "send Steve no stone"]
+    );
+    h.held = None;
+    h.inv.insert("stone".into(), 1);
+    h.inv.insert("diamond".into(), 2);
+    e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
+    assert_eq!(h.take(), ["send Steve empty hand", "send Steve stone"]);
+}
+
+#[test]
+fn locations_worlds_and_properties() {
+    let out = join(
+        r#"on join:
+    set {_l} to location of player
+    send "%{_l}%"
+    send "%x of {_l}% %y of player% %player's z% %world of player% %player's world%"
+    set {_spawn} to location(0, 100, 0)
+    teleport player to {_spawn}
+    teleport player to location(1, 2, 3, world "nether")
+    teleport player to player's location
+    send "%distance between location(0, 0, 0) and location(3, 4, 0)%"
+    send "%uuid of player% %player's uuid% %player's name% %health of player%"
+    if world of player is "world":
+        send "same world"
+"#,
+    );
+    assert_eq!(
+        out,
+        [
+            "send Steve x: 1.5, y: 64, z: -3 in 'world'",
+            "send Steve 1.5 64 -3 world world",
+            "tp Steve 0 100 0 -",
+            "tp Steve 1 2 3 nether",
+            "tp Steve 1.5 64 -3 world",
+            "send Steve 5",
+            "send Steve u1 u1 Steve 17",
+            "send Steve same world",
+        ]
+    );
+}
+
+#[test]
+fn new_types_persist_and_type_check() {
+    let mut e = engine(
+        "on join:\n    set {i} to 3 golden apples\n    set {l} to location(1, 2, 3, world \"w\")\n    set {w} to world of player\n",
+    );
+    let mut h = Mock::with_steve();
+    e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
+    let back = Variables::from_json(&e.save_now().unwrap()).unwrap();
+    assert_eq!(
+        back.get("i"),
+        Value::Item {
+            id: "golden_apple".into(),
+            count: 3
+        }
+    );
+    assert_eq!(
+        back.get("l"),
+        Value::Location {
+            x: 1.0,
+            y: 2.0,
+            z: 3.0,
+            world: Some("w".into())
+        }
+    );
+    assert_eq!(back.get("w"), Value::World("world".into()));
+    assert!(
+        errors_of("on join:\n    teleport player to \"spawn\"\n")[0]
+            .msg
+            .contains("can't understand")
+    );
+    assert!(
+        errors_of("on join:\n    send \"%x of 5%\"\n")[0]
+            .msg
+            .contains("can't understand")
+    );
+    assert!(
+        errors_of("function f(l: location, w: world, i: item) :: location:\n    return {_l}\n").is_empty()
+    );
+}
+
+#[test]
+fn random_numbers_stay_in_range() {
+    let mut e = engine(
+        "on join:\n    loop 200 times:\n        add random integer between 1 and 6 to {_rolls::*}\n        set {_f} to random number between 2 and 3\n        if {_f} is not between 2 and 3:\n            send \"bad float\"\n    loop {_rolls::*}:\n        if loop-value is not 1, 2, 3, 4, 5 or 6:\n            send \"bad %loop-value%\"\n        set {_seen::%loop-value%} to true\n    send \"%size of {_seen::*}%\"\n",
+    );
+    let mut h = Mock::with_steve();
+    h.now = 12345;
+    e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
+    assert_eq!(h.take(), ["send Steve 6"]);
 }
