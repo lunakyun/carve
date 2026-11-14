@@ -128,6 +128,8 @@ pub enum Expr {
     Length(Box<Expr>),
     /// `x with all "a" replaced with "b"`: text, from, to, replace all.
     Replaced(Box<Expr>, Box<Expr>, Box<Expr>, bool),
+    /// Text functions: case, substring, characters, index of, trimmed, reversed.
+    TextFn(crate::text_case_substring::TextFn, Vec<Expr>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -262,6 +264,8 @@ impl Expr {
             Expr::RandomOf(_) | Expr::Split(..) => Ty::Object,
             Expr::Join(..) | Expr::Replaced(..) => Ty::Text,
             Expr::Length(_) => Ty::Number,
+            Expr::TextFn(f, _) if f.returns_number() => Ty::Number,
+            Expr::TextFn(..) => Ty::Text,
             Expr::Default(a, b) => {
                 let (x, y) = (a.ty(env), b.ty(env));
                 if x == y { x } else { Ty::Object }
@@ -448,6 +452,7 @@ impl P<'_> {
             }
         }
         e = self.replaced_postfix(e);
+        e = self.in_case(e);
         // `player's location`, `player's world`, ...
         while matches!(self.toks.get(self.pos), Some(Tok::Sym("'s"))) {
             let Some(Tok::Word(w)) = self.toks.get(self.pos + 1) else {
@@ -599,6 +604,9 @@ impl P<'_> {
             }
             Tok::Word(w) => {
                 let lw = w.to_ascii_lowercase();
+                if let Some(e) = self.text_fn(&lw)? {
+                    return Ok(e);
+                }
                 match lw.as_str() {
                     "the" => self.primary(),
                     "true" | "yes" => Ok(Expr::Bool(true)),
@@ -854,6 +862,211 @@ impl P<'_> {
             }
             other => Err(format!("unexpected {}", describe(&other))),
         }
+    }
+
+    fn is_word(&self, at: usize, w: &str) -> bool {
+        if self.pos + at >= self.toks.len() {
+            self.hit_end.set(true);
+        }
+        matches!(self.toks.get(self.pos + at), Some(t) if t.is_lit(w))
+    }
+
+    /// `x in upper case`, `x in lower case`, `x in proper case`.
+    fn in_case(&mut self, e: Expr) -> Expr {
+        use crate::text_case_substring::TextFn;
+        if !matches!(self.toks.get(self.pos), Some(t) if t.is_lit("in")) {
+            return e;
+        }
+        if !self.is_word(2, "case") {
+            return e;
+        }
+        let f = match self.toks.get(self.pos + 1) {
+            Some(t) if t.is_lit("upper") => TextFn::Upper,
+            Some(t) if t.is_lit("lower") => TextFn::Lower,
+            Some(t) if t.is_lit("proper") => TextFn::Proper,
+            _ => return e,
+        };
+        self.pos += 3;
+        Expr::TextFn(f, vec![e])
+    }
+
+    fn text_arg(&mut self, what: &str) -> Result<Expr, String> {
+        let e = self.primary()?;
+        if !Ty::Text.accepts(e.ty(self.env)) {
+            return Err(format!("{what} needs text"));
+        }
+        Ok(e)
+    }
+
+    fn num_arg(&mut self, what: &str) -> Result<Expr, String> {
+        let e = self.sum()?;
+        if !Ty::Number.accepts(e.ty(self.env)) {
+            return Err(format!("{what} needs a number"));
+        }
+        Ok(e)
+    }
+
+    fn expected(&self, usage: &str) -> String {
+        if self.pos >= self.toks.len() {
+            self.hit_end.set(true);
+        }
+        format!("expected '{usage}'")
+    }
+
+    /// Text functions that start with a word (`uppercase of x`, `substring of x from 1 to 3`,
+    /// `first 3 characters of x`, `index of "a" in x`, `nl`, `trimmed x`, `reversed x`).
+    /// Returns `None` when the words are not one of these forms.
+    fn text_fn(&mut self, lw: &str) -> Result<Option<Expr>, String> {
+        use crate::text_case_substring::TextFn;
+        if !matches!(
+            lw,
+            "nl" | "newline"
+                | "new"
+                | "uppercase"
+                | "lowercase"
+                | "upper"
+                | "lower"
+                | "capitalized"
+                | "capitalised"
+                | "trimmed"
+                | "trim"
+                | "reversed"
+                | "substring"
+                | "subtext"
+                | "first"
+                | "last"
+                | "character"
+                | "char"
+                | "index"
+        ) || matches!(self.toks.get(self.pos), Some(t) if t.is_lit("("))
+        {
+            return Ok(None);
+        }
+        let f = |f: TextFn, args: Vec<Expr>| Ok(Some(Expr::TextFn(f, args)));
+        match lw {
+            "nl" | "newline" => Ok(Some(Expr::Text(vec![Part::Lit("\n".into())]))),
+            "new" if self.is_word(0, "line") => {
+                self.pos += 1;
+                Ok(Some(Expr::Text(vec![Part::Lit("\n".into())])))
+            }
+            "uppercase" | "lowercase" if self.is_word(0, "of") => {
+                self.pos += 1;
+                let a = self.text_arg(&format!("{lw} of"))?;
+                f(if lw == "uppercase" { TextFn::Upper } else { TextFn::Lower }, vec![a])
+            }
+            "upper" | "lower" if self.is_word(0, "case") && self.is_word(1, "of") => {
+                self.pos += 2;
+                let a = self.text_arg(&format!("{lw} case of"))?;
+                f(if lw == "upper" { TextFn::Upper } else { TextFn::Lower }, vec![a])
+            }
+            "capitalized" | "capitalised" | "trimmed" | "trim"
+                if matches!(self.toks.get(self.pos), Some(Tok::Str(_) | Tok::Var(_) | Tok::Word(_))) =>
+            {
+                if self.is_word(0, "of") {
+                    self.pos += 1;
+                }
+                let a = self.text_arg(lw)?;
+                let k = if lw.starts_with("cap") { TextFn::Capitalized } else { TextFn::Trim };
+                f(k, vec![a])
+            }
+            "reversed" => {
+                let save = self.pos;
+                if self.is_word(0, "text") {
+                    self.pos += 1;
+                    if self.is_word(0, "of") {
+                        self.pos += 1;
+                    }
+                } else if !matches!(self.toks.get(self.pos), Some(Tok::Str(_))) {
+                    // `reversed {x::*}` and friends belong to lists.
+                    return Ok(None);
+                }
+                let a = self.text_arg("reversed")?;
+                if matches!(&a, Expr::Var(v) if v.is_list()) {
+                    self.pos = save;
+                    return Ok(None);
+                }
+                f(TextFn::Reverse, vec![a])
+            }
+            "substring" | "subtext" if self.is_word(0, "of") => {
+                self.pos += 1;
+                let t = self.text_arg(lw)?;
+                if !self.is_word(0, "from") {
+                    return Err(self.expected(&format!("{lw} of <text> from <number> to <number>")));
+                }
+                self.pos += 1;
+                if self.is_word(0, "characters") || self.is_word(0, "character") {
+                    self.pos += 1;
+                }
+                let a = self.num_arg(lw)?;
+                let mut args = vec![t, a];
+                if self.is_word(0, "to") {
+                    self.pos += 1;
+                    args.push(self.num_arg(lw)?);
+                }
+                f(TextFn::Sub, args)
+            }
+            "first" | "last"
+                if matches!(self.toks.get(self.pos), Some(Tok::Num(_) | Tok::Var(_)))
+                    || (self.is_word(0, "index") && self.is_word(1, "of")) =>
+            {
+                if self.is_word(0, "index") {
+                    self.pos += 2;
+                    return self.index_args(lw == "last");
+                }
+                let n = self.unary()?;
+                if !Ty::Number.accepts(n.ty(self.env)) {
+                    return Err(format!("'{lw}' needs a number of characters"));
+                }
+                let usage = format!("{lw} <number> characters of <text>");
+                if !(self.is_word(0, "characters") || self.is_word(0, "character")) {
+                    return Err(self.expected(&usage));
+                }
+                self.pos += 1;
+                if !self.is_word(0, "of") {
+                    return Err(self.expected(&usage));
+                }
+                self.pos += 1;
+                let t = self.text_arg(lw)?;
+                f(if lw == "first" { TextFn::First } else { TextFn::Last }, vec![n, t])
+            }
+            "character" | "char"
+                if self.is_word(0, "at")
+                    && (self.is_word(1, "index") || matches!(self.toks.get(self.pos + 1), Some(Tok::Num(_)))) =>
+            {
+                self.pos += 1;
+                if self.is_word(0, "index") {
+                    self.pos += 1;
+                }
+                let n = self.unary()?;
+                if !Ty::Number.accepts(n.ty(self.env)) {
+                    return Err("'character at index' needs a number".into());
+                }
+                if !self.is_word(0, "of") {
+                    return Err(self.expected("character at index <number> of <text>"));
+                }
+                self.pos += 1;
+                let t = self.text_arg("character at index")?;
+                f(TextFn::CharAt, vec![n, t])
+            }
+            "index" if self.is_word(0, "of") => {
+                self.pos += 1;
+                self.index_args(false)
+            }
+            _ => Ok(None),
+        }
+    }
+
+    /// After `index of`: `<text> in <text>`.
+    fn index_args(&mut self, last: bool) -> Result<Option<Expr>, String> {
+        use crate::text_case_substring::TextFn;
+        let a = self.text_arg("index of")?;
+        if !self.is_word(0, "in") {
+            return Err(self.expected("index of <text> in <text>"));
+        }
+        self.pos += 1;
+        let b = self.text_arg("index of")?;
+        let k = if last { TextFn::IndexLast } else { TextFn::IndexFirst };
+        Ok(Some(Expr::TextFn(k, vec![a, b])))
     }
 
     /// `loop-value`, `loop-value-2`, `loop-player`, `loop-index`, `loop-number`, `loop-iteration`.

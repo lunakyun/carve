@@ -1423,6 +1423,13 @@ impl Engine {
                 let to = self.text(to, ex, host)?;
                 Value::Text(crate::text_join_split::replace_text(&t, &from, &to, *all))
             }
+            Expr::TextFn(f, args) => {
+                let mut vals = Vec::with_capacity(args.len());
+                for a in args {
+                    vals.push(self.eval(a, ex, host)?);
+                }
+                crate::text_case_substring::apply(*f, &vals)
+            }
             Expr::RandomOf(v) => {
                 let items = self.list_items(v, ex, host)?;
                 if items.is_empty() {
