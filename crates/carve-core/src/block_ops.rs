@@ -245,6 +245,14 @@ impl Engine {
                 if let Value::Item { id, .. } = v {
                     return Ok(Value::Item { id, count: 1, meta: None });
                 }
+                // `type of "minecraft:oak log"`: an item id written as text.
+                if let Value::Text(t) = &v {
+                    let t = t.trim().to_ascii_lowercase();
+                    let t = t.strip_prefix("minecraft:").unwrap_or(&t).replace(' ', "_");
+                    if crate::items::is_known(&t) {
+                        return Ok(Value::Item { id: t, count: 1, meta: None });
+                    }
+                }
                 let Some(p) = self.block_pos(&v, ex, host) else {
                     return Ok(Value::None);
                 };

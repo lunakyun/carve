@@ -13,6 +13,14 @@ pub enum PlayerFlag {
     OnGround,
     Blocking,
     Sleeping,
+    Burning,
+    CustomNameVisible,
+    Frozen,
+    Gliding,
+    Invisible,
+    Invulnerable,
+    ResourcePack,
+    Glowing,
 }
 
 impl PlayerFlag {
@@ -26,6 +34,14 @@ impl PlayerFlag {
             PlayerFlag::OnGround => "on ground",
             PlayerFlag::Blocking => "blocking",
             PlayerFlag::Sleeping => "sleeping",
+            PlayerFlag::Burning => "burning",
+            PlayerFlag::CustomNameVisible => "custom name visible",
+            PlayerFlag::Frozen => "frozen",
+            PlayerFlag::Gliding => "gliding",
+            PlayerFlag::Invisible => "invisible",
+            PlayerFlag::Invulnerable => "invulnerable",
+            PlayerFlag::ResourcePack => "resource pack",
+            PlayerFlag::Glowing => "glowing",
         }
     }
 }
@@ -45,6 +61,10 @@ pub const PLAYER_FLAG_PATTERNS: &[(&str, CondKind)] = &[
     ("%player% (is not|isn't) blocking", CondKind::Flag(PlayerFlag::Blocking, true)),
     ("%player% is sleeping", CondKind::Flag(PlayerFlag::Sleeping, false)),
     ("%player% (is not|isn't) sleeping", CondKind::Flag(PlayerFlag::Sleeping, true)),
+    ("%player% is (gliding|fall flying)", CondKind::Flag(PlayerFlag::Gliding, false)),
+    ("%player% (is not|isn't) (gliding|fall flying)", CondKind::Flag(PlayerFlag::Gliding, true)),
+    ("%player% is glowing", CondKind::Flag(PlayerFlag::Glowing, false)),
+    ("%player% (is not|isn't) glowing", CondKind::Flag(PlayerFlag::Glowing, true)),
     ("%player% is on [the] ground", CondKind::Flag(PlayerFlag::OnGround, false)),
     ("%player% (is not|isn't) on [the] ground", CondKind::Flag(PlayerFlag::OnGround, true)),
     ("%player% can fly", CondKind::Flag(PlayerFlag::CanFly, false)),

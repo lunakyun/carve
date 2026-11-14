@@ -39,6 +39,16 @@ pub struct EventCtx {
     pub extra: Option<Box<crate::events_items::EventExtra>>,
     /// The clicked slot in `on inventory click`.
     pub inv: Option<Box<crate::inventories::InvClick>>,
+    /// `event-...` values, in the order of `ExtEvent::fields` (see `w2_events_1`).
+    pub ev: Vec<Value>,
+    /// Values of the extra events in `w2_events_2`.
+    pub ext: Option<Box<crate::w2_events_2::ExtVals>>,
+    /// `death message` in `on death`.
+    pub death_message: Option<String>,
+    /// `damage cause` in `on damage` (lower case, like `fall`).
+    pub damage_cause: Option<String>,
+    /// `chat recipients` in `on chat`.
+    pub recipients: Option<Vec<PlayerRef>>,
 }
 
 impl EventCtx {
@@ -53,6 +63,11 @@ impl EventCtx {
             block: None,
             extra: None,
             inv: None,
+            ev: Vec::new(),
+            ext: None,
+            death_message: None,
+            damage_cause: None,
+            recipients: None,
         }
     }
 
@@ -68,6 +83,11 @@ impl EventCtx {
             block: None,
             extra: None,
             inv: None,
+            ev: Vec::new(),
+            ext: None,
+            death_message: None,
+            damage_cause: None,
+            recipients: None,
         }
     }
 
@@ -138,6 +158,13 @@ impl ScriptTable {
         self.functions.iter().filter(|f| f.is_some()).count()
     }
 
+    /// Any `at <time>:` trigger.
+    pub fn has_at(&self) -> bool {
+        self.events
+            .keys()
+            .any(|k| matches!(k, EventKind::Ext(crate::w2_events_1::ExtEvent::At(_))))
+    }
+
     pub fn has_every(&self) -> bool {
         !self.every.is_empty()
     }
@@ -162,6 +189,8 @@ pub enum CommandOutcome {
 #[derive(Debug, Clone, PartialEq)]
 pub struct FireOutcome {
     pub cancelled: bool,
+    /// Values changed with `set event-<name> to ...` (slot, new value).
+    pub set: Vec<(u8, Value)>,
 }
 
 /// One running loop. Items are a snapshot taken when the loop starts.
@@ -207,9 +236,17 @@ impl LoopFrame {
 }
 
 /// `a, b and c`, like Skript prints a list.
+mod ext_eval;
 mod list_eval;
 mod structures_rt;
 pub(crate) use structures_rt::ERROR_KEY;
+mod w2_run;
+mod w2;
+mod w2_eval;
+mod x2_eval;
+mod w2e3;
+mod w5_eval;
+mod w6_eval;
 
 fn join_list(items: &[(String, Value)], out: &mut String) {
     if items.is_empty() {
@@ -379,6 +416,9 @@ pub struct Engine {
     pub bounds: crate::skbee_bound::Bounds,
     /// Sidebar boards by player uuid (not saved).
     pub(crate) boards: crate::skbee_scoreboard_teams::Boards,
+    /// Event values changed by the run in progress (`w2_events_4`).
+    ext_out: Vec<(u8, Value)>,
+    w5: crate::w2_expressions_5::State,
 }
 
 impl Default for Engine {
@@ -471,6 +511,8 @@ impl Engine {
             timings: None,
             bounds: crate::skbee_bound::Bounds::default(),
             boards: Default::default(),
+            ext_out: Vec::new(),
+            w5: Default::default(),
         }
     }
 
@@ -592,6 +634,7 @@ impl Engine {
         }
         let table = self.table.clone();
         let mut cancelled = false;
+        self.ext_out.clear();
         let trigs = table.events.get(&kind).map(Vec::as_slice).unwrap_or_default();
         let mut ctx = Some(ctx);
         for (i, trig) in trigs.iter().enumerate() {
@@ -607,7 +650,25 @@ impl Engine {
                 cancelled |= c;
             }
         }
-        FireOutcome { cancelled }
+        FireOutcome {
+            cancelled,
+            set: std::mem::take(&mut self.ext_out),
+        }
+    }
+
+    /// Run the `at <time>:` triggers whose time the world clock passed when it
+    /// went from `prev` to `cur` (ticks of the day). Call once per tick when
+    /// `table().has_at()`.
+    pub fn fire_at_time(&mut self, prev: i64, cur: i64, host: &mut dyn Host) {
+        use crate::w2_events_1::{ExtEvent, crossed};
+        let table = self.table.clone();
+        for k in table.events.keys() {
+            if let EventKind::Ext(ExtEvent::At(t)) = k
+                && crossed(prev, cur, *t)
+            {
+                self.fire(*k, EventCtx::console(), host);
+            }
+        }
     }
 
     /// Run a script command. `raw_args` is everything after the command name.
@@ -948,6 +1009,11 @@ impl Engine {
         {
             return r;
         }
+        if let Value::Vector { .. } = v
+            && let Some(r) = crate::w2_expressions_7::component(prop, v)
+        {
+            return r;
+        }
         match prop {
             Prop::X | Prop::Y | Prop::Z | Prop::Location | Prop::World => {
                 let Some((x, y, z, world)) = self.as_location(v, ex, host) else {
@@ -1231,6 +1297,22 @@ impl Engine {
                 };
                 Ok(hit != *negate)
             }
+            Cond::Rare(r) => {
+                let a = self.eval(&r.a, ex, host)?;
+                let b = match &r.b {
+                    Some(b) => Some(self.eval(b, ex, host)?),
+                    None => None,
+                };
+                let hit = if r.kind == crate::w2_conditions_2::W2Kind::ScriptCommand {
+                    match &a {
+                        Value::Text(t) => self.table.command(t.trim().trim_start_matches('/')).is_some(),
+                        _ => false,
+                    }
+                } else {
+                    crate::w2_conditions_2::check(r.kind, &a, b.as_ref(), host)
+                };
+                Ok(hit != r.negate)
+            }
             Cond::IsSet(e, want) => {
                 let v = self.eval(e, ex, host)?;
                 Ok((v != Value::None) == *want)
@@ -1244,6 +1326,7 @@ impl Engine {
                 };
                 Ok(is != *negate)
             }
+            Cond::Rare3(r) => self.cond_w2(r, ex, host),
             Cond::PlayerFlag { player, flag, negate } => {
                 let p = self.eval(player, ex, host)?;
                 let Some(p) = online(&p, &mut ex.seen, host) else {
@@ -1455,6 +1538,10 @@ impl Engine {
                     Value::List(l) => out.extend(l),
                     v => out.push(v),
                 },
+                Expr::Ext(..) => match self.eval(e, ex, host)? {
+                    Value::List(v) => out.extend(v),
+                    v => out.push(v),
+                },
                 _ => out.push(self.eval(e, ex, host)?),
             }
         }
@@ -1605,6 +1692,9 @@ impl Engine {
     ) -> Result<Value, String> {
         let x = self.eval(a, ex, host).map_err(|_| err.clone())?;
         let y = self.eval(b, ex, host).map_err(|_| err.clone())?;
+        if matches!(x, Value::Vector { .. }) || matches!(y, Value::Vector { .. }) {
+            return crate::w2_expressions_7::arith(&x, op, &y);
+        }
         let timey = |v: &Value| matches!(v, Value::Timespan { .. } | Value::Date(_));
         if !timey(&x) && !timey(&y) {
             return Err(err);
@@ -1637,6 +1727,9 @@ impl Engine {
             });
         }
         let Value::Date(d) = first else {
+            if let (Value::Timespan { millis }, DateOp::Format, 1) = (&first, op, args.len()) {
+                return Ok(Value::Text(crate::w2_expressions_3::clock_text(*millis)));
+            }
             return Ok(Value::None);
         };
         Ok(match op {
@@ -1649,6 +1742,21 @@ impl Engine {
                 Value::Text(crate::time_dates::format_date(d, &fmt))
             }
         })
+    }
+
+    /// Evaluate the arguments of a `w2_expressions_4` expression or effect.
+    /// A player that is offline becomes `<none>`.
+    #[inline(never)]
+    fn w4_args(&mut self, args: &[Expr], ex: &mut Exec, host: &mut dyn Host) -> Result<Vec<Value>, String> {
+        let mut vals = Vec::with_capacity(args.len());
+        for a in args {
+            let v = self.eval(a, ex, host)?;
+            vals.push(match v {
+                Value::Player(_) => online(&v, &mut ex.seen, host).map_or(Value::None, Value::Player),
+                v => v,
+            });
+        }
+        Ok(vals)
     }
 
     #[inline(never)]
@@ -1675,6 +1783,7 @@ impl Engine {
             Expr::Console => Value::Console,
             Expr::Message => ex.ctx.message.clone().map(Value::Text).unwrap_or(Value::None),
             Expr::Damage => ex.ctx.damage.map(Value::Num).unwrap_or(Value::None),
+            Expr::Ev2Val(s) => crate::w2_events_2::read(&ex.ctx, *s),
             Expr::Attacker => match ex.ctx.attacker.clone() {
                 Some(a) => online(&Value::Player(a), &mut ex.seen, host)
                     .map(Value::Player)
@@ -1682,6 +1791,7 @@ impl Engine {
                 None => Value::None,
             },
             Expr::Inv(i) => self.inv_expr(i, ex, host)?,
+            Expr::ExtVal(i) => ex.ctx.ev.get(usize::from(*i)).cloned().unwrap_or(Value::None),
             Expr::ClickedBlock => match &ex.ctx.block {
                 Some(b) => Value::Item {
                     id: b.clone(),
@@ -1691,6 +1801,7 @@ impl Engine {
                 None => Value::None,
             },
             Expr::EventVal(v) => crate::events_items::eval(*v, &ex.ctx),
+            Expr::Ev4Val(i) => ex.ctx.args.get(usize::from(*i)).cloned().unwrap_or(Value::None),
             Expr::Arg(i) => ex.ctx.args.get(i.wrapping_sub(1)).cloned().unwrap_or(Value::None),
             Expr::NameOf(inner) => {
                 let v = self.eval(inner, ex, host)?;
@@ -1769,18 +1880,20 @@ impl Engine {
             Expr::Date(op, args) => self.eval_date(*op, args, ex, host)?,
             Expr::Wt(w) => self.wt_eval(w, ex, host)?,
             Expr::Skb(s) => self.skb_eval(s, ex, host)?,
+            Expr::X2(w) => self.eval_x2(w, ex, host)?,
             Expr::Color(on, e) => {
                 let t = self.text(e, ex, host)?;
                 Value::Text(if *on { crate::colors::colorize(&t) } else { crate::colors::strip(&t) })
             }
             Expr::ParseNum(e) => {
                 let t = self.text(e, ex, host)?;
-                t.trim()
-                    .parse::<f64>()
-                    .ok()
-                    .filter(|n| n.is_finite())
-                    .map(Value::Num)
-                    .unwrap_or(Value::None)
+                match t.trim().parse::<f64>().ok().filter(|n| n.is_finite()) {
+                    Some(n) => Value::Num(n),
+                    None => {
+                        self.w5.last_parse_error = Some(format!("'{t}' is not a number"));
+                        Value::None
+                    }
+                }
             }
             Expr::Join(v, sep) => {
                 let items = self.list_items(v, ex, host)?;
@@ -1791,6 +1904,11 @@ impl Engine {
                 return Err("split makes a list: use 'set {x::*} to split ...' or 'loop split ...'".into());
             }
             Expr::Length(e) => {
+                if matches!(**e, Expr::Var(_) | Expr::W2(_) | Expr::W7(_) | Expr::Prop(..))
+                    && let Value::Vector { x, y, z } = self.eval(e, ex, host)?
+                {
+                    return Ok(Value::Num(crate::w2_expressions_7::length((x, y, z))));
+                }
                 let t = self.text(e, ex, host)?;
                 Value::Num(crate::text_join_split::char_len(&t) as f64)
             }
@@ -1806,6 +1924,10 @@ impl Engine {
                     vals.push(self.eval(a, ex, host)?);
                 }
                 crate::skbee_text::apply(*f, &vals)
+            }
+            Expr::W4(w) => {
+                let vals = self.w4_args(&w.args, ex, host)?;
+                crate::w2_expressions_4::apply(w.op, &vals, host)
             }
             Expr::TextFn(f, args) => {
                 let mut vals = Vec::with_capacity(args.len());
@@ -1847,10 +1969,21 @@ impl Engine {
                 Value::Timespan { millis } => Value::Num(crate::timespans::span_part(millis, *unit, *total)),
                 _ => Value::None,
             },
+            Expr::W7(n) => {
+                let mut vals = Vec::with_capacity(n.args.len());
+                for a in &n.args {
+                    vals.push(self.eval(a, ex, host)?);
+                }
+                crate::w2_expressions_7::apply(n.op, &vals, host)?
+            }
             Expr::Items(s) => Value::List(self.eval_list(s, ex, host)?),
+            Expr::Ext(f, args) => self.eval_ext(*f, args, ex, host)?,
+            Expr::W5(w) => self.eval_w5(w, ex, host)?,
+            Expr::W6(w) => self.eval_w6(w, ex, host)?,
             Expr::ListAgg(a, s) => self.eval_agg(*a, s, ex, host)?,
             Expr::Sb(s) => self.sb_eval(s, ex, host)?,
             Expr::Ent(x) => self.ent_expr(x, ex, host)?,
+            Expr::W2(w) => self.eval_w2(w, ex, host)?,
             Expr::RandomOf(v) => {
                 let items = self.list_items(v, ex, host)?;
                 if items.is_empty() {
@@ -2029,6 +2162,7 @@ impl Engine {
                     host.send_action_bar(&p, &t);
                 }
             }
+            Effect::W2b(w) => self.run_w2b(w, ex, host)?,
             Effect::Hf(h) => {
                 let amount = match &h.amount {
                     Some(a) => self.num(a, ex, host)?,
@@ -2047,6 +2181,18 @@ impl Engine {
                 let (name, p) = self.admin_target(&v, ex, host);
                 crate::op_kick_ban::run_effect(host, *kind, &name, p.as_ref(), text.as_deref());
             }
+            Effect::W2(w) => self.run_w2(w, ex, host)?,
+            Effect::W2c(w) => {
+                let v = self.eval(&w.value, ex, host)?;
+                if let Some(p) = self.player(&w.player, ex, host)? {
+                    crate::w2_expressions_3::run(w, &v, &p, host);
+                }
+            }
+            Effect::W4(w) => {
+                let vals = self.w4_args(&w.args, ex, host)?;
+                crate::w2_expressions_4::run(w.op, &vals, host);
+            }
+            Effect::W6(w) => self.exec_w6(w, ex, host)?,
             Effect::Heal(p) => {
                 if let Some(p) = self.player(p, ex, host)? {
                     host.heal(&p);
@@ -2069,6 +2215,18 @@ impl Engine {
                     host.set_gamemode(&p, mode);
                 }
             }
+            Effect::Ext4(x) => match &**x {
+                crate::w2_events_4::ExtEffect::SetVal(i, e) => {
+                    let v = self.eval(e, ex, host)?;
+                    let i = usize::from(*i);
+                    if ex.ctx.args.len() <= i {
+                        ex.ctx.args.resize(i + 1, Value::None);
+                    }
+                    ex.ctx.args[i] = v.clone();
+                    self.ext_out.push((i as u8, v));
+                }
+            },
+            Effect::W5(w) => self.run_w5_effect(w, ex, host)?,
             Effect::Xp(op, a, b) => {
                 let (pe, ne) = if op.num_first { (b, a) } else { (a, b) };
                 let n = self.num(ne, ex, host)?;
@@ -2076,6 +2234,7 @@ impl Engine {
                     crate::xp_level::apply(host, &p, op.field, op.mode, n);
                 }
             }
+            Effect::X2(k, a) => self.run_x2(*k, a, ex, host)?,
             Effect::Kill(p) => self.kill_any(p, ex, host)?,
             Effect::Teleport(p, x, y, z) => {
                 let (x, y, z) = (
@@ -2327,6 +2486,8 @@ impl Engine {
             }
             Effect::SetList(v, s) => self.exec_set_list(v, s, ex, host)?,
             Effect::SortList(v, desc) => self.exec_sort_list(v, *desc, ex, host)?,
+            Effect::W2e3(w) => self.exec_w2(w, ex, host)?,
+            Effect::W2Transform(t) => self.exec_transform(t, ex, host)?,
             Effect::Delete(v) => {
                 let k = self.key(v, ex, host)?;
                 if v.local {
@@ -2404,4 +2565,127 @@ fn parse_args(def: &CommandDef, raw: &str, host: &mut dyn Host) -> Result<Vec<Va
         return Err(format!("Too many arguments. Usage: {}", def.usage()));
     }
     Ok(out)
+}
+
+/// A location from a value: a location itself, or an online player's position.
+fn w2_loc(
+    v: &Value,
+    seen: &mut Vec<(String, Option<String>)>,
+    host: &mut dyn Host,
+) -> Option<(f64, f64, f64, Option<String>)> {
+    if let Some((x, y, z, w)) = crate::w2_conditions_3::loc_parts(v) {
+        return Some((x, y, z, w.map(str::to_string)));
+    }
+    let p = online(v, seen, host)?;
+    host.player_location(&p).map(|(x, y, z, w)| (x, y, z, Some(w)))
+}
+
+impl Engine {
+    /// The rare conditions of `w2_conditions_3`.
+    #[inline(never)]
+    fn cond_w2(
+        &mut self,
+        c: &crate::w2_conditions_3::W2Cond,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<bool, String> {
+        use crate::w2_conditions_3 as w;
+        use crate::w2_conditions_3::W2Cond as C;
+        Ok(match c {
+            C::Valid(e, negate) => {
+                let v = self.eval(e, ex, host)?;
+                let ok = match &v {
+                    Value::None => false,
+                    Value::Player(_) => online(&v, &mut ex.seen, host).is_some(),
+                    _ => true,
+                };
+                ok != *negate
+            }
+            C::ScriptLoaded(e, negate) => {
+                let name = self.text(e, ex, host)?;
+                self.sources.keys().any(|f| w::script_name_matches(f, &name)) != *negate
+            }
+            C::Regex { text, pattern, whole, negate } => {
+                let t = self.text(text, ex, host)?;
+                let p = self.text(pattern, ex, host)?;
+                w::regex_test(&t, &p, *whole)? != *negate
+            }
+            C::WithinBox { loc, a, b, negate } => {
+                let (l, a, b) = (self.eval(loc, ex, host)?, self.eval(a, ex, host)?, self.eval(b, ex, host)?);
+                let (l, a, b) = (
+                    w2_loc(&l, &mut ex.seen, host),
+                    w2_loc(&a, &mut ex.seen, host),
+                    w2_loc(&b, &mut ex.seen, host),
+                );
+                let ok = match (l, a, b) {
+                    (Some(l), Some(a), Some(b)) => w::in_box(
+                        (l.0, l.1, l.2, l.3.as_deref()),
+                        (a.0, a.1, a.2, a.3.as_deref()),
+                        (b.0, b.1, b.2, b.3.as_deref()),
+                    ),
+                    _ => return Ok(false),
+                };
+                ok != *negate
+            }
+            C::WithinRadius { loc, radius, center, negate } => {
+                let r = self.num(radius, ex, host)?;
+                let (l, m) = (self.eval(loc, ex, host)?, self.eval(center, ex, host)?);
+                let (l, m) = (w2_loc(&l, &mut ex.seen, host), w2_loc(&m, &mut ex.seen, host));
+                let ok = match (l, m) {
+                    (Some(l), Some(m)) => {
+                        w::in_radius((l.0, l.1, l.2, l.3.as_deref()), (m.0, m.1, m.2, m.3.as_deref()), r)
+                    }
+                    _ => return Ok(false),
+                };
+                ok != *negate
+            }
+            C::WithinWorld { loc, world, negate } => {
+                let l = self.eval(loc, ex, host)?;
+                let wv = self.eval(world, ex, host)?;
+                let name = match &wv {
+                    Value::World(n) | Value::Text(n) => n.clone(),
+                    _ => return Ok(false),
+                };
+                let Some((_, _, _, Some(lw))) = w2_loc(&l, &mut ex.seen, host) else {
+                    return Ok(false);
+                };
+                lw.eq_ignore_ascii_case(&name) != *negate
+            }
+            C::State(p, state, negate) => {
+                let v = self.eval(p, ex, host)?;
+                let Some(p) = online(&v, &mut ex.seen, host) else {
+                    return Ok(false);
+                };
+                host.player_state(&p, *state) != *negate
+            }
+            C::Pvp { world, negate } => {
+                let name = match world {
+                    Some(e) => match self.eval(e, ex, host)? {
+                        Value::World(n) | Value::Text(n) => Some(n),
+                        _ => return Ok(false),
+                    },
+                    None => None,
+                };
+                match host.pvp_enabled(name.as_deref()) {
+                    Some(on) => on != *negate,
+                    None => false,
+                }
+            }
+            C::Instant(e, negate) => {
+                let t = self.text(e, ex, host)?;
+                w::is_instant_effect(&t) != *negate
+            }
+            C::Block(e, tr, negate) => {
+                let id = match self.eval(e, ex, host)? {
+                    Value::Item { id, .. } => id,
+                    Value::Text(t) => t,
+                    _ => return Ok(false),
+                };
+                match host.block_trait(&w::norm_id(&id), *tr) {
+                    Some(b) => b != *negate,
+                    None => false,
+                }
+            }
+        })
+    }
 }

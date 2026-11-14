@@ -557,6 +557,10 @@ pub fn parse_cond(toks: &[Tok], env: &Env) -> Option<Cond> {
         return None;
     }
     let subject = parse_expr(toks.get(..i)?, env).ok()?;
+    // `event-block is tnt` compares items, not entity types.
+    if matches!(subject.ty(env), Ty::Item | Ty::Text | Ty::Number | Ty::Boolean) {
+        return None;
+    }
     Some(Cond::Ent(Box::new(EntCond {
         subject,
         kind: kind.to_string(),
@@ -764,6 +768,7 @@ impl Engine {
         let is_kind = match &v {
             Value::Player(_) => c.kind == "player",
             Value::Entity(e) => e.kind == c.kind,
+            Value::Item { id, .. } => *id == c.kind,
             _ => false,
         };
         Ok(is_kind != c.negate)

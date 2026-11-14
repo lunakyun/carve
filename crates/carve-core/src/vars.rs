@@ -83,6 +83,7 @@ impl Variables {
                 Value::Console => json!({"console": true}),
                 Value::Timespan { millis } => json!({"timespan": millis}),
                 Value::Nbt(c) => json!({"nbt": c.to_snbt()}),
+                Value::Vector { x, y, z } => json!({"vector": {"x": x, "y": y, "z": z}}),
             };
             obj.insert(k.clone(), j);
         }
@@ -143,6 +144,13 @@ fn object_value(o: &Map<String, Json>) -> Option<Value> {
             world: l.get("world").and_then(Json::as_str).map(str::to_string),
         });
     }
+    if let Some(v) = o.get("vector").and_then(Json::as_object) {
+        return Some(Value::Vector {
+            x: v.get("x")?.as_f64()?,
+            y: v.get("y")?.as_f64()?,
+            z: v.get("z")?.as_f64()?,
+        });
+    }
     if let Some(d) = o.get("date").and_then(Json::as_i64) {
         return Some(Value::Date(d));
     }
@@ -167,6 +175,25 @@ pub(crate) fn index_order(a: &str, b: &str) -> std::cmp::Ordering {
         (Ok(_), Err(_)) => std::cmp::Ordering::Less,
         (Err(_), Ok(_)) => std::cmp::Ordering::Greater,
         _ => a.cmp(b),
+    }
+}
+
+/// Order two `a::b::c` paths part by part, numbers by value.
+pub(crate) fn path_order(a: &str, b: &str) -> std::cmp::Ordering {
+    let mut x = a.split("::");
+    let mut y = b.split("::");
+    loop {
+        match (x.next(), y.next()) {
+            (None, None) => return std::cmp::Ordering::Equal,
+            (None, Some(_)) => return std::cmp::Ordering::Less,
+            (Some(_), None) => return std::cmp::Ordering::Greater,
+            (Some(p), Some(q)) => {
+                let o = index_order(p, q);
+                if o != std::cmp::Ordering::Equal {
+                    return o;
+                }
+            }
+        }
     }
 }
 
@@ -200,6 +227,18 @@ impl Variables {
                 .take_while(|(k, _)| k.starts_with(prefix)),
             prefix,
         )
+    }
+
+    /// Every value under the list `prefix` (`name::`), at any depth.
+    pub fn all_under(&self, prefix: &str) -> Vec<(String, Value)> {
+        let mut out: Vec<(String, Value)> = self
+            .map
+            .range(prefix.to_string()..)
+            .take_while(|(k, _)| k.starts_with(prefix))
+            .filter_map(|(k, v)| Some((k.strip_prefix(prefix)?.to_string(), v.clone())))
+            .collect();
+        out.sort_by(|a, b| path_order(&a.0, &b.0));
+        out
     }
 
     pub fn list_len(&self, prefix: &str) -> usize {
@@ -273,6 +312,16 @@ impl Locals {
 
     pub(crate) fn list(&self, prefix: &str) -> Vec<(String, Value)> {
         direct(self.0.iter().map(|(k, v)| (k, v)), prefix)
+    }
+
+    pub(crate) fn all_under(&self, prefix: &str) -> Vec<(String, Value)> {
+        let mut out: Vec<(String, Value)> = self
+            .0
+            .iter()
+            .filter_map(|(k, v)| Some((k.strip_prefix(prefix)?.to_string(), v.clone())))
+            .collect();
+        out.sort_by(|a, b| path_order(&a.0, &b.0));
+        out
     }
 
     pub(crate) fn list_len(&self, prefix: &str) -> usize {

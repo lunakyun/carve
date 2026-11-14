@@ -44,6 +44,12 @@ pub enum Value {
     Timespan {
         millis: i64,
     },
+    /// A vector (x, y, z).
+    Vector {
+        x: f64,
+        y: f64,
+        z: f64,
+    },
     /// A list produced by a list operation or a function. Not stored in variables.
     List(Vec<Value>),
     /// An NBT compound (`nbt from "{a:1}"`).
@@ -75,6 +81,7 @@ impl Value {
             Value::Date(_) => "date",
             Value::Console => "console",
             Value::Timespan { .. } => "timespan",
+            Value::Vector { .. } => "vector",
             Value::List(_) => "list",
             Value::Nbt(_) => "nbt compound",
             Value::Entity(_) => "entity",
@@ -132,6 +139,9 @@ impl Value {
                     && (aw.is_none() || bw.is_none() || aw == bw)
             }
             (Value::Entity(a), Value::Entity(b)) => a.uuid == b.uuid,
+            (Value::Vector { x: ax, y: ay, z: az }, Value::Vector { x: bx, y: by, z: bz }) => {
+                (ax - bx).abs() < 1e-9 && (ay - by).abs() < 1e-9 && (az - bz).abs() < 1e-9
+            }
             (Value::Date(a), Value::Date(b)) => a == b,
             (Value::Nbt(a), Value::Nbt(b)) => a == b,
             (Value::Timespan { millis: a }, Value::Timespan { millis: b })
@@ -205,6 +215,14 @@ impl Value {
             Value::Date(d) => out.push_str(&crate::time_dates::format_date(*d, crate::time_dates::DEFAULT_FORMAT)),
             Value::Console => out.push_str("console"),
             Value::Entity(e) => out.push_str(&e.kind.replace('_', " ")),
+            Value::Vector { x, y, z } => {
+                out.push_str("x: ");
+                push_num(out, *x);
+                out.push_str(", y: ");
+                push_num(out, *y);
+                out.push_str(", z: ");
+                push_num(out, *z);
+            }
             Value::Timespan { millis } => crate::timespans::push_span(out, *millis),
             Value::Nbt(c) => c.push_snbt(out),
             Value::List(items) => {

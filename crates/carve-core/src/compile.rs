@@ -49,8 +49,14 @@ pub enum EventKind {
     AdvancementDone,
     /// `on recipe discover`: `recipe id` is the recipe.
     RecipeDiscover,
-    /// The server list is asked for (no player).
-    ServerPing,
+    /// Events and `at <time>:` triggers of `w2_events_1`.
+    Ext(crate::w2_events_1::ExtEvent),
+    /// The extra events of `w2_events_2`.
+    Ext2(crate::w2_events_2::Ev),
+    /// Extra events, see `w2_events_3`.
+    Ext3(crate::w2_events_3::Ev3),
+    /// Events of `w2_events_4`.
+    Ext4(crate::w2_events_4::ExtEvent),
 }
 
 impl EventKind {
@@ -85,7 +91,10 @@ impl EventKind {
             EventKind::BoundExit => "bound exit",
             EventKind::AdvancementDone => "advancement done",
             EventKind::RecipeDiscover => "recipe discover",
-            EventKind::ServerPing => "server list ping",
+            EventKind::Ext(e) => e.name(),
+            EventKind::Ext2(e) => crate::w2_events_2::spec(e).names[0],
+            EventKind::Ext3(e) => e.name(),
+            EventKind::Ext4(e) => e.name(),
         }
     }
 
@@ -112,29 +121,41 @@ impl EventKind {
             "sprint toggle" | "toggle sprint" | "player toggle sprint" => EventKind::SprintToggle,
             "flight toggle" | "toggle flight" | "player toggle flight" => EventKind::FlightToggle,
             "inventory click" | "inventory clicking" | "inventory click event" => EventKind::InventoryClick,
-            "inventory close" | "inventory closing" | "inventory close event" => EventKind::InventoryClose,
+            "inventory close" | "inventory closing" | "inventory close event" | "close inventory" => {
+                EventKind::InventoryClose
+            }
             "advancement done" | "advancement" | "player advancement" | "advancement complete"
             | "advancement completed" | "advancement get" => EventKind::AdvancementDone,
             "recipe discover" | "recipe discovered" | "player recipe discover" | "recipe unlock" => {
                 EventKind::RecipeDiscover
             }
-            "server list ping" | "server ping" | "list ping" => EventKind::ServerPing,
-            _ => return crate::events_items::parse_kind(s).or_else(|| crate::skbee_bound::parse_event(s)),
+            _ => {
+                return crate::events_items::parse_kind(s)
+                    .or_else(|| crate::skbee_bound::parse_event(s))
+                    .or_else(|| crate::w2_events_4::ExtEvent::parse(s).map(EventKind::Ext4))
+                    .or_else(|| crate::w2_events_1::ExtEvent::parse(s).map(EventKind::Ext))
+                    .or_else(|| crate::w2_events_2::parse(s).map(EventKind::Ext2))
+                    .or_else(|| crate::w2_events_3::Ev3::parse(s).map(EventKind::Ext3));
+            }
         })
     }
 
     /// Whether `cancel event` means anything here.
     pub fn cancellable(self) -> bool {
-        !matches!(
-            self,
-            EventKind::Respawn
-            | EventKind::Load
-            | EventKind::LevelChange
-            | EventKind::InventoryClose
-            | EventKind::BoundEnter
-            | EventKind::BoundExit
-            | EventKind::ServerPing
-        )
+        match self {
+            EventKind::Ext(e) => e.cancellable(),
+            EventKind::Ext2(e) => crate::w2_events_2::spec(e).cancel,
+            EventKind::Ext4(e) => e.cancellable(),
+            _ => !matches!(
+                self,
+                EventKind::Respawn
+                    | EventKind::Load
+                    | EventKind::LevelChange
+                    | EventKind::InventoryClose
+                    | EventKind::BoundEnter
+                    | EventKind::BoundExit
+            ),
+        }
     }
 }
 
@@ -210,12 +231,16 @@ pub enum Cond {
         negate: bool,
     },
     Cmp(Expr, CmpOp, Expr),
+    /// Rare conditions, boxed so this enum stays small.
+    Rare3(Box<crate::w2_conditions_3::W2Cond>),
     HasPerm {
         player: Expr,
         node: Expr,
         negate: bool,
     },
     IsSet(Expr, bool),
+    /// Rare conditions (boxed to keep this enum small).
+    Rare(Box<crate::w2_conditions_2::Rare>),
     /// `chance of 25%`
     Chance(Expr),
     /// `player has 2 diamonds`, `player's inventory contains stone`.
@@ -307,10 +332,22 @@ pub enum Effect {
     Hf(Box<crate::health_food::HfEffect>),
     /// NBT and item component changes.
     Nbt(Box<crate::skbee_nbt::NbtEffect>),
+    W2(Box<crate::w2_effects_1::W2Effect>),
+    W2b(Box<crate::w2_effects_2::W2Effect>),
+    X2(crate::w2_expressions_2::W2Eff, Box<(Expr, Expr)>),
+    /// `set exhaustion of player to 2` and friends.
+    W2c(Box<crate::w2_expressions_3::StatEffect>),
+    W4(Box<crate::w2_expressions_4::W4Effect>),
+    W2e3(Box<crate::w2_effects_3::W2Eff>),
+    W2Transform(Box<crate::w2_effects_3::Transform>),
+    W6(Box<crate::w2_expressions_6::W6Effect>),
     SetHealth(Expr, Expr),
     SetGamemode(Expr, Expr),
     /// Experience change; the two expressions are in pattern order.
     Xp(crate::xp_level::XpOp, Expr, Expr),
+    /// Effects of `w2_events_4`.
+    Ext4(Box<crate::w2_events_4::ExtEffect>),
+    W5(Box<crate::w2_expressions_5::W5Effect>),
     Kill(Expr),
     Teleport(Expr, Expr, Expr, Expr),
     TeleportTo(Expr, Expr),
@@ -464,9 +501,17 @@ pub enum EffKind {
     Broadcast,
     Heal,
     Hf(crate::health_food::HfOp),
+    W2(crate::w2_effects_1::W2Op),
+    W2b(crate::w2_effects_2::W2Op),
+    X2(crate::w2_expressions_2::W2Eff),
+    W2c(crate::w2_expressions_3::PStat, crate::w2_expressions_3::Mode),
+    W4(crate::w2_expressions_4::W4Eff),
+    W2e3(crate::w2_effects_3::W2Op),
+    W6(crate::w2_expressions_6::W6Op),
     SetHealth,
     SetGamemode,
     Xp(crate::xp_level::XpOp),
+    W5(crate::w2_expressions_5::W5Op),
     Kill,
     Teleport,
     TeleportTo,
@@ -528,6 +573,10 @@ pub enum CondKind {
     Flag(PlayerFlag, bool),
     /// negated
     Admin(AdminCond, bool),
+    /// Rare checks from `w2_conditions_2`; the bool is negation.
+    W2(crate::w2_conditions_2::W2Kind, bool),
+    /// Rare conditions from `w2_conditions_3`.
+    W3(crate::w2_conditions_3::W2Kind),
 }
 
 /// Text effects (`replace ...`). Kept apart from `EFFECT_PATTERNS` so the
@@ -658,13 +707,56 @@ fn registry() -> &'static Registry {
                     .iter()
                     .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
             )
+            .chain(
+                crate::w2_effects_1::EFFECT_PATTERNS
+                    .iter()
+                    .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
+            )
+            .chain(
+                crate::w2_effects_2::EFFECT_PATTERNS
+                    .iter()
+                    .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
+            )
+            .chain(
+                crate::w2_expressions_2::EFFECT_PATTERNS
+                    .iter()
+                    .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
+            )
+            .chain(
+                crate::w2_expressions_3::EFFECT_PATTERNS
+                    .iter()
+                    .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
+            )
+            .chain(
+                crate::w2_expressions_4::EFFECT_PATTERNS
+                    .iter()
+                    .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
+            )
+            .chain(
+                crate::w2_effects_3::EFFECT_PATTERNS
+                    .iter()
+                    .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
+            )
+            .chain(
+                crate::w2_expressions_5::EFFECT_PATTERNS
+                    .iter()
+                    .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
+            )
+            .chain(
+                crate::w2_expressions_6::EFFECT_PATTERNS
+                    .iter()
+                    .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
+            )
             .collect(),
         conditions: crate::op_kick_ban::CONDITION_PATTERNS
             .iter()
+            .chain(crate::w2_conditions_2::CONDITION_PATTERNS)
             .chain(crate::senders::SENDER_CONDITION_PATTERNS)
             .chain(crate::gamemode::CONDITION_PATTERNS)
             .chain(crate::item_meta::CONDITION_PATTERNS)
             .chain(PLAYER_FLAG_PATTERNS)
+            .chain(crate::w2_conditions_2::FLAG_PATTERNS)
+            .chain(crate::w2_conditions_3::W2_CONDITION_PATTERNS)
             .chain(CONDITION_PATTERNS)
             .filter_map(|(s, k)| Pattern::new(s, *k).ok())
             .collect(),
@@ -682,6 +774,14 @@ pub fn check_registry() -> Result<(), String> {
         .chain(crate::sounds::SOUND_PATTERNS)
         .chain(TEXT_EFFECT_PATTERNS)
         .chain(crate::health_food::EFFECT_PATTERNS)
+        .chain(crate::w2_effects_1::EFFECT_PATTERNS)
+        .chain(crate::w2_effects_2::EFFECT_PATTERNS)
+        .chain(crate::w2_expressions_2::EFFECT_PATTERNS)
+        .chain(crate::w2_expressions_3::EFFECT_PATTERNS)
+        .chain(crate::w2_expressions_4::EFFECT_PATTERNS)
+        .chain(crate::w2_effects_3::EFFECT_PATTERNS)
+        .chain(crate::w2_expressions_5::EFFECT_PATTERNS)
+        .chain(crate::w2_expressions_6::EFFECT_PATTERNS)
     {
         Pattern::new(s, *k)?;
     }
@@ -694,6 +794,9 @@ pub fn check_registry() -> Result<(), String> {
         .chain(crate::gamemode::CONDITION_PATTERNS)
         .chain(crate::item_meta::CONDITION_PATTERNS)
         .chain(PLAYER_FLAG_PATTERNS)
+        .chain(crate::w2_conditions_2::CONDITION_PATTERNS)
+        .chain(crate::w2_conditions_2::FLAG_PATTERNS)
+            .chain(crate::w2_conditions_3::W2_CONDITION_PATTERNS)
         .chain(CONDITION_PATTERNS)
     {
         Pattern::new(s, *k)?;
@@ -1175,6 +1278,9 @@ impl Cx<'_> {
         let srcs: Vec<&'static str> = crate::op_kick_ban::CONDITION_PATTERNS
             .iter()
             .chain(PLAYER_FLAG_PATTERNS)
+            .chain(crate::w2_conditions_2::CONDITION_PATTERNS)
+            .chain(crate::w2_conditions_2::FLAG_PATTERNS)
+            .chain(crate::w2_conditions_3::W2_CONDITION_PATTERNS)
             .chain(CONDITION_PATTERNS)
             .map(|(s, _)| *s)
             .collect();
@@ -1383,10 +1489,25 @@ impl Cx<'_> {
         if self.call_stmt(num, &toks) {
             return;
         }
+        if self.env.ext4.is_some() {
+            match crate::w2_events_4::parse_effect(&toks, &self.env) {
+                Some(Ok(eff)) => {
+                    self.emit(Instr::Eff(eff), num);
+                    return;
+                }
+                Some(Err(e)) => {
+                    self.err(num, e);
+                    return;
+                }
+                None => {}
+            }
+        }
         let ops_first = toks.first().is_some_and(|t| t.is_lit("sort"))
             || (toks.first().is_some_and(|t| t.is_lit("set"))
                 && toks.get(3..).is_some_and(|r| crate::list_ops::looks_like_list_op(r, &self.env)));
-        let parsed = if ops_first {
+        let parsed = if let Some(t) = crate::w2_effects_3::parse_transform(&toks, &self.env) {
+            Some(t)
+        } else if ops_first {
             crate::list_ops::parse_effect(&toks, &self.env)
                 .or_else(|| crate::list_literals::parse_list_effect(&toks, &self.env))
         } else {
@@ -1589,6 +1710,13 @@ impl Cx<'_> {
             .iter()
             .chain(TEXT_EFFECT_PATTERNS)
             .chain(crate::health_food::EFFECT_PATTERNS)
+            .chain(crate::w2_effects_1::EFFECT_PATTERNS)
+            .chain(crate::w2_effects_2::EFFECT_PATTERNS)
+            .chain(crate::w2_expressions_2::EFFECT_PATTERNS)
+            .chain(crate::w2_expressions_3::EFFECT_PATTERNS)
+            .chain(crate::w2_expressions_4::EFFECT_PATTERNS)
+            .chain(crate::w2_effects_3::EFFECT_PATTERNS)
+            .chain(crate::w2_expressions_6::EFFECT_PATTERNS)
             .map(|(s, _)| *s)
             .collect();
         let mut e = ScriptError::new(
@@ -1672,6 +1800,12 @@ fn take_var(caps: &mut [Option<Capture>], i: usize) -> Option<VarRef> {
 }
 
 fn build_cond(kind: CondKind, mut c: Vec<Option<Capture>>) -> Cond {
+    if let CondKind::W3(k) = kind {
+        return match crate::w2_conditions_3::build(k, c) {
+            Some(w) => Cond::Rare3(Box::new(w)),
+            None => Cond::Cmp(Expr::Num(0.0), CmpOp::Eq, Expr::Num(1.0)),
+        };
+    }
     let a = take_expr(&mut c, 0).unwrap_or(Expr::Num(0.0));
     let b = take_expr(&mut c, 1).unwrap_or(Expr::Num(0.0));
     let op = match kind {
@@ -1690,6 +1824,11 @@ fn build_cond(kind: CondKind, mut c: Vec<Option<Capture>>) -> Cond {
             };
         }
         CondKind::Admin(k, negate) => return Cond::Admin(k, a, negate),
+        CondKind::W2(kind, negate) => {
+            let b = (kind_has_b(kind)).then_some(b);
+            return Cond::Rare(Box::new(crate::w2_conditions_2::build(kind, negate, a, b)));
+        }
+        CondKind::W3(_) => CmpOp::Eq,
         CondKind::IsSet => return Cond::IsSet(a, true),
         CondKind::NotSet => return Cond::IsSet(a, false),
         CondKind::Ne => CmpOp::Ne,
@@ -1791,6 +1930,16 @@ fn build_effect(kind: EffKind, mut c: Vec<Option<Capture>>) -> Option<Effect> {
         },
         EffKind::Broadcast => Effect::Broadcast(take_expr(c, 0)?),
         EffKind::Hf(op) => return crate::health_food::build(op, c),
+        EffKind::W2(op) => return crate::w2_effects_1::build(op, c),
+        EffKind::W2b(op) => return crate::w2_effects_2::build(op, c),
+        EffKind::X2(k) => return crate::w2_expressions_2::build(k, c),
+        EffKind::W2c(stat, mode) => {
+            return crate::w2_expressions_3::build(stat, mode, c).map(|e| Effect::W2c(Box::new(e)));
+        }
+        EffKind::W4(op) => return crate::w2_expressions_4::build(op, c),
+        EffKind::W2e3(op) => return crate::w2_effects_3::build(op, c),
+        EffKind::W5(op) => return crate::w2_expressions_5::build(op, c),
+        EffKind::W6(op) => return crate::w2_expressions_6::build(op, c),
         EffKind::Heal => Effect::Heal(take_expr(c, 0)?),
         EffKind::SetHealth => Effect::SetHealth(take_expr(c, 0)?, take_expr(c, 1)?),
         EffKind::SetGamemode => Effect::SetGamemode(take_expr(c, 0)?, take_expr(c, 1)?),
@@ -2168,6 +2317,7 @@ pub fn type_from_name(name: &str) -> Option<Ty> {
         "location" => Ty::Location,
         "world" => Ty::World,
         "timespan" | "time span" => Ty::Timespan,
+        "vector" => Ty::Vector,
         "date" => Ty::Date,
         "object" => Ty::Object,
         "numbers" | "integers" | "texts" | "strings" | "players" | "booleans" | "items" | "itemtypes"
@@ -2346,8 +2496,9 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                         file,
                         top.num,
                         format!(
-                            "unknown event '{ev}', known: join, quit, chat, break, place, death, damage, respawn, click, right click, left click, inventory click, inventory close, sneak toggle, sprint toggle, flight toggle, bound enter, bound exit, load, {} (and 'every N seconds:')",
-                            crate::events_items::NAMES
+                            "unknown event '{ev}', known: join, quit, chat, break, place, death, damage, respawn, click, right click, left click, inventory click, inventory close, sneak toggle, sprint toggle, flight toggle, bound enter, bound exit, load, {}, {}, and the extra events in docs/syntax/w2-events-3.md (and 'every N seconds:')",
+                            crate::events_items::NAMES,
+                            crate::w2_events_2::known_names()
                         ),
                     ));
                 continue;
@@ -2360,21 +2511,57 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                 ));
                 continue;
             }
-            let env = Env {
-                has_message: k == EventKind::Chat,
+            let mut env = Env {
+                has_message: k == EventKind::Chat || matches!(k, EventKind::Ext3(e) if e.has_text()),
                 arg_types: vec![],
                 trigger_name: format!("'on {}'", k.name()),
-                no_player: matches!(k, EventKind::Load | EventKind::MobSpawn | EventKind::ProjectileHit | EventKind::ServerPing),
+                no_player: matches!(k, EventKind::Load | EventKind::MobSpawn | EventKind::ProjectileHit)
+                    || matches!(k, EventKind::Ext(e) if !e.has_player() && !e.maybe_player())
+                    || matches!(k, EventKind::Ext3(e) if !e.has_player()),
                 event_vals: crate::events_items::mask(k),
-                has_damage: k == EventKind::Damage,
+                ext4: if let EventKind::Ext4(e) = k { Some(e) } else { None },
+                ev_fields: if let EventKind::Ext(e) = k { e.fields() } else { &[] },
+                has_damage: k == EventKind::Damage || matches!(k, EventKind::Ext3(e) if e.has_number()),
                 has_attacker: matches!(k, EventKind::Damage | EventKind::Death),
                 has_block: matches!(k, EventKind::Click | EventKind::RightClick | EventKind::LeftClick),
                 has_inv: k == EventKind::InventoryClick,
                 has_bound: matches!(k, EventKind::BoundEnter | EventKind::BoundExit),
                 ..Env::default()
             };
+            if let EventKind::Ext2(e) = k {
+                crate::w2_events_2::apply_env(&mut env, e);
+            }
             click_filters.extend(filters);
             (TriggerKind::Event(k), &top.children, env, false)
+        } else if let Some(minute) = crate::w2_events_4::parse_at_real_time(&lower) {
+            let k = EventKind::Ext4(crate::w2_events_4::ExtEvent::SystemTime(minute));
+            let env = Env {
+                trigger_name: format!("'at {:02}:{:02} in real time'", minute / 60, minute % 60),
+                no_player: true,
+                ext4: Some(crate::w2_events_4::ExtEvent::SystemTime(minute)),
+                ..Env::default()
+            };
+            (TriggerKind::Event(k), &top.children, env, false)
+        } else if let Some(rest) = lower.strip_prefix("at ") {
+            let Some(t) = crate::w2_events_1::parse_at_time(rest.trim().trim_end_matches(':')) else {
+                errors.push(ScriptError::new(
+                    file,
+                    top.num,
+                    format!("can't understand 'at {rest}', use 'at 18:00:', 'at 6:30 pm:', 'at noon:' or 'at midnight:'"),
+                ));
+                continue;
+            };
+            let env = Env {
+                trigger_name: format!("'at {}'", rest.trim().trim_end_matches(':')),
+                no_player: true,
+                ..Env::default()
+            };
+            (
+                TriggerKind::Event(EventKind::Ext(crate::w2_events_1::ExtEvent::At(t))),
+                &top.children,
+                env,
+                false,
+            )
         } else if let Some(rest) = lower.strip_prefix("every ") {
             let Some(ticks) = parse_every(rest) else {
                 errors.push(ScriptError::new(
@@ -2565,4 +2752,9 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
         }
     }
     (triggers, errors)
+}
+
+fn kind_has_b(k: crate::w2_conditions_2::W2Kind) -> bool {
+    use crate::w2_conditions_2::W2Kind::*;
+    matches!(k, Divisible | InWorld | OfType)
 }

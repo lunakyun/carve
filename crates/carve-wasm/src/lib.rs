@@ -1,6 +1,8 @@
 //! Carve as a Pumpkin WASM plugin. All game access goes through
 //! [`WasmHost`], which implements the core's `Host` trait.
 
+mod w2_events_4;
+
 use std::collections::BTreeSet;
 use std::sync::Mutex;
 
@@ -12,24 +14,31 @@ use carve_core::skbee_text::{Click, Hover, Kind, Part};
 use carve_core::skbee_recipes_advancements::{CookKind, Ingredient as RIngredient, RecipeDef, RecipeKind};
 use carve_core::skbee_utilities::Info;
 use carve_core::world_effects::{FxPos, ParticleFx};
+use carve_core::w2_expressions_7::Query;
 use carve_core::{
-    CommandOutcome, Engine, EventCtx, EventKind, Host, LogLevel, PlayerFlag, PlayerRef, Recipient, ScriptError, Variables,
+    CommandOutcome, Engine, EventCtx, EventKind, Host, LogLevel, PlayerFlag, PlayerRef, Recipient, ScriptError, Value,
+    Variables,
 };
+mod w2_events_3;
+
+use pumpkin_plugin_api::CustomStatistic;
 use pumpkin_plugin_api::DamageType;
 use pumpkin_plugin_api::World;
-use pumpkin_plugin_api::{GameRule, GameRuleValue};
 use pumpkin_plugin_api::wit::pumpkin::plugin::status_effect::StatusEffectInstance;
 use pumpkin_plugin_api::world::{BlockFlags, ExplosionInteraction};
+use pumpkin_plugin_api::wit::pumpkin::plugin::status_effect::StatusEffectType;
+use pumpkin_plugin_api::{Block, GameRule, GameRuleValue};
 use pumpkin_plugin_api::command::{
     ArgumentType, Command, CommandError, CommandNode, CommandSender, ConsumedArgs, StringType,
 };
 use pumpkin_plugin_api::commands::CommandHandler;
 use pumpkin_plugin_api::common::{BlockPos as WitPos, EntityPose, GameMode, Hand, RgbColor};
+use pumpkin_plugin_api::player::JavaResourcePack;
 use pumpkin_plugin_api::events::{
     BlockBreakEvent, BlockPlaceEvent, EntityDamageByEntityEvent, InventoryClickEvent, InventoryCloseEvent, EntityDamageEvent, EventData, EventHandler,
     EventPriority, FromIntoEvent, InteractAction, PlayerChatEvent, PlayerDeathEvent, PlayerInteractEvent,
     PlayerJoinEvent, PlayerLeaveEvent, PlayerRespawnEvent, PlayerToggleFlightEvent, PlayerToggleSneakEvent,
-    PlayerToggleSprintEvent, ServerListPingEvent,
+    PlayerToggleSprintEvent,
 };
 use pumpkin_plugin_api::events::{PlayerAdvancementDoneEvent, PlayerRecipeDiscoverEvent};
 use pumpkin_plugin_api::logging::{LogLevel as ApiLevel, log};
@@ -49,6 +58,10 @@ mod fx;
 mod inv;
 mod sb;
 
+mod w2_events_2;
+mod w2_expressions_3;
+mod w4;
+
 const SCRIPTS_DIR: &str = "scripts";
 const VARS_FILE: &str = "variables.json";
 const BOUNDS_FILE: &str = "bounds.json";
@@ -59,6 +72,7 @@ struct HostState {
     tick: u64,
     /// (due tick, resume token)
     pending: Vec<(u64, u64)>,
+    w4: w4::W4State,
 }
 
 struct State {
@@ -70,9 +84,15 @@ struct State {
     /// entity id -> player uuid, rebuilt at most once per tick on a miss.
     entity_players: Vec<(i32, String)>,
     entity_map_tick: u64,
+    /// Last wall-clock minute handled by `at HH:MM in real time` triggers.
+    last_minute: i64,
     /// Victim of the damage event being handled, and whether scripts already ran
     /// for it (the by-entity event that may follow must not run them twice).
     damage_pending: Option<(i32, bool, u64)>,
+    /// Extra events (`w2_events_1`) that have a listener on the server.
+    ext_registered: Vec<carve_core::w2_events_1::ExtEvent>,
+    /// World time of the previous tick, for `at <time>:` triggers.
+    at_prev: Option<i64>,
 }
 
 static STATE: Mutex<Option<State>> = Mutex::new(None);
@@ -260,6 +280,33 @@ impl WasmHost<'_> {
 /// UUIDs of players who are flying right now. The API reports flight only
 /// through the toggle event, so it is tracked here.
 static FLYING: Mutex<Vec<String>> = Mutex::new(Vec::new());
+
+/// UUIDs of players whose resource pack finished loading. Set from the
+/// resource pack status event; cleared when the player leaves.
+static PACKS: Mutex<Vec<String>> = Mutex::new(Vec::new());
+
+struct OnPackStatus;
+
+impl EventHandler<pumpkin_plugin_api::events::PlayerResourcePackStatusEvent> for OnPackStatus {
+    fn handle(
+        &self,
+        server: Server,
+        data: EventData<pumpkin_plugin_api::events::PlayerResourcePackStatusEvent>,
+    ) -> EventData<pumpkin_plugin_api::events::PlayerResourcePackStatusEvent> {
+        let uuid = uuid::to_string(data.player.get_id());
+        let status = data.status.to_lowercase();
+        let _ = with_state(&server, None, |st, _| {
+            st.hs.w4.packs.insert(uuid.clone(), status.clone());
+        });
+        if let Ok(mut p) = PACKS.lock() {
+            p.retain(|u| *u != uuid);
+            if status.contains("success") || status.contains("loaded") {
+                p.push(uuid);
+            }
+        }
+        data
+    }
+}
 
 /// Bare permission names live in the plugin's namespace: `vip` -> `carve:vip`.
 fn full_node(node: &str) -> String {
@@ -461,6 +508,33 @@ impl WasmHost<'_> {
             .map_or(0, |pl| pl.get_inventory().as_inventory().count_item(id))
     }
 
+    fn biome_at(&mut self, world: &str, x: i32, y: i32, z: i32) -> Option<String> {
+        let w = self.server.get_world_by_name(world)?;
+        let b = w.get_biome(carve_block_pos(x, y, z));
+        Some(carve_core::w2_expressions_1::snake(&format!("{b:?}")))
+    }
+
+    fn armor_item(&mut self, p: &PlayerRef, slot: carve_core::w2_expressions_1::ArmorSlot) -> Option<(String, u32)> {
+        use carve_core::w2_expressions_1::ArmorSlot;
+        use pumpkin_plugin_api::world::EquipmentSlot;
+        let slot = match slot {
+            ArmorSlot::Helmet => EquipmentSlot::Head,
+            ArmorSlot::Chestplate => EquipmentSlot::Chest,
+            ArmorSlot::Leggings => EquipmentSlot::Legs,
+            ArmorSlot::Boots => EquipmentSlot::Feet,
+        };
+        let stack = self.get(p)?.as_entity().as_living()?.get_equipment(slot)?;
+        let key = stack.get_registry_key();
+        let id = key.strip_prefix("minecraft:").unwrap_or(&key).to_string();
+        Some((id, u32::from(stack.get_count())))
+    }
+
+    fn block_entity_nbt(&mut self, world: &str, x: i32, y: i32, z: i32) -> Option<Vec<u8>> {
+        self.server
+            .get_world_by_name(world)?
+            .get_block_entity_nbt(carve_block_pos(x, y, z))
+    }
+
     fn health(&mut self, p: &PlayerRef) -> Option<f64> {
         self.get(p).map(|pl| f64::from(pl.get_health()))
     }
@@ -495,6 +569,7 @@ impl WasmHost<'_> {
             return false;
         };
         let e = pl.as_entity();
+        let pl_uuid = p.uuid.clone();
         match flag {
             PlayerFlag::Sneaking => e.is_sneaking(),
             PlayerFlag::Sprinting => e.is_sprinting(),
@@ -508,9 +583,55 @@ impl WasmHost<'_> {
             }
             // No shield-blocking state in the plugin API yet.
             PlayerFlag::Blocking => false,
+            PlayerFlag::Burning => e.is_on_fire(),
+            PlayerFlag::CustomNameVisible => e.is_custom_name_visible(),
+            // Vanilla: fully frozen at 140 ticks.
+            PlayerFlag::Frozen => pl.get_freeze_ticks() >= 140,
+            PlayerFlag::Gliding => e.is_fall_flying(),
+            PlayerFlag::Glowing => e.is_glowing(),
+            PlayerFlag::Invisible => e.is_invisible(),
+            PlayerFlag::Invulnerable => e.is_invulnerable(),
+            PlayerFlag::ResourcePack => PACKS.lock().is_ok_and(|p| p.contains(&pl_uuid)),
         }
     }
 
+
+    fn player_state(&mut self, p: &PlayerRef, state: carve_core::w2_conditions_3::PlayerState) -> bool {
+        use carve_core::w2_conditions_3::PlayerState;
+        let Some(pl) = self.get(p) else {
+            return false;
+        };
+        match state {
+            PlayerState::Poisoned => pl.has_effect(StatusEffectType::Poison),
+            PlayerState::Silent => pl.as_entity().is_silent(),
+            PlayerState::Riding => pl.as_entity().get_vehicle().is_some(),
+        }
+    }
+
+    fn pvp_enabled(&mut self, world: Option<&str>) -> Option<bool> {
+        let w = match world {
+            Some(name) => self.server.get_world_by_name(name)?,
+            None => self.server.get_all_worlds().into_iter().next()?,
+        };
+        match w.get_game_rule(GameRule::Pvp) {
+            GameRuleValue::Bool(b) => Some(b),
+            GameRuleValue::Int(n) => Some(n != 0),
+        }
+    }
+
+    fn block_trait(&mut self, id: &str, t: carve_core::w2_conditions_3::BlockTrait) -> Option<bool> {
+        use carve_core::w2_conditions_3::BlockTrait;
+        let block = Block::from_name(id)?;
+        match t {
+            BlockTrait::Solid => Some(block.is_solid),
+            BlockTrait::Transparent => {
+                Block::get_default_state_for_id(block.id).map(|s| s.opacity == 0 && !block.is_solid)
+            }
+            BlockTrait::Passable => {
+                Block::get_default_state_for_id(block.id).map(|s| s.collision_shapes.is_empty())
+            }
+        }
+    }
     fn xp_get(&mut self, p: &PlayerRef, field: carve_core::xp_level::XpField) -> Option<f64> {
         use carve_core::xp_level::XpField;
         self.get(p).map(|pl| match field {
@@ -853,6 +974,56 @@ impl WasmHost<'_> {
         }
     }
 
+    fn set_flight(&mut self, p: &PlayerRef, on: bool) {
+        if let Some(pl) = self.get(p) {
+            pl.set_allow_flight(on);
+            pl.set_flying(on);
+        }
+        if let Ok(mut f) = FLYING.lock() {
+            f.retain(|u| *u != p.uuid);
+            if on {
+                f.push(p.uuid.clone());
+            }
+        }
+    }
+
+    fn set_invulnerable(&mut self, p: &PlayerRef, on: bool) {
+        if let Some(pl) = self.get(p) {
+            pl.set_invulnerable(on);
+        }
+    }
+
+    fn set_invisible(&mut self, p: &PlayerRef, on: bool) {
+        if let Some(pl) = self.get(p) {
+            pl.as_entity().set_invisible(on);
+        }
+    }
+
+    fn apply_knockback(&mut self, p: &PlayerRef, strength: f64, x: f64, z: f64) {
+        if let Some(pl) = self.get(p) {
+            pl.apply_knockback(strength, x, z);
+        }
+    }
+
+    fn set_rotation(&mut self, p: &PlayerRef, yaw: f32, pitch: f32) {
+        if let Some(pl) = self.get(p) {
+            let world = pl.get_world();
+            pl.teleport(pl.get_position(), Some(yaw), Some(pitch), world);
+        }
+    }
+
+    fn open_book(&mut self, p: &PlayerRef, off_hand: bool) {
+        if let Some(pl) = self.get(p) {
+            pl.open_book(if off_hand { Hand::Left } else { Hand::Right });
+        }
+    }
+
+    fn set_list_order(&mut self, p: &PlayerRef, order: i32) {
+        if let Some(pl) = self.get(p) {
+            pl.set_tab_list_order(order);
+        }
+    }
+
     fn damage(&mut self, p: &PlayerRef, amount: f64) {
         if let Some(pl) = self.get(p) {
             pl.damage(amount as f32, DamageType::Generic);
@@ -1030,6 +1201,140 @@ impl WasmHost<'_> {
         }
     }
 
+    fn transfer(&mut self, p: &PlayerRef, host: &str, port: u16) {
+        if let Some(pl) = self.get(p) {
+            pl.transfer(host, port);
+        }
+    }
+
+    fn respawn(&mut self, p: &PlayerRef) {
+        if let Some(pl) = self.get(p) {
+            pl.respawn();
+        }
+    }
+
+    fn hide_player(&mut self, viewer: &PlayerRef, target: &PlayerRef) {
+        // The API takes the other player by value, so ask the server for a fresh handle.
+        let Some(t) = uuid::parse(&target.uuid).and_then(|id| self.server.get_player_by_uuid(id)) else {
+            return;
+        };
+        if let Some(v) = self.get(viewer) {
+            v.hide_player(t);
+        }
+    }
+
+    fn show_player(&mut self, viewer: &PlayerRef, target: &PlayerRef) {
+        let Some(t) = uuid::parse(&target.uuid).and_then(|id| self.server.get_player_by_uuid(id)) else {
+            return;
+        };
+        if let Some(v) = self.get(viewer) {
+            v.show_player(t);
+        }
+    }
+
+    fn compass_target(&mut self, p: &PlayerRef) -> Option<(f64, f64, f64, Option<String>)> {
+        let pl = self.get(p)?;
+        let (x, y, z) = pl.get_compass_target();
+        Some((x, y, z, Some(pl.get_world().get_name())))
+    }
+
+    fn set_compass_target(&mut self, p: &PlayerRef, x: f64, y: f64, z: f64, _world: Option<&str>) {
+        if let Some(pl) = self.get(p) {
+            pl.set_compass_target((x, y, z));
+        }
+    }
+
+    fn save_world(&mut self) {
+        if let Err(e) = self.server.save_all() {
+            plog(ApiLevel::Warn, &format!("save world failed: {e}"));
+        }
+    }
+
+    fn set_sprinting(&mut self, p: &PlayerRef, on: bool) {
+        if let Some(pl) = self.get(p) {
+            pl.as_entity().set_sprinting(on);
+        }
+    }
+
+    fn eject_passengers(&mut self, p: &PlayerRef) {
+        if let Some(pl) = self.get(p) {
+            pl.as_entity().eject_passengers();
+        }
+    }
+
+    fn set_name_visible(&mut self, p: &PlayerRef, visible: bool) {
+        if let Some(pl) = self.get(p) {
+            pl.as_entity().set_custom_name_visible(visible);
+        }
+    }
+
+    fn send_resource_pack(&mut self, p: &PlayerRef, url: &str, hash: &str, id: &str) {
+        let Some(id) = uuid::parse(id) else { return };
+        if let Some(java) = self.get(p).and_then(Player::as_java) {
+            java.send_resource_pack(JavaResourcePack {
+                id,
+                url: url.to_string(),
+                hash: hash.to_string(),
+                forced: false,
+                prompt_message: None,
+            });
+        }
+    }
+
+    fn remaining_air(&mut self, p: &PlayerRef) -> Option<i64> {
+        self.get(p).map(|pl| i64::from(pl.as_entity().get_remaining_air()))
+    }
+
+    fn set_remaining_air(&mut self, p: &PlayerRef, ticks: i64) {
+        if let Some(pl) = self.get(p) {
+            let e = pl.as_entity();
+            let max = i64::from(e.get_max_air());
+            e.set_remaining_air(ticks.clamp(0, max.max(1)) as i32);
+        }
+    }
+
+    fn respawn_location(&mut self, p: &PlayerRef) -> Option<(f64, f64, f64)> {
+        self.get(p)?.get_respawn_location()
+    }
+
+    fn set_respawn_location(&mut self, p: &PlayerRef, x: f64, y: f64, z: f64) {
+        if let Some(pl) = self.get(p) {
+            pl.set_respawn_location((x, y, z));
+        }
+    }
+
+    fn sea_level(&mut self, world: &str) -> Option<i64> {
+        self.server
+            .get_world_by_name(world)
+            .map(|w| i64::from(w.get_sea_level()))
+    }
+
+    fn simulation_distance(&mut self) -> Option<i64> {
+        Some(i64::from(self.server.get_simulation_distance()))
+    }
+
+    fn w2e7_query(&mut self, q: Query<'_>) -> Option<Value> {
+        let num = |n: f64| Some(Value::Num(n));
+        match q {
+            Query::Tps => num(self.server.get_tps()),
+            Query::Mspt => num(self.server.get_mspt()),
+            // The Minecraft version Pumpkin was built for; the plugin API has no call for it.
+            Query::MinecraftVersion => Some(Value::Text("26.3".into())),
+            Query::ServerViewDistance => num(f64::from(self.server.get_view_distance())),
+            Query::PlayTicks(p) => {
+                let pl = self.get(p)?;
+                num(f64::from(pl.get_custom_statistic(CustomStatistic::PlayTime)))
+            }
+            Query::LivedTicks(p) => num(f64::from(self.get(p)?.as_entity().get_ticks_lived())),
+            Query::Yaw(p) => num(f64::from(self.get(p)?.get_yaw())),
+            Query::Pitch(p) => num(f64::from(self.get(p)?.get_pitch())),
+            Query::Environment(name) => {
+                let w = self.server.get_world_by_name(name)?;
+                Some(Value::Text(w.get_dimension()))
+            }
+        }
+    }
+
     fn log(&mut self, level: LogLevel, msg: &str) {
         let l = match level {
             LogLevel::Info => ApiLevel::Info,
@@ -1122,6 +1427,9 @@ impl Host for TickHost<'_, '_> {
         gamemode(p: &PlayerRef) -> Option<String>;
         set_gamemode(p: &PlayerRef, mode: &str);
         player_flag(p: &PlayerRef, flag: PlayerFlag) -> bool;
+        player_state(p: &PlayerRef, state: carve_core::w2_conditions_3::PlayerState) -> bool;
+        pvp_enabled(world: Option<&str>) -> Option<bool>;
+        block_trait(id: &str, t: carve_core::w2_conditions_3::BlockTrait) -> Option<bool>;
         xp_get(p: &PlayerRef, field: carve_core::xp_level::XpField) -> Option<f64>;
         xp_set(p: &PlayerRef, field: carve_core::xp_level::XpField, value: f64);
         vital(p: &PlayerRef, v: Vital) -> Option<f64>;
@@ -1189,6 +1497,95 @@ impl Host for TickHost<'_, '_> {
         world_spawn(world: &str) -> Option<(f64, f64, f64)>;
         border_size(world: &str) -> Option<f64>;
         set_border_size(world: &str, size: f64, seconds: f64);
+        transfer(p: &PlayerRef, host: &str, port: u16);
+        respawn(p: &PlayerRef);
+        hide_player(viewer: &PlayerRef, target: &PlayerRef);
+        show_player(viewer: &PlayerRef, target: &PlayerRef);
+        set_flight(p: &PlayerRef, on: bool);
+        set_invulnerable(p: &PlayerRef, on: bool);
+        set_invisible(p: &PlayerRef, on: bool);
+        apply_knockback(p: &PlayerRef, strength: f64, x: f64, z: f64);
+        set_rotation(p: &PlayerRef, yaw: f32, pitch: f32);
+        open_book(p: &PlayerRef, off_hand: bool);
+        save_world();
+        set_sprinting(p: &PlayerRef, on: bool);
+        eject_passengers(p: &PlayerRef);
+        set_name_visible(p: &PlayerRef, visible: bool);
+        send_resource_pack(p: &PlayerRef, url: &str, hash: &str, id: &str);
+        remaining_air(p: &PlayerRef) -> Option<i64>;
+        set_remaining_air(p: &PlayerRef, ticks: i64);
+        respawn_location(p: &PlayerRef) -> Option<(f64, f64, f64)>;
+        set_respawn_location(p: &PlayerRef, x: f64, y: f64, z: f64);
+        sea_level(world: &str) -> Option<i64>;
+        simulation_distance() -> Option<i64>;
+    }
+    delegate! {
+        biome_at(world: &str, x: i32, y: i32, z: i32) -> Option<String>;
+        armor_item(p: &PlayerRef, slot: carve_core::w2_expressions_1::ArmorSlot) -> Option<(String, u32)>;
+        block_entity_nbt(world: &str, x: i32, y: i32, z: i32) -> Option<Vec<u8>>;
+        compass_target(p: &PlayerRef) -> Option<(f64, f64, f64, Option<String>)>;
+        set_compass_target(p: &PlayerRef, x: f64, y: f64, z: f64, world: Option<&str>);
+    }
+
+    fn pstat(&mut self, p: &PlayerRef, s: carve_core::w2_expressions_3::PStat) -> Option<f64> {
+        self.inner.pstat_impl(p, s)
+    }
+
+    fn set_pstat(&mut self, p: &PlayerRef, s: carve_core::w2_expressions_3::PStat, v: f64) {
+        self.inner.set_pstat_impl(p, s, v);
+    }
+
+    fn eye_location(&mut self, p: &PlayerRef) -> Option<(f64, f64, f64, String)> {
+        self.inner.eye_location_impl(p)
+    }
+
+    fn first_empty_slot(&mut self, p: &PlayerRef) -> Option<u32> {
+        self.inner.first_empty_slot_impl(p)
+    }
+
+    fn can_see(&mut self, viewer: &PlayerRef, other: &PlayerRef) -> bool {
+        self.inner.can_see_impl(viewer, other)
+    }
+
+    fn system_memory(&mut self) -> Option<(u64, u64)> {
+        self.inner.system_memory_impl()
+    }
+
+    fn top_block_y(&mut self, world: Option<&str>, x: i32, z: i32) -> Option<i32> {
+        self.inner.top_block_y_impl(world, x, z)
+    }
+
+    delegate! {
+        item_cooldown(p: &PlayerRef, item: &str) -> Option<i64>;
+        set_item_cooldown(p: &PlayerRef, item: &str, ticks: i64);
+        solid_block_y(world: &str, x: i32, z: i32, highest: bool) -> Option<i32>;
+        light_level(world: &str, x: i32, y: i32, z: i32, kind: u8) -> Option<u8>;
+        set_list_order(p: &PlayerRef, order: i32);
+    }
+
+    fn last_death_location(&mut self, p: &PlayerRef) -> Option<(f64, f64, f64, String)> {
+        self.hs.w4.deaths.get(&p.uuid).cloned()
+    }
+
+    fn last_damage(&mut self, p: &PlayerRef) -> Option<carve_core::w2_expressions_4::DamageInfo> {
+        self.hs.w4.hits.get(&p.uuid).cloned()
+    }
+
+    fn join_message(&mut self) -> Option<String> {
+        self.hs.w4.join_msg.clone()
+    }
+
+    fn set_join_message(&mut self, text: &str) {
+        self.hs.w4.join_msg = Some(text.to_string());
+        self.hs.w4.join_set = Some(text.to_string());
+    }
+
+    fn resource_pack_status(&mut self, p: &PlayerRef) -> Option<String> {
+        self.hs.w4.packs.get(&p.uuid).cloned()
+    }
+
+    fn w2e7_query(&mut self, q: Query<'_>) -> Option<Value> {
+        self.inner.w2e7_query(q)
     }
 
     sb::sb_host_methods!();
@@ -1262,11 +1659,22 @@ trait EventAccess: FromIntoEvent {
     fn left(_data: &EventData<Self>) -> Option<String> {
         None
     }
+    /// Called for every event, even when no script listens.
+    fn observe(_data: &EventData<Self>, _hs: &mut HostState) {}
+    /// A message a script set during the event (`set join message to`).
+    fn set_message(_data: &mut EventData<Self>, _msg: &str) {}
 }
 
 impl EventAccess for PlayerJoinEvent {
     fn ctx(d: &EventData<Self>) -> EventCtx {
         EventCtx::player(player_ref(&d.player))
+    }
+    fn observe(d: &EventData<Self>, hs: &mut HostState) {
+        hs.w4.join_msg = Some(d.join_message.get_text());
+        hs.w4.join_set = None;
+    }
+    fn set_message(d: &mut EventData<Self>, msg: &str) {
+        d.join_message = text(msg);
     }
     fn set_cancelled(d: &mut EventData<Self>) {
         d.cancelled = true;
@@ -1278,7 +1686,13 @@ impl EventAccess for PlayerLeaveEvent {
         Some(uuid::to_string(d.player.get_id()))
     }
     fn ctx(d: &EventData<Self>) -> EventCtx {
-        EventCtx::player(player_ref(&d.player))
+        if let Ok(mut p) = PACKS.lock() {
+            let u = uuid::to_string(d.player.get_id());
+            p.retain(|x| *x != u);
+        }
+        let mut c = EventCtx::player(player_ref(&d.player));
+        c.message = Some(d.leave_message.get_text());
+        c
     }
     fn set_cancelled(d: &mut EventData<Self>) {
         d.cancelled = true;
@@ -1287,7 +1701,9 @@ impl EventAccess for PlayerLeaveEvent {
 
 impl EventAccess for PlayerChatEvent {
     fn ctx(d: &EventData<Self>) -> EventCtx {
-        EventCtx::chat(player_ref(&d.player), d.message.clone())
+        let mut ctx = EventCtx::chat(player_ref(&d.player), d.message.clone());
+        ctx.recipients = Some(d.recipients.iter().map(player_ref).collect());
+        ctx
     }
     fn set_cancelled(d: &mut EventData<Self>) {
         d.cancelled = true;
@@ -1317,7 +1733,15 @@ impl EventAccess for BlockPlaceEvent {
 
 impl EventAccess for PlayerDeathEvent {
     fn ctx(d: &EventData<Self>) -> EventCtx {
-        EventCtx::player(player_ref(&d.player))
+        let mut ctx = EventCtx::player(player_ref(&d.player));
+        ctx.death_message = Some(d.death_message.get_text());
+        ctx
+    }
+    fn observe(d: &EventData<Self>, hs: &mut HostState) {
+        let (x, y, z) = d.player.get_position();
+        hs.w4
+            .deaths
+            .insert(uuid::to_string(d.player.get_id()), (x, y, z, d.player.get_world().get_name()));
     }
     fn set_cancelled(d: &mut EventData<Self>) {
         d.cancelled = true;
@@ -1418,13 +1842,6 @@ impl EventAccess for PlayerRecipeDiscoverEvent {
     fn set_cancelled(d: &mut EventData<Self>) {
         d.cancelled = true;
     }
-}
-
-impl EventAccess for ServerListPingEvent {
-    fn ctx(_d: &EventData<Self>) -> EventCtx {
-        EventCtx::console()
-    }
-    fn set_cancelled(_d: &mut EventData<Self>) {}
 }
 
 impl EventAccess for PlayerRespawnEvent {
@@ -1528,9 +1945,11 @@ impl State {
         victim: PlayerRef,
         damage: f32,
         attacker: Option<PlayerRef>,
+        cause: String,
     ) -> bool {
         let mut ctx = EventCtx::player(victim);
         ctx.damage = Some(f64::from(damage));
+        ctx.damage_cause = Some(cause);
         ctx.attacker = attacker;
         let mut th = TickHost {
             inner: host,
@@ -1545,6 +1964,7 @@ struct OnDamage;
 impl EventHandler<EntityDamageEvent> for OnDamage {
     fn handle(&self, server: Server, mut data: EventData<EntityDamageEvent>) -> EventData<EntityDamageEvent> {
         let cancelled = with_state(&server, None, |st, host| {
+            st.track_hit(host, data.entity_id, data.damage, Some(data.damage_type), None);
             if !st.engine.table().has_event(EventKind::Damage) {
                 return false;
             }
@@ -1556,7 +1976,8 @@ impl EventHandler<EntityDamageEvent> for OnDamage {
                 return false;
             }
             st.damage_pending = Some((data.entity_id, true, st.hs.tick));
-            st.fire_damage(host, victim, data.damage, None)
+            let cause = carve_core::w2_expressions_2::snake_case(&format!("{:?}", data.damage_type));
+            st.fire_damage(host, victim, data.damage, None, cause)
         });
         if cancelled == Some(true) {
             data.cancelled = true;
@@ -1574,6 +1995,7 @@ impl EventHandler<EntityDamageByEntityEvent> for OnDamageByEntity {
         mut data: EventData<EntityDamageByEntityEvent>,
     ) -> EventData<EntityDamageByEntityEvent> {
         let cancelled = with_state(&server, None, |st, host| {
+            st.track_hit(host, data.entity_id, data.damage, None, Some(data.damager_id));
             if !st.engine.table().has_event(EventKind::Damage) {
                 return false;
             }
@@ -1589,7 +2011,8 @@ impl EventHandler<EntityDamageByEntityEvent> for OnDamageByEntity {
                 return false;
             };
             let attacker = st.player_by_entity(host, data.damager_id);
-            st.fire_damage(host, victim, data.damage, attacker)
+            let cause = data.cause.strip_prefix("minecraft:").unwrap_or(&data.cause).to_string();
+            st.fire_damage(host, victim, data.damage, attacker, cause)
         });
         if cancelled == Some(true) {
             data.cancelled = true;
@@ -1604,7 +2027,61 @@ impl<E: EventAccess> EventHandler<E> for OnEvent<E> {
         if let Some(u) = E::left(&data) {
             sb::forget(&u);
         }
+        let result = with_state(&server, None, |st, host| {
+            E::observe(&data, &mut st.hs);
+            if !st.engine.table().has_event(kind) {
+                return (false, None);
+            }
+            let ctx = E::ctx(&data);
+            let mut th = TickHost {
+                inner: host,
+                hs: &mut st.hs,
+            };
+            let cancelled = st.engine.fire(kind, ctx, &mut th).cancelled;
+            st.hs.w4.join_msg = None;
+            (cancelled, st.hs.w4.join_set.take())
+        });
+        if let Some((cancelled, msg)) = result {
+            if cancelled {
+                E::set_cancelled(&mut data);
+            }
+            if let Some(m) = msg {
+                E::set_message(&mut data, &m);
+            }
+        }
+        data
+    }
+}
+
+fn register_event<E: EventAccess + Send + Sync + 'static>(ctx: &Context, kind: EventKind) {
+    let h = OnEvent::<E>(kind, std::marker::PhantomData);
+    if let Err(e) = ctx.register_event_handler::<E, _>(h, EventPriority::Normal, true) {
+        plog(
+            ApiLevel::Error,
+            &format!("could not listen to {} events: {e}", kind.name()),
+        );
+    }
+}
+
+// ---------- extra events (carve-core `w2_events_1`) ----------
+
+use carve_core::w2_events_1::ExtEvent;
+use pumpkin_plugin_api::events as ev;
+
+/// Like `EventAccess`, but the event kind may depend on the data (a book
+/// edit and a book signing are one server event).
+trait ExtAccess: FromIntoEvent {
+    fn kind(d: &EventData<Self>) -> ExtEvent;
+    fn ctx(d: &EventData<Self>) -> EventCtx;
+    fn set_cancelled(d: &mut EventData<Self>);
+}
+
+struct OnExt<E>(std::marker::PhantomData<fn() -> E>);
+
+impl<E: ExtAccess> EventHandler<E> for OnExt<E> {
+    fn handle(&self, server: Server, mut data: EventData<E>) -> EventData<E> {
         let cancelled = with_state(&server, None, |st, host| {
+            let kind = EventKind::Ext(E::kind(&data));
             if !st.engine.table().has_event(kind) {
                 return false;
             }
@@ -1622,13 +2099,292 @@ impl<E: EventAccess> EventHandler<E> for OnEvent<E> {
     }
 }
 
-fn register_event<E: EventAccess + Send + Sync + 'static>(ctx: &Context, kind: EventKind) {
-    let h = OnEvent::<E>(kind, std::marker::PhantomData);
-    if let Err(e) = ctx.register_event_handler::<E, _>(h, EventPriority::Normal, true) {
-        plog(
-            ApiLevel::Error,
-            &format!("could not listen to {} events: {e}", kind.name()),
-        );
+macro_rules! ext_event {
+    ($ty:ty, |$k:ident| $kind:expr, |$d:ident| $ctx:expr, |$c:ident| $cancel:expr) => {
+        impl ExtAccess for $ty {
+            fn kind($k: &EventData<Self>) -> ExtEvent {
+                let _ = $k;
+                $kind
+            }
+            fn ctx($d: &EventData<Self>) -> EventCtx {
+                $ctx
+            }
+            fn set_cancelled($c: &mut EventData<Self>) {
+                let _ = &$c;
+                $cancel
+            }
+        }
+    };
+}
+
+fn ev_ctx(player: Option<&Player>, ev: Vec<Value>) -> EventCtx {
+    let mut c = match player {
+        Some(p) => EventCtx::player(player_ref(p)),
+        None => EventCtx::console(),
+    };
+    c.ev = ev;
+    c
+}
+
+fn at_pos(world: Option<String>, p: &pumpkin_plugin_api::common::BlockPos) -> Value {
+    Value::Location {
+        x: f64::from(p.x),
+        y: f64::from(p.y),
+        z: f64::from(p.z),
+        world,
+    }
+}
+
+fn ev_item(id: &str) -> Value {
+    Value::Item {
+        id: id.strip_prefix("minecraft:").unwrap_or(id).to_string(),
+        count: 1,
+        meta: None,
+    }
+}
+
+ext_event!(ev::PrepareAnvilEvent, |d| ExtEvent::AnvilPrepare,
+    |d| ev_ctx(Some(&d.player), vec![Value::Text(d.rename_text.clone()), Value::Num(f64::from(d.repair_cost))]),
+    |d| {});
+ext_event!(ev::PlayerAnimationEvent, |d| ExtEvent::ArmSwing,
+    |d| ev_ctx(Some(&d.player), vec![Value::Text(d.animation_type.clone())]),
+    |d| d.cancelled = true);
+ext_event!(ev::PlayerBedEnterEvent, |d| ExtEvent::BedEnter,
+    |d| ev_ctx(Some(&d.player), vec![at_pos(Some(d.player.get_world().get_name()), &d.bed_pos)]),
+    |d| d.cancelled = true);
+ext_event!(ev::PlayerBedLeaveEvent, |d| ExtEvent::BedLeave,
+    |d| ev_ctx(Some(&d.player), vec![at_pos(Some(d.player.get_world().get_name()), &d.bed_pos)]),
+    |d| {});
+ext_event!(ev::BellRingEvent, |d| ExtEvent::BellRing,
+    |d| ev_ctx(None, vec![
+        at_pos(Some(d.target_world.get_name()), &d.block_pos),
+        Value::World(d.target_world.get_name()),
+        d.entity_id.map_or(Value::None, |i| Value::Num(f64::from(i))),
+        d.direction.clone().map_or(Value::None, Value::Text),
+    ]),
+    |d| d.cancelled = true);
+ext_event!(ev::BlockDamageEvent, |d| ExtEvent::BlockDamage,
+    |d| ev_ctx(Some(&d.player), vec![
+        at_pos(Some(d.player.get_world().get_name()), &d.block_pos),
+        Value::Bool(d.insta_break),
+    ]),
+    |d| d.cancelled = true);
+ext_event!(ev::BlockDropItemEvent, |d| ExtEvent::BlockDrop,
+    |d| ev_ctx(d.player.as_ref(), vec![
+        at_pos(Some(d.target_world.get_name()), &d.block_pos),
+        Value::World(d.target_world.get_name()),
+        d.items.first().map_or(Value::None, |s| {
+            let mut v = ev_item(&s.get_registry_key());
+            if let Value::Item { count, .. } = &mut v {
+                *count = u32::from(s.get_count());
+            }
+            v
+        }),
+        Value::Num(d.items.len() as f64),
+    ]),
+    |d| d.cancelled = true);
+ext_event!(ev::BlockFertilizeEvent, |d| ExtEvent::BlockFertilize,
+    |d| ev_ctx(d.player.as_ref(), vec![
+        at_pos(Some(d.target_world.get_name()), &d.block_pos),
+        Value::World(d.target_world.get_name()),
+        Value::Num(d.changed_blocks.len() as f64),
+    ]),
+    |d| d.cancelled = true);
+ext_event!(ev::BlockGrowEvent, |d| ExtEvent::BlockGrowth,
+    |d| ev_ctx(None, vec![
+        at_pos(Some(d.target_world.get_name()), &d.block_pos),
+        Value::World(d.target_world.get_name()),
+        ev_item(&d.new_block),
+        ev_item(&d.old_block),
+    ]),
+    |d| d.cancelled = true);
+ext_event!(ev::PlayerEditBookEvent, |d| if d.signing { ExtEvent::BookSign } else { ExtEvent::BookEdit },
+    |d| ev_ctx(Some(&d.player), vec![
+        d.title.clone().map_or(Value::None, Value::Text),
+        Value::Num(f64::from(d.slot)),
+        Value::Text(d.pages.join("\n")),
+    ]),
+    |d| d.cancelled = true);
+ext_event!(ev::BrewEvent, |d| ExtEvent::BrewingComplete,
+    |d| ev_ctx(None, vec![at_pos(None, &d.block_pos), Value::Num(f64::from(d.fuel_level))]),
+    |d| d.cancelled = true);
+ext_event!(ev::BrewingStandFuelEvent, |d| ExtEvent::BrewingFuel,
+    |d| ev_ctx(None, vec![at_pos(None, &d.block_pos), Value::Num(f64::from(d.fuel_power))]),
+    |d| d.cancelled = true);
+ext_event!(ev::BrewingStartEvent, |d| ExtEvent::BrewingStart,
+    |d| ev_ctx(None, vec![
+        at_pos(Some(d.target_world.get_name()), &d.block_pos),
+        Value::World(d.target_world.get_name()),
+        Value::Num(f64::from(d.brewing_time)),
+    ]),
+    |d| d.cancelled = true);
+ext_event!(ev::ServerBroadcastEvent, |d| ExtEvent::Broadcast,
+    |d| ev_ctx(None, vec![Value::Text(d.message.get_text()), Value::Text(d.sender.get_text())]),
+    |d| d.cancelled = true);
+ext_event!(ev::PlayerBucketEntityEvent, |d| ExtEvent::BucketCatch,
+    |d| ev_ctx(Some(&d.player), vec![ev_item(&d.bucket_item), Value::Num(f64::from(d.entity_id))]),
+    |d| d.cancelled = true);
+ext_event!(ev::PlayerBucketEmptyEvent, |d| ExtEvent::BucketEmpty,
+    |d| ev_ctx(Some(&d.player), vec![
+        at_pos(Some(d.player.get_world().get_name()), &d.block_pos),
+        ev_item(&d.bucket),
+    ]),
+    |d| d.cancelled = true);
+ext_event!(ev::PlayerBucketFillEvent, |d| ExtEvent::BucketFill,
+    |d| ev_ctx(Some(&d.player), vec![
+        at_pos(Some(d.player.get_world().get_name()), &d.block_pos),
+        ev_item(&d.bucket),
+    ]),
+    |d| d.cancelled = true);
+ext_event!(ev::BlockBurnEvent, |d| ExtEvent::Burn,
+    |d| ev_ctx(None, vec![
+        at_pos(Some(d.target_world.get_name()), &d.block_pos),
+        Value::World(d.target_world.get_name()),
+        ev_item(&d.block),
+        ev_item(&d.igniting_block),
+    ]),
+    |d| d.cancelled = true);
+ext_event!(ev::BlockCanBuildEvent, |d| ExtEvent::CanBuild,
+    |d| ev_ctx(Some(&d.player), vec![
+        ev_item(&d.block_to_build),
+        ev_item(&d.block),
+        Value::Bool(d.buildable),
+    ]),
+    |d| {
+        d.cancelled = true;
+        d.buildable = false;
+    });
+ext_event!(ev::ChunkPopulateEvent, |d| ExtEvent::ChunkGenerate,
+    |d| ev_ctx(None, vec![Value::Num(f64::from(d.chunk_x)), Value::Num(f64::from(d.chunk_z))]),
+    |d| d.cancelled = true);
+ext_event!(ev::ChunkUnloadEvent, |d| ExtEvent::ChunkUnload,
+    |d| ev_ctx(None, vec![Value::Num(f64::from(d.chunk_x)), Value::Num(f64::from(d.chunk_z))]),
+    |d| d.cancelled = true);
+ext_event!(ev::EntityCombustEvent, |d| ExtEvent::Combust,
+    |d| ev_ctx(None, vec![
+        Value::Num(f64::from(d.entity_id)),
+        Value::Timespan { millis: (f64::from(d.duration_secs) * 1000.0) as i64 },
+    ]),
+    |d| d.cancelled = true);
+ext_event!(ev::PlayerLoginEvent, |d| ExtEvent::Connect,
+    |d| ev_ctx(Some(&d.player), vec![]),
+    |d| d.cancelled = true);
+ext_event!(ev::BlockDispenseEvent, |d| ExtEvent::Dispense,
+    |d| ev_ctx(None, vec![at_pos(None, &d.block_pos), ev_item(&d.item_name)]),
+    |d| d.cancelled = true);
+ext_event!(ev::PlayerEggThrowEvent, |d| ExtEvent::EggThrow,
+    |d| ev_ctx(Some(&d.player), vec![
+        Value::Bool(d.hatching),
+        Value::Num(f64::from(d.num_hatches)),
+        Value::Text(d.hatching_type.clone()),
+    ]),
+    |d| d.cancelled = true);
+ext_event!(ev::PlayerElytraBoostEvent, |d| ExtEvent::ElytraBoost,
+    |d| ev_ctx(Some(&d.player), vec![Value::Num(f64::from(d.firework_id))]),
+    |d| d.cancelled = true);
+
+/// Attach the listeners for the extra events that the loaded scripts use.
+/// Listeners can only be added at load, so a trigger added by a later
+/// `/carve reload` needs a restart (see [`missing_ext_listeners`]).
+fn register_ext_events(ctx: &Context, engine: &Engine) -> Vec<ExtEvent> {
+    let table = engine.table();
+    let mut done = Vec::new();
+    macro_rules! reg {
+        ($ty:ty, $($k:expr),+) => {{
+            let kinds = [$($k),+];
+            if kinds.iter().any(|k| table.has_event(EventKind::Ext(*k))) {
+                let h = OnExt::<$ty>(std::marker::PhantomData);
+                match ctx.register_event_handler::<$ty, _>(h, EventPriority::Normal, true) {
+                    Ok(_) => done.extend(kinds),
+                    Err(e) => plog(ApiLevel::Error, &format!("could not listen to {}: {e}", kinds[0].name())),
+                }
+            }
+        }};
+    }
+    reg!(ev::PrepareAnvilEvent, ExtEvent::AnvilPrepare);
+    reg!(ev::PlayerAnimationEvent, ExtEvent::ArmSwing);
+    reg!(ev::PlayerBedEnterEvent, ExtEvent::BedEnter);
+    reg!(ev::PlayerBedLeaveEvent, ExtEvent::BedLeave);
+    reg!(ev::BellRingEvent, ExtEvent::BellRing);
+    reg!(ev::BlockDamageEvent, ExtEvent::BlockDamage);
+    reg!(ev::BlockDropItemEvent, ExtEvent::BlockDrop);
+    reg!(ev::BlockFertilizeEvent, ExtEvent::BlockFertilize);
+    reg!(ev::BlockGrowEvent, ExtEvent::BlockGrowth);
+    reg!(ev::PlayerEditBookEvent, ExtEvent::BookEdit, ExtEvent::BookSign);
+    reg!(ev::BrewEvent, ExtEvent::BrewingComplete);
+    reg!(ev::BrewingStandFuelEvent, ExtEvent::BrewingFuel);
+    reg!(ev::BrewingStartEvent, ExtEvent::BrewingStart);
+    reg!(ev::ServerBroadcastEvent, ExtEvent::Broadcast);
+    reg!(ev::PlayerBucketEntityEvent, ExtEvent::BucketCatch);
+    reg!(ev::PlayerBucketEmptyEvent, ExtEvent::BucketEmpty);
+    reg!(ev::PlayerBucketFillEvent, ExtEvent::BucketFill);
+    reg!(ev::BlockBurnEvent, ExtEvent::Burn);
+    reg!(ev::BlockCanBuildEvent, ExtEvent::CanBuild);
+    reg!(ev::ChunkPopulateEvent, ExtEvent::ChunkGenerate);
+    reg!(ev::ChunkUnloadEvent, ExtEvent::ChunkUnload);
+    reg!(ev::EntityCombustEvent, ExtEvent::Combust);
+    reg!(ev::PlayerLoginEvent, ExtEvent::Connect);
+    reg!(ev::BlockDispenseEvent, ExtEvent::Dispense);
+    reg!(ev::PlayerEggThrowEvent, ExtEvent::EggThrow);
+    reg!(ev::PlayerElytraBoostEvent, ExtEvent::ElytraBoost);
+    done
+}
+
+/// Names of used extra events that have no listener (added after startup).
+fn missing_ext_listeners(engine: &Engine, registered: &[ExtEvent]) -> Vec<&'static str> {
+    let table = engine.table();
+    ALL_EXT
+        .iter()
+        .filter(|k| table.has_event(EventKind::Ext(**k)) && !registered.contains(k))
+        .map(|k| k.name())
+        .collect()
+}
+
+const ALL_EXT: [ExtEvent; 27] = [
+    ExtEvent::AnvilPrepare,
+    ExtEvent::ArmSwing,
+    ExtEvent::BedEnter,
+    ExtEvent::BedLeave,
+    ExtEvent::BellRing,
+    ExtEvent::BlockDamage,
+    ExtEvent::BlockDrop,
+    ExtEvent::BlockFertilize,
+    ExtEvent::BlockGrowth,
+    ExtEvent::BookEdit,
+    ExtEvent::BookSign,
+    ExtEvent::BrewingComplete,
+    ExtEvent::BrewingFuel,
+    ExtEvent::BrewingStart,
+    ExtEvent::Broadcast,
+    ExtEvent::BucketCatch,
+    ExtEvent::BucketEmpty,
+    ExtEvent::BucketFill,
+    ExtEvent::Burn,
+    ExtEvent::CanBuild,
+    ExtEvent::ChunkGenerate,
+    ExtEvent::ChunkUnload,
+    ExtEvent::Combust,
+    ExtEvent::Connect,
+    ExtEvent::Dispense,
+    ExtEvent::EggThrow,
+    ExtEvent::ElytraBoost,
+];
+
+/// World clock handling for `at <time>:` triggers, once per tick.
+fn tick_at_time(server: &Server, st: &mut State, host: &mut WasmHost) {
+    if !st.engine.table().has_at() {
+        return;
+    }
+    let Some(w) = server.get_all_worlds().into_iter().next() else {
+        return;
+    };
+    let cur = (w.get_time_of_day() % 24000) as i64;
+    if let Some(prev) = st.at_prev.replace(cur) {
+        let mut th = TickHost {
+            inner: host,
+            hs: &mut st.hs,
+        };
+        st.engine.fire_at_time(prev, cur, &mut th);
     }
 }
 
@@ -1747,7 +2503,14 @@ impl CommandHandler for AdminCommand {
                 inner: host,
                 hs: &mut st.hs,
             };
-            let out = carve_core::admin::admin(&mut st.engine, &mut store, &mut th, &env, &raw);
+            let mut out = carve_core::admin::admin(&mut st.engine, &mut store, &mut th, &env, &raw);
+            let missing = missing_ext_listeners(&st.engine, &st.ext_registered);
+            if out.loaded && !missing.is_empty() {
+                out.lines.push(format!(
+                    "Restart the server to listen to: {}.",
+                    missing.join(", ")
+                ));
+            }
 
             out
         });
@@ -1779,6 +2542,7 @@ fn tick(server: Server) {
                 true
             }
         });
+        w2_events_4::poll_clock(st, host);
         due.sort();
         for (_, tok) in due {
             let mut th = TickHost {
@@ -1794,6 +2558,7 @@ fn tick(server: Server) {
             };
             st.engine.tick(now, &mut th);
         }
+        tick_at_time(&server, st, host);
         if let Some(json) = st.engine.save_due(now * 50) {
             st.save(&json);
         }
@@ -2014,11 +2779,20 @@ impl Plugin for Carve {
         register_event::<InventoryClickEvent>(&context, EventKind::InventoryClick);
         register_event::<PlayerAdvancementDoneEvent>(&context, EventKind::AdvancementDone);
         register_event::<PlayerRecipeDiscoverEvent>(&context, EventKind::RecipeDiscover);
-        register_event::<ServerListPingEvent>(&context, EventKind::ServerPing);
+        w2_events_2::register_all(&context);
+        w2_events_3::register_all(&context, &|ev| {
+            engine.table().has_event(EventKind::Ext3(ev))
+        });
+        w2_events_4::register_all(&context);
         for r in [
             context.register_event_handler::<PlayerInteractEvent, _>(OnInteract, EventPriority::Normal, true),
             context.register_event_handler::<InventoryCloseEvent, _>(OnInvClose, EventPriority::Normal, true),
             context.register_event_handler::<EntityDamageEvent, _>(OnDamage, EventPriority::Normal, true),
+            context.register_event_handler::<pumpkin_plugin_api::events::PlayerResourcePackStatusEvent, _>(
+                OnPackStatus,
+                EventPriority::Lowest,
+                false,
+            ),
             context.register_event_handler::<EntityDamageByEntityEvent, _>(
                 OnDamageByEntity,
                 EventPriority::Normal,
@@ -2030,17 +2804,22 @@ impl Plugin for Carve {
             }
         }
 
+        let ext_registered = register_ext_events(&context, &engine);
         if let Ok(mut g) = STATE.try_lock() {
             *g = Some(State {
+                ext_registered,
+                at_prev: None,
                 engine,
                 hs: HostState {
                     tick: 0,
                     pending: Vec::new(),
+                    w4: w4::W4State::default(),
                 },
                 data_dir,
                 registered,
                 entity_players: Vec::new(),
                 entity_map_tick: u64::MAX,
+                last_minute: 0,
                 damage_pending: None,
             });
         }
@@ -2149,4 +2928,8 @@ fn data_component(
         ItemComp::GlintOverride => D::EnchantmentGlintOverride,
         ItemComp::ItemModel => D::ItemModel,
     }
+}
+
+fn carve_block_pos(x: i32, y: i32, z: i32) -> pumpkin_plugin_api::common::BlockPos {
+    pumpkin_plugin_api::common::BlockPos { x, y, z }
 }

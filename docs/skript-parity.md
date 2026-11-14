@@ -16,17 +16,17 @@ event needs an in-game check. ⛔ items depend on Bukkit plugins (WorldGuard, Va
 
 | Category | Total | ✅ | 🟡 | ⬜ | ⛔ |
 |---|--:|--:|--:|--:|--:|
-| Events | 185 | 7 | 5 | 172 | 1 |
-| Effects | 154 | 10 | 5 | 138 | 1 |
-| Conditions | 170 | 5 | 3 | 159 | 3 |
-| Expressions | 545 | 20 | 14 | 501 | 10 |
-| Sections | 11 | 4 | 1 | 6 | 0 |
-| Structures | 8 | 4 | 0 | 3 | 1 |
-| Functions | 45 | 6 | 5 | 34 | 0 |
-| Types | 126 | 9 | 5 | 110 | 2 |
-| **All** | **1244** | **65** | **38** | **1123** | **18** |
+| Events | 185 | 101 | 40 | 7 | 37 |
+| Effects | 154 | 39 | 23 | 27 | 65 |
+| Conditions | 170 | 37 | 21 | 74 | 38 |
+| Expressions | 545 | 162 | 82 | 112 | 189 |
+| Sections | 11 | 5 | 2 | 4 | 0 |
+| Structures | 8 | 5 | 2 | 1 | 0 |
+| Functions | 45 | 9 | 5 | 31 | 0 |
+| Types | 126 | 15 | 13 | 91 | 7 |
+| **All** | **1244** | **373** | **188** | **347** | **336** |
 
-Counting 🟡 as half, Carve covers about **7%** of core Skript by entry count.
+Counting 🟡 as half, Carve covers about **38%** of core Skript by entry count.
 By real-world use the number is much higher: the common core (events, variables, loops, conditions,
 functions, commands) is mostly done, and most ⬜ entries are niche (pandas, brewing stands, loot tables).
 
@@ -71,348 +71,348 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 
 ## Events (185)
 
-- ⬜ At Time
-- ⬜ On Anvil Damage
-- ⬜ On Anvil Prepare
-- ⬜ On AoE Cloud Effect
-- ⬜ On Arm Swing
-- ⬜ On Armor Change
-- ⬜ On Attempt Attack
-- ⬜ On Bat Toggle Sleep
-- ⬜ On Beacon Change Effect
-- ⬜ On Beacon Effect
-- ⬜ On Beacon Toggle
-- ⬜ On Bed Enter
-- ⬜ On Bed Leave
-- ⬜ On Bell Resonate
-- ⬜ On Bell Ring
-- ⬜ On Block Damage
-- ⬜ On Block Drop
-- ⬜ On Block Fertilize
-- ⬜ On Block Growth
-- ⬜ On Book Edit
-- ⬜ On Book Sign
+- 🟡 At Time — `at 18:00:`, `at 6pm:`, `at noon:`; first world only, no `in world`
+- ⛔ On Anvil Damage — Pumpkin has no anvil damage event
+- 🟡 On Anvil Prepare — `event-text` (rename), `event-number` (cost); no result item, can't cancel
+- ⛔ On AoE Cloud Effect — Pumpkin never fires the area effect cloud event
+- ✅ On Arm Swing — `event-text` is the animation type
+- ⛔ On Armor Change — no armor change event in the plugin API
+- ⛔ On Attempt Attack — no pre-attack event in the plugin API
+- ⛔ On Bat Toggle Sleep — Pumpkin never fires it
+- ⛔ On Beacon Change Effect — Pumpkin has no beacon events
+- ⛔ On Beacon Effect — Pumpkin has no beacon events
+- ⛔ On Beacon Toggle — Pumpkin has no beacon events
+- ✅ On Bed Enter — `event-location` is the bed
+- ✅ On Bed Leave — can't be cancelled
+- ⛔ On Bell Resonate — Pumpkin never fires it
+- 🟡 On Bell Ring — `event-location`, `event-number` (entity id), `event-text` (direction); no player
+- ✅ On Block Damage — `event-location`, `event-boolean` (instant break)
+- 🟡 On Block Drop — first dropped item as `event-item`, stack count as `event-number`
+- ✅ On Block Fertilize — `event-number` is the changed block count
+- ✅ On Block Growth — `event-block` new, `event-old-block` old
+- 🟡 On Book Edit — `event-text` title, `event-number` slot, `event-pages` joined by new lines
+- 🟡 On Book Sign — same values as book edit
 - ✅ On Break / Mine — `on break`
-- ⬜ On Brewing Complete
-- ⬜ On Brewing Fuel
-- ⬜ On Brewing Start
-- ⬜ On Broadcast
-- ⬜ On Bucket Catch Entity
-- ⬜ On Bucket Empty
-- ⬜ On Bucket fill
-- ⬜ On Burn
-- ⬜ On Can Build Check
+- ✅ On Brewing Complete — `event-number` is the fuel level
+- ✅ On Brewing Fuel — `event-number` is the fuel power
+- ✅ On Brewing Start — `event-number` is the brewing time in ticks
+- ✅ On Broadcast — `event-text` message, `event-sender`; no player
+- 🟡 On Bucket Catch Entity — `event-item` bucket, `event-number` entity id
+- ✅ On Bucket Empty — `event-location`, `event-item`
+- ✅ On Bucket fill — `event-location`, `event-item`
+- ✅ On Burn — `event-block` burned, `event-igniting-block`
+- 🟡 On Can Build Check — cancel means not buildable; no `set` of the boolean
 - ✅ On Chat — `message`, cancellable
-- ⬜ On Chunk Generate
-- ⬜ On Chunk Load
-- ⬜ On Chunk Unload
+- ✅ On Chunk Generate — `event-chunk-x`, `event-chunk-z`
+- ⛔ On Chunk Load — Pumpkin never fires the chunk load event
+- ✅ On Chunk Unload — `event-chunk-x`, `event-chunk-z`
 - 🟡 On Click — left/right, `with`/`on` filters; no entity clicks
-- ⬜ On Combust
+- 🟡 On Combust — `event-number` entity id, `event-timespan`; the entity is not a value yet
 - ⬜ On Command ⭐
-- ⬜ On Connect
+- ✅ On Connect — cancel refuses the login
 - ✅ On Consume ⭐
 - 🟡 On Craft — recipe id only
-- ⬜ On Creeper Power
+- ⛔ On Creeper Power — Pumpkin never fires it
 - 🟡 On Damage — players only; `damage`, `attacker`, `victim`; can't change the damage
 - 🟡 On Death — players only; no attacker or death message
-- ⬜ On Dispense
+- 🟡 On Dispense — `event-location`, `event-item` (name); the item can't be changed
 - ✅ On Drop ⭐
-- ⬜ On Egg Throw
-- ⬜ On Elytra Boost
-- ⬜ On Enchant
-- ⬜ On Enchant Prepare
-- ⬜ On Enderman Enrage
-- ⬜ On Enderman/Sheep/Silverfish/Falling Block
-- ⬜ On Entity Breed
-- ⬜ On Entity Dismount
-- ⬜ On Entity Jump
-- ⬜ On Entity Mount
-- ⬜ On Entity Potion Effect
-- ⬜ On Entity Shoot Bow
-- ⬜ On Entity Transform
-- ⬜ On Experience Change
-- ⬜ On Experience Cooldown Change
-- ⬜ On Experience Spawn
-- ⬜ On Explode
-- ⬜ On Explosion Prime
-- ⬜ On Fade
-- ⬜ On Firework Explode
+- ✅ On Egg Throw — `event-boolean` hatching, `event-number` hatches, `event-text` type
+- ✅ On Elytra Boost — `event-number` is the firework entity id
+- ✅ On Enchant — values: `enchanted item`, `enchantment cost`, `enchant option`
+- ✅ On Enchant Prepare — `bookshelf count`, `enchanted item`
+- ⛔ On Enderman Enrage — Pumpkin has no enderman anger event
+- ✅ On Enderman/Sheep/Silverfish/Falling Block — also `on entity change block`; `new block`, `block x/y/z`
+- ✅ On Entity Breed — `father id`, `mother id`, `child id`; no player
+- ✅ On Entity Dismount — `player` is set when a player dismounts; `vehicle id`
+- ⛔ On Entity Jump — Pumpkin has no entity jump event
+- ✅ On Entity Mount — `player` is set when a player mounts; `vehicle id`
+- ✅ On Entity Potion Effect — `effect name`, `effect duration`, `effect amplifier`
+- 🟡 On Entity Shoot Bow — wired; Pumpkin only fires it for mobs, not for players' bows
+- ✅ On Entity Transform — `transform reason`, `new entity id`
+- ✅ On Experience Change — `experience amount`
+- 🟡 On Experience Cooldown Change — wired; Pumpkin never fires this event yet
+- ⛔ On Experience Spawn — Pumpkin has no experience orb spawn event
+- ✅ On Explode — entity and block explosions; `explosion yield`, `explosion x/y/z`
+- ✅ On Explosion Prime — `explosion radius`, `explosion fire`
+- 🟡 On Fade — wired; Pumpkin never fires block fade yet
+- ✅ On Firework Explode — `event-entity`
 - ⬜ On First Join ⭐
-- ⬜ On Fishing
+- ✅ On Fishing — `fishing state`, `caught type`, `fishing xp`
 - ✅ On Flight Toggle
-- ⬜ On Flow
-- ⬜ On Form
-- ⬜ On Fuel Burn
-- ⬜ On Furnace Item Extract
+- ✅ On Flow — liquid flow; `flow source x/y/z`, `flow target x/y/z`
+- ✅ On Form — `block x/y/z`
+- ✅ On Fuel Burn — `fuel item`, `burn time`
+- ✅ On Furnace Item Extract — `extracted item`, `extracted amount`, `extracted xp`
 - ✅ On Gamemode Change ⭐
-- ⬜ On Gliding State Change
-- ⬜ On Grow
+- ✅ On Gliding State Change — `gliding state` is true when gliding starts
+- ✅ On Grow — `old block`, `new block`, `block x/y/z`
 - ⬜ On Hand Item Swap ⭐
-- ⬜ On Harvest Block
-- ⬜ On Heal
-- ⬜ On Horse Jump
-- ⬜ On Hunger Meter Change
-- ⬜ On Ignition
+- ✅ On Harvest Block — `harvested count`, `block x/y/z`
+- ✅ On Heal — `heal amount`; `player` is set when a player heals
+- ✅ On Horse Jump — `jump power`
+- ✅ On Hunger Meter Change — `new food level`
+- ✅ On Ignition — `block x/y/z`
 - ✅ On Inventory Click ⭐ — `on inventory click:` with `clicked slot`, `clicked item`, `click type`, `cancel event`
 - ✅ On Inventory Close — `on inventory close:`; cannot be cancelled
-- ⬜ On Inventory Drag
-- ⬜ On Inventory Item Move
-- ⬜ On Inventory Open
-- ⬜ On Inventory Pickup
-- ⬜ On Inventory Slot Change
-- ⬜ On Item Break
-- ⬜ On Item Damage
-- ⬜ On Item Despawn
-- ⬜ On Item Mend
-- ⬜ On Item Merge
-- ⬜ On Item Spawn
+- ✅ On Inventory Drag — no slot details from Pumpkin
+- ✅ On Inventory Item Move — hopper moves; `moved item`, `moved amount`
+- ✅ On Inventory Open
+- ✅ On Inventory Pickup — hopper pickups; `picked up item`
+- ⛔ On Inventory Slot Change — Pumpkin has no slot change event
+- ✅ On Item Break — `broken item`; can't be cancelled
+- ✅ On Item Damage — `damaged item`, `item damage amount`
+- ✅ On Item Despawn — `event-entity` (entity id)
+- ✅ On Item Mend — `mended item`, `repair amount`, `mending xp`
+- ✅ On Item Merge — `merge target id`
+- ✅ On Item Spawn — `spawned item`, `block x/y/z`
 - ✅ On Join
-- ⬜ On Jump
-- ⬜ On Kick
-- ⬜ On Language Change
-- ⬜ On Leash / Unleash
-- ⬜ On Leaves Decay
+- ⛔ On Jump — Pumpkin has no jump event; `on player input` sees the jump bit (16) but there are no bit operators yet
+- ✅ On Kick — `on kick` — `player`, `event-text` (reason); can be cancelled
+- ✅ On Language Change — `on language change` — `player`, `event-text` (new locale)
+- 🟡 On Leash / Unleash — `on leash` (player) and `on unleash` (`event-text` reason); the leashed entity is not exposed
+- 🟡 On Leaves Decay — `on leaves decay` — can be cancelled; no block position value yet
 - ✅ On Level Change
-- ⬜ On Lightning Strike
-- ⬜ On Loot Generate
-- ⬜ On Love Mode Enter
+- 🟡 On Lightning Strike — `on lightning strike` — can be cancelled; no position value yet
+- 🟡 On Loot Generate — `on loot generate` — `event-text` is the loot table; loot items are not exposed
+- 🟡 On Love Mode Enter — `on love mode enter` — `player` (the feeder, if a player), `event-number` (ticks in love)
 - ⬜ On Move / Rotate ⭐
-- ⬜ On Move On
-- ⬜ On Pathfind
-- ⬜ On Physics
+- ⛔ On Move On — no block-stepped-on event in Pumpkin; use `on move` plus a block check
+- ⛔ On Pathfind — Pumpkin has no pathfind event
+- ⛔ On Physics — Pumpkin's block physics event is too hot to bridge to scripts
 - ✅ On Pick Up ⭐
-- ⬜ On Pig Zap
-- ⬜ On Piglin Barter
-- ⬜ On Piston Extend
-- ⬜ On Piston Retract
+- ⛔ On Pig Zap — Pumpkin never fires its pig zap event
+- 🟡 On Piglin Barter — `on piglin barter` — can be cancelled; barter items are not exposed
+- 🟡 On Piston Extend — `on piston extend` — `event-text` is the direction; no position value yet
+- 🟡 On Piston Retract — `on piston retract` — `event-text` is the direction; no position value yet
 - ✅ On Place
-- ⬜ On Player Chunk Enter
-- ⬜ On Player Chunk Enters
-- ⬜ On Player Deep Sleep
+- ⛔ On Player Chunk Enter — no chunk enter event for players in Pumpkin's plugin API
+- ⛔ On Player Chunk Enters — no chunk enter event for players in Pumpkin's plugin API
+- ⛔ On Player Deep Sleep — Pumpkin has bed enter/leave but no deep sleep event
 - ✅ On Player GameMode Change
-- ⬜ On Player Input
-- ⬜ On Player Pick Item
-- ⬜ On Player Pickup Arrow
-- ⬜ On Player Trade
+- ✅ On Player Input — `on player input` — `event-text` is the input bits, `event-number` the same as a number (1 forward, 2 back, 4 left, 8 right, 16 jump, 32 sneak, 64 sprint)
+- ⛔ On Player Pick Item — Pumpkin has no pick item event
+- ⛔ On Player Pickup Arrow — Pumpkin has no arrow pickup event
+- ⛔ On Player Trade — Pumpkin only has trade select, not trade complete
 - ⬜ On Player World Change
-- ⬜ On Portal
-- ⬜ On Portal Create
-- ⬜ On Portal Enter
+- ✅ On Portal — `on portal` — `player` when the entity is a player
+- 🟡 On Portal Create — `on portal create` — `event-text` is the portal type; no position value yet
+- ✅ On Portal Enter — `on portal enter` — `player` when the entity is a player
 - ⬜ On Prepare Craft
-- ⬜ On Pressure Plate / Trip
-- ⬜ On Projectile Collide
+- ⛔ On Pressure Plate / Trip — no pressure plate event in the plugin API; `on redstone` sees the power change
+- ⛔ On Projectile Collide — no projectile collide event in Pumpkin (see On Projectile Hit)
 - 🟡 On Projectile Hit ⭐ — no projectile type
 - ✅ On Quit — player still known until the first wait
-- ⬜ On Ready Arrow
-- ⬜ On Redstone
+- ⛔ On Ready Arrow — Pumpkin has no ready arrow event
+- 🟡 On Redstone — `on redstone` — `event-number` is the new power; no position value yet
 - 🟡 On Region Enter/Leave — Carve bounds: `on bound enter` and `on bound exit` (see syntax/skbee-bound.md); no WorldGuard regions
-- ⬜ On Resource Pack Request Response
+- ✅ On Resource Pack Request Response — `on resource pack response` — `player`, `event-text` (status)
 - ✅ On Respawn
-- ⬜ On Resurrect Attempt
-- ⬜ On Riptide
+- ✅ On Resurrect Attempt — `on resurrect attempt` — `player` when the entity is a player; can be cancelled
+- ⛔ On Riptide — Pumpkin has no riptide event
 - 🟡 On Script Load/Unload — `on load` only
-- ⬜ On Send Command List
-- 🟡 On Server List Ping — `on server list ping` runs with no player; it cannot change the MOTD or counts shown
+- ✅ On Send Command List — `on send command list` — `player`, `event-text` (command); can be cancelled
+- ✅ On Server List Ping — `on server list ping:`; `event-motd`, `event-max-players`, `event-players` can be set
 - 🟡 On Server Start/Stop — `on load` runs at start; no stop
-- ⬜ On Sheep Regrow Wool
-- ⬜ On Shoot
-- ⬜ On Sign Change
-- ⬜ On Slime Split
-- ⬜ On Smelt
+- 🟡 On Sheep Regrow Wool — wired, but Pumpkin does not fire this event yet
+- 🟡 On Shoot — `on shoot:`; Pumpkin fires it only for mob bows and crossbows
+- ✅ On Sign Change — `on sign change:`; `event-line-1` to `event-line-4` can be set
+- 🟡 On Slime Split — wired, but Pumpkin does not fire this event yet
+- ✅ On Smelt — `on smelt:`; `event-source`, `event-result`, `event-block`
 - ✅ On Sneak Toggle ⭐
 - ✅ On Spawn ⭐
-- ⬜ On Spawn Change
-- ⬜ On Spectate
-- ⬜ On Sponge Absorb
-- ⬜ On Spread
+- 🟡 On Spawn Change — `on spawn change:`; Pumpkin fires it only for `/setworldspawn`
+- ⛔ On Spectate — the plugin API has no such event
+- ✅ On Sponge Absorb — `on sponge absorb:`
+- 🟡 On Spread — `on spread:`; Pumpkin fires it for fire spreading only
 - ✅ On Sprint Toggle
-- ⬜ On Start Smelt
-- ⬜ On Stonecutter Recipe Select
-- ⬜ On Stop Using Item
-- ⬜ On Swim Toggle
-- ⬜ On System Time
-- ⬜ On Tame
-- ⬜ On Target
+- ✅ On Start Smelt — `on start smelt:`; `event-time` can be set
+- ⛔ On Stonecutter Recipe Select — the plugin API has no such event
+- ⛔ On Stop Using Item — the plugin API has no such event
+- ✅ On Swim Toggle — `on swim toggle:`; `player` when a player swims, `event-swimming`
+- ✅ On System Time — `at 14:30 in real time:` (clock is UTC)
+- ✅ On Tame — `on tame:`; `player` is the new owner
+- ✅ On Target — `on target:`; `event-entity`, `event-target`
 - ⬜ On Teleport ⭐
-- ⬜ On Throwing of an Egg
-- ⬜ On Tool Change
-- ⬜ On Unknown Command Execution
-- ⬜ On Vault Display Item
-- ⬜ On Vehicle Collision
-- ⬜ On Vehicle Create
-- ⬜ On Vehicle Damage
-- ⬜ On Vehicle Destroy
-- ⬜ On Vehicle Enter
-- ⬜ On Vehicle Exit
-- ⬜ On Vehicle Move
-- ⬜ On Villager Career Change
-- ⬜ On Weather Change
-- ⬜ On World Border Bounds Change
-- ⬜ On World Border Bounds Finish Change
-- ⬜ On World Border Center Change
-- ⬜ On World Init
-- ⬜ On World Load
-- ⬜ On World Save
-- ⬜ On World Unload
-- ⬜ On Zombie Break Door
+- ✅ On Throwing of an Egg — `on throwing of an egg:`; `event-hatching` and `event-hatches` can be set
+- 🟡 On Tool Change — `on tool change:`; gives the hotbar slots only, not the items
+- ⛔ On Unknown Command Execution — the plugin API has no such event
+- 🟡 On Vault Display Item — wired, but Pumpkin does not fire this event yet
+- ✅ On Vehicle Collision — `on vehicle collision:`; `event-entity` or `event-block`
+- ✅ On Vehicle Create — `on vehicle create:`
+- ✅ On Vehicle Damage — `on vehicle damage:`
+- ✅ On Vehicle Destroy — `on vehicle destroy:`
+- ✅ On Vehicle Enter — `on vehicle enter:`
+- ✅ On Vehicle Exit — `on vehicle exit:`
+- ✅ On Vehicle Move — `on vehicle move:`; `event-from`, `event-to`
+- 🟡 On Villager Career Change — wired, but Pumpkin does not fire this event yet
+- ✅ On Weather Change — `on weather change:` and `on weather change to rain:` / `to clear:`
+- ⛔ On World Border Bounds Change — the plugin API has no world border events
+- ⛔ On World Border Bounds Finish Change — the plugin API has no world border events
+- ⛔ On World Border Center Change — the plugin API has no world border events
+- ✅ On World Init — `on world init:`
+- ✅ On World Load — `on world load:`
+- ✅ On World Save — `on world save:`
+- ✅ On World Unload — `on world unload:`
+- 🟡 On Zombie Break Door — `on zombie break door:`; runs for any mob that breaks a door
 - ✅ Periodical — `every 5 seconds:`
 
 ## Effects (154)
 
 - ✅ Action Bar — also `send actionbar` and `to all players`
-- ⬜ Allay Duplicate
-- ⬜ Allow / Prevent Leash Drop
-- ⬜ Allow Aging
-- ⬜ Apply Bone Meal
-- ⬜ Apply Fishing Lure
+- ⛔ Allay Duplicate (Pumpkin has no allay duplication)
+- ⛔ Allow / Prevent Leash Drop (no leash-drop control in the plugin API)
+- ⛔ Allow Aging (no animal age lock in the plugin API)
+- ⛔ Apply Bone Meal (no bone meal call in the plugin API)
+- ⛔ Apply Fishing Lure (no fishing lure control in the plugin API)
 - ✅ Apply Potion Effect ⭐ — `apply [potion of] speed 2 to player for 10 seconds`
 - 🟡 Ban ⭐ — name, with reason, by IP; works on offline names
 - 🟡 Boss Bar Flags — `add darken sky flag to bossbar "id"`, fog, dragon bar; set only, no reading
 - ✅ Break Block ⭐ — `break block at <loc>`
 - ✅ Broadcast — also `broadcast "x" to world "name"`
-- ⬜ Cancel Active Item
+- ⛔ Cancel Active Item (no way to stop item use in the plugin API)
 - ⬜ Cancel Command Cooldown
 - ⬜ Cancel Drops
 - ✅ Cancel Event — before the first wait
 - 🟡 Change: Set/Add/Remove/Remove All/Delete/Reset ⭐ — set/add/remove/delete on variables and lists, including list literals like `set {x::*} to 1, 2 and 3`; no `remove all`, `reset`, or changing other expressions (health is separate)
-- ⬜ Charge Creeper
-- ⬜ Charge Entity
-- ⬜ Clear Entity Storage
+- ⛔ Charge Creeper (creeper state is not exposed)
+- ⛔ Charge Entity (creeper state is not exposed)
+- ⛔ Clear Entity Storage (no bee or entity storage in Pumpkin)
 - ⬜ Color Items
 - ✅ Command — `execute console command`, `execute command "x" [by player]`, `make player execute command "x"`
 - 🟡 Conditional / Unconditional — conditions on their own line stop the trigger
-- ⬜ Connect
-- ⬜ Consume Boosting Firework
-- ⬜ Consume Brewing Fuel
+- ✅ Connect (`connect player to server "host" [on port n]`)
+- ⛔ Consume Boosting Firework (no elytra firework boost control)
+- ⛔ Consume Brewing Fuel (brewing fuel use is not controllable)
 - ✅ Continue
-- ⬜ Copy Into Variable
+- ✅ Copy Into Variable (`copy {a::*} into {b::*}`)
 - 🟡 Damage/Heal/Repair — `heal`, `heal by`, `damage player by`; no repair
-- ⬜ Dance
+- ⛔ Dance (no parrot or allay dance state in the plugin API)
 - ⬜ Detonate Entities
 - ⬜ Do If ⭐
 - ⬜ Drop
 - 🟡 Enable/Disable/Unload/Reload Script — through `/carve enable/disable/reload`, not as an effect
 - ⬜ Enchant/Disenchant
-- ⬜ Enderman Teleport
+- ⛔ Enderman Teleport (enderman teleport is not exposed)
 - ⬜ Enforce Whitelist
 - ✅ Entity Despawn — `despawn`, `remove` or `delete` an entity
-- ⬜ Entity Visibility
-- ⬜ Equip
-- ⬜ Equippable Component - Dispense
-- ⬜ Equippable Component - Equip On Entities
-- ⬜ Equippable Component - Lose Durability
-- ⬜ Equippable Component - Shear Off
-- ⬜ Equippable Component - Swap Equipment
+- 🟡 Entity Visibility (players only: `hide p from q`, `reveal p to q`)
+- 🟡 Equip (players, one item: `equip player with diamond helmet`)
+- ⛔ Equippable Component - Dispense (no equippable component events)
+- ⛔ Equippable Component - Equip On Entities (no equippable component events)
+- ⛔ Equippable Component - Lose Durability (no equippable component events)
+- ⛔ Equippable Component - Shear Off (no equippable component events)
+- ⛔ Equippable Component - Swap Equipment (no equippable component events)
 - ✅ Exit — `exit loop`, `stop`
 - ⬜ Expand/Shrink World Border
 - ⬜ Explode Creeper
 - ✅ Explosion ⭐ — `create explosion of force 3 [with fire] at ...` (plugin API only; Pumpkin has no /explode command)
 - ⬜ Fail Command Execution
 - ✅ Feed ⭐ — `feed player [by n]`
-- ⬜ Force Attack
-- ⬜ Force Eating
+- ⛔ Force Attack (no attack call in the plugin API)
+- ⛔ Force Eating (no item use call in the plugin API)
 - ⬜ Force Enchantment Glint
-- ⬜ Force Panda On Back
-- ⬜ Force Respawn
-- ⬜ Generate Loot
-- ⬜ Goat Horns
-- ⬜ Handedness
-- ⬜ Hide Player from Server List
+- ⛔ Force Panda On Back (panda state is not exposed)
+- ✅ Force Respawn
+- ⛔ Generate Loot — the plugin API has a loot event but no call to roll a loot table into items
+- ⛔ Goat Horns — no goat or instrument API
+- ⛔ Handedness — the plugin API cannot read or change a player's main hand
+- ⛔ Hide Player from Server List — the server list ping event has no player sample to edit
 - ✅ Ignite/Extinguish — `ignite player for 5 seconds`, `set player on fire`, `extinguish player` (players only)
-- ⬜ Insert Entity Storage
-- ⬜ Item Despawn
+- ⛔ Insert Entity Storage — no bee hive or entity storage API
+- ⛔ Item Despawn — no item-entity despawn timer in the plugin API
 - ⬜ Item Tooltips
 - ⬜ Keep Inventory / Experience
 - ✅ Kick ⭐ — `kick player due to "x"`
 - ✅ Kill — players, entities and lists of them
-- ⬜ Knockback
+- ✅ Knockback — players only (`knock p away from loc [with strength n]`)
 - ⬜ Launch firework
 - ⬜ Leash entities
 - ✅ Lightning ⭐ — `strike lightning [effect] at ...`
 - ⬜ Load Server Icon
 - ⬜ Load World
-- ⬜ Locally Suppress Warning
-- ⬜ Log
-- ⬜ Look At
+- 🟡 Locally Suppress Warning — accepted and ignored; Carve has no such warnings
+- ✅ Log — `log "x" [to file "name"]` appends to `logs/<name>`
+- ✅ Look At — `make player look at <location>` (players)
 - ⬜ Make Adult/Baby
-- ⬜ Make Allay Duplicate
+- ⛔ Make Allay Duplicate — no allay API
 - ⬜ Make Breedable
-- ⬜ Make Disturbance
-- ⬜ Make Egg Hatch
-- ⬜ Make Entity Scream
-- ⬜ Make Fire Resistant
-- ⬜ Make Fly ⭐
-- ⬜ Make Goat Ram
-- ⬜ Make Incendiary
-- ⬜ Make Interaction Responsive
-- ⬜ Make Invisible
-- ⬜ Make Invulnerable
-- ⬜ Make Panda Roll
-- ⬜ Make Panda Sneeze
-- ⬜ Make Say
+- ⛔ Make Disturbance — the plugin API cannot emit game events
+- ⛔ Make Egg Hatch — no egg hatch API
+- ⛔ Make Entity Scream — no goat scream API
+- ⛔ Make Fire Resistant — item fire resistance is a data component scripts cannot set through the plugin API
+- ✅ Make Fly ⭐ — `make player fly` / `stop flying` (allow flight and flying)
+- ⛔ Make Goat Ram — no goat API
+- ⛔ Make Incendiary — no fireball or explosion API
+- ⛔ Make Interaction Responsive — no interaction entity API
+- ✅ Make Invisible — players only; sets the entity flag
+- ✅ Make Invulnerable — players only
+- ⛔ Make Panda Roll — no panda API
+- ⛔ Make Panda Sneeze — no panda API
+- 🟡 Make Say — runs the vanilla `say` command as the player, so it shows as a say message, not normal chat
 - ⬜ Make Sign Glow
 - ✅ Message — `send ... [to ...]`
 - ✅ op/deop ⭐ — `op player`, `deop player`
-- ⬜ Open Book
+- 🟡 Open Book — opens the written book already in the player's main or off hand; cannot open an arbitrary item
 - 🟡 Open/Close Inventory ⭐ — `open chest with 3 rows named "x" to player` works; `close` compiles but Pumpkin's plugin API v0.1 cannot close a window (v0.2 can)
-- ⬜ Open/Close Lid
+- ⛔ Open/Close Lid — no chest or barrel lid API
 - ⬜ Pathfind
 - ⬜ Persistent
-- ⬜ Play Dead
+- ⛔ Play Dead — no death animation call in the plugin API
 - 🟡 Play Effect — particles only: `play 5 flame particles at player` (more options: syntax/skbee-particles-display.md)
 - 🟡 Play or Draw an Effect ⭐ — particles with `spread`, `offset x, y, z`, `speed`, `extra`, `force`; dust color, block and item data parse but the server cannot send them (see syntax/skbee-particles-display.md)
 - 🟡 Play Sound ⭐ (volume, pitch, location, via `playsound`; no categories)
-- ⬜ Player Info Visibility
-- ⬜ Player Visibility
-- ⬜ Poison/Cure
+- ⛔ Player Info Visibility — no tab-list visibility API in the plugin API
+- ✅ Player Visibility — `hide %player% [from %player%]`, `reveal %player% [to %player%]`
+- 🟡 Poison/Cure — `poison %player% [for %timespan%]`, `cure %player%`; via the `effect` command
 - ⬜ Potion Effect - Ambient
 - ⬜ Potion Effect - Icon
 - ⬜ Potion Effect - Infinite
 - ⬜ Potion Effect - Particles
 - 🟡 Potion Effects ⭐ — `remove all potion effects from player`, `remove speed potion effect from player`; players only
-- ⬜ Pull In Hooked Entity
+- ⛔ Pull In Hooked Entity — no fishing hook API
 - 🟡 Push ⭐ — `push <entity or player> up/down/north/south/east/west [with speed N]`; no forward, backward or away-from
-- ⬜ PvP
-- ⬜ Register Tag
-- ⬜ Release From Entity Storage
+- ⛔ PvP — no per-world PvP flag in the plugin API
+- ⛔ Register Tag — no tag registry in the plugin API
+- ⛔ Release From Entity Storage — no entity storage block API
 - 🟡 Replace ⭐
 - ✅ Return
-- ⬜ Ring Bell
-- ⬜ Rotate
-- ⬜ Run
-- ⬜ Save World
+- ⛔ Ring Bell — no way to ring a bell from a plugin
+- ⛔ Rotate — no block rotation API
+- ⛔ Run — needs section values, which Carve does not have
+- ✅ Save World — `save [the] world`
 - ⛔ Script Command Suggestion Filtering Mode — Pumpkin 0.2.2 crashes on plugin tab completion
-- ⬜ Send Block Change
-- ⬜ Send Resource Pack
-- ⬜ Shear
-- ⬜ Shoot
-- ⬜ Silence Entity
+- ⛔ Send Block Change — no fake block packet API
+- ✅ Send Resource Pack — `send resource pack "url" [with hash "sha1"] to %player%` (Java players)
+- ⛔ Shear — no shear API
+- ⛔ Shoot — no projectile launch API
+- ⛔ Silence Entity — no silent flag in the plugin API
 - ✅ Sort — `sort {x::*}`, `in descending order`; no `by`
 - 🟡 Spawn ⭐ — `spawn [N] <mob> [at <place>]`; no `named`, NBT or mob-specific data
-- ⬜ Sprinting
-- ⬜ Stop Server
+- ✅ Sprinting — `make %player% start/stop sprinting`
+- ✅ Stop Server — `stop [the] server`
 - 🟡 Stop Sound ⭐ (one sound or all, via `stopsound`; no categories)
-- ⬜ Strider Shivering
-- ⬜ Suppress Type Hints (Experimental)
-- ⬜ Swing Hand
-- ⬜ Tame / Untame
+- ⛔ Strider Shivering — no strider API
+- ⛔ Suppress Type Hints (Experimental) — Carve has no type hints
+- 🟡 Swing Hand — `make %player% swing [main|off] hand`; via the `swing` command
+- ⛔ Tame / Untame — no tame API
 - ✅ Teleport — to x, y, z or a location; entities too
-- ⬜ Text Display Drop Shadow
-- ⬜ Text Display See Through Blocks
+- ⛔ Text Display Drop Shadow — no text display API
+- ⛔ Text Display See Through Blocks — no text display API
 - ✅ Title - Clear/Reset — `clear title of player`, `reset title of player`
 - ✅ Title - Send — title + subtitle, `for 3 seconds`, fade in and out, `to all players`
-- ⬜ Toggle
-- ⬜ Toggle Custom Name Visibility
+- ✅ Toggle — `toggle {flag}` flips a boolean; unset becomes true
+- ✅ Toggle Custom Name Visibility — `show/hide custom name of %player%`
 - ⛔ Toggle Flight (no flight ability in the plugin API)
-- ⬜ Toggle Picking Up Items
-- ⬜ Transform List
-- ⬜ Tree
-- ⬜ Update Block
-- ⬜ Vectors - Rotate Around Vector
-- ⬜ Vectors - Rotate around XYZ
-- ⬜ Vehicle
-- ⬜ Wake And Sleep
-- ⬜ Zombify Villager
+- ⛔ Toggle Picking Up Items — no pickup flag in the plugin API
+- ✅ Transform List — `transform {list::*} with (input * 2)`
+- ⛔ Tree — no tree growth API
+- ⛔ Update Block — no block update API
+- ⛔ Vectors - Rotate Around Vector — Carve has no vector type
+- ⛔ Vectors - Rotate around XYZ — Carve has no vector type
+- 🟡 Vehicle — `dismount`, `eject`, `make %player% ride %player%`; via the `ride` command
+- ⛔ Wake And Sleep — no sleep API
+- ⛔ Zombify Villager — no villager API
 
 ## Conditions (170)
 
@@ -472,224 +472,224 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Has Persistent Data Tag
 - ⬜ Has Played Before
 - ✅ Has Potion Effect ⭐ — `player has potion effect speed`, `player doesn't have potion effect speed`
-- ⬜ Has Resource Pack
-- ⬜ Has Scoreboard Tag
-- ⬜ Ignition Process
-- ⬜ In The Past/Future
-- ⬜ Is a Script Command
+- ✅ Has Resource Pack — `player has a resource pack` (set when the pack finishes loading)
+- ⛔ Has Scoreboard Tag — the plugin API has no entity tags to read
+- ⛔ Ignition Process — needs TNT entities, not in the plugin API
+- ✅ In The Past/Future
+- ✅ Is a Script Command — `command "hello" is a script command`
 - ⛔ Is a Skript command — not Skript
-- ⬜ Is Adult
-- ⬜ Is Alive
-- ⬜ Is Baby
+- ⛔ Is Adult — no ageable entities in the plugin API
+- ✅ Is Alive
+- ⛔ Is Baby — no ageable entities in the plugin API
 - ⛔ Is Banned — condition parses, but Pumpkin has no way to read the ban list, so it is always false
-- ⬜ Is Bed/Anchor Spawn
+- ⛔ Is Bed/Anchor Spawn — the API gives the respawn point but not what it is
 - ✅ Is Block — `block at <loc> is stone`
-- ⬜ Is Block Redstone Powered
+- ⛔ Is Block Redstone Powered — no redstone power query in the plugin API
 - ⛔ Is Blocking (no shield state in the plugin API; always false)
-- ⬜ Is Burning
-- ⬜ Is Charged
-- ⬜ Is Charging Fireball
-- ⬜ Is Climbing
-- ⬜ Is Conditional
-- ⬜ Is Custom Name Visible
-- ⬜ Is Dancing
-- ⬜ Is Eating
-- ⬜ Is Edible
-- ⬜ Is Empty
+- ✅ Is Burning
+- ⛔ Is Charged — creepers and crossbows are not reachable
+- ⛔ Is Charging Fireball — ghasts are not reachable
+- ⛔ Is Climbing — no climbing state in the plugin API
+- ⛔ Is Conditional — no command blocks
+- ✅ Is Custom Name Visible
+- ⛔ Is Dancing — no mob state in the plugin API
+- ⛔ Is Eating — no item-use state in the plugin API
+- 🟡 Is Edible — fixed list of vanilla foods
+- ✅ Is Empty — text, lists and unset values
 - ✅ Is Enchanted — `item is enchanted [with sharpness 5]`
-- ⬜ Is Evenly Divisible By
-- ⬜ Is Fire Resistant
-- ⬜ Is Fish Hook in Open Water
-- ⬜ Is Flammable
+- ✅ Is Evenly Divisible By
+- 🟡 Is Fire Resistant — netherite items and ancient debris
+- ⛔ Is Fish Hook in Open Water — no fishing hooks in the plugin API
+- 🟡 Is Flammable — fixed list of vanilla blocks and items
 - 🟡 Is Flying ⭐ (tracked from flight toggle events)
-- ⬜ Is From A Mob Spawner
-- ⬜ Is Frozen
-- ⬜ Is Fuel
-- ⬜ Is Gliding
-- ⬜ Is Hand Raised
+- ⛔ Is From A Mob Spawner — no spawn reason in the plugin API
+- ✅ Is Frozen — fully frozen at 140 freeze ticks
+- 🟡 Is Fuel — fixed list of vanilla fuels
+- ✅ Is Gliding
+- ⛔ Is Hand Raised — no item-use state in the plugin API
 - 🟡 Is Holding — via `tool of player is ...`
-- ⬜ Is In Love
-- ⬜ Is in World
-- ⬜ Is Incendiary
-- ⬜ Is Infinite
-- ⬜ Is Interactable
-- ⬜ Is Invisible
-- ⬜ Is Invulnerable
-- ⬜ Is Jumping
-- ⬜ Is Leashed
-- ⬜ Is Loaded
-- ⬜ Is Lootable
+- ⛔ Is In Love — no animal state in the plugin API
+- ✅ Is in World
+- ⛔ Is Incendiary — explosions are not reachable
+- ⛔ Is Infinite — no infinite potion durations in the plugin API
+- ⛔ Is Interactable — no mob state in the plugin API
+- ✅ Is Invisible
+- ✅ Is Invulnerable
+- ⛔ Is Jumping — no jump state in the plugin API
+- ⛔ Is Leashed — no leads in the plugin API
+- ⛔ Is Loaded — no chunk load query in the plugin API
+- ⛔ Is Lootable — no loot tables in the plugin API
 - 🟡 Is Member/Owner of Region — `is an owner of bound`, `is a member of bound` (Carve bounds, not WorldGuard)
-- ⬜ Is Normalized
-- ⬜ Is Occluding
+- ⛔ Is Normalized — Carve has no vector type
+- ⛔ Is Occluding — no block shape data in the core
 - 🟡 Is of Type — `<entity> is a zombie`, `is not a zombie`; entity types only
 - ✅ Is on Ground
-- ⬜ Is Online ⭐
+- ✅ Is Online ⭐
 - ✅ Is Operator ⭐ — `player is op` (permission level above zero)
-- ⬜ Is Passable
-- ⬜ Is Pathfinding
-- ⬜ Is Persistent
-- ⬜ Is Playing Dead
+- 🟡 Is Passable — block type; no collision shape
+- ⛔ Is Pathfinding — no mob AI in the plugin API
+- ⛔ Is Persistent — no entity persistence flag in the plugin API
+- ⛔ Is Playing Dead — axolotls are not reachable
 - 🟡 Is Plugin Enabled — Pumpkin plugins only, not exposed yet
-- ⬜ Is Poisoned
+- 🟡 Is Poisoned — players only (no entity values yet)
 - ⬜ Is Preferred Tool
-- ⬜ Is Pressing Key
-- ⬜ Is Responsive
-- ⬜ Is Riding
-- ⬜ Is Riptiding
-- ⬜ Is Saddled
-- ⬜ Is Screaming
-- ⬜ Is Script Loaded
-- ⬜ Is Silent
+- ⛔ Is Pressing Key — no player input API
+- ⬜ Is Responsive — needs entity values (entities slice), not done here
+- 🟡 Is Riding — players only, any vehicle (no entity type filter)
+- ⬜ Is Riptiding — needs entity values (entities slice), not done here
+- ⬜ Is Saddled — needs entity values (entities slice), not done here
+- ⬜ Is Screaming — needs entity values (entities slice), not done here
+- ✅ Is Script Loaded — `script "shop" is loaded`
+- 🟡 Is Silent — players only (no entity values yet)
 - ✅ Is Sleeping
-- ⬜ Is Slime Chunk
+- ⛔ Is Slime Chunk — the plugin API does not expose the world seed
 - ✅ Is Sneaking ⭐
-- ⬜ Is Solid
+- 🟡 Is Solid — block or item type, from Pumpkin's block registry
 - ⬜ Is Spawnable
 - ✅ Is Sprinting ⭐
 - ⬜ Is Stackable
 - ✅ Is Swimming
-- ⬜ Is Tagged
-- ⬜ Is Tameable
-- ⬜ Is Tamed
-- ⬜ Is Ticking
-- ⬜ Is Transparent
+- ⛔ Is Tagged — no tag registry in the plugin API
+- ⬜ Is Tameable — needs entity values (entities slice), not done here
+- ⬜ Is Tamed — needs entity values (entities slice), not done here
+- ⛔ Is Ticking — no tick manager in the plugin API
+- 🟡 Is Transparent — block type; light opacity of the default state
 - 🟡 Is Unbreakable — `unbreakable of player's tool` (main-hand item only)
-- ⬜ Is Using Experimental Feature
-- ⬜ Is Valid
+- ⛔ Is Using Experimental Feature — Pumpkin has no feature flags
+- ✅ Is Valid — `x is valid` (online player, set value)
 - ⬜ Is Wearing
 - ✅ Is Whitelisted — `player is whitelisted`, `"Name" is not on the whitelist`
-- ⬜ Is Within
-- ⬜ Is Within Radius
+- 🟡 Is Within — two corners, or a world; no chunk or block-entity forms
+- ✅ Is Within Radius — `loc is within 5 blocks of loc`
 - ⬜ Item Has Enchantment Glint Override
-- ⬜ Leash Will Drop
-- ⬜ Left Handed
+- ⬜ Leash Will Drop — needs entity values (entities slice), not done here
+- ⛔ Left Handed — the API gives no client settings from a player handle
 - ⬜ Lid Is Open/Closed
-- ⬜ Matches
-- ⬜ Panda Is On Its Back
-- ⬜ Panda Is Rolling
-- ⬜ Panda Is Scared
-- ⬜ Panda Is Sneezing
+- ✅ Matches — `text matches regex`, `contains regex`; own regex engine, no lookaround or captures
+- ⬜ Panda Is On Its Back — needs entity values (entities slice), not done here
+- ⬜ Panda Is Rolling — needs entity values (entities slice), not done here
+- ⬜ Panda Is Scared — needs entity values (entities slice), not done here
+- ⬜ Panda Is Sneezing — needs entity values (entities slice), not done here
 - ⬜ Potion Effect - Has Icon
 - ⬜ Potion Effect - Has Particles
 - ⬜ Potion Effect - Is Ambient
-- ⬜ Potion Effect Type - Is Instant
-- ⬜ PvP
+- 🟡 Potion Effect Type - Is Instant — effect names as text
+- ✅ PvP — `pvp is enabled [in world]`, from the pvp game rule
 - 🟡 Region Contains — `is within bound` (Carve bounds, not WorldGuard)
 - ⬜ Resource Pack
-- ⬜ Running Minecraft
+- ⛔ Running Minecraft — the plugin API gives no Minecraft version
 - ✅ Starts/Ends With
-- ⬜ Strider Is Shivering
+- ⬜ Strider Is Shivering — needs entity values (entities slice), not done here
 - ⬜ Text Display Has Drop Shadow
 - ⬜ Text Display Visible Through Blocks
 - ✅ Time ⭐ — `it is day`, `it is night`, `it is not night in world "w"`
 - ✅ Weather ⭐ — `it is raining`, `it is thundering`, `it is sunny`, `weather is clear`
-- ⬜ Will Consume Boosting Firework
-- ⬜ Will Despawn
+- ⬜ Will Consume Boosting Firework — needs entity values (entities slice), not done here
+- ⬜ Will Despawn — needs entity values (entities slice), not done here
 
 ## Expressions (545)
 
-- ⬜ Absorbed blocks
-- ⬜ Active Item
-- ⬜ Active Item Use Time
-- ⬜ Affected Entities
-- ⬜ Age of Block/Entity
+- ⛔ Absorbed blocks — needs a sponge event; Pumpkin has none
+- ⛔ Active Item — the plugin API cannot see the item being used
+- ⛔ Active Item Use Time — the plugin API cannot see item use time
+- ⬜ Affected Entities — needs the area-effect-cloud event wired; not done yet
+- ⛔ Age of Block/Entity — no block-state API, and only players are reachable as entities
 - ⬜ All Banned Players/IPs
-- ⬜ All Commands
+- ⛔ All Commands — the plugin API cannot list commands
 - ⛔ All Groups — needs a permissions plugin
 - ⬜ All Operators
-- ⬜ All Permissions
-- ⬜ All Persistent Data Keys
-- ⬜ All Scripts
-- ⬜ All Tags of a Type
-- ⬜ Allay Duplication Cooldown
-- ⬜ Allay Target Jukebox
-- ⬜ Alpha/Red/Green/Blue Color Value
-- ⬜ Alphabetical Sort
-- ⬜ Altitude
+- ⛔ All Permissions — the plugin API cannot list permissions
+- ⛔ All Persistent Data Keys — the plugin API cannot list data keys
+- ✅ All Scripts — `all scripts`: file names of the loaded scripts, usable as a list
+- ⛔ All Tags of a Type — no tag registry in the plugin API
+- ⛔ Allay Duplication Cooldown — no mob-specific API
+- ⛔ Allay Target Jukebox — no mob-specific API
+- 🟡 Alpha/Red/Green/Blue Color Value — `red value of "#ff8000"`; works on hex and named color text (no color type yet)
+- ✅ Alphabetical Sort — `alphabetically sorted {x::*}`
+- ✅ Altitude — `altitude of player`, `altitude of {loc}`: the Y coordinate
 - ✅ Amount — `amount of {list::*}`
-- ⬜ Amount of Items
-- ⬜ An Eternity
-- ⬜ Angle
-- ⬜ Anvil Repair Cost
-- ⬜ Anvil Text Input
-- ⬜ Any Of
-- ⬜ Applied Beacon Effect
+- ✅ Amount of Items — `amount of diamonds in player's inventory`
+- ✅ An Eternity — `an eternity` or `eternity`: a huge time span
+- ✅ Angle — `90 degrees`, `1.57 radians`: result is in degrees
+- ⬜ Anvil Repair Cost — needs the prepare-anvil event wired; not done yet
+- ⬜ Anvil Text Input — needs the prepare-anvil event wired; not done yet
+- ⬜ Any Of — not done yet
+- ⛔ Applied Beacon Effect — Pumpkin has no beacon-effect event
 - ⬜ Applied Enchantments
 - ✅ Argument — `arg`, `arg-N`
 - ✅ Arithmetic — + - * /
-- ⬜ Armor Change Item
-- ⬜ Armor Slot
-- ⬜ Arrow Attached Block
-- ⬜ Arrow Knockback Strength
-- ⬜ Arrows Stuck
-- ⬜ Attack Cooldown
+- ⬜ Armor Change Item — needs an equipment-change event; not done yet
+- 🟡 Armor Slot — `helmet of player`, `chestplate`, `leggings`, `boots`: read only
+- ⛔ Arrow Attached Block — no arrow entity API
+- ⛔ Arrow Knockback Strength — no arrow entity API
+- ⬜ Arrows Stuck — needs the arrow-body-count-change event wired; not done yet
+- ⛔ Attack Cooldown — the plugin API has no attack cooldown
 - ✅ Attacked — `victim`
 - 🟡 Attacker — players only
-- ⬜ Banner Pattern
-- ⬜ Banner Pattern Item
-- ⬜ Banner Patterns
-- ⬜ Barter Drops
-- ⬜ Barter Input
-- ⬜ Beacon Effects
-- ⬜ Beacon Range
-- ⬜ Beacon Tier
-- ⬜ Bed
-- ⬜ Beehive Honey Level
-- ⬜ Beehive Target Flower
-- ⬜ Biome
-- ⬜ Blank Equippable Component
+- ⛔ Banner Pattern — the banner block entity API has no patterns
+- ⛔ Banner Pattern Item — the banner block entity API has no patterns
+- ⛔ Banner Patterns — the banner block entity API has no patterns
+- ⬜ Barter Drops — needs the piglin-barter event wired; not done yet
+- ⬜ Barter Input — needs the piglin-barter event wired; not done yet
+- ⬜ Beacon Effects — not done yet (primary and secondary effect are in the block entity NBT)
+- ✅ Beacon Range — `beacon range of {loc}`
+- ✅ Beacon Tier — `beacon tier of {loc}`
+- ⬜ Bed — not done yet (the API has a respawn location)
+- ⛔ Beehive Honey Level — needs block-state properties; the plugin API has none
+- ⛔ Beehive Target Flower — the plugin API has no beehive flower data
+- ✅ Biome — `biome at {loc}`, `biome of player`: a text like `birch_forest`
+- ⛔ Blank Equippable Component — no item component builder in the plugin API
 - ✅ Block ⭐ — `block at <loc>`, `block below player`
-- ⬜ Block Break Speed
+- ⛔ Block Break Speed — no block hardness data in the plugin API
 - ⬜ Block Data
-- ⬜ Block Hardness
-- ⬜ Block Sound
+- ⛔ Block Hardness — no block hardness data in the plugin API
+- ⛔ Block Sound — no block sound data in the plugin API
 - ⬜ Block Sphere
 - ⬜ Blocks
 - ⛔ Blocks in Region — needs WorldGuard
-- ⬜ Book Author
-- ⬜ Book Pages
-- ⬜ Book Title
+- ⬜ Book Author — not done yet (item component API)
+- ⬜ Book Pages — not done yet (item component API)
+- ⬜ Book Title — not done yet (item component API)
 - ⬜ Boss Bar From Boss
 - ⬜ Boss Bar From Key
-- ⬜ Breeding Family
-- ⬜ Brewing Results
-- ⬜ Brewing Stand Fuel Level
+- ⛔ Breeding Family — no breeding data in the plugin API
+- ⬜ Brewing Results — needs the brew event wired; not done yet
+- ✅ Brewing Stand Fuel Level — `brewing stand fuel level of {loc}`
 - ⬜ Brewing Stand Slot
-- ⬜ Brewing Time
-- ⬜ Broadcast Message
-- ⬜ Brushing Stage
-- ⬜ Buried Item
-- ⬜ Burn/Cook Time
+- ✅ Brewing Time — `brewing time of {loc}`: a time span
+- ⬜ Broadcast Message — needs the server-broadcast event wired; not done yet
+- ⛔ Brushing Stage — the plugin API has no brushable block state
+- ⛔ Buried Item — the decorated pot API has no item access
+- ✅ Burn/Cook Time — `burn time of {loc}`, `cook time of {loc}`, `total cook time of {loc}`: time spans
 - ✅ Case Text ⭐ — `uppercase of x`, `x in lower case`, `capitalized x`, `x in proper case`
 - ⬜ Center of World Border
-- ⬜ Character Codepoint
-- ⬜ Character from Codepoint
-- ⬜ Characters Between
-- ⬜ Chat Format
+- ✅ Character Codepoint — `codepoint of "a"`, `unicode of x`, `code point of x`
+- ✅ Character from Codepoint — `character from codepoint 65`, `char from unicode n`
+- ✅ Characters Between — `characters between "a" and "e"`, `alphanumeric characters between ...`, `loop` works
+- ⛔ Chat Format — the chat event has no format field in the plugin API
 - ✅ Chat Message — `message`
-- ⬜ Chat Recipients
-- ⬜ Choice Argument
-- ⬜ Chunk
+- ✅ Chat Recipients — `chat recipients` in `on chat`
+- ⛔ Choice Argument — command arguments only support text, number and player so far
+- 🟡 Chunk — `chunk x of loc`, `chunk z of loc` (numbers only, no chunk value)
 - 🟡 Clicked Block/Entity/Inventory/Slot — `clicked block`, `clicked slot`, `clicked item`; no clicked entity
 - 🟡 Color from Hex Code ⭐ — `<#rrggbb>`, `&#rrggbb` and `&x&r...` in text; no `rgb(...)` color value
-- ⬜ Color of
+- ⛔ Color of — item and entity colours are not reachable (item-meta and entities topics)
 - ✅ Colored / Uncolored ⭐ — `colored`, `uncolored`
 - ✅ Colored/Formatted/Uncolored — `colored`, `formatted`, `uncolored`, `unformatted`
 - ✅ Command — args, permission, aliases, usage, executable by; no cooldown; new commands need a restart
-- ⬜ Command Block Command
+- ⛔ Command Block Command — needs block entity handles; no block values yet
 - ✅ Command Executor — `executor`, same as `sender`
-- ⬜ Command Info
+- ⛔ Command Info — the plugin API cannot list or inspect other commands
 - ✅ Command Sender ⭐ — `sender`, `command sender`, `sender is a player`
-- ⬜ Compass Target
-- ⬜ Config
+- ✅ Compass Target — `compass target of player`, `player's compass target`, `set compass target of player to loc`, `reset compass target of player`
+- ⛔ Config — Skript's config.sk does not exist in Carve
 - ✅ Console ⭐ — `console`, `send ... to console`, `sender is console`
 - ⬜ Consumed Item
 - ✅ Coordinate — `x/y/z of`, `x-coordinate of`
 - ✅ Create Boss Bar — id, title, color, style, progress; scoreboards and boss bars are in [their own page](syntax/scoreboards-bossbars.md)
-- ⬜ Create Loot Context
+- ⛔ Create Loot Context — no loot table API in the plugin API
 - ⬜ Create WorldBorder
-- ⬜ Created Damage Source
+- ⛔ Created Damage Source — the plugin API has damage types but no damage source object
 - ⬜ Created Potion Effect
 - ⬜ Creature/Entity/Player/Projectile/Villager/Powered Creeper/etc.
 - ⬜ Cursor Slot
@@ -698,35 +698,35 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Damage — read only
 - ⬜ Damage Amount of World Border
 - ⬜ Damage Buffer of World Border
-- ⬜ Damage Cause
-- ⬜ Damage Source
-- ⬜ Damage Source - Causing Entity
-- ⬜ Damage Source - Damage Location
-- ⬜ Damage Source - Damage Type
-- ⬜ Damage Source - Direct Entity
-- ⬜ Damage Source - Food Exhaustion
-- ⬜ Damage Source - Source Location
+- 🟡 Damage Cause — `damage cause` in `on damage` (read only, like `fall`, `player_attack`)
+- ⛔ Damage Source — the plugin API has damage types but no damage source object
+- ⛔ Damage Source - Causing Entity — the plugin API has damage types but no damage source object
+- ⛔ Damage Source - Damage Location — the plugin API has damage types but no damage source object
+- ⛔ Damage Source - Damage Type — the plugin API has damage types but no damage source object
+- ⛔ Damage Source - Direct Entity — the plugin API has damage types but no damage source object
+- ⛔ Damage Source - Food Exhaustion — the plugin API has damage types but no damage source object
+- ⛔ Damage Source - Source Location — the plugin API has damage types but no damage source object
 - ⬜ Damage Value/Durability
 - ⬜ Damaged Item
 - ✅ Date Ago/Later ⭐ — `5 minutes ago`, `2 hours later`
-- ⬜ De-queue Queue (Experimental)
-- ⬜ Death Message ⭐
-- ⬜ Debug Info
+- ⛔ De-queue Queue (Experimental) — Carve has no queue type
+- 🟡 Death Message ⭐ — `death message` in `on death` (read only; WIT lets us read it)
+- ⛔ Debug Info — Skript internals only, no meaning in Carve
 - ✅ Default Value — `a ? b`
-- ⬜ Difference
+- ✅ Difference — `difference between 3 and 10`, also dates and timespans
 - ✅ Difficulty — `difficulty`, `difficulty of world "w"`, `set difficulty to hard`
-- ⬜ Direction
-- ⬜ Display Billboard
-- ⬜ Display Brightness
-- ⬜ Display Glow Color Override
-- ⬜ Display Height/Width
-- ⬜ Display Interpolation Delay/Duration
+- 🟡 Direction — `3 blocks above/below/north/south/east/west [of] loc`; no direction type
+- ⛔ Display Billboard — needs entity values, which Carve does not have yet
+- ⛔ Display Brightness — needs entity values, which Carve does not have yet
+- ⛔ Display Glow Color Override — needs entity values, which Carve does not have yet
+- ⛔ Display Height/Width — needs entity values, which Carve does not have yet
+- ⛔ Display Interpolation Delay/Duration — needs entity values, which Carve does not have yet
 - ✅ Display Name ⭐ — get and set, `display name`, `nickname`
-- ⬜ Display Shadow Radius/Strength
-- ⬜ Display Teleport Duration
-- ⬜ Display Transformation Rotation
-- ⬜ Display Transformation Scale/Translation
-- ⬜ Display View Range
+- ⛔ Display Shadow Radius/Strength — needs entity values, which Carve does not have yet
+- ⛔ Display Teleport Duration — needs entity values, which Carve does not have yet
+- ⛔ Display Transformation Rotation — needs entity values, which Carve does not have yet
+- ⛔ Display Transformation Scale/Translation — needs entity values, which Carve does not have yet
+- ⛔ Display View Range — needs entity values, which Carve does not have yet
 - ✅ Distance
 - ⬜ Dropped Item Owner
 - ⬜ Dropped Item Thrower
@@ -745,200 +745,200 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 Entities — `all zombies in radius 10 of player`, `all entities`; no `all entities in chunk` or world filters
 - ⬜ Entity AI
 - ⬜ Entity Attribute
-- ⬜ Entity Fire Burn Duration
-- ⬜ Entity Owner
-- ⬜ Entity Size
-- ⬜ Entity Snapshot
-- ⬜ Entity Sound
-- ⬜ Entity Storage Entity Count
-- ⬜ Entity/Player/World from UUID
-- ⬜ Equippable Component
-- ⬜ Equippable Component - Allowed Entities
-- ⬜ Equippable Component - Camera Overlay
-- ⬜ Equippable Component - Equip Sound
-- ⬜ Equippable Component - Equipment Slot
-- ⬜ Equippable Component - Model
-- ⬜ Equippable Component - Shear Sound
-- ⬜ Exact Item
-- ⬜ Except
-- ⬜ Exhaustion
+- 🟡 Entity Fire Burn Duration — `burn duration of player` (read, set, add, remove); no combust-event value
+- ⛔ Entity Owner — scripts have no entity values, so there is no tamed-owner lookup
+- ⛔ Entity Size — slime and phantom size is not in the plugin API
+- ⛔ Entity Snapshot — the plugin API has no entity snapshots
+- ⛔ Entity Sound — the plugin API cannot read an entity's sounds
+- ⛔ Entity Storage Entity Count — bee hives and nests are not in the plugin API
+- 🟡 Entity/Player/World from UUID — `player from uuid "..."` for online players; worlds and other entities cannot be looked up by UUID
+- ⛔ Equippable Component — item components are not reachable from scripts
+- ⛔ Equippable Component - Allowed Entities — item components are not reachable from scripts
+- ⛔ Equippable Component - Camera Overlay — item components are not reachable from scripts
+- ⛔ Equippable Component - Equip Sound — item components are not reachable from scripts
+- ⛔ Equippable Component - Equipment Slot — item components are not reachable from scripts
+- ⛔ Equippable Component - Model — item components are not reachable from scripts
+- ⛔ Equippable Component - Shear Sound — item components are not reachable from scripts
+- 🟡 Exact Item — `exact item of <item>`; items carry no metadata here, so it returns the item as is
+- ✅ Except — `{a::*} except {b::*}`, also `except "x"`
+- ✅ Exhaustion — `exhaustion of player`; set, add, remove
 - ✅ Experience ⭐ — `xp of player`, set/add/remove/give; total points
-- ⬜ Experience Cooldown Change Reason
-- ⬜ Experience Pickup Cooldown
-- ⬜ Exploded Blocks
-- ⬜ Explosion Block Yield
-- ⬜ Explosion Yield
-- ⬜ Explosive Yield
-- ⬜ Facing
-- ⬜ Fall Distance
-- ⬜ Fertilized Blocks
+- ⛔ Experience Cooldown Change Reason — needs the experience cooldown event, which is not wired in Carve
+- ⛔ Experience Pickup Cooldown — needs the experience cooldown event, which is not wired in Carve
+- ⛔ Exploded Blocks — needs the explosion event, which is not wired in Carve
+- ⛔ Explosion Block Yield — needs the explosion event, which is not wired in Carve
+- ⛔ Explosion Yield — needs the explosion event, which is not wired in Carve
+- ⛔ Explosive Yield — needs the explosion event, which is not wired in Carve
+- 🟡 Facing — `facing of player` as north, south, east, west, up or down; players only
+- ✅ Fall Distance — `fall distance of player`; set, add, remove; players only
+- ⛔ Fertilized Blocks — needs the fertilize event, which is not in the plugin API
 - ✅ Filter ⭐ — `{x::*} where [input > 2]`
-- ⬜ Final Damage
-- ⬜ Firework Effect
-- ⬜ First Empty Slot in Inventory
-- ⬜ Fishing Approach Angle
-- ⬜ Fishing Bite Time
-- ⬜ Fishing Hook
-- ⬜ Fishing Hooked Entity
-- ⬜ Fishing Wait Time
+- 🟡 Final Damage — `final damage` in `on damage`; same value as `damage`
+- ⛔ Firework Effect — firework effects are not in the plugin API
+- ✅ First Empty Slot in Inventory — `first empty slot of player` (0 to 35), `<none>` when full
+- ⛔ Fishing Approach Angle — fishing hook internals are not in the plugin API
+- ⛔ Fishing Bite Time — fishing hook internals are not in the plugin API
+- ⛔ Fishing Hook — fishing hook internals are not in the plugin API
+- ⛔ Fishing Hooked Entity — scripts have no entity values and the hook is not in the plugin API
+- ⛔ Fishing Wait Time — fishing hook internals are not in the plugin API
 - ⛔ Flight Mode (no flight ability in the plugin API)
 - ✅ Food Level ⭐ — read, set, add, remove; `hunger` too
 - ✅ Formatted Date ⭐
-- ⬜ Formatted Time
-- ⬜ Former/Future State
-- ⬜ Free / Max / Total Memory
-- ⬜ Freeze Time
+- 🟡 Formatted Time — `<timespan> formatted` gives `1:05:03`, `5:03` or `2:01:05:03`; no custom format text
+- ⛔ Former/Future State — needs block state change events, which are not in the plugin API
+- 🟡 Free / Max / Total Memory — `free memory`, `max memory`, `total memory` in MB; machine memory, not a JVM heap
+- ✅ Freeze Time — `freeze time of player` as a timespan; set, add, remove
 - ✅ Function
-- ⬜ Furnace Event Items
-- ⬜ Furnace Slot
-- ⬜ Furnace Times
-- ⬜ Game Effects with Data
+- ⛔ Furnace Event Items — furnace events are not in the plugin API
+- ⛔ Furnace Slot — furnace block entities are not reachable from scripts
+- ⛔ Furnace Times — furnace block entities are not reachable from scripts
+- ⛔ Game Effects with Data — game effects with data are not in the plugin API
 - ✅ Game Mode ⭐ — `gamemode of player`, `set gamemode of player to creative`
 - ✅ Gamerule Value — `gamerule keepInventory`, `set gamerule keepInventory to true`
-- ⬜ Gliding State
-- ⬜ Glowing
-- ⬜ Gravity
+- ✅ Gliding State — `gliding state of player`, `player is gliding`; read only
+- ✅ Glowing — `glowing state of player`, `player is glowing`; `set glowing state of player to true`
+- ✅ Gravity — `gravity of player`; `set gravity of player to false`
 - ⛔ Group — needs a permissions plugin (Vault)
-- ⬜ Hanging Entity/Remover
-- ⬜ Hash ⭐
-- ⬜ Hatching Entity Type
-- ⬜ Hatching Number
-- ⬜ Head location
-- ⬜ Heal Amount
-- ⬜ Heal Reason
+- ⛔ Hanging Entity/Remover — hanging entities are not in the plugin API
+- ✅ Hash ⭐ — `"x" hashed with MD5` (also SHA-1, SHA-256, SHA-512), lowercase hex
+- ⛔ Hatching Entity Type — egg hatching is not in the plugin API
+- ⛔ Hatching Number — egg hatching is not in the plugin API
+- ✅ Head location — `head location of player` (eye position)
+- ⛔ Heal Amount — needs the regain health event, which is not wired in Carve
+- ⛔ Heal Reason — needs the regain health event, which is not wired in Carve
 - ✅ Health — read, set, add, remove
-- ⬜ Hex Code
-- ⬜ Hidden Players
-- ⬜ Highest Solid Block
-- ⬜ Horse Domestication
-- ⬜ Hostname
-- ⬜ Hotbar Button
-- ⬜ Hotbar Slot
-- ⬜ Hover List
-- ⬜ Humidity
-- ⬜ Id
+- 🟡 Hex Code — `hex code of "red"` or of `"#00ff7f"`, gives `FF5555`; named chat colors only
+- ✅ Hidden Players — `hidden players of player`: online players that player cannot see
+- 🟡 Highest Solid Block — `highest solid block at <location>`; the highest non-air block of the column
+- ⛔ Horse Domestication — horses are not in the plugin API
+- ⛔ Hostname — needs the server list ping event, which is not wired in Carve
+- ⛔ Hotbar Button — belongs to inventory click events, which another part of Carve owns
+- 🟡 Hotbar Slot — `hotbar slot of player` (0 to 8); read only, the plugin API cannot change it
+- ⛔ Hover List — needs the server list ping event, which is not wired in Carve
+- ⛔ Humidity — biome climate values are not in the plugin API
+- 🟡 Id — `id of <item>` gives the text id such as `minecraft:diamond`, not a number
 - ✅ Index Of — `[first|last] index of a in b`
 - ✅ Indices of List ⭐ — `indices of {list::*}`, also in `loop` and `set`
-- ⬜ Indices of Value
-- ⬜ Infinity
-- ⬜ Initiator Inventory
-- ⬜ Input
-- ⬜ Interaction Height/Width
+- ✅ Indices of Value — `first index of value x in {l::*}`, `last index ...`, `indices of value x in {l::*}`
+- ✅ Infinity — `infinity`, `positive infinity`, `negative infinity`
+- ⛔ Initiator Inventory — inventory move events are not in the plugin API
+- ⛔ Input — the API gives no player input (WASD, jump) state
+- ⛔ Interaction Height/Width — Pumpkin's API has no interaction entities
 - 🟡 Inventory ⭐ — `player's inventory` and `player's current inventory` in slot, contains, clear, add and remove; not a value you can store
 - ⬜ Inventory Action
 - ⬜ Inventory Close Reason
 - ⬜ Inventory Holder/Viewers/Rows/Slots
 - ✅ Inventory Slot ⭐ — `slot 3 of player's inventory`, `set slot 3 of player's current inventory to diamond`
-- ⬜ Inverse Boolean
+- ✅ Inverse Boolean — `not x`
 - ✅ IP — `ip of player`
 - ✅ Item — `2 diamonds`, `diamond sword named "x"`
-- ✅ Item Amount — `item amount of x`, `amount of x`
-- ⬜ Item Component - Copy
-- ⬜ Item Cooldown
-- ⬜ Item Display Transform
+- ✅ Item Amount — `item amount of <item>` (read only)
+- ⛔ Item Component - Copy — the API only exposes raw component bytes, not typed access
+- ✅ Item Cooldown — `cooldown of <item> for <player>`, `set`/`reset cooldown of ...`
+- ⛔ Item Display Transform — Pumpkin's API has no display entities with transforms to set from scripts
 - ✅ Item Enchantments — `enchantments of x`
 - ⬜ Item Flags
-- ⬜ Item Model
-- ⬜ Item of an Entity
+- ⛔ Item Model — the API only exposes raw component bytes, not typed access
+- ⛔ Item of an Entity — the API cannot read the stack held by an item entity
 - 🟡 Item Rarity — get, set and reset on `player's tool` only
-- ⬜ Item with Custom Model Data
-- ⬜ Item with Enchantment Glint
-- ⬜ Item with Item Flags
+- ⛔ Item with Custom Model Data — the API only exposes raw component bytes, not typed access
+- ⛔ Item with Enchantment Glint — the API only exposes raw component bytes, not typed access
+- ⛔ Item with Item Flags — the API only exposes raw component bytes, not typed access
 - ✅ Item with Lore ⭐ — `x with lore "a" and "b"`
-- ⬜ Item With Model
-- ⬜ Item with Tooltip
-- ⬜ Items
+- ⛔ Item With Model — the API only exposes raw component bytes, not typed access
+- ⛔ Item with Tooltip — the API only exposes raw component bytes, not typed access
+- ⛔ Items — needs item entities or inventories, which the API cannot read as lists here
 - ⬜ Items In ⭐
 - ✅ Join & Split ⭐
-- ⬜ Join Message ⭐
+- ✅ Join Message ⭐ — `join message`, `set join message to "..."` in `on join`
 - ⬜ Key Of Boss Bar
-- ⬜ Keyed
+- 🟡 Keyed — `key of <item>` gives `minecraft:id`; items only
 - ⬜ Kick Message
-- ⬜ Language
-- ⬜ Last Attacker
+- ✅ Language — `language of <player>`, `locale of <player>`
+- 🟡 Last Attacker — `last attacker of <player>`; players only, remembered since the plugin loaded
 - ⬜ Last Caught Errors
-- ⬜ Last Color
-- ⬜ Last Damage
-- ⬜ Last Damage Cause
-- ⬜ Last Death Location
-- ⬜ Last Interaction Date
-- ⬜ Last Interaction Player
-- ⬜ Last Loaded Server Icon
-- ⬜ Last Resource Pack Response
+- ✅ Last Color — `last color of <text>`: a color name like `red`, or `#rrggbb`
+- 🟡 Last Damage — `last damage of <player>`; remembered since the plugin loaded
+- 🟡 Last Damage Cause — `last damage cause of <player>`: text like `fall` or `player_attack`
+- ✅ Last Death Location — `last death location of <player>`; remembered since the plugin loaded
+- ⛔ Last Interaction Date — Pumpkin's API has no interaction entities
+- ⛔ Last Interaction Player — Pumpkin's API has no interaction entities
+- ⛔ Last Loaded Server Icon — the API gives no server list ping data to read back
+- 🟡 Last Resource Pack Response — `[last] resource pack response [of <player>]`: status text from Pumpkin
 - ✅ Last Spawned Entity — needs the plugin host, `/summon` cannot report it
-- ⬜ Last/First Login Time
-- ⬜ Leash Holder
+- ⛔ Last/First Login Time — the API has no player history; Carve can't know past logins
+- ⛔ Leash Holder — the API has leash events but no way to read the holder
 - ✅ Length ⭐
 - ✅ Level ⭐ — `level of player`, set/add/remove/give
 - ✅ Level Progress — read, set, add, remove (0 to 1)
-- ⬜ Light Level
-- ⬜ Loaded Plugins
+- ✅ Light Level — `light level at <loc>`, `block light level at`, `sky light level at`
+- ⛔ Loaded Plugins — the API has no plugin list
 - 🟡 Location — `location of player`
 - ✅ Location At ⭐ — `location at x, y, z [in world "w"]`
-- ⬜ Location with Yaw/Pitch
+- ⛔ Location with Yaw/Pitch — Carve locations hold x, y, z and world only; rotation is not stored
 - ✅ Loop Iteration
 - ✅ Loop value — `loop-value[-N]`, `loop-player`, `loop-index`, `loop-number`
-- ⬜ Loot
-- ⬜ Loot Context
-- ⬜ Loot Location of Loot Context
-- ⬜ Loot of Loot Table
-- ⬜ Loot Table
-- ⬜ Loot Table from Key
-- ⬜ Looted Entity of Loot Context
-- ⬜ Looter of Loot Context
+- ⛔ Loot — the API cannot roll or read loot tables
+- ⛔ Loot Context — the API cannot roll or read loot tables
+- ⛔ Loot Location of Loot Context — the API cannot roll or read loot tables
+- ⛔ Loot of Loot Table — the API cannot roll or read loot tables
+- ⛔ Loot Table — the API cannot roll or read loot tables
+- ⛔ Loot Table from Key — the API cannot roll or read loot tables
+- ⛔ Looted Entity of Loot Context — the API cannot roll or read loot tables
+- ⛔ Looter of Loot Context — the API cannot roll or read loot tables
 - 🟡 Lore ⭐ — `lore of x` reads it; setting lore of a held item is not done
-- ⬜ Love Time
-- ⬜ Lowest/Highest Solid Block
-- ⬜ Luck of Loot Context
-- ⬜ Max Durability
+- ⛔ Love Time — the API has breed events but no love timer
+- 🟡 Lowest/Highest Solid Block — `highest|lowest [solid] block at <loc>`: gives a location; plants and liquids count as not solid
+- ⛔ Luck of Loot Context — the API cannot roll or read loot tables
+- 🟡 Max Durability — `max durability of <item>`: built-in table of tools, armor and a few more
 - ✅ Max Health ⭐ — read, set, add, remove
-- ⬜ Max Item Use Time
-- ⬜ Max Minecart Speed
+- 🟡 Max Item Use Time — `max item use time of <item>`: built-in table (bow, food, shield, ...)
+- ⛔ Max Minecart Speed — the API has no minecart speed
 - ✅ Max Players — `max players`, `max player count` (read only)
-- ⬜ Maximum Double Value
-- ⬜ Maximum Float Value
-- ⬜ Maximum Freeze Time
-- ⬜ Maximum Integer Value
-- ⬜ Maximum Long Value
-- ⬜ Maximum Stack Size
+- ✅ Maximum Double Value — `maximum double value`
+- ✅ Maximum Float Value — `maximum float value`
+- 🟡 Maximum Freeze Time — `max freeze time of <entity>`: always 7 seconds (vanilla value)
+- ✅ Maximum Integer Value — `maximum integer value`
+- ✅ Maximum Long Value — `maximum long value` (a number, so it loses the last digits)
+- 🟡 Maximum Stack Size — `max stack size of <item>`; built-in table of vanilla sizes, not read from the server
 - ✅ Me ⭐ — `me`, `myself`
-- ⬜ Mending Repair Amount
+- ⛔ Mending Repair Amount — needs the `on item mend` event, which is not wired
 - ✅ Message — `send ... [to ...]`
 - 🟡 Message of the Day — `motd` (read only)
-- ⬜ Metadata
-- ⬜ Middle of Location
-- ⬜ Midpoint
-- ⬜ Minecart Derailed / Flying Velocity
-- ⬜ Minimum Double Value
-- ⬜ Minimum Float Value
-- ⬜ Minimum Integer Value
-- ⬜ Minimum Long Value
+- 🟡 Metadata — `metadata value "key" of <player|world|item>`; kept in memory, lost on restart; players, worlds and item types only
+- ✅ Middle of Location — `middle of <location>` (centre of the block)
+- ✅ Midpoint — `midpoint of <a> and <b>`
+- ⛔ Minecart Derailed / Flying Velocity — the plugin API has no minecart access
+- ✅ Minimum Double Value — `minimum double value`
+- ✅ Minimum Float Value — `minimum float value`
+- ✅ Minimum Integer Value — `minimum integer value`
+- ✅ Minimum Long Value — `minimum long value`
 - ⬜ Minimum/Maximum Enchantment Level
 - ⛔ Money — needs an economy plugin
-- ⬜ Moon Phase
-- ⬜ Moved blocks
+- ✅ Moon Phase — `moon phase of <world|location|player>`, gives text like `full moon`
+- ⛔ Moved blocks — needs the piston events, which are not wired
 - 🟡 Name — `name of player`, `name of <entity>`, set name of an entity
 - ✅ Name / Display Name / Tab List Name
 - 🟡 Named Item/Inventory ⭐ — `x named "n"`, `name of x`; no named inventories
-- ⬜ NaN
+- ✅ NaN — `nan`
 - ✅ Nearest Entity — `nearest [type] to <place> [within N]`
-- ⬜ Negative Infinity
+- ✅ Negative Infinity — `negative infinity`
 - ✅ New Line ⭐ — `nl`, `new line`
 - ⬜ New Potion Effect
-- ⬜ No Damage Ticks
-- ⬜ No Damage Time
-- ⬜ Node
+- ⛔ No Damage Ticks — the plugin API cannot read hurt immunity ticks
+- ⛔ No Damage Time — the plugin API cannot read hurt immunity time
+- ⛔ Node — Carve has no config node tree
 - ✅ Now ⭐
 - ✅ Number Of — `number of {list::*}` (also `size of`, `amount of`)
-- ⬜ Number of Characters
-- ⬜ Numbers
-- ⬜ Offline players ⭐
+- ✅ Number of Characters — `number of uppercase letters in <text>` (also lowercase, digits, spaces)
+- ✅ Numbers — `numbers from 1 to 5`, `integers from 1 to 5`; works in `loop`, `set {x::*} to`; at most a million
+- ⛔ Offline players — the plugin API has no offline player lookup
 - ⬜ On-Screen Kick Message
 - ✅ Online Player Count ⭐ — `online players count`, `amount of players`, `player count`
 - 🟡 Opened Inventory — `current inventory` of a player, for menus opened by Carve
-- ⬜ Panda Gene
+- ⛔ Panda Gene — the plugin API has no panda access
 - 🟡 Parse — `parsed as number` only
-- ⬜ Parse Error
+- ✅ Parse Error — `parse error` after a failed `parsed as number`
 - ⬜ Particle Count
 - ⬜ Particle Distribution
 - ⬜ Particle Offset
@@ -946,26 +946,26 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Particle with Offset/Distribution/Velocity
 - ⬜ Particle with Speed/Extra Value
 - ⬜ Particles with Data
-- ⬜ Passenger
-- ⬜ Pathfinding Target Entity
-- ⬜ Pathfinding Target Location
-- ⬜ Percent of
-- ⬜ Persistent Data Value
-- ⬜ Pi
-- ⬜ Picked Item/Block/Entity
-- ⬜ Pickup Delay
+- ⛔ Passenger — the plugin API has no passenger access
+- ⛔ Pathfinding Target Entity — the plugin API has no pathfinding access
+- ⛔ Pathfinding Target Location — the plugin API has no pathfinding access
+- ✅ Percent of — `10% of 200`, `{_x}% of 3`, `25 percent of {_y}`
+- 🟡 Persistent Data Value — `persistent data value "key" of <player|world|item>`; saved with the variables file, not in the entity
+- ✅ Pi — `pi`
+- ⛔ Picked Item/Block/Entity — no pick-item event in the plugin API
+- ⛔ Pickup Delay — the plugin API has no item entity access
 - ✅ Ping ⭐ — `ping of player`
-- 🟡 Plain Item — `item type of x` (no name, lore or enchantments)
-- ⬜ Player Chat Completions
-- ⬜ Player Input Keys
+- 🟡 Plain Item — `plain <item>`; items carry no extra data yet, so it returns the item as is
+- ⛔ Player Chat Completions — the plugin API cannot change chat completions
+- ⛔ Player Input Keys — only an input event exists, no way to read the current keys
 - ✅ Player List Header and Footer — set and reset, for one player or all players; no reading
-- ⬜ Player List Name
-- ⬜ Player List Priority
-- ⬜ Player Protocol Version
+- ✅ Player List Name — `player list name of <player>`, `<player>'s tab list name`; set and reset
+- 🟡 Player List Priority — `set player list priority of <player> to <number>`; write only
+- ⛔ Player Protocol Version — the plugin API does not give the client version
 - ⬜ Player Skull
 - ⬜ Player Weather
-- ⬜ Portal
-- ⬜ Portal Cooldown
+- ⛔ Portal — the plugin API has no portal access
+- ⛔ Portal Cooldown — the plugin API has no portal cooldown
 - ⬜ Potion (item)
 - ⬜ Potion Effect - Amplifier
 - ⬜ Potion Effect - Duration
@@ -977,163 +977,163 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Progress
 - ⬜ Projectile Critical State
 - ⬜ Projectile Force
-- ⬜ Protocol Version
+- ⛔ Protocol Version — the plugin API does not give the client protocol version of Java players
 - ⬜ Queue (Experimental)
 - ⬜ Queue Start/End (Experimental)
-- ⬜ Quit Message ⭐
-- ⬜ Quit Reason
+- 🟡 Quit Message ⭐ — `quit message` in `on quit`, read only
+- ⛔ Quit Reason — the leave event has no reason field
 - 🟡 Random — `random element of {list::*}`, `random N elements of {list::*}`
-- ⬜ Random Character
+- ✅ Random Character — `a random character`, `random alphanumeric character`, `random character between "a" and "z"`
 - ✅ Random Numbers
 - ✅ Random UUID ⭐ — `random uuid` (version 4, as text)
 - ⬜ Raw Name
-- ⬜ Raw String
+- 🟡 Raw String — `raw "&aHi"` stops colour codes and tags from turning into colours by adding an invisible character, so it does not compare equal to the plain text
 - ⬜ Readied Arrow/Bow
-- ⬜ Recursive
-- ⬜ Recursive Size
+- 🟡 Recursive — `recursive {x::*}` in `loop` and `set {y::*} to`
+- ✅ Recursive Size — `recursive size of {x::*}`
 - ⬜ Redstone Block Power
-- ⬜ Reduce
-- ⬜ Reduced Value
+- 🟡 Reduce — `reduce {x::*} with [reduced value + input]` or `{x::*} reduced with [...]`; starts from the first element
+- 🟡 Reduced Value — `reduced value` inside `reduce`; the current item is `input`
 - ⛔ Region — needs WorldGuard
 - 🟡 Region Members & Owners — `owners of bound`, `members of bound` (Carve bounds, not WorldGuard)
 - 🟡 Regions At — `bounds at <location>` (Carve bounds, not WorldGuard)
-- ⬜ Remaining Air
-- ⬜ Repeat String
+- ✅ Remaining Air — `remaining air of player`, set / add / remove with a timespan
+- ✅ Repeat String — `"ab" repeated 3 times`; capped at 1,000,000 characters
 - ⬜ Resolve Text Component
-- ⬜ Resonating Time
+- ⛔ Resonating Time — bell block entity is not exposed
 - ⬜ Respawn Anchor Charges
-- ⬜ Respawn Location
+- ✅ Respawn Location — `respawn location of player`, `set respawn location of player to <location>`
 - ⬜ Respawn Reason
 - ⬜ Result
 - ✅ Reversed List ⭐ — `reversed {x::*}`
-- ⬜ Ringing Time
-- ⬜ Rotated Quaternion/Vector
-- ⬜ Rotation Axis/Angle
+- ⛔ Ringing Time — bell block entity is not exposed
+- ⛔ Rotated Quaternion/Vector — Carve has no vector or quaternion types
+- ⛔ Rotation Axis/Angle — Carve has no vector or quaternion types
 - 🟡 Rounding — as functions, plus `n rounded to N decimal places`
 - ✅ Saturation — read, set, add, remove
 - ⬜ Scale
-- ⬜ Scoreboard Tags
+- ⛔ Scoreboard Tags — no entity tag API in the plugin API
 - 🟡 Script — through `/carve`
 - 🟡 Script Command Cooldown Information — no cooldowns yet
 - ⛔ Script Command Suggestion Input — same Pumpkin crash
 - ⛔ Script Command Suggestions — Pumpkin 0.2.2 crashes on plugin tab completion
-- ⬜ Sea Level
+- 🟡 Sea Level — `sea level of world "x"`, read only
 - ⬜ Sea Pickles
-- ⬜ Seed of Loot Table
+- ⛔ Seed of Loot Table — no loot table data in the plugin API
 - ⬜ Sent Command List
-- ⬜ Server Icon
+- ⛔ Server Icon — the icon is only in the server list ping event, which Carve does not expose
 - ⬜ Sets
 - ⬜ Shooter
 - ✅ Shuffled List ⭐ — `shuffled {x::*}`
-- ⬜ Sign Text
-- ⬜ Simulation Distance
+- ⛔ Sign Text — block entities only expose custom data, not sign text
+- 🟡 Simulation Distance — `simulation distance`, read only
 - ✅ Size — `size of {list::*}`
 - 🟡 Size of World Border — `world border size [of world]`, `set world border size to 500 over 30 seconds`; no add or remove
-- ⬜ Skull Owner
-- ⬜ Skull Texture
+- ⛔ Skull Owner — block entities only expose custom data, not skull data
+- ⛔ Skull Texture — block entities only expose custom data, not skull data
 - ⬜ Slot Index
 - 🟡 Sorted List ⭐ — `sorted {x::*}`; no `by` expression
 - ⬜ Source Block
 - 🟡 Spawn ⭐ — `spawn of world "x"` (a location); also `teleport player to spawn`; no setting it
 - ⬜ Spawn Egg Entity
 - ⬜ Spawn Reason
-- ⬜ Spawner Type
-- ⬜ Special Number
+- ⛔ Spawner Type — spawner block entity is not exposed
+- ✅ Special Number — `pi`, `infinity`, `negative infinity`, `NaN`
 - ⬜ Spectator Target
 - ⛔ Speed (walk and fly speed: no attribute API in the plugin API)
 - ⬜ Stored Enchantments
 - ✅ String Colors — `&a` codes, `§a` codes and `<red>` tags in sent messages
 - ⬜ Style
 - ✅ Substring ⭐ — `substring of x from a to b`, `first N characters of x`, `last N characters of x`, `character at index N of x`
-- ✅ Tab List Name — get and set
-- ⬜ Tablisted Players
-- ⬜ Tag
-- ⬜ Tag Namespaced Key
-- ⬜ Tags Contents
-- ⬜ Tags of X
+- ✅ Tab List Name — `<player>'s tab list name`, same as Player List Name
+- 🟡 Tablisted Players — all online players; Pumpkin cannot tell who is hidden from a player's tab list
+- ⛔ Tag — no tag registry in the plugin API
+- ⛔ Tag Namespaced Key — no tag registry in the plugin API
+- ⛔ Tags Contents — no tag registry in the plugin API
+- ⛔ Tags of X — no tag registry in the plugin API
 - ⬜ Tamer
 - ⬜ Target
 - ✅ Targeted Block ⭐ — `targeted block of player`
 - ⬜ Teleport Cause
 - ⬜ Temperature
-- ⬜ Ternary ⭐
+- 🟡 Ternary ⭐ — `a if <condition> else b`; the condition can be a comparison, `contains`, `starts with`, `is set`, joined with `and` / `or`
 - ⬜ Text Display Alignment
 - ⬜ Text Display Line Width
 - ⬜ Text Display Opacity
-- ⬜ Text Of
+- ⛔ Text Of — no text component values in Carve
 - 🟡 Text Replacement ⭐
-- ⬜ The Egg
+- ⛔ The Egg — needs entity values and an egg-throw trigger, which Carve does not have yet
 - ✅ Time ⭐ — `time in world "w"`, `set time to 6:00 pm`, `add 5 minutes to time`; time is a number of ticks
-- ⬜ Time Lived of Entity
-- ⬜ Time Played
+- 🟡 Time Lived of Entity — `time lived of player` only (no entity values yet)
+- ✅ Time Played — `time played of player`
 - ✅ Time Since/Until ⭐ — `time since {d}`, `time until {d}`
 - 🟡 Timespan Details ⭐ — `minutes of {t}`, `total minutes of {t}`; no `{t}'s minutes` form
 - ⬜ Title
 - ✅ Tool — main hand
 - ✅ Total Experience — `total experience of player`
-- ⬜ TPS (ticks per second)
-- ⬜ Transform Reason
-- ⬜ Transformed List
+- 🟡 TPS (ticks per second) — `tps`, `server tps`, `mspt`; one current value, not the 1/5/15 minute averages
+- ⛔ Transform Reason — needs entity transform events and entity values
+- ⛔ Transformed List — needs lambdas (experimental); use `where` filters instead
 - 🟡 Type of — blocks only: `type of block at <loc>`
 - 🟡 Unbreakable Items — `set unbreakable of player's tool to true` (main-hand item only)
 - ✅ Unix Date
 - ✅ Unix Timestamp ⭐
-- ⬜ Unknown Command Message
-- ⬜ Unleash Reason
+- ⛔ Unknown Command Message — the plugin API has no unknown-command event or message
+- ⛔ Unleash Reason — needs entity values and leash triggers, which Carve does not have yet
 - ✅ UUID — `uuid of player`
-- ⬜ Value
-- ⬜ Value (Experimental)
-- ⬜ Value of Subnode
-- ⬜ Value Within
-- ⬜ Vector/Quaternion - WXYZ Component
-- ⬜ Vectors - Angle Between
-- ⬜ Vectors - Arithmetic
-- ⬜ Vectors - Create from Direction
-- ⬜ Vectors - Create from XYZ
-- ⬜ Vectors - Create Location from Vector
-- ⬜ Vectors - Cross Product
-- ⬜ Vectors - Cylindrical Shape
-- ⬜ Vectors - Dot Product
-- ⬜ Vectors - Length
-- ⬜ Vectors - Location Vector Offset
-- ⬜ Vectors - Normalized
-- ⬜ Vectors - Random Vector
-- ⬜ Vectors - Spherical Shape
-- ⬜ Vectors - Squared Length
-- ⬜ Vectors - Vector Between Locations
-- ⬜ Vectors - Vector from Location
-- ⬜ Vectors - Vector from Yaw and Pitch
-- ⬜ Vectors - Vector Projection
-- ⬜ Vectors - XYZ Component
-- ⬜ Vectors - Yaw and Pitch
-- ⬜ Vehicle
+- ⛔ Value — needs typed value lists; Carve variables already hold their value
+- ⛔ Value (Experimental) — experimental Skript feature, not planned
+- ⛔ Value of Subnode — Carve has no config nodes
+- ⛔ Value Within — needs ranges and objects with an inner value, which Carve does not have
+- ⛔ Vector/Quaternion - WXYZ Component — no quaternion type; x, y and z of a vector work
+- ✅ Vectors - Angle Between — `angle between v and w` (degrees)
+- ✅ Vectors - Arithmetic — `v + w`, `v - w`, `v * n`, `v / n`, `v * w`, `-v`, `loc + v`
+- ✅ Vectors - Create from Direction — `vector from direction of player`, `vector from direction north`
+- ✅ Vectors - Create from XYZ — `vector(1, 2, 3)`, `vector from 1, 2, 3`
+- ✅ Vectors - Create Location from Vector — `location from vector v in world "w"`, `v to location`
+- ✅ Vectors - Cross Product — `v cross w`
+- ✅ Vectors - Cylindrical Shape — `cylindrical vector radius r, yaw y, height h`
+- ✅ Vectors - Dot Product — `v dot w`
+- ✅ Vectors - Length — `length of v`, `vector length of v`
+- ✅ Vectors - Location Vector Offset — `loc offset by v`
+- ✅ Vectors - Normalized — `normalized v`, `v normalized`
+- ✅ Vectors - Random Vector — `random vector` (unit length)
+- ✅ Vectors - Spherical Shape — `spherical vector radius r, yaw y, pitch p`
+- ✅ Vectors - Squared Length — `squared length of v`
+- ✅ Vectors - Vector Between Locations — `vector from a to b`, `vector between a and b`
+- ✅ Vectors - Vector from Location — `vector from loc`, `vector of player`
+- ✅ Vectors - Vector from Yaw and Pitch — `vector from yaw y and pitch p`
+- ✅ Vectors - Vector Projection — `v projected onto w`, `projection of v onto w`
+- 🟡 Vectors - XYZ Component — `x of v`, `v's y`, `z component of v`; read only (rebuild with `vector(...)` to change one)
+- 🟡 Vectors - Yaw and Pitch — `yaw of v`, `pitch of v`; read only
+- ⛔ Vehicle — needs entity values, which Carve does not have yet
 - 🟡 Velocity ⭐ — `x/y/z velocity of <entity>`, set per axis; no vector type
-- 🟡 Version — `server version` is the Pumpkin version, not the Minecraft version
-- ⬜ Version String
-- ⬜ View Distance
-- ⬜ View Distance of Client
+- 🟡 Version — `server version`, `minecraft version`; the Minecraft version is fixed at build time
+- 🟡 Version String — `server version string`, `version string of server`; versions are plain text
+- 🟡 View Distance — `view distance of server`, `view distance of player`; read only
+- ✅ View Distance of Client — `client view distance of player`
 - ⬜ Viewers
-- ⬜ Villager Level/Experience
-- ⬜ Villager Profession
-- ⬜ Villager Type
-- ⬜ Warden Anger Level
-- ⬜ Warden Most Angered At
+- ⛔ Villager Level/Experience — the plugin API has no villager data
+- ⛔ Villager Profession — the plugin API has no villager data
+- ⛔ Villager Type — the plugin API has no villager data
+- ⛔ Warden Anger Level — the plugin API has no warden data
+- ⛔ Warden Most Angered At — the plugin API has no warden data
 - ⬜ Warning Distance of World Border
 - ⬜ Warning Time of World Border
 - ✅ Weather ⭐ — `weather in world "w"`, `set weather to rain for 5 minutes`
-- ⬜ Whether
+- 🟡 Whether — `whether a is b` with is, is not, is set, is not set, greater, less, at least, at most
 - 🟡 Whitelist — `add player to the whitelist`, `whitelist player`, `unwhitelist player`; no player list, no on/off
-- ⬜ With Fire Resistance
+- ⛔ With Fire Resistance — item components are not reachable from the plugin API
 - ✅ World — `world of`
 - ⬜ World Border
-- ⬜ World Environment
+- ✅ World Environment — `environment of world "x"` (normal, nether, the end)
 - ✅ World from Name — `world "name"`
-- ⬜ World Seed
+- ⛔ World Seed — the plugin API cannot read the world seed
 - ✅ Worlds — `all worlds` in `loop` and `set {w::*} to all worlds`
-- ⬜ WXYZ Component/Coordinate
-- ⬜ X of Item/Entity Type
-- ⬜ X Times
-- ⬜ Yaw / Pitch
+- ⛔ WXYZ Component/Coordinate — no quaternion type; x, y and z of a vector work
+- 🟡 X of Item/Entity Type — `3 of diamond`; items only
+- 🟡 X Times — only in `loop N times`
+- 🟡 Yaw / Pitch — `yaw of player`, `pitch of player`, and of vectors; read only
 
 ## Sections (11)
 
@@ -1142,7 +1142,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Delay — `wait N ticks/seconds`, `wait 1 minute and 30 seconds`, `wait {span}`
 - ⬜ Filter ⭐
 - 🟡 For Each Loop — `loop {list::*}` works; no `for each` wording
-- ⬜ Locally Suppress Warning
+- 🟡 Locally Suppress Warning — accepted and ignored; Carve has no such warnings
 - ✅ Loop — times, lists, all players, values
 - ⬜ Shoot
 - ⬜ Spawn ⭐
@@ -1216,9 +1216,9 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Anything with Contents
 - ⬜ Attribute Type
 - ⬜ Audience
-- ⬜ Banner Pattern
+- ⛔ Banner Pattern — the banner block entity API has no patterns
 - ⬜ Banner Pattern Type
-- ⬜ Biome
+- ✅ Biome — `biome at {loc}`, `biome of player`: a text like `birch_forest`
 - 🟡 Block ⭐ — a block is a location with whole numbers
 - ⬜ Block Data
 - ✅ Boolean
@@ -1248,14 +1248,14 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Enchantment Type
 - ⬜ Entity
 - ⬜ Entity Effect
-- ⬜ Entity Snapshot
+- ⛔ Entity Snapshot — the plugin API has no entity snapshots
 - 🟡 Entity Type — `type of <entity>` gives text
 - ⬜ Entity Type with Amount
 - ⬜ Equipment Slot
 - ⬜ Equippable Components
 - ⬜ Executable
 - ⬜ Experience ⭐
-- ⬜ Firework Effect
+- ⛔ Firework Effect — firework effects are not in the plugin API
 - ⬜ Firework Type
 - ⬜ Fishing State
 - ⬜ Frog Variant
@@ -1266,7 +1266,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Gamerule Value
 - ⬜ Gene
 - ⬜ Header
-- ⬜ Heal Reason
+- ⛔ Heal Reason — needs the regain health event, which is not wired in Carve
 - ⬜ Input Key
 - ⬜ Inventory ⭐
 - ⬜ Inventory Action
@@ -1276,7 +1276,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Item Component
 - ⬜ Item Display Transforms
 - ⬜ Item Flag
-- ⬜ Item Rarity
+- ⛔ Item Rarity — the API only exposes raw component bytes, not typed access
 - 🟡 Item Type — Minecraft ids, checked at load
 - ⬜ Living Entity
 - ✅ Location — no yaw/pitch

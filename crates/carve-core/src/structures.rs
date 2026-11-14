@@ -379,7 +379,8 @@ pub fn split_inline(text: &str) -> Option<(&str, &str, bool)> {
                     }
                     let eff = text.get(..i).unwrap_or("").trim();
                     let cond = rest.get(kw.len()..).unwrap_or("").trim();
-                    if eff.is_empty() || cond.is_empty() {
+                    // `a if <cond> else b` is a ternary value, not an inline `if`.
+                    if eff.is_empty() || cond.is_empty() || has_else(cond) {
                         return None;
                     }
                     let eff = match eff.get(..3) {
@@ -393,6 +394,30 @@ pub fn split_inline(text: &str) -> Option<(&str, &str, bool)> {
         }
     }
     None
+}
+
+/// Is there an `else` / `otherwise` word outside text and `{variables}`?
+fn has_else(text: &str) -> bool {
+    let mut in_str = false;
+    let mut depth = 0usize;
+    let mut word = String::new();
+    for ch in text.chars().chain(std::iter::once(' ')) {
+        match ch {
+            '"' => in_str = !in_str,
+            '{' if !in_str => depth += 1,
+            '}' if !in_str && depth > 0 => depth -= 1,
+            _ => {}
+        }
+        if !in_str && depth == 0 && ch.is_alphabetic() {
+            word.push(ch);
+            continue;
+        }
+        if word.eq_ignore_ascii_case("else") || word.eq_ignore_ascii_case("otherwise") {
+            return true;
+        }
+        word.clear();
+    }
+    false
 }
 
 /// Compile a line like `send "hi" to player if player is op`. Returns true

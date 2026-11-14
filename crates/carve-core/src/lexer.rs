@@ -73,15 +73,18 @@ pub fn lex(s: &str) -> Result<Vec<Tok>, String> {
                 let digits: String = c[ds..i].iter().collect();
                 word = format!("arg-{digits}");
             }
-            // `event-bound`, `event-block`: one word.
+            // `event-block`, `event-max-players`, `event-line-1`: one word.
             if word.eq_ignore_ascii_case("event") && i + 1 < n && c[i] == '-' && c[i + 1].is_alphabetic() {
-                i += 1;
-                let ws = i;
-                while i < n && c[i].is_alphabetic() {
+                let mut w = String::from("event");
+                while i + 1 < n && c[i] == '-' && c[i + 1].is_alphanumeric() {
                     i += 1;
+                    w.push('-');
+                    while i < n && c[i].is_alphanumeric() {
+                        w.push(c[i].to_ascii_lowercase());
+                        i += 1;
+                    }
                 }
-                let part: String = c[ws..i].iter().collect();
-                word = format!("event-{}", part.to_ascii_lowercase());
+                word = w;
             }
             // `loop-value`, `loop-player`, `loop-value-2`: one word.
             if word.eq_ignore_ascii_case("loop") && i + 1 < n && c[i] == '-' && c[i + 1].is_alphabetic() {
@@ -101,16 +104,6 @@ pub fn lex(s: &str) -> Result<Vec<Tok>, String> {
                     let digits: String = c[ds..i].iter().collect();
                     word = format!("{word}-{digits}");
                 }
-            }
-            // `event-item`, `event-block`: one word.
-            if word.eq_ignore_ascii_case("event") && i + 1 < n && c[i] == '-' && c[i + 1].is_alphabetic() {
-                i += 1;
-                let ws = i;
-                while i < n && c[i].is_alphabetic() {
-                    i += 1;
-                }
-                let part: String = c[ws..i].iter().collect();
-                word = format!("event-{}", part.to_ascii_lowercase());
             }
             out.push(Tok::Word(word));
             continue;

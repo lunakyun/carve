@@ -200,6 +200,96 @@ pub trait Host {
         }
     }
 
+    /// Biome name (`plains`, `birch_forest`) at a block position.
+    fn biome_at(&mut self, _world: &str, _x: i32, _y: i32, _z: i32) -> Option<String> {
+        None
+    }
+
+    /// Item id and amount worn in an armor slot of a player.
+    fn armor_item(&mut self, _player: &PlayerRef, _slot: crate::w2_expressions_1::ArmorSlot) -> Option<(String, u32)> {
+        None
+    }
+
+    /// Raw NBT bytes of the block entity (beacon, furnace, brewing stand, ...) at a position.
+    fn block_entity_nbt(&mut self, _world: &str, _x: i32, _y: i32, _z: i32) -> Option<Vec<u8>> {
+        None
+    }
+
+    /// Where the player's compass points: x, y, z and world name.
+    fn compass_target(&mut self, _player: &PlayerRef) -> Option<(f64, f64, f64, Option<String>)> {
+        None
+    }
+
+    /// Point the player's compass at a place. Hosts that cannot do it ignore it.
+    fn set_compass_target(&mut self, _player: &PlayerRef, _x: f64, _y: f64, _z: f64, _world: Option<&str>) {}
+
+    /// Read a number or yes/no (as 0 or 1) state of a player: exhaustion,
+    /// fall distance, fire/freeze ticks, hotbar slot, yaw, pitch, ...
+    fn pstat(&mut self, _player: &PlayerRef, _stat: crate::w2_expressions_3::PStat) -> Option<f64> {
+        None
+    }
+
+    /// Write one of those states. The core has already clamped it.
+    fn set_pstat(&mut self, _player: &PlayerRef, _stat: crate::w2_expressions_3::PStat, _value: f64) {}
+
+    /// Eye position and world name. The default is the feet position plus 1.62.
+    fn eye_location(&mut self, player: &PlayerRef) -> Option<(f64, f64, f64, String)> {
+        self.player_location(player).map(|(x, y, z, w)| (x, y + 1.62, z, w))
+    }
+
+    /// Slot number of the first empty slot in the player's inventory.
+    fn first_empty_slot(&mut self, _player: &PlayerRef) -> Option<u32> {
+        None
+    }
+
+    /// Can `viewer` see `other` (not hidden from them)?
+    fn can_see(&mut self, _viewer: &PlayerRef, _other: &PlayerRef) -> bool {
+        true
+    }
+
+    /// Machine memory in bytes: total and used.
+    fn system_memory(&mut self) -> Option<(u64, u64)> {
+        None
+    }
+
+    /// Y of the highest non-air block in a column. `world` `None` means the default world.
+    fn top_block_y(&mut self, _world: Option<&str>, _x: i32, _z: i32) -> Option<i32> {
+        None
+    }
+
+    /// Sort order in the player list.
+    fn set_list_order(&mut self, _player: &PlayerRef, _order: i32) {}
+
+    /// Air left, in ticks (300 is a full breath).
+    fn remaining_air(&mut self, _player: &PlayerRef) -> Option<i64> {
+        None
+    }
+
+    fn set_remaining_air(&mut self, _player: &PlayerRef, _ticks: i64) {}
+
+    /// Where the player respawns (bed or anchor), if known.
+    fn respawn_location(&mut self, _player: &PlayerRef) -> Option<(f64, f64, f64)> {
+        None
+    }
+
+    fn set_respawn_location(&mut self, _player: &PlayerRef, _x: f64, _y: f64, _z: f64) {}
+
+    /// Sea level (block height) of a world by name.
+    fn sea_level(&mut self, _world: &str) -> Option<i64> {
+        None
+    }
+
+    /// Simulation distance of the server, in chunks.
+    fn simulation_distance(&mut self) -> Option<i64> {
+        None
+    }
+
+    /// Server facts and per-player numbers for vectors, `tps`, versions and
+    /// play time (see `w2_expressions_7::Query`). `None` means unknown.
+    fn w2e7_query(&mut self, _q: crate::w2_expressions_7::Query<'_>) -> Option<crate::value::Value> {
+        None
+    }
+
     /// Hurt the player. The default lowers health and kills at zero.
     fn damage(&mut self, player: &PlayerRef, amount: f64) {
         if let Some(h) = self.health(player) {
@@ -265,10 +355,12 @@ pub trait Host {
     /// Set the display name (`&` colors allowed); `None` resets it.
     fn set_display_name(&mut self, _player: &PlayerRef, _name: Option<&str>) {}
 
+    /// The name shown in the player list (tab list), `None` when not set.
     fn tab_list_name(&mut self, _player: &PlayerRef) -> Option<String> {
         None
     }
 
+    /// Set the player list name, or `None` to go back to the player's name.
     fn set_tab_list_name(&mut self, _player: &PlayerRef, _name: Option<&str>) {}
 
     /// Latency in milliseconds.
@@ -684,4 +776,174 @@ pub trait Host {
             self.execute_command(&format!("worldborder set {size}"));
         }
     }
+
+    /// Send a player to another server. The default runs the vanilla
+    /// `transfer` command as the console.
+    fn transfer(&mut self, player: &PlayerRef, host: &str, port: u16) {
+        self.execute_command(&format!("transfer {host} {port} {}", player.name));
+    }
+
+    /// Force a dead player to respawn. Hosts that cannot do it ignore this.
+    fn respawn(&mut self, _player: &PlayerRef) {}
+
+    /// Hide `target` from `viewer`'s view.
+    fn hide_player(&mut self, _viewer: &PlayerRef, _target: &PlayerRef) {}
+
+    /// Undo `hide_player`.
+    fn show_player(&mut self, _viewer: &PlayerRef, _target: &PlayerRef) {}
+
+    /// Put an item in a vanilla slot such as `armor.head`. The default runs
+    /// the `item replace` command as the console.
+    fn equip(&mut self, player: &PlayerRef, slot: &str, id: &str) {
+        self.execute_command(&format!("item replace entity {} {slot} with minecraft:{id}", player.name));
+    }
+
+    /// `make player fly` / `stop flying`: allow flight and set flying.
+    fn set_flight(&mut self, _player: &PlayerRef, _on: bool) {}
+
+    fn set_invulnerable(&mut self, _player: &PlayerRef, _on: bool) {}
+
+    /// Invisible flag. The default gives or clears the invisibility effect.
+    fn set_invisible(&mut self, player: &PlayerRef, on: bool) {
+        let cmd = if on {
+            format!("effect give {} minecraft:invisibility infinite 0 true", player.name)
+        } else {
+            format!("effect clear {} minecraft:invisibility", player.name)
+        };
+        self.execute_command(&cmd);
+    }
+
+    /// Push the player. `(x, z)` points from the player toward the pusher.
+    fn apply_knockback(&mut self, _player: &PlayerRef, _strength: f64, _x: f64, _z: f64) {}
+
+    /// Turn the player's view. The default uses the vanilla `rotate` command.
+    fn set_rotation(&mut self, player: &PlayerRef, yaw: f32, pitch: f32) {
+        self.execute_command(&format!("rotate {} {yaw} {pitch}", player.name));
+    }
+
+    /// Open the book held in a hand.
+    fn open_book(&mut self, _player: &PlayerRef, _off_hand: bool) {}
+
+    /// Make the player say something in chat. The default runs `say` as them.
+    fn say_as(&mut self, player: &PlayerRef, text: &str) {
+        self.execute_command_as(player, &format!("say {text}"));
+    }
+
+    /// Append a line to `logs/<file>`. `file` is already a clean plain name.
+    fn log_to_file(&mut self, file: &str, text: &str) {
+        use std::io::Write;
+        let _ = std::fs::create_dir_all("logs");
+        let ms = self.wall_clock_millis();
+        if let Ok(mut f) = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(std::path::Path::new("logs").join(file))
+        {
+            let _ = writeln!(f, "[{ms}] {text}");
+        }
+    }
+
+    /// Poisoned, silent or riding (players only). Hosts that cannot tell answer `false`.
+    fn player_state(&mut self, _player: &PlayerRef, _state: crate::w2_conditions_3::PlayerState) -> bool {
+        false
+    }
+
+    /// Whether PvP is on in a world (by name), or in the default world with `None`.
+    /// `None` means the host cannot tell.
+    fn pvp_enabled(&mut self, _world: Option<&str>) -> Option<bool> {
+        None
+    }
+
+    /// A property of a block type (`stone`, no namespace). `None` if unknown.
+    fn block_trait(&mut self, _id: &str, _t: crate::w2_conditions_3::BlockTrait) -> Option<bool> {
+        None
+    }
+    // ---- w2_expressions_4 ----
+
+
+    /// Ticks left on an item cooldown, `None` when there is none.
+    fn item_cooldown(&mut self, _player: &PlayerRef, _item: &str) -> Option<i64> {
+        None
+    }
+
+    /// Start (or with 0 ticks, clear) an item cooldown.
+    fn set_item_cooldown(&mut self, _player: &PlayerRef, _item: &str, _ticks: i64) {}
+
+    /// Where the player last died: x, y, z and world name.
+    fn last_death_location(&mut self, _player: &PlayerRef) -> Option<(f64, f64, f64, String)> {
+        None
+    }
+
+    /// The last hit the player took.
+    fn last_damage(&mut self, _player: &PlayerRef) -> Option<crate::w2_expressions_4::DamageInfo> {
+        None
+    }
+
+    /// The join message of the `on join` event that is running.
+    fn join_message(&mut self) -> Option<String> {
+        None
+    }
+
+    /// Change the join message of the `on join` event that is running.
+    fn set_join_message(&mut self, _text: &str) {}
+
+    /// Last resource pack status the player reported (`loaded`, `declined`, ...).
+    fn resource_pack_status(&mut self, _player: &PlayerRef) -> Option<String> {
+        None
+    }
+
+    /// Y of the highest (or lowest) solid block in a column.
+    fn solid_block_y(&mut self, _world: &str, _x: i32, _z: i32, _highest: bool) -> Option<i32> {
+        None
+    }
+
+    /// Light at a block: kind 0 block light, 1 sky light, 2 the larger of both.
+    fn light_level(&mut self, _world: &str, _x: i32, _y: i32, _z: i32, _kind: u8) -> Option<u8> {
+        None
+    }
+
+    /// Show or hide `target` to one `viewer`. Hosts without the API do nothing.
+    fn set_visible_to(&mut self, viewer: &PlayerRef, target: &PlayerRef, visible: bool) {
+        if visible {
+            self.show_player(viewer, target);
+        } else {
+            self.hide_player(viewer, target);
+        }
+    }
+
+    /// Save every world. The default runs the vanilla `save-all` command.
+    fn save_world(&mut self) {
+        self.execute_command("save-all");
+    }
+
+    /// Stop the server. The default runs the vanilla `stop` command.
+    fn stop_server(&mut self) {
+        self.execute_command("stop");
+    }
+
+    fn set_sprinting(&mut self, _player: &PlayerRef, _on: bool) {}
+
+    /// Play the arm swing. The default runs the vanilla `swing` command.
+    fn swing_hand(&mut self, player: &PlayerRef, main: bool) {
+        let cmd = crate::w2_effects_3::swing_command(&player.name, main);
+        self.execute_command(&cmd);
+    }
+
+    /// Get off whatever the player is riding. The default runs `ride dismount`.
+    fn dismount(&mut self, player: &PlayerRef) {
+        self.execute_command(&format!("ride {} dismount", player.name));
+    }
+
+    /// Throw off everything riding the player.
+    fn eject_passengers(&mut self, _player: &PlayerRef) {}
+
+    /// Put `rider` on `vehicle`. The default runs `ride mount`.
+    fn ride(&mut self, rider: &PlayerRef, vehicle: &PlayerRef) {
+        self.execute_command(&format!("ride {} mount {}", rider.name, vehicle.name));
+    }
+
+    fn set_name_visible(&mut self, _player: &PlayerRef, _visible: bool) {}
+
+    /// Offer a resource pack. `id` is a UUID string that is the same for the same URL.
+    fn send_resource_pack(&mut self, _player: &PlayerRef, _url: &str, _hash: &str, _id: &str) {}
 }

@@ -57,6 +57,11 @@ impl Engine {
                 v.sort_by(compare);
                 v
             }
+            ListSrc::SortedAlpha(i) => {
+                let mut v = self.eval_list(i, ex, host)?;
+                v.sort_by_cached_key(|x| x.to_string().to_lowercase());
+                v
+            }
             ListSrc::Reversed(i) => {
                 let mut v = self.eval_list(i, ex, host)?;
                 v.reverse();
@@ -74,6 +79,7 @@ impl Engine {
                 v.truncate(if n.is_finite() && n > 0.0 { n as usize } else { 0 });
                 v
             }
+            ListSrc::Recursive(v) => self.recursive_items(v, ex, host)?,
             ListSrc::Filter(i, c) => {
                 let items = self.eval_list(i, ex, host)?;
                 let saved = ex.locals.get(INPUT_KEY).cloned();
@@ -130,7 +136,7 @@ impl Engine {
     }
 
     /// Replace the list `v` with `items`, numbered from 1.
-    fn write_list(
+    pub(super) fn write_list(
         &mut self,
         v: &VarRef,
         items: Vec<Value>,

@@ -21,12 +21,16 @@ pub enum ListSrc {
     /// `a, b and c` where each part is a list or a value.
     Concat(Vec<ListSrc>),
     Sorted(Box<ListSrc>),
+    /// `alphabetically sorted list`: everything compared as text, ignoring case.
+    SortedAlpha(Box<ListSrc>),
     Reversed(Box<ListSrc>),
     Shuffled(Box<ListSrc>),
     /// `list where [input > 2]`
     Filter(Box<ListSrc>, Box<Cond>),
     /// `random 2 elements of list`
     Random(Box<Expr>, Box<ListSrc>),
+    /// `recursive {x::*}`: every value under the list, at any depth.
+    Recursive(VarRef),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -71,13 +75,22 @@ pub fn parse_src_all(toks: &[Tok], env: &Env, commas: bool) -> Result<ListSrc, S
 pub fn looks_like_list_op(toks: &[Tok], env: &Env) -> bool {
     if let Some(Tok::Word(w)) = toks.first() {
         let lw = w.to_ascii_lowercase();
-        if matches!(lw.as_str(), "sorted" | "reversed" | "shuffled") {
+        if matches!(lw.as_str(), "sorted" | "reversed" | "shuffled" | "alphabetically" | "alphabetical") {
+            return true;
+        }
+        if lw == "all" && toks.get(1).is_some_and(|t| t.is_lit("scripts")) && toks.len() == 2 {
             return true;
         }
         if lw == "worlds" || (lw == "all" && matches!(toks.get(1), Some(t) if t.is_lit("worlds"))) {
             return true;
         }
         if lw == "random" && matches!(toks.get(1), Some(Tok::Num(_) | Tok::Var(_))) {
+            return true;
+        }
+        if lw == "recursive" && matches!(toks.get(1), Some(Tok::Var(_))) {
+            return true;
+        }
+        if lw == "tablisted" && toks.get(1).is_some_and(|t| t.is_lit("players")) {
             return true;
         }
         if matches!(toks.get(1), Some(t) if t.is_lit("("))
@@ -89,7 +102,11 @@ pub fn looks_like_list_op(toks: &[Tok], env: &Env) -> bool {
             return true;
         }
     }
-    crate::skbee_bound::is_list_head(toks) || crate::skbee_scoreboard_teams::is_list_expr(toks) || toks.iter().any(|t| t.is_lit("where"))
+    crate::skbee_bound::is_list_head(toks)
+        || crate::skbee_scoreboard_teams::is_list_expr(toks)
+        || crate::w2_expressions_2::starts_list(toks)
+        || crate::w2_expressions_5::is_numbers_loop(toks)
+        || toks.iter().any(|t| t.is_lit("where") || t.is_lit("except"))
 }
 
 impl Cur<'_> {
@@ -118,6 +135,13 @@ impl Cur<'_> {
         while self.toks.get(pos).is_some_and(|t| t.is_lit("where")) {
             let (c, np) = self.pred(pos + 1)?;
             s = ListSrc::Filter(Box::new(s), Box::new(c));
+            pos = np;
+        }
+        // `{a::*} except {b::*}`
+        while self.toks.get(pos).is_some_and(|t| t.is_lit("except")) {
+            let (rhs, np) = self.base(pos + 1)?;
+            let f = crate::w2_expressions_3::ExtFn::Except;
+            s = ListSrc::One(Expr::Ext(f, vec![Expr::Items(Box::new(s)), Expr::Items(Box::new(rhs))]));
             pos = np;
         }
         Ok((s, pos))
@@ -153,6 +177,16 @@ impl Cur<'_> {
                 self.one(pos)
             }
             Some(Tok::Word(w)) => match w.to_ascii_lowercase().as_str() {
+                "alphabetically" | "alphabetical"
+                    if word(self.toks.get(pos + 1)).as_deref() == Some("sorted") =>
+                {
+                    let mut p = pos + 2;
+                    if word(self.toks.get(p)).as_deref() == Some("list") {
+                        p += 1;
+                    }
+                    let (inner, np) = self.concat(p)?;
+                    Ok((ListSrc::SortedAlpha(Box::new(inner)), np))
+                }
                 lw @ ("sorted" | "reversed" | "shuffled") => {
                     let mut p = pos + 1;
                     if word(self.toks.get(p)).as_deref() == Some("list") {
@@ -168,6 +202,16 @@ impl Cur<'_> {
                         },
                         np,
                     ))
+                }
+                "recursive" if matches!(self.toks.get(pos + 1), Some(Tok::Var(_))) => {
+                    let Some(Tok::Var(raw)) = self.toks.get(pos + 1) else {
+                        return Err("expected 'recursive {list::*}'".into());
+                    };
+                    let v = parse_varref(raw, self.env)?;
+                    if !v.is_list() {
+                        return Err("'recursive' needs a list variable like {x::*}".into());
+                    }
+                    Ok((ListSrc::Recursive(v), pos + 2))
                 }
                 "random" if matches!(self.toks.get(pos + 1), Some(Tok::Num(_) | Tok::Var(_))) => {
                     let n = match self.toks.get(pos + 1) {
@@ -237,7 +281,7 @@ impl Cur<'_> {
 }
 
 /// A `where` condition. `input` is the item being tested.
-fn parse_filter(toks: &[Tok], env: &Env) -> Result<Cond, String> {
+pub(crate) fn parse_filter(toks: &[Tok], env: &Env) -> Result<Cond, String> {
     if toks.is_empty() {
         return Err("empty 'where' condition".into());
     }

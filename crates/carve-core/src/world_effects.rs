@@ -82,11 +82,6 @@ pub enum WorldFx {
         from: Expr,
         effect: Option<String>,
     },
-    Ignite {
-        who: Expr,
-        dur: Option<Dur>,
-    },
-    Extinguish(Expr),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -97,7 +92,6 @@ pub struct WorldCond {
 }
 
 const DEFAULT_POTION_TICKS: f64 = 15.0 * 20.0;
-const DEFAULT_FIRE_TICKS: f64 = 5.0 * 20.0;
 const DEFAULT_POWER: f64 = 3.0;
 const MAX_PARTICLES: f64 = 1000.0;
 const MAX_POWER: f64 = 100.0;
@@ -214,46 +208,10 @@ pub fn parse_effect(toks: &[Tok], env: &Env) -> Result<Option<Effect>, String> {
         }
         "apply" => apply(toks, env)?,
         "remove" | "clear" => clear(toks, env)?,
-        "extinguish" => player_arg(toks.get(1..), env).map(WorldFx::Extinguish),
-        "ignite" => ignite(toks.get(1..), env),
-        "set" => {
-            let at = toks.iter().position(|t| is(t, "on"));
-            match at {
-                Some(i) if toks.get(i + 1).is_some_and(|t| is(t, "fire")) && i > 1 => {
-                    let who = toks.get(1..i);
-                    let rest = toks.get(i + 2..).unwrap_or_default();
-                    ignite_parts(who, rest, env)
-                }
-                _ => None,
-            }
-        }
+        // `ignite`, `extinguish`, `set <player> on fire` are `w2_effects_2`'s.
         _ => None,
     };
     Ok(fx.map(|f| Effect::World(Box::new(f))))
-}
-
-fn player_arg(toks: Option<&[Tok]>, env: &Env) -> Option<Expr> {
-    player(toks?, env)
-}
-
-fn ignite(toks: Option<&[Tok]>, env: &Env) -> Option<WorldFx> {
-    let toks = toks?;
-    let (who, dur) = split_for(toks, env)?;
-    Some(WorldFx::Ignite {
-        who: player(who, env)?,
-        dur,
-    })
-}
-
-/// `set <who> on fire [for <dur>]`: `rest` is what follows `fire`.
-fn ignite_parts(who: Option<&[Tok]>, rest: &[Tok], env: &Env) -> Option<WorldFx> {
-    let who = player(who?, env)?;
-    let dur = match rest.split_first() {
-        None => None,
-        Some((f, d)) if is(f, "for") => Some(duration(d, env)?),
-        Some(_) => return None,
-    };
-    Some(WorldFx::Ignite { who, dur })
 }
 
 /// `strike lightning [effect] at <place>`, `show a lightning effect at <place>`.
@@ -645,17 +603,6 @@ impl Engine {
             WorldFx::ClearEffects { from, effect } => {
                 if let Some(p) = self.fx_player(from, ex, host)? {
                     host.clear_effects(&p, effect.as_deref());
-                }
-            }
-            WorldFx::Ignite { who, dur } => {
-                let ticks = ticks_of(dur, DEFAULT_FIRE_TICKS, self, ex, host)?;
-                if let Some(p) = self.fx_player(who, ex, host)? {
-                    host.set_fire(&p, ticks as i32);
-                }
-            }
-            WorldFx::Extinguish(who) => {
-                if let Some(p) = self.fx_player(who, ex, host)? {
-                    host.set_fire(&p, 0);
                 }
             }
         }

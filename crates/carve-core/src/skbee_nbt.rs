@@ -1338,6 +1338,10 @@ pub fn build(h: &Head, operand: Expr, env: &Env) -> Result<Expr, String> {
         HeadKind::Snbt => NbtExpr::Snbt(src_of(operand)),
         HeadKind::Comp(c) => match tool_player(&operand) {
             Some(p) => NbtExpr::Comp(*c, p.clone()),
+            // `max stack size of diamond`: the item type's own limit.
+            None if *c == ItemComp::MaxStackSize => {
+                return Ok(crate::w2_expressions_5::boxed(crate::w2_expressions_5::W5::MaxStack(Box::new(operand))));
+            }
             None => return Err(format!("use '{} of player's tool'", c.name())),
         },
     };
