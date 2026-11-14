@@ -921,13 +921,20 @@ impl Engine {
             Prop::Name => online(v, &mut ex.seen, host)
                 .map(|p| Value::Text(p.name))
                 .unwrap_or(Value::None),
-            Prop::Tool => match online(v, &mut ex.seen, host).and_then(|p| host.held_item(&p)) {
-                Some((id, count)) => Value::Item { id, count },
-                None => Value::Item {
-                    id: "air".into(),
-                    count: 1,
-                },
-            },
+            Prop::Tool => {
+                let p = online(v, &mut ex.seen, host);
+                match p.as_ref().and_then(|p| host.held_item(p)) {
+                    Some((id, count)) => {
+                        let meta = p.and_then(|p| host.held_item_meta(&p)).map(Box::new);
+                        Value::Item { id, count, meta }
+                    }
+                    None => Value::Item {
+                        id: "air".into(),
+                        count: 1,
+                        meta: None,
+                    },
+                }
+            }
             Prop::Gamemode => online(v, &mut ex.seen, host)
                 .and_then(|p| host.gamemode(&p))
                 .map(Value::Text)
@@ -1094,10 +1101,18 @@ impl Engine {
                 let Some(p) = online(&p, &mut ex.seen, host) else {
                     return Ok(false);
                 };
-                let Value::Item { id, count } = item else {
+                let Value::Item { id, count, .. } = item else {
                     return Err(format!("expected an item, got {} ({item})", item.type_name()));
                 };
                 Ok((host.count_item(&p, &id) >= count.max(1)) != *negate)
+            }
+            Cond::ItemEnch { item, ench, negate } => {
+                let item = self.eval(item, ex, host)?;
+                let spec = match ench {
+                    Some(e) => Some(self.text(e, ex, host)?),
+                    None => None,
+                };
+                Ok(crate::item_meta::has_enchant(&item, spec.as_deref()) != *negate)
             }
             Cond::All(parts) => {
                 for p in parts {
@@ -1380,6 +1395,10 @@ impl Engine {
                 Expr::Indices(v) => {
                     out.extend(self.list_items(v, ex, host)?.into_iter().map(|(k, _)| Value::Text(k)));
                 }
+                Expr::ItemInfo(..) => match self.eval(e, ex, host)? {
+                    Value::List(l) => out.extend(l),
+                    v => out.push(v),
+                },
                 _ => out.push(self.eval(e, ex, host)?),
             }
         }
@@ -1611,6 +1630,7 @@ impl Engine {
                 Some(b) => Value::Item {
                     id: b.clone(),
                     count: 1,
+                    meta: None,
                 },
                 None => Value::None,
             },
@@ -1618,6 +1638,9 @@ impl Engine {
             Expr::Arg(i) => ex.ctx.args.get(i.wrapping_sub(1)).cloned().unwrap_or(Value::None),
             Expr::NameOf(inner) => {
                 let v = self.eval(inner, ex, host)?;
+                if matches!(v, Value::Item { .. }) {
+                    return Ok(crate::item_meta::info(crate::item_meta::ItemInfo::Name, &v));
+                }
                 match online(&v, &mut ex.seen, host) {
                     Some(p) => Value::Text(p.name),
                     None => Value::None,
@@ -1628,7 +1651,29 @@ impl Engine {
             Expr::Item { id, count } => Value::Item {
                 id: id.clone(),
                 count: *count,
+                meta: None,
             },
+            Expr::ItemMeta(m) => {
+                let base = self.eval(&m.base, ex, host)?;
+                let name = match &m.name {
+                    Some(n) => Some(self.text(n, ex, host)?),
+                    None => None,
+                };
+                let mut lore = Vec::with_capacity(m.lore.len());
+                for l in &m.lore {
+                    lore.push(self.text(l, ex, host)?);
+                }
+                let mut specs = Vec::with_capacity(m.enchants.len());
+                for s in &m.enchants {
+                    specs.push(self.text(s, ex, host)?);
+                }
+                crate::item_meta::with_meta(base, name, lore, &specs)
+            }
+            Expr::ItemInfo(info, inner) => {
+                let v = self.eval(inner, ex, host)?;
+                crate::item_meta::info(*info, &v)
+            }
+            Expr::Enchant(b) => Value::Text(crate::item_meta::spec_text(&b.0, b.1)),
             Expr::WorldNamed(n) => Value::World(self.text(n, ex, host)?),
             Expr::Blk(b) => self.block_eval(b, ex, host)?,
             Expr::Bound(b) => self.bound_eval(b, ex, host)?,
@@ -1971,7 +2016,7 @@ impl Engine {
             }
             Effect::Give(p, n, item) => {
                 let item = self.eval(item, ex, host)?;
-                let Value::Item { id, count } = item else {
+                let Value::Item { id, count, meta } = item else {
                     return Err(format!("expected an item, got {} ({item})", item.type_name()));
                 };
                 let count = match n {
@@ -1985,7 +2030,10 @@ impl Engine {
                     None => count,
                 };
                 if let Some(p) = self.player(p, ex, host)? {
-                    host.give_item(&p, &id, count);
+                    match meta {
+                        Some(m) => host.give_item_meta(&p, &id, count, &m),
+                        None => host.give_item(&p, &id, count),
+                    }
                 }
             }
             Effect::PlaySound {

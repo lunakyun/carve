@@ -307,7 +307,7 @@ fn item_of(v: Value) -> Result<Option<(String, u32)>, String> {
     match v {
         Value::None => Ok(None),
         Value::Item { id, .. } if id == "air" => Ok(None),
-        Value::Item { id, count } => Ok(Some((id, count.max(1)))),
+        Value::Item { id, count, .. } => Ok(Some((id, count.max(1)))),
         other => Err(format!("expected an item, got {} ({other})", other.type_name())),
     }
 }
@@ -370,7 +370,7 @@ impl Engine {
                 match self.player(&inv.who, ex, host)? {
                     Some(p) => host
                         .inv_get(&p, inv.current, slot)
-                        .map_or(Value::None, |(id, count)| Value::Item { id, count }),
+                        .map_or(Value::None, |(id, count)| Value::Item { id, count, meta: None }),
                     None => Value::None,
                 }
             }
@@ -380,7 +380,7 @@ impl Engine {
                 .inv
                 .as_ref()
                 .and_then(|c| c.item.clone())
-                .map_or(Value::None, |(id, count)| Value::Item { id, count }),
+                .map_or(Value::None, |(id, count)| Value::Item { id, count, meta: None }),
             InvExpr::ClickType => ex
                 .ctx
                 .inv

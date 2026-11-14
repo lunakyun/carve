@@ -239,6 +239,7 @@ pub fn eval(v: EventVal, ctx: &EventCtx) -> Value {
             Some((id, count)) => Value::Item {
                 id: id.clone(),
                 count: *count,
+                meta: None,
             },
             None => Value::None,
         },

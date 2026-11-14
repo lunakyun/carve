@@ -26,6 +26,8 @@ pub enum Value {
     Item {
         id: String,
         count: u32,
+        /// Name, lore and enchantments, when the item has any.
+        meta: Option<Box<crate::item_meta::ItemMeta>>,
     },
     Location {
         x: f64,
@@ -157,12 +159,17 @@ impl Value {
             Value::Text(t) => out.push_str(t),
             Value::Bool(b) => out.push_str(if *b { "true" } else { "false" }),
             Value::Player(p) => out.push_str(&p.name),
-            Value::Item { id, count } => {
+            Value::Item { id, count, meta } => {
                 if *count != 1 {
                     push_num(out, f64::from(*count));
                     out.push(' ');
                 }
                 out.push_str(&id.replace('_', " "));
+                if let Some(n) = meta.as_ref().and_then(|m| m.name.as_ref()) {
+                    out.push_str(" named \"");
+                    out.push_str(n);
+                    out.push('"');
+                }
             }
             Value::Location { x, y, z, world } => {
                 out.push_str("x: ");

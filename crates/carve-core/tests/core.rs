@@ -1543,7 +1543,8 @@ fn new_types_persist_and_type_check() {
         back.get("i"),
         Value::Item {
             id: "golden_apple".into(),
-            count: 3
+            count: 3,
+            meta: None
         }
     );
     assert_eq!(

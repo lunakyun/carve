@@ -243,14 +243,14 @@ impl Engine {
             BlockExpr::TypeOf(e) => {
                 let v = self.eval(e, ex, host)?;
                 if let Value::Item { id, .. } = v {
-                    return Ok(Value::Item { id, count: 1 });
+                    return Ok(Value::Item { id, count: 1, meta: None });
                 }
                 let Some(p) = self.block_pos(&v, ex, host) else {
                     return Ok(Value::None);
                 };
                 Ok(host
                     .block_type(&p)
-                    .map_or(Value::None, |id| Value::Item { id, count: 1 }))
+                    .map_or(Value::None, |id| Value::Item { id, count: 1, meta: None }))
             }
         }
     }

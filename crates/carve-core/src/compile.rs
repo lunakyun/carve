@@ -208,6 +208,12 @@ pub enum Cond {
         item: Expr,
         negate: bool,
     },
+    /// `item is enchanted [with sharpness 5]`; `ench` is `None` for any enchantment.
+    ItemEnch {
+        item: Expr,
+        ench: Option<Expr>,
+        negate: bool,
+    },
     /// Every part is true (`a and b`).
     All(Vec<Cond>),
     /// At least one part is true (`a or b`).
@@ -463,6 +469,8 @@ pub enum CondKind {
     NotBetween,
     HasItem,
     NotHasItem,
+    /// `item is enchanted [with x]`.
+    ItemEnchanted { any: bool, negate: bool },
     InvContains,
     IsPlayer,
     IsNotPlayer,
@@ -606,6 +614,7 @@ fn registry() -> &'static Registry {
             .iter()
             .chain(crate::senders::SENDER_CONDITION_PATTERNS)
             .chain(crate::gamemode::CONDITION_PATTERNS)
+            .chain(crate::item_meta::CONDITION_PATTERNS)
             .chain(PLAYER_FLAG_PATTERNS)
             .chain(CONDITION_PATTERNS)
             .filter_map(|(s, k)| Pattern::new(s, *k).ok())
@@ -633,6 +642,7 @@ pub fn check_registry() -> Result<(), String> {
         .iter()
         .chain(crate::senders::SENDER_CONDITION_PATTERNS)
         .chain(crate::gamemode::CONDITION_PATTERNS)
+        .chain(crate::item_meta::CONDITION_PATTERNS)
         .chain(PLAYER_FLAG_PATTERNS)
         .chain(CONDITION_PATTERNS)
     {
@@ -1521,6 +1531,13 @@ fn build_cond(kind: CondKind, mut c: Vec<Option<Capture>>) -> Cond {
                 player: a,
                 item: b,
                 negate: true,
+            };
+        }
+        CondKind::ItemEnchanted { any, negate } => {
+            return Cond::ItemEnch {
+                item: a,
+                ench: (!any).then_some(b),
+                negate,
             };
         }
         CondKind::Between | CondKind::NotBetween => {

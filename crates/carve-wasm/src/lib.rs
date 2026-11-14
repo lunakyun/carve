@@ -70,6 +70,23 @@ fn plog(level: ApiLevel, msg: &str) {
     log(level, &format!("[Carve] {msg}"));
 }
 
+/// `Enchantment::SweepingEdge` (or `SweepingEdge`) as `sweeping_edge`.
+fn enchant_id(debug: &str) -> String {
+    let name = debug.rsplit("::").next().unwrap_or(debug);
+    let mut out = String::with_capacity(name.len() + 4);
+    for (i, c) in name.chars().enumerate() {
+        if c.is_ascii_uppercase() {
+            if i > 0 {
+                out.push('_');
+            }
+            out.push(c.to_ascii_lowercase());
+        } else {
+            out.push(c);
+        }
+    }
+    out
+}
+
 /// Build a component from `&a` / `§a` codes, `<#rrggbb>` and `<red>` style tags.
 fn text(s: &str) -> TextComponent {
     if !s.contains(['&', '§', '<']) {
@@ -323,6 +340,21 @@ impl WasmHost<'_> {
         let key = stack.get_registry_key();
         let id = key.strip_prefix("minecraft:").unwrap_or(&key).to_string();
         Some((id, u32::from(stack.get_count())))
+    }
+
+    fn held_item_meta(&mut self, p: &PlayerRef) -> Option<carve_core::item_meta::ItemMeta> {
+        use carve_core::item_meta::{ItemMeta, plain_from_json};
+        let stack = self.get(p)?.get_item_in_hand(Hand::Right)?;
+        let meta = ItemMeta {
+            name: stack.get_custom_name().map(|n| plain_from_json(&n.to_json())),
+            lore: stack.get_lore().iter().map(|l| plain_from_json(&l.to_json())).collect(),
+            enchants: stack
+                .get_enchantments()
+                .into_iter()
+                .map(|e| (enchant_id(&format!("{:?}", e.enchantment)), e.level))
+                .collect(),
+        };
+        (!meta.is_empty()).then_some(meta)
     }
 
     fn count_item(&mut self, p: &PlayerRef, id: &str) -> u32 {
@@ -672,6 +704,7 @@ impl Host for TickHost<'_, '_> {
         player_location(p: &PlayerRef) -> Option<(f64, f64, f64, String)>;
         teleport_to(p: &PlayerRef, x: f64, y: f64, z: f64, world: Option<&str>);
         held_item(p: &PlayerRef) -> Option<(String, u32)>;
+        held_item_meta(p: &PlayerRef) -> Option<carve_core::item_meta::ItemMeta>;
         count_item(p: &PlayerRef, id: &str) -> u32;
         health(p: &PlayerRef) -> Option<f64>;
         gamemode(p: &PlayerRef) -> Option<String>;

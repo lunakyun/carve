@@ -14,6 +14,7 @@ pub mod gamemode;
 pub mod health_food;
 pub mod fx_names;
 pub mod host;
+pub mod item_meta;
 pub mod items;
 pub mod lexer;
 pub mod list_literals;
