@@ -188,7 +188,9 @@ async function phase1 (srv) {
 
   // A command added by reload can't be registered until a restart (Pumpkin API limit).
   fs.writeFileSync(path.join(SCRIPTS, 'late.carve'), 'command /tlate:\n    trigger:\n        send "t:late"\n')
-  const lateMsg = await reload(tester, 'Reloaded')
+  t = Date.now()
+  tester.command('carve reload')
+  const lateMsg = await tester.waitFor(has('system', 'need a server restart'), 15000, t)
   check('reload names new commands that need a restart', !!lateMsg && lateMsg.text.includes('/tlate'))
   t = Date.now()
   tester.command('tlate')
@@ -275,20 +277,80 @@ async function phase1 (srv) {
   tester.dig(0, 63, 0, 0)
   check('v2 on left click with <item> filter', !!await tester.waitFor(has('system', 't:lclick-stone'), 3000, t))
 
+  // ---- /carve admin ----
+  const say = async (cmd, want, who = tester, ms = 5000) => {
+    const t0 = Date.now()
+    who.command(cmd)
+    return who.waitFor(has('system', want), ms, t0)
+  }
+  check('admin: help', !!await say('carve help', '/carve timings'))
+  check('admin: alias /cv', !!await say('cv help', '/carve reload'))
+  check('admin: list', !!await say('carve list', 'carve-test.carve'))
+  check('admin: info', !!await say('carve info', 'Data folder'))
+  check('admin: info <script>', !!await say('carve info carve-test', 'double(n: number) :: number'))
+  fs.writeFileSync(path.join(SCRIPTS, 'one.carve'), 'on join:\n    blorp\n')
+  const bad = await say('carve reload one', 'its old version is kept')
+  check('admin: reload <script> with error keeps old', !!bad && !!await tester.waitFor(has('system', 'one.carve:2'), 2000, bad.t))
+  check('admin: errors', !!await say('carve errors one', 'one.carve:2'))
+  fs.writeFileSync(path.join(SCRIPTS, 'one.carve'),
+    'command /tvar2:\n    trigger:\n        send "x"\non chat:\n    if message is "one?":\n        send "t:one" to player\n')
+  check('admin: reload <script>', !!await say('carve reload one', 'Reloaded one.carve'))
+  t = Date.now()
+  tester.chat('one?')
+  check('admin: reloaded script runs', !!await tester.waitFor(has('system', 't:one'), 4000, t))
+  check('admin: disable', !!await say('carve disable one', 'Disabled one.carve'))
+  check('admin: disabled file renamed', fs.existsSync(path.join(SCRIPTS, '-one.carve')))
+  t = Date.now()
+  tester.chat('one?')
+  check('admin: disabled script stops', !await tester.waitFor(has('system', 't:one'), 2000, t))
+  check('admin: enable (restart note for its command)', !!await say('carve enable one', 'need a server restart'))
+  check('admin: list disabled', !!await say('carve list disabled', 'Disabled (0)'))
+  fs.rmSync(path.join(SCRIPTS, 'one.carve'))
+  await say('carve reload', 'Reloaded')
+  check('admin: vars set', !!await say('carve vars set t_admin 41', 'Set {t_admin} to 41'))
+  t = Date.now()
+  tester.command('carve run add 1 to {t_admin}')
+  await sleep(300)
+  check('admin: run <effect> + vars get', !!await say('carve vars get t_admin', '42'))
+  check('admin: run shows parse errors', !!await say('carve run brodcast "x"', 'did you mean'))
+  check('admin: vars list', !!await say('carve vars list t_', '{t_admin}'))
+  check('admin: vars delete', !!await say('carve vars delete t_admin', 'Deleted 1'))
+  await say('carve timings on', 'Timings on')
+  tester.command('tvar')
+  await sleep(300)
+  check('admin: timings', !!await say('carve timings', 'carve-test.carve'))
+  await say('carve timings off', 'Timings off')
+  check('admin: permission denied for non-op', !!await say('carve vars list', 'need the carve:vars permission', pleb))
+  t = Date.now()
+  tester.suggest('/carve re')
+  const sug = await tester.waitFor((e) => e.kind === 'suggest', 4000, t)
+  check('admin: tab completion (subcommand)', !!sug && sug.text.includes('reload'), sug ? sug.text : 'no reply')
+  // Script names are not completed (Pumpkin 0.2.2 crashes on plugin
+  // suggestion handlers); this checks that asking is harmless.
+  t = Date.now()
+  tester.suggest('/carve info carve-t')
+  await sleep(1000)
+  t = Date.now()
+  tester.command('tvar')
+  check('admin: tab completion of an argument is harmless', !!await tester.waitFor(has('system', 't:counter'), 4000, t))
+
   t = Date.now()
   pleb.quit()
   check('on quit (player name still known)', !!await tester.waitFor(has('system', 't:quit Pleb'), 4000, t))
 
   await sleep(6000) // variables.json is saved ~5 s after a change
+  lastCounter = Math.max(0, ...tester.log.filter(has('system', 't:counter')).map((e) => Number((e.text.match(/t:counter (\d+)/) || [])[1] || 0)))
   tester.quit()
   await sleep(500)
 }
+
+let lastCounter = 0
 
 async function phase2 (srv) {
   const tester = await join('Tester')
   const t = Date.now()
   tester.command('tvar')
-  check('variable survives server restart', !!await tester.waitFor(has('system', 't:counter 4'), 4000, t))
+  check('variable survives server restart', !!await tester.waitFor(has('system', `t:counter ${lastCounter + 1}`), 4000, t), `expected ${lastCounter + 1}`)
   tester.quit()
   await sleep(500)
 }
@@ -305,7 +367,7 @@ async function main () {
   }
   const vars = path.join(DATA, 'variables.json')
   const saved = fs.existsSync(vars) ? fs.readFileSync(vars, 'utf8') : ''
-  check('variables.json written', /"t_counter":\s*3/.test(saved))
+  check('variables.json written', new RegExp(`"t_counter":\\s*${lastCounter}\\b`).test(saved), `t_counter ${lastCounter}`)
 
   const srv2 = new Server()
   if (!await srv2.start()) throw new Error('server did not restart')

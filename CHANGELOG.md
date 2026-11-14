@@ -40,6 +40,11 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - Commands: `aliases:`, `usage:` and `executable by:`.
 - Text can hold quotes inside `%...%`, as in `"%f("x")%"`.
 
+- `/carve` admin command: `help`, `reload [all|<script>]`, `enable`/`disable`,
+  `list`, `info`, `errors`, `vars list/get/set/delete`, `run`, `timings`.
+  Permissions: `carve:admin`, plus `carve:reload`, `carve:enable`,
+  `carve:vars` and `carve:run`. See [the /carve command](docs/admin.md).
+
 ### Fixed (v2)
 
 - An option whose value ends with `:` was read as an empty block.

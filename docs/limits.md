@@ -19,6 +19,12 @@ expect, or don't exist yet. Plans for some of them are in the
   directly. A node from another plugin (`other:x`) works only if that plugin
   registered it.
 
+## The /carve command
+
+- **Tab completion** works for subcommands only. Pumpkin 0.2.2 crashes when it
+  asks a plugin for completions, so Carve offers none for script names.
+- **Single-file reload** doesn't run `on load`.
+
 ## Events
 
 - **Events:** join, quit, chat, break, place, death, damage, respawn, clicks,

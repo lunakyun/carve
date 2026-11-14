@@ -54,7 +54,8 @@ command /heal [<player>]:
    On a hosted server without an interactive console, allow them in
    `pumpkin.toml` instead (see below).
 3. Put `*.carve` files in `plugins/data/carve/scripts/`.
-4. Run `/carve reload` (`carve:admin`, ops have it by default).
+4. Run `/carve reload` (ops can by default). `/carve help` lists everything
+   else: enable/disable, info, errors, variables, run and timings.
 
 On hosted servers (panels without a console you can type in), Pumpkin can't
 ask and skips Carve with "Console readline is not available". Allow the
@@ -88,6 +89,7 @@ cargo build -p carve-wasm --release --target wasm32-wasip2
   [types](docs/syntax/types.md)
 - [Variables](docs/variables.md)
 - [Commands](docs/commands.md)
+- [The /carve command](docs/admin.md)
 - [Reading errors](docs/errors.md)
 - [Known limits](docs/limits.md)
 - [Architecture](docs/architecture.md)

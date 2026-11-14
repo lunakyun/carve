@@ -357,6 +357,10 @@ fn read_scripts(dir: &str) -> Result<Vec<(String, String)>, String> {
                 .file_name()
                 .map(|n| n.to_string_lossy().into_owned())
                 .unwrap_or_default();
+            // `-name.carve` is disabled (Skript's convention).
+            if name.starts_with('-') {
+                continue;
+            }
             match std::fs::read_to_string(&path) {
                 Ok(src) => files.push((name, src)),
                 Err(e) => return Err(format!("can't read {name}: {e}")),
@@ -696,58 +700,80 @@ impl CommandHandler for ScriptCommand {
     }
 }
 
-struct ReloadCommand;
+/// The scripts folder, for `/carve`.
+struct DirStore(String);
 
-impl CommandHandler for ReloadCommand {
-    fn handle(
-        &self,
-        sender: CommandSender,
-        server: Server,
-        _args: ConsumedArgs,
-    ) -> Result<i32, CommandError> {
-        let result = with_state(&server, None, |st, _host| -> Result<Vec<String>, String> {
-            let files = read_scripts(&st.scripts_dir())?;
-            match st.engine.reload(&files) {
-                Ok(sum) => {
-                    let new: Vec<String> = sum
-                        .commands
-                        .iter()
-                        .filter(|c| !st.registered.contains(*c))
-                        .map(|c| format!("/{c}"))
-                        .collect();
-                    let mut msg = format!("&aReloaded {} script(s), {} trigger(s).", sum.files, sum.triggers);
-                    if !new.is_empty() {
-                        msg.push_str(&format!(
-                            " &eNew commands need a server restart: {}",
-                            new.join(", ")
-                        ));
-                    }
-                    Ok(vec![msg])
-                }
-                Err(errors) => {
-                    report(&errors);
-                    let mut lines = vec![format!("&c{} error(s), old scripts kept:", errors.len())];
-                    lines.extend(errors.iter().take(10).map(|e| format!("&c{e}")));
-                    Ok(lines)
-                }
-            }
+impl carve_core::admin::ScriptStore for DirStore {
+    fn list(&mut self) -> Result<Vec<String>, String> {
+        let entries = std::fs::read_dir(&self.0).map_err(|e| format!("can't read {}: {e}", self.0))?;
+        Ok(entries
+            .flatten()
+            .filter_map(|e| e.file_name().into_string().ok())
+            .collect())
+    }
+    fn read(&mut self, name: &str) -> Result<String, String> {
+        std::fs::read_to_string(format!("{}/{name}", self.0)).map_err(|e| format!("can't read {name}: {e}"))
+    }
+    fn rename(&mut self, from: &str, to: &str) -> Result<(), String> {
+        std::fs::rename(format!("{}/{from}", self.0), format!("{}/{to}", self.0))
+            .map_err(|e| format!("can't rename {from} to {to}: {e}"))
+    }
+}
+
+fn admin_args(args: &ConsumedArgs) -> String {
+    use pumpkin_plugin_api::command::Arg;
+    match args.get_value("args") {
+        Arg::Simple(s) | Arg::Msg(s) => s,
+        _ => String::new(),
+    }
+}
+
+/// `/carve <sub> [args]` (alias `/cv`).
+struct AdminCommand {
+    sub: &'static str,
+    with_args: bool,
+}
+
+impl CommandHandler for AdminCommand {
+    fn handle(&self, sender: CommandSender, server: Server, args: ConsumedArgs) -> Result<i32, CommandError> {
+        let raw = if self.with_args {
+            format!("{} {}", self.sub, admin_args(&args))
+        } else {
+            self.sub.to_string()
+        };
+        let recipient = match sender.as_player() {
+            Some(p) => Recipient::Player(player_ref(&p)),
+            None => Recipient::Console,
+        };
+        let out = with_state(&server, Some(&sender), |st, host| {
+            let allowed = |node: &str| sender.has_permission(&server, node);
+            let mut store = DirStore(st.scripts_dir());
+            let env = carve_core::admin::AdminEnv {
+                sender: recipient,
+                allowed: &allowed,
+                registered: &st.registered,
+                version: env!("CARGO_PKG_VERSION"),
+                api: "v0.1",
+                data_folder: "plugins/data/carve",
+            };
+            let mut th = TickHost {
+                inner: host,
+                hs: &mut st.hs,
+            };
+            let out = carve_core::admin::admin(&mut st.engine, &mut store, &mut th, &env, &raw);
+
+            out
         });
-        match result {
-            Some(Ok(lines)) => {
-                if lines.first().is_some_and(|l| l.starts_with("&aReloaded")) {
-                    fire_load(&server);
-                }
-                for l in lines {
-                    sender.send_message(text(&l));
-                }
-                Ok(1)
-            }
-            Some(Err(e)) => {
-                sender.send_error(text(&e));
-                Ok(0)
-            }
-            None => Err(CommandError::CommandFailed(text("Carve is busy, try again."))),
+        let Some(out) = out else {
+            return Err(CommandError::CommandFailed(text("Carve is busy, try again.")));
+        };
+        if out.loaded {
+            fire_load(&server);
         }
+        for l in &out.lines {
+            sender.send_message(text(l));
+        }
+        Ok(1)
     }
 }
 
@@ -860,7 +886,27 @@ impl Plugin for Carve {
         for (node, desc, default) in [
             (
                 ADMIN_PERM,
+                "Use every /carve subcommand",
+                PermissionDefault::Op(PermissionLevel::Two),
+            ),
+            (
+                "carve:reload",
                 "Use /carve reload",
+                PermissionDefault::Op(PermissionLevel::Two),
+            ),
+            (
+                "carve:enable",
+                "Use /carve enable and disable",
+                PermissionDefault::Op(PermissionLevel::Two),
+            ),
+            (
+                "carve:vars",
+                "Use /carve vars",
+                PermissionDefault::Op(PermissionLevel::Two),
+            ),
+            (
+                "carve:run",
+                "Use /carve run",
                 PermissionDefault::Op(PermissionLevel::Two),
             ),
             (
@@ -880,9 +926,36 @@ impl Plugin for Carve {
             }
         }
 
-        let admin = Command::new(&["carve".to_string(), "cv".to_string()], "Carve admin")
-            .then(CommandNode::literal("reload").execute(ReloadCommand));
-        context.register_command(admin, ADMIN_PERM);
+        // Everyone may run /carve (help); each subcommand checks its own permission.
+        // Subcommands are literal nodes, so the client completes them by itself.
+        // No plugin suggestion handler: Pumpkin 0.2.2 panics (and the server
+        // stops) when it calls one ("there is no reactor running").
+        let mut admin = Command::new(
+            &["carve".to_string(), "cv".to_string()],
+            "Carve scripts: /carve help",
+        )
+        .execute(AdminCommand {
+            sub: "help",
+            with_args: false,
+        });
+        for (name, ..) in carve_core::admin::SUBCOMMANDS {
+            admin = admin.then(
+                CommandNode::literal(name)
+                    .execute(AdminCommand {
+                        sub: name,
+                        with_args: false,
+                    })
+                    .then(
+                        CommandNode::argument("args", &ArgumentType::String(StringType::Greedy)).execute(
+                            AdminCommand {
+                                sub: name,
+                                with_args: true,
+                            },
+                        ),
+                    ),
+            );
+        }
+        context.register_command(admin, COMMAND_PERM);
 
         let mut registered = BTreeSet::new();
         let mut perms_done = BTreeSet::new();

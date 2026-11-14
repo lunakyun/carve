@@ -64,6 +64,14 @@ for new commands, and the runaway guard.
   `on respawn`
 - right and left click with filters
 
+**`/carve`:**
+- every subcommand, including single-file reload with and without errors and
+  disable/enable with the file rename
+- `vars` set/get/list/delete, `run` (also with a typo) and `timings`
+- the permission check for a non-op
+- tab completion of subcommands, and that asking for argument completion
+  doesn't crash the server
+
 Not covered: `attacker` with a real hit. That needs the test client to attack
 another player's entity, which it can't do yet.
 

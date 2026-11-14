@@ -13,11 +13,11 @@ const SB = {
   HANDSHAKE: 0, HELLO: 0, LOGIN_ACK: 3,
   C_CLIENT_INFO: 0, C_FINISH: 3, C_KEEP_ALIVE: 4, C_PONG: 5, C_KNOWN_PACKS: 7, C_ACCEPT_COC: 9,
   ACCEPT_TP: 0, CHAT_COMMAND: 7, CHAT: 9, CHUNK_BATCH_RECEIVED: 11, KEEP_ALIVE: 28, MOVE_POS: 30,
-  PLAYER_ACTION: 41, PLAYER_LOADED: 44, PONG: 45, USE_ITEM_ON: 66, CLIENT_COMMAND: 12,
+  PLAYER_ACTION: 41, PLAYER_LOADED: 44, PONG: 45, USE_ITEM_ON: 66, CLIENT_COMMAND: 12, COMMAND_SUGGESTION: 15,
 }
 const CB = {
   L_DISCONNECT: 0, L_FINISHED: 2, L_COMPRESSION: 3,
-  C_DISCONNECT: 2, C_FINISH: 3, C_KEEP_ALIVE: 4, C_PING: 5, C_KNOWN_PACKS: 15, C_COC: 20,
+  C_DISCONNECT: 2, C_FINISH: 3, C_KEEP_ALIVE: 4, C_PING: 5, C_KNOWN_PACKS: 15, C_COC: 20, COMMAND_SUGGESTIONS: 15,
   CHUNK_BATCH_FINISHED: 11, DISCONNECT: 32, DISGUISED_CHAT: 33, KEEP_ALIVE: 45, PING: 62,
   PLAYER_CHAT: 66, PLAYER_POSITION: 73, RESPAWN: 84, ACTION_BAR: 89, SET_HEALTH: 106, SUBTITLE: 114,
   TITLE: 116, SYSTEM_CHAT: 124,
@@ -164,6 +164,23 @@ class Bot extends EventEmitter {
       case CB.ACTION_BAR: this._record('actionbar', text(d)); break
       case CB.DISCONNECT: this._record('kick', text(d)); break
       // After a respawn the client must say "loaded" again, or Pumpkin ignores clicks.
+      case CB.COMMAND_SUGGESTIONS: {
+        // id, start, length, count, then (text, has tooltip) per match
+        let o = readVarint(d, 0)[1]
+        o = readVarint(d, o)[1]
+        o = readVarint(d, o)[1]
+        const [n, o2] = readVarint(d, o)
+        o = o2
+        const values = []
+        for (let i = 0; i < n; i++) {
+          const [len, o3] = readVarint(d, o)
+          values.push(d.toString('utf8', o3, o3 + len))
+          o = o3 + len
+          if (d[o++]) break // tooltip NBT follows; Carve sends none
+        }
+        this._record('suggest', values.join(' '))
+        break
+      }
       case CB.RESPAWN: this.loaded = false; this._record('respawn', ''); break
     }
   }
@@ -180,6 +197,9 @@ class Bot extends EventEmitter {
   placeOn (x, y, z) {
     this._send(SB.USE_ITEM_ON, Buffer.concat([varint(0), blockPos(x, y, z), varint(1), f32(0.5, 1, 0.5), u8(0), u8(0), varint(2)]))
   }
+
+  // Ask for tab completion of a command line like "/carve re".
+  suggest (line) { this._send(SB.COMMAND_SUGGESTION, Buffer.concat([varint(7), str(line)])) }
 
   // Press "Respawn" on the death screen.
   respawn () { this._send(SB.CLIENT_COMMAND, varint(0)) }
