@@ -42,6 +42,8 @@ pub mod skbee_utilities;
 pub mod server_misc;
 pub mod player_flags;
 pub mod timespans;
+pub mod types_1;
+pub mod types_1_data;
 pub mod value;
 pub mod w2_conditions_2;
 pub mod vars;
