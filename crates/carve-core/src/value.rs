@@ -54,21 +54,48 @@ impl Value {
             (Value::Player(p), Value::Text(t)) | (Value::Text(t), Value::Player(p)) => {
                 p.name.eq_ignore_ascii_case(t)
             }
-            (Value::Num(n), Value::Text(t)) | (Value::Text(t), Value::Num(n)) => {
-                t.trim().parse::<f64>().map(|v| (v - n).abs() < 1e-9).unwrap_or(false)
-            }
+            (Value::Num(n), Value::Text(t)) | (Value::Text(t), Value::Num(n)) => t
+                .trim()
+                .parse::<f64>()
+                .map(|v| (v - n).abs() < 1e-9)
+                .unwrap_or(false),
             _ => false,
         }
     }
 }
 
 pub fn format_num(n: f64) -> String {
+    let mut s = String::new();
+    push_num(&mut s, n);
+    s
+}
+
+/// Append a number the way scripts print it: whole numbers without a
+/// fraction, others with at most 4 decimals.
+pub fn push_num(out: &mut String, n: f64) {
+    use std::fmt::Write;
     if n.is_finite() && n.fract() == 0.0 && n.abs() < 1e15 {
-        format!("{}", n as i64)
+        let _ = write!(out, "{}", n as i64);
     } else {
-        let s = format!("{n:.4}");
-        let s = s.trim_end_matches('0').trim_end_matches('.');
-        s.to_string()
+        let start = out.len();
+        let _ = write!(out, "{n:.4}");
+        let keep = out
+            .get(start..)
+            .map_or(0, |s| s.trim_end_matches('0').trim_end_matches('.').len());
+        out.truncate(start + keep);
+    }
+}
+
+impl Value {
+    /// Append the printed form of this value to `out`.
+    pub fn push_to(&self, out: &mut String) {
+        match self {
+            Value::None => out.push_str("<none>"),
+            Value::Num(n) => push_num(out, *n),
+            Value::Text(t) => out.push_str(t),
+            Value::Bool(b) => out.push_str(if *b { "true" } else { "false" }),
+            Value::Player(p) => out.push_str(&p.name),
+        }
     }
 }
 

@@ -6,7 +6,7 @@ use crate::blocks::{Line, parse_blocks};
 use crate::error::ScriptError;
 use crate::expr::{Env, Expr, Ty, VarRef, parse_template};
 use crate::lexer::{Tok, lex};
-use crate::pattern::{Capture, Pattern, closest};
+use crate::pattern::{Capture, Memo, Pattern, closest};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum EventKind {
@@ -105,10 +105,20 @@ pub enum Cond {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Effect {
-    Send { text: Expr, to: Option<Expr> },
+    Send {
+        text: Expr,
+        to: Option<Expr>,
+    },
     Broadcast(Expr),
-    Title { title: Expr, subtitle: Option<Expr>, to: Expr },
-    ActionBar { text: Expr, to: Expr },
+    Title {
+        title: Expr,
+        subtitle: Option<Expr>,
+        to: Expr,
+    },
+    ActionBar {
+        text: Expr,
+        to: Expr,
+    },
     Heal(Expr),
     SetHealth(Expr, Expr),
     Kill(Expr),
@@ -179,14 +189,20 @@ pub enum CondKind {
 
 /// Effect patterns, tried in order (more specific first).
 pub const EFFECT_PATTERNS: &[(&str, EffKind)] = &[
-    ("send title %text% [with subtitle %text%] to %player%", EffKind::Title),
+    (
+        "send title %text% [with subtitle %text%] to %player%",
+        EffKind::Title,
+    ),
     ("send action bar %text% to %player%", EffKind::ActionBar),
     ("send %text% [to %player%]", EffKind::Send),
     ("broadcast %text%", EffKind::Broadcast),
     ("heal %player%", EffKind::Heal),
     ("set health of %player% to %number%", EffKind::SetHealth),
     ("kill %player%", EffKind::Kill),
-    ("teleport %player% to %number%, %number%, %number%", EffKind::Teleport),
+    (
+        "teleport %player% to %number%, %number%, %number%",
+        EffKind::Teleport,
+    ),
     ("execute console command %text%", EffKind::ConsoleCommand),
     ("cancel [the] event", EffKind::Cancel),
     ("wait %number% (tick|ticks)", EffKind::WaitTicks),
@@ -219,8 +235,14 @@ fn registry() -> &'static Registry {
     static R: OnceLock<Registry> = OnceLock::new();
     R.get_or_init(|| Registry {
         // The pattern strings are constants covered by tests; a bad one is skipped.
-        effects: EFFECT_PATTERNS.iter().filter_map(|(s, k)| Pattern::new(s, *k).ok()).collect(),
-        conditions: CONDITION_PATTERNS.iter().filter_map(|(s, k)| Pattern::new(s, *k).ok()).collect(),
+        effects: EFFECT_PATTERNS
+            .iter()
+            .filter_map(|(s, k)| Pattern::new(s, *k).ok())
+            .collect(),
+        conditions: CONDITION_PATTERNS
+            .iter()
+            .filter_map(|(s, k)| Pattern::new(s, *k).ok())
+            .collect(),
     })
 }
 
@@ -308,10 +330,9 @@ impl Cx<'_> {
                 let mut cur = line;
                 let mut cond_text = line.head().get(3..).unwrap_or("");
                 loop {
-                    let jif = match self.cond(cur.num, cond_text) {
-                        Some(c) => Some(self.emit(Instr::JumpIfNot(c, usize::MAX), cur.num)),
-                        None => None,
-                    };
+                    let jif = self
+                        .cond(cur.num, cond_text)
+                        .map(|c| self.emit(Instr::JumpIfNot(c, usize::MAX), cur.num));
                     self.block(&cur.children);
                     let next = lines.get(i + 1);
                     let next_lower = next.map(|l| l.text.to_ascii_lowercase()).unwrap_or_default();
@@ -353,7 +374,13 @@ impl Cx<'_> {
                 continue;
             }
             if line.opens_block() {
-                self.err(line.num, format!("unknown section '{}' (only 'if', 'else if' and 'else' open blocks here)", line.head()));
+                self.err(
+                    line.num,
+                    format!(
+                        "unknown section '{}' (only 'if', 'else if' and 'else' open blocks here)",
+                        line.head()
+                    ),
+                );
                 i += 1;
                 continue;
             }
@@ -370,14 +397,17 @@ impl Cx<'_> {
                 return None;
             }
         };
-        let mut type_err = inner_error(&toks, &self.env);
+        let mut type_err = None;
+        let mut memo = Memo::default();
         for p in &registry().conditions {
-            match p.matches(&toks, &self.env) {
+            match p.matches_memo(&toks, &self.env, &mut memo) {
                 Ok(caps) => return Some(build_cond(p.kind, caps)),
                 Err(Some(e)) if type_err.is_none() => type_err = Some(e),
                 Err(_) => {}
             }
         }
+        // A broken template or variable explains the failure best.
+        let type_err = inner_error(&toks, &self.env).or(type_err);
         let srcs: Vec<&'static str> = CONDITION_PATTERNS.iter().map(|(s, _)| *s).collect();
         let mut e = ScriptError::new(
             self.file,
@@ -400,9 +430,10 @@ impl Cx<'_> {
                 return;
             }
         };
-        let mut type_err = inner_error(&toks, &self.env);
+        let mut type_err = None;
+        let mut memo = Memo::default();
         for p in &registry().effects {
-            match p.matches(&toks, &self.env) {
+            match p.matches_memo(&toks, &self.env, &mut memo) {
                 Ok(caps) => {
                     if p.kind == EffKind::Cancel && self.is_command {
                         self.err(num, "commands have no event to cancel");
@@ -417,6 +448,7 @@ impl Cx<'_> {
                 Err(_) => {}
             }
         }
+        let type_err = inner_error(&toks, &self.env).or(type_err);
         let srcs: Vec<&'static str> = EFFECT_PATTERNS.iter().map(|(s, _)| *s).collect();
         let mut e = ScriptError::new(
             self.file,
@@ -465,8 +497,20 @@ fn build_cond(kind: CondKind, mut c: Vec<Option<Capture>>) -> Cond {
         CondKind::Le => CmpOp::Le,
         CondKind::Gt => CmpOp::Gt,
         CondKind::Lt => CmpOp::Lt,
-        CondKind::HasPerm => return Cond::HasPerm { player: a, node: b, negate: false },
-        CondKind::NotHasPerm => return Cond::HasPerm { player: a, node: b, negate: true },
+        CondKind::HasPerm => {
+            return Cond::HasPerm {
+                player: a,
+                node: b,
+                negate: false,
+            };
+        }
+        CondKind::NotHasPerm => {
+            return Cond::HasPerm {
+                player: a,
+                node: b,
+                negate: true,
+            };
+        }
     };
     Cond::Cmp(a, op, b)
 }
@@ -474,14 +518,29 @@ fn build_cond(kind: CondKind, mut c: Vec<Option<Capture>>) -> Cond {
 fn build_effect(kind: EffKind, mut c: Vec<Option<Capture>>) -> Option<Effect> {
     let c = &mut c;
     Some(match kind {
-        EffKind::Title => Effect::Title { title: take_expr(c, 0)?, subtitle: take_expr(c, 1), to: take_expr(c, 2)? },
-        EffKind::ActionBar => Effect::ActionBar { text: take_expr(c, 0)?, to: take_expr(c, 1)? },
-        EffKind::Send => Effect::Send { text: take_expr(c, 0)?, to: take_expr(c, 1) },
+        EffKind::Title => Effect::Title {
+            title: take_expr(c, 0)?,
+            subtitle: take_expr(c, 1),
+            to: take_expr(c, 2)?,
+        },
+        EffKind::ActionBar => Effect::ActionBar {
+            text: take_expr(c, 0)?,
+            to: take_expr(c, 1)?,
+        },
+        EffKind::Send => Effect::Send {
+            text: take_expr(c, 0)?,
+            to: take_expr(c, 1),
+        },
         EffKind::Broadcast => Effect::Broadcast(take_expr(c, 0)?),
         EffKind::Heal => Effect::Heal(take_expr(c, 0)?),
         EffKind::SetHealth => Effect::SetHealth(take_expr(c, 0)?, take_expr(c, 1)?),
         EffKind::Kill => Effect::Kill(take_expr(c, 0)?),
-        EffKind::Teleport => Effect::Teleport(take_expr(c, 0)?, take_expr(c, 1)?, take_expr(c, 2)?, take_expr(c, 3)?),
+        EffKind::Teleport => Effect::Teleport(
+            take_expr(c, 0)?,
+            take_expr(c, 1)?,
+            take_expr(c, 2)?,
+            take_expr(c, 3)?,
+        ),
         EffKind::ConsoleCommand => Effect::ConsoleCommand(take_expr(c, 0)?),
         EffKind::Cancel => Effect::Cancel,
         EffKind::WaitTicks => Effect::Wait(take_expr(c, 0)?, 1),
@@ -498,8 +557,16 @@ fn parse_command_header(file: &str, num: usize, head: &str) -> Result<CommandDef
     let mut parts = rest.split_whitespace();
     let name = parts.next().unwrap_or("");
     let name = name.strip_prefix('/').unwrap_or(name).to_ascii_lowercase();
-    if name.is_empty() || !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-') {
-        return Err(ScriptError::new(file, num, "expected 'command /name:' with a simple name"));
+    if name.is_empty()
+        || !name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+    {
+        return Err(ScriptError::new(
+            file,
+            num,
+            "expected 'command /name:' with a simple name",
+        ));
     }
     let mut args = Vec::new();
     for p in parts {
@@ -515,16 +582,27 @@ fn parse_command_header(file: &str, num: usize, head: &str) -> Result<CommandDef
                 return Err(ScriptError::new(
                     file,
                     num,
-                    format!("unknown argument '{p}', use <text>, <number>, <player> or [<text>] for optional"),
+                    format!(
+                        "unknown argument '{p}', use <text>, <number>, <player> or [<text>] for optional"
+                    ),
                 ));
             }
         };
         if !optional && args.iter().any(|a: &ArgDef| a.optional) {
-            return Err(ScriptError::new(file, num, "required arguments can't come after optional ones"));
+            return Err(ScriptError::new(
+                file,
+                num,
+                "required arguments can't come after optional ones",
+            ));
         }
         args.push(ArgDef { ty, optional });
     }
-    Ok(CommandDef { name, permission: None, description: None, args })
+    Ok(CommandDef {
+        name,
+        permission: None,
+        description: None,
+        args,
+    })
 }
 
 pub fn compile_file(file: &str, src: &str) -> Result<Vec<Trigger>, Vec<ScriptError>> {
@@ -535,64 +613,129 @@ pub fn compile_file(file: &str, src: &str) -> Result<Vec<Trigger>, Vec<ScriptErr
     for top in &tree {
         let lower = top.head().to_ascii_lowercase();
         if !top.opens_block() {
-            errors.push(ScriptError::new(file, top.num, format!("expected a trigger like 'on join:' or 'command /name:', got '{}'", top.text)));
+            errors.push(ScriptError::new(
+                file,
+                top.num,
+                format!(
+                    "expected a trigger like 'on join:' or 'command /name:', got '{}'",
+                    top.text
+                ),
+            ));
             continue;
         }
-        let (kind, body, env, is_command): (TriggerKind, &[Line], Env, bool) = if let Some(ev) = lower.strip_prefix("on ") {
-            let Some(k) = EventKind::parse(ev.trim()) else {
-                errors.push(ScriptError::new(file, top.num, format!("unknown event '{}', known: join, quit, chat, break, place", ev.trim())));
-                continue;
-            };
-            let env = Env { has_message: k == EventKind::Chat, arg_types: vec![], trigger_name: format!("'on {}'", k.name()) };
-            (TriggerKind::Event(k), &top.children, env, false)
-        } else if lower.starts_with("command") {
-            let mut def = match parse_command_header(file, top.num, top.head()) {
-                Ok(d) => d,
-                Err(e) => {
-                    errors.push(e);
+        let (kind, body, env, is_command): (TriggerKind, &[Line], Env, bool) =
+            if let Some(ev) = lower.strip_prefix("on ") {
+                let Some(k) = EventKind::parse(ev.trim()) else {
+                    errors.push(ScriptError::new(
+                        file,
+                        top.num,
+                        format!(
+                            "unknown event '{}', known: join, quit, chat, break, place",
+                            ev.trim()
+                        ),
+                    ));
                     continue;
+                };
+                let env = Env {
+                    has_message: k == EventKind::Chat,
+                    arg_types: vec![],
+                    trigger_name: format!("'on {}'", k.name()),
+                };
+                (TriggerKind::Event(k), &top.children, env, false)
+            } else if lower.starts_with("command") {
+                let mut def = match parse_command_header(file, top.num, top.head()) {
+                    Ok(d) => d,
+                    Err(e) => {
+                        errors.push(e);
+                        continue;
+                    }
+                };
+                let mut body: Option<&[Line]> = None;
+                for entry in &top.children {
+                    let el = entry.text.to_ascii_lowercase();
+                    if el == "trigger:" {
+                        body = Some(&entry.children);
+                    } else if el.starts_with("permission:") {
+                        let v = entry.text.get("permission:".len()..).unwrap_or("").trim();
+                        def.permission = Some(v.to_string()).filter(|s| !s.is_empty());
+                    } else if el.starts_with("description:") {
+                        def.description = Some(
+                            entry
+                                .text
+                                .get("description:".len()..)
+                                .unwrap_or("")
+                                .trim()
+                                .to_string(),
+                        );
+                    } else {
+                        errors.push(ScriptError::new(
+                            file,
+                            entry.num,
+                            format!(
+                                "unknown command entry '{}', use permission:, description: or trigger:",
+                                entry.text
+                            ),
+                        ));
+                    }
                 }
-            };
-            let mut body: Option<&[Line]> = None;
-            for entry in &top.children {
-                let el = entry.text.to_ascii_lowercase();
-                if el == "trigger:" {
-                    body = Some(&entry.children);
-                } else if el.starts_with("permission:") {
-                    let v = entry.text.get("permission:".len()..).unwrap_or("").trim();
-                    def.permission = Some(v.to_string()).filter(|s| !s.is_empty());
-                } else if el.starts_with("description:") {
-                    def.description = Some(entry.text.get("description:".len()..).unwrap_or("").trim().to_string());
-                } else {
-                    errors.push(ScriptError::new(file, entry.num, format!("unknown command entry '{}', use permission:, description: or trigger:", entry.text)));
-                }
-            }
-            let Some(body) = body else {
-                errors.push(ScriptError::new(file, top.num, "command has no 'trigger:' section"));
+                let Some(body) = body else {
+                    errors.push(ScriptError::new(
+                        file,
+                        top.num,
+                        "command has no 'trigger:' section",
+                    ));
+                    continue;
+                };
+                let arg_types = def
+                    .args
+                    .iter()
+                    .map(|a| match a.ty {
+                        ArgTy::Text => Ty::Text,
+                        ArgTy::Number => Ty::Number,
+                        ArgTy::Player => Ty::Player,
+                    })
+                    .collect();
+                let env = Env {
+                    has_message: false,
+                    arg_types,
+                    trigger_name: format!("command /{}", def.name),
+                };
+                (TriggerKind::Command(def), body, env, true)
+            } else {
+                errors.push(ScriptError::new(
+                    file,
+                    top.num,
+                    format!(
+                        "unknown trigger '{}', expected 'on <event>:' or 'command /name:'",
+                        top.head()
+                    ),
+                ));
                 continue;
             };
-            let arg_types = def
-                .args
-                .iter()
-                .map(|a| match a.ty {
-                    ArgTy::Text => Ty::Text,
-                    ArgTy::Number => Ty::Number,
-                    ArgTy::Player => Ty::Player,
-                })
-                .collect();
-            let env = Env { has_message: false, arg_types, trigger_name: format!("command /{}", def.name) };
-            (TriggerKind::Command(def), body, env, true)
-        } else {
-            errors.push(ScriptError::new(file, top.num, format!("unknown trigger '{}', expected 'on <event>:' or 'command /name:'", top.head())));
-            continue;
+        let mut cx = Cx {
+            file,
+            env,
+            is_command,
+            code: Vec::new(),
+            lines: Vec::new(),
+            errors: Vec::new(),
         };
-        let mut cx = Cx { file, env, is_command, code: Vec::new(), lines: Vec::new(), errors: Vec::new() };
         cx.block(body);
         if cx.errors.is_empty() {
-            triggers.push(Trigger { file: file_arc.clone(), line: top.num, kind, code: cx.code, lines: cx.lines });
+            triggers.push(Trigger {
+                file: file_arc.clone(),
+                line: top.num,
+                kind,
+                code: cx.code,
+                lines: cx.lines,
+            });
         } else {
             errors.extend(cx.errors);
         }
     }
-    if errors.is_empty() { Ok(triggers) } else { Err(errors) }
+    if errors.is_empty() {
+        Ok(triggers)
+    } else {
+        Err(errors)
+    }
 }

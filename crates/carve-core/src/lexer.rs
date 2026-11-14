@@ -122,16 +122,14 @@ pub fn lex(s: &str) -> Result<Vec<Tok>, String> {
             out.push(Tok::Var(text));
             continue;
         }
-        if i + 1 < n {
-            let two: String = c[i..i + 2].iter().collect();
-            if let Some(s) = SYMS2.iter().find(|s| **s == two) {
-                out.push(Tok::Sym(s));
-                i += 2;
-                continue;
-            }
+        if let Some(&next) = c.get(i + 1)
+            && let Some(s) = SYMS2.iter().find(|s| s.chars().eq([ch, next]))
+        {
+            out.push(Tok::Sym(s));
+            i += 2;
+            continue;
         }
-        let one = ch.to_string();
-        if let Some(s) = SYMS1.iter().find(|s| **s == one) {
+        if let Some(s) = SYMS1.iter().find(|s| s.chars().eq([ch])) {
             out.push(Tok::Sym(s));
             i += 1;
             continue;

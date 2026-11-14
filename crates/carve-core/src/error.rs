@@ -11,7 +11,12 @@ pub struct ScriptError {
 
 impl ScriptError {
     pub fn new(file: &str, line: usize, msg: impl Into<String>) -> Self {
-        ScriptError { file: file.to_string(), line, msg: msg.into(), suggestions: Vec::new() }
+        ScriptError {
+            file: file.to_string(),
+            line,
+            msg: msg.into(),
+            suggestions: Vec::new(),
+        }
     }
 }
 

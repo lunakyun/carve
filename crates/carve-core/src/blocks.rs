@@ -45,22 +45,42 @@ pub fn parse_blocks(file: &str, src: &str) -> Result<Vec<Line>, Vec<ScriptError>
             let tabs = indent.chars().all(|c| c == '\t');
             let spaces = indent.chars().all(|c| c == ' ');
             if !tabs && !spaces {
-                errors.push(ScriptError::new(file, num, "mixed tabs and spaces in indentation"));
+                errors.push(ScriptError::new(
+                    file,
+                    num,
+                    "mixed tabs and spaces in indentation",
+                ));
                 continue;
             }
-            let u = *unit.get_or_insert(if tabs { Unit::Tab } else { Unit::Spaces(indent.len()) });
+            let u = *unit.get_or_insert(if tabs {
+                Unit::Tab
+            } else {
+                Unit::Spaces(indent.len())
+            });
             match u {
                 Unit::Tab if tabs => indent.len(),
-                Unit::Spaces(n) if spaces && indent.len() % n == 0 => indent.len() / n,
+                Unit::Spaces(n) if spaces && indent.len().is_multiple_of(n) => indent.len() / n,
                 Unit::Tab => {
-                    errors.push(ScriptError::new(file, num, "this file is indented with tabs, but this line uses spaces"));
+                    errors.push(ScriptError::new(
+                        file,
+                        num,
+                        "this file is indented with tabs, but this line uses spaces",
+                    ));
                     continue;
                 }
                 Unit::Spaces(n) => {
                     if tabs {
-                        errors.push(ScriptError::new(file, num, "this file is indented with spaces, but this line uses tabs"));
+                        errors.push(ScriptError::new(
+                            file,
+                            num,
+                            "this file is indented with spaces, but this line uses tabs",
+                        ));
                     } else {
-                        errors.push(ScriptError::new(file, num, format!("indentation must be a multiple of {n} spaces")));
+                        errors.push(ScriptError::new(
+                            file,
+                            num,
+                            format!("indentation must be a multiple of {n} spaces"),
+                        ));
                     }
                     continue;
                 }
@@ -83,20 +103,32 @@ pub fn parse_blocks(file: &str, src: &str) -> Result<Vec<Line>, Vec<ScriptError>
             }
         };
         if *level > allowed {
-            errors.push(ScriptError::new(file, *num, "unexpected indentation (the line above does not end with ':')"));
+            errors.push(ScriptError::new(
+                file,
+                *num,
+                "unexpected indentation (the line above does not end with ':')",
+            ));
         }
         if let Some((pl, pn, pt)) = prev
             && pt.ends_with(':')
             && *level <= *pl
         {
-            errors.push(ScriptError::new(file, *pn, "empty block: nothing is indented under this line"));
+            errors.push(ScriptError::new(
+                file,
+                *pn,
+                "empty block: nothing is indented under this line",
+            ));
         }
         prev = Some(item);
     }
     if let Some((_, pn, pt)) = prev
         && pt.ends_with(':')
     {
-        errors.push(ScriptError::new(file, *pn, "empty block: nothing is indented under this line"));
+        errors.push(ScriptError::new(
+            file,
+            *pn,
+            "empty block: nothing is indented under this line",
+        ));
     }
     if !errors.is_empty() {
         return Err(errors);
@@ -119,7 +151,11 @@ fn build(flat: &[(usize, usize, String)], i: &mut usize, level: usize) -> Vec<Li
             }
             continue;
         }
-        out.push(Line { num: *num, text: text.clone(), children: Vec::new() });
+        out.push(Line {
+            num: *num,
+            text: text.clone(),
+            children: Vec::new(),
+        });
         *i += 1;
     }
     out

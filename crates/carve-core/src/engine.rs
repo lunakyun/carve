@@ -1,14 +1,17 @@
 //! Script table, event dispatch, the flat-instruction VM and wait/resume.
 
+use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
-use crate::compile::{ArgTy, CmpOp, CommandDef, Cond, Effect, EventKind, Instr, Trigger, TriggerKind, compile_file};
+use crate::compile::{
+    ArgTy, CmpOp, CommandDef, Cond, Effect, EventKind, Instr, Trigger, TriggerKind, compile_file,
+};
 use crate::error::ScriptError;
-use crate::expr::{BinOp, Expr, Part, VarRef};
+use crate::expr::{BinOp, Expr, Key, Part, VarRef};
 use crate::host::{Host, LogLevel};
-use crate::value::{PlayerRef, Recipient, Value, format_num};
-use crate::vars::{Variables, delete_in};
+use crate::value::{PlayerRef, Recipient, Value, format_num, push_num};
+use crate::vars::{Locals, Variables};
 
 pub const DEFAULT_MAX_INSTRUCTIONS: usize = 100_000;
 pub const SAVE_DEBOUNCE_MS: u64 = 5_000;
@@ -24,7 +27,12 @@ pub struct EventCtx {
 
 impl EventCtx {
     pub fn player(p: PlayerRef) -> Self {
-        EventCtx { sender: Recipient::Player(p.clone()), player: Some(p), message: None, args: Vec::new() }
+        EventCtx {
+            sender: Recipient::Player(p.clone()),
+            player: Some(p),
+            message: None,
+            args: Vec::new(),
+        }
     }
 
     pub fn chat(p: PlayerRef, message: impl Into<String>) -> Self {
@@ -83,10 +91,56 @@ pub struct FireOutcome {
 struct Exec {
     trig: Arc<Trigger>,
     pc: usize,
-    locals: BTreeMap<String, Value>,
+    locals: Locals,
     ctx: EventCtx,
     waited: bool,
     cancelled: bool,
+    /// uuid -> current name (None = offline), for the current run slice only.
+    /// Cleared at every wait, because a player can leave while a run waits.
+    seen: Vec<(String, Option<String>)>,
+}
+
+impl Exec {
+    fn new(trig: Arc<Trigger>, ctx: EventCtx) -> Self {
+        Exec {
+            trig,
+            pc: 0,
+            locals: Locals::default(),
+            ctx,
+            waited: false,
+            cancelled: false,
+            seen: Vec::new(),
+        }
+    }
+}
+
+/// The player's current name, asking the host at most once per run slice.
+fn resolve<'c>(
+    seen: &'c mut Vec<(String, Option<String>)>,
+    uuid: &str,
+    host: &mut dyn Host,
+) -> Option<&'c str> {
+    let i = match seen.iter().position(|(u, _)| u == uuid) {
+        Some(i) => i,
+        None => {
+            let name = host.resolve_player(uuid);
+            seen.push((uuid.to_string(), name));
+            seen.len() - 1
+        }
+    };
+    seen.get(i).and_then(|(_, n)| n.as_deref())
+}
+
+/// Resolve a value to an online player, or None.
+fn online(v: &Value, seen: &mut Vec<(String, Option<String>)>, host: &mut dyn Host) -> Option<PlayerRef> {
+    match v {
+        Value::Player(p) => resolve(seen, &p.uuid, host).map(|name| PlayerRef {
+            uuid: p.uuid.clone(),
+            name: name.to_string(),
+        }),
+        Value::Text(name) => host.find_player(name),
+        _ => None,
+    }
 }
 
 enum Step {
@@ -124,7 +178,11 @@ fn build_table(files: &[(String, String)]) -> (ScriptTable, Vec<ScriptError>) {
                         TriggerKind::Event(k) => table.events.entry(*k).or_default().push(t.clone()),
                         TriggerKind::Command(d) => {
                             if table.commands.contains_key(&d.name) {
-                                errors.push(ScriptError::new(&t.file, t.line, format!("command /{} is defined twice", d.name)));
+                                errors.push(ScriptError::new(
+                                    &t.file,
+                                    t.line,
+                                    format!("command /{} is defined twice", d.name),
+                                ));
                             } else {
                                 table.commands.insert(d.name.clone(), t.clone());
                             }
@@ -155,7 +213,11 @@ impl Engine {
     }
 
     fn summary(&self) -> LoadSummary {
-        LoadSummary { files: self.table.files, triggers: self.table.triggers, commands: self.table.command_names() }
+        LoadSummary {
+            files: self.table.files,
+            triggers: self.table.triggers,
+            commands: self.table.command_names(),
+        }
     }
 
     /// First load: files that compile are used, the rest are reported.
@@ -183,10 +245,19 @@ impl Engine {
     /// Run every trigger for `kind`. Returns whether the event got cancelled
     /// (only `cancel event` before the first `wait` counts).
     pub fn fire(&mut self, kind: EventKind, ctx: EventCtx, host: &mut dyn Host) -> FireOutcome {
-        let trigs: Vec<Arc<Trigger>> = self.table.events.get(&kind).cloned().unwrap_or_default();
+        let table = self.table.clone();
         let mut cancelled = false;
-        for trig in trigs {
-            let ex = Exec { trig, pc: 0, locals: BTreeMap::new(), ctx: ctx.clone(), waited: false, cancelled: false };
+        let trigs = table.events.get(&kind).map(Vec::as_slice).unwrap_or_default();
+        let mut ctx = Some(ctx);
+        for (i, trig) in trigs.iter().enumerate() {
+            // The last trigger gets the ctx itself, the others a copy.
+            let c = if i + 1 == trigs.len() {
+                ctx.take()
+            } else {
+                ctx.clone()
+            };
+            let Some(c) = c else { break };
+            let ex = Exec::new(trig.clone(), c);
             if let Some(c) = self.start(ex, host) {
                 cancelled |= c;
             }
@@ -195,7 +266,13 @@ impl Engine {
     }
 
     /// Run a script command. `raw_args` is everything after the command name.
-    pub fn run_command(&mut self, name: &str, sender: Recipient, raw_args: &str, host: &mut dyn Host) -> CommandOutcome {
+    pub fn run_command(
+        &mut self,
+        name: &str,
+        sender: Recipient,
+        raw_args: &str,
+        host: &mut dyn Host,
+    ) -> CommandOutcome {
         let name = name.trim_start_matches('/').to_ascii_lowercase();
         let Some(trig) = self.table.commands.get(&name).cloned() else {
             return CommandOutcome::NotFound;
@@ -216,8 +293,13 @@ impl Engine {
             Ok(a) => a,
             Err(msg) => return CommandOutcome::Usage(msg),
         };
-        let ctx = EventCtx { player, sender, message: None, args };
-        let ex = Exec { trig: trig.clone(), pc: 0, locals: BTreeMap::new(), ctx, waited: false, cancelled: false };
+        let ctx = EventCtx {
+            player,
+            sender,
+            message: None,
+            args,
+        };
+        let ex = Exec::new(trig.clone(), ctx);
         self.start(ex, host);
         CommandOutcome::Ran
     }
@@ -238,6 +320,7 @@ impl Engine {
             Step::Wait(ticks) => {
                 let cancelled = ex.cancelled;
                 ex.waited = true;
+                ex.seen.clear();
                 let token = self.next_token;
                 self.next_token += 1;
                 self.waits.insert(token, ex);
@@ -251,13 +334,17 @@ impl Engine {
 
     fn run(&mut self, ex: &mut Exec, host: &mut dyn Host) -> Step {
         let trig = ex.trig.clone();
+        ex.seen.clear();
         let mut budget = self.max_instructions;
         while let Some(instr) = trig.code.get(ex.pc) {
             let line = trig.lines.get(ex.pc).copied().unwrap_or(trig.line);
             if budget == 0 {
                 host.log(
                     LogLevel::Error,
-                    &format!("{}:{}: script stopped: ran more than {} instructions without a wait", trig.file, line, self.max_instructions),
+                    &format!(
+                        "{}:{}: script stopped: ran more than {} instructions without a wait",
+                        trig.file, line, self.max_instructions
+                    ),
                 );
                 return Step::Abort;
             }
@@ -290,7 +377,7 @@ impl Engine {
         Step::Done
     }
 
-    fn cond(&mut self, c: &Cond, ex: &Exec, host: &mut dyn Host) -> Result<bool, String> {
+    fn cond(&mut self, c: &Cond, ex: &mut Exec, host: &mut dyn Host) -> Result<bool, String> {
         match c {
             Cond::Cmp(a, op, b) => {
                 let a = self.eval(a, ex, host)?;
@@ -317,8 +404,8 @@ impl Engine {
             }
             Cond::HasPerm { player, node, negate } => {
                 let p = self.eval(player, ex, host)?;
-                let node = self.eval(node, ex, host)?.to_string();
-                let Some(p) = self.online(&p, host) else {
+                let node = self.text(node, ex, host)?;
+                let Some(p) = online(&p, &mut ex.seen, host) else {
                     return Ok(false);
                 };
                 Ok(host.has_permission(&p, &node) != *negate)
@@ -326,62 +413,135 @@ impl Engine {
         }
     }
 
-    /// Resolve a value to an online player, or None.
-    fn online(&self, v: &Value, host: &mut dyn Host) -> Option<PlayerRef> {
-        match v {
-            Value::Player(p) => host.resolve_player(&p.uuid).map(|name| PlayerRef { uuid: p.uuid.clone(), name }),
-            Value::Text(name) => host.find_player(name),
-            _ => None,
+    fn text(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<String, String> {
+        let mut s = String::new();
+        self.write(e, ex, host, &mut s)?;
+        Ok(s)
+    }
+
+    fn num(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<f64, String> {
+        match e {
+            Expr::Num(n) => return Ok(*n),
+            Expr::Var(var) => {
+                // Read in place: no clone of the stored value.
+                let k = self.key(var, ex, host)?;
+                let val = if var.local {
+                    ex.locals.get(&k)
+                } else {
+                    self.vars.get_ref(&k)
+                };
+                return match val {
+                    Some(Value::Num(n)) => Ok(*n),
+                    Some(v) => to_num_opt(v)
+                        .ok_or_else(|| format!("expected a number, got {} ({})", v.type_name(), v)),
+                    None => Err("expected a number, got <none> (<none>)".into()),
+                };
+            }
+            _ => {}
         }
-    }
-
-    fn text(&mut self, e: &Expr, ex: &Exec, host: &mut dyn Host) -> Result<String, String> {
-        Ok(self.eval(e, ex, host)?.to_string())
-    }
-
-    fn num(&mut self, e: &Expr, ex: &Exec, host: &mut dyn Host) -> Result<f64, String> {
         let v = self.eval(e, ex, host)?;
         to_num_opt(&v).ok_or_else(|| format!("expected a number, got {} ({})", v.type_name(), v))
     }
 
-    fn player(&mut self, e: &Expr, ex: &Exec, host: &mut dyn Host) -> Result<Option<PlayerRef>, String> {
+    fn player(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<Option<PlayerRef>, String> {
+        if let Expr::Player = e {
+            return Ok(ex.ctx.player.as_ref().and_then(|p| {
+                resolve(&mut ex.seen, &p.uuid, host).map(|name| PlayerRef {
+                    uuid: p.uuid.clone(),
+                    name: name.to_string(),
+                })
+            }));
+        }
         let v = self.eval(e, ex, host)?;
-        Ok(self.online(&v, host))
+        Ok(online(&v, &mut ex.seen, host))
     }
 
-    fn key(&mut self, v: &VarRef, ex: &Exec, host: &mut dyn Host) -> Result<String, String> {
-        Ok(self.template(&v.name, ex, host)?.to_ascii_lowercase())
+    fn key<'k>(&mut self, v: &'k VarRef, ex: &mut Exec, host: &mut dyn Host) -> Result<Cow<'k, str>, String> {
+        match &v.key {
+            Key::Static(k) => Ok(Cow::Borrowed(k)),
+            Key::Dynamic(parts) => {
+                let mut s = String::new();
+                self.write_parts(parts, ex, host, &mut s)?;
+                s.make_ascii_lowercase();
+                Ok(Cow::Owned(s))
+            }
+        }
     }
 
-    fn template(&mut self, parts: &[Part], ex: &Exec, host: &mut dyn Host) -> Result<String, String> {
-        let mut s = String::new();
+    fn write_parts(
+        &mut self,
+        parts: &[Part],
+        ex: &mut Exec,
+        host: &mut dyn Host,
+        out: &mut String,
+    ) -> Result<(), String> {
         for p in parts {
             match p {
-                Part::Lit(l) => s.push_str(l),
-                Part::Expr(e) => s.push_str(&self.eval(e, ex, host)?.to_string()),
+                Part::Lit(l) => out.push_str(l),
+                Part::Expr(e) => self.write(e, ex, host, out)?,
             }
-        }
-        Ok(s)
-    }
-
-    fn get_var(&mut self, v: &VarRef, ex: &Exec, host: &mut dyn Host) -> Result<Value, String> {
-        let k = self.key(v, ex, host)?;
-        Ok(if v.local { ex.locals.get(&k).cloned().unwrap_or(Value::None) } else { self.vars.get(&k) })
-    }
-
-    fn set_var(&mut self, v: &VarRef, val: Value, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
-        let k = self.key(v, ex, host)?;
-        if v.local {
-            if val == Value::None {
-                ex.locals.remove(&k);
-            } else {
-                ex.locals.insert(k, val);
-            }
-        } else {
-            self.vars.set(k, val);
-            self.mark_dirty(host);
         }
         Ok(())
+    }
+
+    /// Append the printed value of `e` to `out`. Same result as
+    /// `eval(e).to_string()`, without the temporary values.
+    fn write(
+        &mut self,
+        e: &Expr,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+        out: &mut String,
+    ) -> Result<(), String> {
+        match e {
+            Expr::Num(n) => push_num(out, *n),
+            Expr::Text(parts) => self.write_parts(parts, ex, host, out)?,
+            Expr::Var(v) => {
+                let k = self.key(v, ex, host)?;
+                let val = if v.local {
+                    ex.locals.get(&k)
+                } else {
+                    self.vars.get_ref(&k)
+                };
+                match val {
+                    Some(val) => val.push_to(out),
+                    None => out.push_str("<none>"),
+                }
+            }
+            Expr::Player => {
+                let name = match &ex.ctx.player {
+                    Some(p) => resolve(&mut ex.seen, &p.uuid, host),
+                    None => None,
+                };
+                out.push_str(name.unwrap_or("<none>"));
+            }
+            Expr::Message => out.push_str(ex.ctx.message.as_deref().unwrap_or("<none>")),
+            Expr::Arg(i) => match ex.ctx.args.get(i.wrapping_sub(1)) {
+                Some(v) => v.push_to(out),
+                None => out.push_str("<none>"),
+            },
+            Expr::NameOf(_) | Expr::Neg(_) | Expr::Bin(..) => self.eval(e, ex, host)?.push_to(out),
+        }
+        Ok(())
+    }
+
+    fn get_var(&mut self, v: &VarRef, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
+        let k = self.key(v, ex, host)?;
+        let val = if v.local {
+            ex.locals.get(&k)
+        } else {
+            self.vars.get_ref(&k)
+        };
+        Ok(val.cloned().unwrap_or(Value::None))
+    }
+
+    fn store(&mut self, local: bool, key: &str, val: Value, ex: &mut Exec, host: &mut dyn Host) {
+        if local {
+            ex.locals.set(key, val);
+        } else {
+            self.vars.set_str(key, val);
+            self.mark_dirty(host);
+        }
     }
 
     fn mark_dirty(&mut self, host: &mut dyn Host) {
@@ -390,23 +550,24 @@ impl Engine {
         }
     }
 
-    fn eval(&mut self, e: &Expr, ex: &Exec, host: &mut dyn Host) -> Result<Value, String> {
+    fn eval(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
         Ok(match e {
             Expr::Num(n) => Value::Num(*n),
-            Expr::Text(parts) => Value::Text(self.template(parts, ex, host)?),
+            Expr::Text(parts) => {
+                let mut s = String::new();
+                self.write_parts(parts, ex, host, &mut s)?;
+                Value::Text(s)
+            }
             Expr::Var(v) => self.get_var(v, ex, host)?,
-            Expr::Player => match &ex.ctx.player {
-                Some(p) => match host.resolve_player(&p.uuid) {
-                    Some(name) => Value::Player(PlayerRef { uuid: p.uuid.clone(), name }),
-                    None => Value::None,
-                },
+            Expr::Player => match self.player(e, ex, host)? {
+                Some(p) => Value::Player(p),
                 None => Value::None,
             },
             Expr::Message => ex.ctx.message.clone().map(Value::Text).unwrap_or(Value::None),
             Expr::Arg(i) => ex.ctx.args.get(i.wrapping_sub(1)).cloned().unwrap_or(Value::None),
             Expr::NameOf(inner) => {
                 let v = self.eval(inner, ex, host)?;
-                match self.online(&v, host) {
+                match online(&v, &mut ex.seen, host) {
                     Some(p) => Value::Text(p.name),
                     None => Value::None,
                 }
@@ -431,7 +592,13 @@ impl Engine {
     }
 
     /// Ok(Some(ticks)) means: pause for that many ticks.
-    fn effect(&mut self, e: &Effect, ex: &mut Exec, host: &mut dyn Host, line: usize) -> Result<Option<u64>, String> {
+    fn effect(
+        &mut self,
+        e: &Effect,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+        line: usize,
+    ) -> Result<Option<u64>, String> {
         match e {
             Effect::Send { text, to } => {
                 let msg = self.text(text, ex, host)?;
@@ -441,11 +608,15 @@ impl Engine {
                             host.send_message(&Recipient::Player(p), &msg);
                         }
                     }
-                    None => match ex.ctx.sender.clone() {
+                    None => match &ex.ctx.sender {
                         Recipient::Console => host.send_message(&Recipient::Console, &msg),
                         Recipient::Player(p) => {
-                            if let Some(p) = self.online(&Value::Player(p), host) {
-                                host.send_message(&Recipient::Player(p), &msg);
+                            if let Some(name) = resolve(&mut ex.seen, &p.uuid, host) {
+                                let to = PlayerRef {
+                                    uuid: p.uuid.clone(),
+                                    name: name.to_string(),
+                                };
+                                host.send_message(&Recipient::Player(to), &msg);
                             }
                         }
                     },
@@ -488,7 +659,11 @@ impl Engine {
                 }
             }
             Effect::Teleport(p, x, y, z) => {
-                let (x, y, z) = (self.num(x, ex, host)?, self.num(y, ex, host)?, self.num(z, ex, host)?);
+                let (x, y, z) = (
+                    self.num(x, ex, host)?,
+                    self.num(y, ex, host)?,
+                    self.num(z, ex, host)?,
+                );
                 if let Some(p) = self.player(p, ex, host)? {
                     host.teleport(&p, x, y, z);
                 }
@@ -501,7 +676,10 @@ impl Engine {
                 if ex.waited {
                     host.log(
                         LogLevel::Warn,
-                        &format!("{}:{}: 'cancel event' after a wait does nothing (the event already happened)", ex.trig.file, line),
+                        &format!(
+                            "{}:{}: 'cancel event' after a wait does nothing (the event already happened)",
+                            ex.trig.file, line
+                        ),
                     );
                 } else {
                     ex.cancelled = true;
@@ -509,7 +687,7 @@ impl Engine {
             }
             Effect::Wait(amount, mult) => {
                 let n = self.num(amount, ex, host)?;
-                if !(n >= 0.0) || !n.is_finite() {
+                if !n.is_finite() || n < 0.0 {
                     return Err(format!("can't wait {}", format_num(n)));
                 }
                 let ticks = (n * *mult as f64).round() as u64;
@@ -519,22 +697,38 @@ impl Engine {
             }
             Effect::Set(v, val) => {
                 let val = self.eval(val, ex, host)?;
-                self.set_var(v, val, ex, host)?;
+                let k = self.key(v, ex, host)?;
+                self.store(v.local, &k, val, ex, host);
             }
             Effect::Add(v, n) | Effect::Remove(v, n) => {
                 let n = self.num(n, ex, host)?;
-                let cur = self.get_var(v, ex, host)?;
-                let base = match cur {
-                    Value::None => 0.0,
-                    other => to_num_opt(&other).ok_or_else(|| format!("can't add to a variable holding {} ({})", other.type_name(), other))?,
+                let k = self.key(v, ex, host)?;
+                let cur = if v.local {
+                    ex.locals.get(&k)
+                } else {
+                    self.vars.get_ref(&k)
                 };
-                let res = if matches!(e, Effect::Add(..)) { base + n } else { base - n };
-                self.set_var(v, Value::Num(res), ex, host)?;
+                let base = match cur {
+                    None | Some(Value::None) => 0.0,
+                    Some(other) => to_num_opt(other).ok_or_else(|| {
+                        format!(
+                            "can't add to a variable holding {} ({})",
+                            other.type_name(),
+                            other
+                        )
+                    })?,
+                };
+                let res = if matches!(e, Effect::Add(..)) {
+                    base + n
+                } else {
+                    base - n
+                };
+                self.store(v.local, &k, Value::Num(res), ex, host);
             }
             Effect::Delete(v) => {
                 let k = self.key(v, ex, host)?;
                 if v.local {
-                    delete_in(&mut ex.locals, &k);
+                    ex.locals.delete(&k);
                 } else {
                     self.vars.delete(&k);
                     self.mark_dirty(host);
@@ -593,8 +787,14 @@ fn parse_args(def: &CommandDef, raw: &str, host: &mut dyn Host) -> Result<Vec<Va
         };
         out.push(match a.ty {
             ArgTy::Text => Value::Text(word.to_string()),
-            ArgTy::Number => Value::Num(word.parse().map_err(|_| format!("'{word}' is not a number. Usage: {}", def.usage()))?),
-            ArgTy::Player => Value::Player(host.find_player(word).ok_or_else(|| format!("Player '{word}' is not online"))?),
+            ArgTy::Number => Value::Num(
+                word.parse()
+                    .map_err(|_| format!("'{word}' is not a number. Usage: {}", def.usage()))?,
+            ),
+            ArgTy::Player => Value::Player(
+                host.find_player(word)
+                    .ok_or_else(|| format!("Player '{word}' is not online"))?,
+            ),
         });
     }
     if !rest.is_empty() {

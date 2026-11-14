@@ -1,6 +1,9 @@
 //! Expressions: literals, variables, text templates, event values, arithmetic.
 
+use std::cell::Cell;
+
 use crate::lexer::{Tok, lex};
+use crate::value::format_num;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Ty {
@@ -41,9 +44,17 @@ pub enum Part {
     Expr(Expr),
 }
 
+/// A variable name, lowercased. Names made only of plain text are lowercased
+/// once at compile time; names with `%...%` parts are built on every use.
+#[derive(Debug, Clone, PartialEq)]
+pub enum Key {
+    Static(String),
+    Dynamic(Vec<Part>),
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct VarRef {
-    pub name: Vec<Part>,
+    pub key: Key,
     pub local: bool,
 }
 
@@ -77,19 +88,35 @@ impl Expr {
             Expr::Text(_) | Expr::Message | Expr::NameOf(_) => Ty::Text,
             Expr::Var(_) => Ty::Object,
             Expr::Player => Ty::Player,
-            Expr::Arg(i) => env.arg_types.get(i.wrapping_sub(1)).copied().unwrap_or(Ty::Object),
+            Expr::Arg(i) => env
+                .arg_types
+                .get(i.wrapping_sub(1))
+                .copied()
+                .unwrap_or(Ty::Object),
         }
     }
 }
 
 pub fn parse_expr(toks: &[Tok], env: &Env) -> Result<Expr, String> {
+    parse_expr_span(toks, env).map_err(|(msg, _)| msg)
+}
+
+/// Like [`parse_expr`]. On failure, also says whether the parser looked past
+/// the last token. If it did not, adding more tokens can't make the parse
+/// succeed, which lets the pattern matcher stop trying longer spans.
+pub fn parse_expr_span(toks: &[Tok], env: &Env) -> Result<Expr, (String, bool)> {
     if toks.is_empty() {
-        return Err("missing expression".into());
+        return Err(("missing expression".into(), true));
     }
-    let mut p = P { toks, pos: 0, env };
-    let e = p.sum()?;
-    if p.pos != toks.len() {
-        return Err(format!("unexpected {}", describe(&toks[p.pos])));
+    let mut p = P {
+        toks,
+        pos: 0,
+        env,
+        hit_end: Cell::new(false),
+    };
+    let e = p.sum().map_err(|m| (m, p.hit_end.get()))?;
+    if let Some(t) = toks.get(p.pos) {
+        return Err((format!("unexpected {}", describe(t)), p.hit_end.get()));
     }
     Ok(e)
 }
@@ -112,11 +139,17 @@ struct P<'a> {
     toks: &'a [Tok],
     pos: usize,
     env: &'a Env,
+    /// Set when the parser asked for a token past the end.
+    hit_end: Cell<bool>,
 }
 
 impl P<'_> {
     fn peek(&self) -> Option<&Tok> {
-        self.toks.get(self.pos)
+        let t = self.toks.get(self.pos);
+        if t.is_none() {
+            self.hit_end.set(true);
+        }
+        t
     }
 
     fn eat_sym(&mut self, s: &str) -> bool {
@@ -165,6 +198,19 @@ impl P<'_> {
                 return Err(format!("math needs numbers, got {}", t.name()));
             }
         }
+        // Fold constant math. Division by zero stays a runtime error so it is
+        // reported with its line, like any other runtime error.
+        if let (Expr::Num(x), Expr::Num(y)) = (&l, &r) {
+            let folded = match op {
+                BinOp::Add => Some(x + y),
+                BinOp::Sub => Some(x - y),
+                BinOp::Mul => Some(x * y),
+                BinOp::Div => (*y != 0.0).then(|| x / y),
+            };
+            if let Some(n) = folded {
+                return Ok(Expr::Num(n));
+            }
+        }
         Ok(Expr::Bin(Box::new(l), op, Box::new(r)))
     }
 
@@ -207,7 +253,10 @@ impl P<'_> {
                         if self.env.has_message {
                             Ok(Expr::Message)
                         } else {
-                            Err(format!("'message' only exists in 'on chat', not in {}", self.env.trigger_name))
+                            Err(format!(
+                                "'message' only exists in 'on chat', not in {}",
+                                self.env.trigger_name
+                            ))
                         }
                     }
                     "arg" | "argument" => self.arg(1),
@@ -239,10 +288,15 @@ impl P<'_> {
     fn arg(&self, i: usize) -> Result<Expr, String> {
         let n = self.env.arg_types.len();
         if n == 0 {
-            return Err(format!("'arg' only exists in commands with arguments, not in {}", self.env.trigger_name));
+            return Err(format!(
+                "'arg' only exists in commands with arguments, not in {}",
+                self.env.trigger_name
+            ));
         }
         if i == 0 || i > n {
-            return Err(format!("arg-{i} does not exist, this command has {n} argument(s)"));
+            return Err(format!(
+                "arg-{i} does not exist, this command has {n} argument(s)"
+            ));
         }
         Ok(Expr::Arg(i))
     }
@@ -250,7 +304,7 @@ impl P<'_> {
 
 /// Parse a `"hello %player%!"` template body. `%%` is a literal percent sign.
 pub fn parse_template(s: &str, env: &Env) -> Result<Vec<Part>, String> {
-    let mut parts = Vec::new();
+    let mut parts: Vec<Part> = Vec::new();
     let mut lit = String::new();
     let chars: Vec<char> = s.chars().collect();
     let mut i = 0;
@@ -281,12 +335,31 @@ pub fn parse_template(s: &str, env: &Env) -> Result<Vec<Part>, String> {
         if j >= chars.len() {
             return Err("unclosed '%' in text (use %% for a percent sign)".into());
         }
-        let inner: String = chars[i + 1..j].iter().collect();
+        let inner: String = chars.get(i + 1..j).unwrap_or_default().iter().collect();
         let e = parse_expr_str(&inner, env).map_err(|e| format!("in %{inner}%: {e}"))?;
-        if !lit.is_empty() {
-            parts.push(Part::Lit(std::mem::take(&mut lit)));
+        // Constant parts are folded into the surrounding text.
+        match e {
+            Expr::Num(n) => lit.push_str(&format_num(n)),
+            Expr::Text(inner_parts) => {
+                for p in inner_parts {
+                    match p {
+                        Part::Lit(l) => lit.push_str(&l),
+                        e @ Part::Expr(_) => {
+                            if !lit.is_empty() {
+                                parts.push(Part::Lit(std::mem::take(&mut lit)));
+                            }
+                            parts.push(e);
+                        }
+                    }
+                }
+            }
+            e => {
+                if !lit.is_empty() {
+                    parts.push(Part::Lit(std::mem::take(&mut lit)));
+                }
+                parts.push(Part::Expr(e));
+            }
         }
-        parts.push(Part::Expr(e));
         i = j + 1;
     }
     if !lit.is_empty() {
@@ -297,7 +370,12 @@ pub fn parse_template(s: &str, env: &Env) -> Result<Vec<Part>, String> {
 
 pub fn parse_varref(raw: &str, env: &Env) -> Result<VarRef, String> {
     let raw = raw.trim();
-    let name = parse_template(raw, env)?;
+    let mut parts = parse_template(raw, env)?;
     let local = raw.starts_with('_');
-    Ok(VarRef { name, local })
+    let key = match parts.as_mut_slice() {
+        [] => Key::Static(String::new()),
+        [Part::Lit(l)] => Key::Static(std::mem::take(l).to_ascii_lowercase()),
+        _ => Key::Dynamic(parts),
+    };
+    Ok(VarRef { key, local })
 }

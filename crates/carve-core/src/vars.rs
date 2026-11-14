@@ -16,11 +16,27 @@ impl Variables {
         self.map.get(key).cloned().unwrap_or(Value::None)
     }
 
+    /// The stored value, without cloning. `None` when unset.
+    pub fn get_ref(&self, key: &str) -> Option<&Value> {
+        self.map.get(key)
+    }
+
     pub fn set(&mut self, key: String, v: Value) {
         if v == Value::None {
             self.map.remove(&key);
         } else {
             self.map.insert(key, v);
+        }
+    }
+
+    /// Like [`Variables::set`], but only allocates the key when it is new.
+    pub fn set_str(&mut self, key: &str, v: Value) {
+        if v == Value::None {
+            self.map.remove(key);
+        } else if let Some(slot) = self.map.get_mut(key) {
+            *slot = v;
+        } else {
+            self.map.insert(key.to_string(), v);
         }
     }
 
@@ -56,7 +72,8 @@ impl Variables {
         if s.trim().is_empty() {
             return Ok(Self::default());
         }
-        let j: Json = serde_json::from_str(s).map_err(|e| format!("variables.json is not valid JSON: {e}"))?;
+        let j: Json =
+            serde_json::from_str(s).map_err(|e| format!("variables.json is not valid JSON: {e}"))?;
         let Json::Object(obj) = j else {
             return Err("variables.json must hold a JSON object".into());
         };
@@ -71,7 +88,10 @@ impl Variables {
                     let uuid = p.and_then(|p| p.get("uuid")).and_then(Json::as_str);
                     let name = p.and_then(|p| p.get("name")).and_then(Json::as_str);
                     match (uuid, name) {
-                        (Some(u), Some(n)) => Value::Player(PlayerRef { uuid: u.into(), name: n.into() }),
+                        (Some(u), Some(n)) => Value::Player(PlayerRef {
+                            uuid: u.into(),
+                            name: n.into(),
+                        }),
                         _ => continue,
                     }
                 }
@@ -83,12 +103,50 @@ impl Variables {
     }
 }
 
-pub(crate) fn delete_in(map: &mut BTreeMap<String, Value>, key: &str) {
-    if let Some(prefix) = key.strip_suffix('*')
-        && prefix.ends_with("::")
-    {
+/// For a list key like `list::*`, the prefix `list::` that every item starts with.
+pub(crate) fn list_prefix(key: &str) -> Option<&str> {
+    key.strip_suffix('*').filter(|p| p.ends_with("::"))
+}
+
+fn delete_in(map: &mut BTreeMap<String, Value>, key: &str) {
+    if let Some(prefix) = list_prefix(key) {
         map.retain(|k, _| !k.starts_with(prefix));
     } else {
         map.remove(key);
+    }
+}
+
+/// Local variables of one run. Runs hold few locals, so a flat list is
+/// faster than a map here.
+#[derive(Debug, Default, Clone)]
+pub(crate) struct Locals(Vec<(String, Value)>);
+
+impl Locals {
+    pub(crate) fn get(&self, key: &str) -> Option<&Value> {
+        self.0.iter().find(|(k, _)| k == key).map(|(_, v)| v)
+    }
+
+    pub(crate) fn set(&mut self, key: &str, v: Value) {
+        let pos = self.0.iter().position(|(k, _)| k == key);
+        match (pos, v) {
+            (Some(i), Value::None) => {
+                self.0.swap_remove(i);
+            }
+            (None, Value::None) => {}
+            (Some(i), v) => {
+                if let Some(slot) = self.0.get_mut(i) {
+                    slot.1 = v;
+                }
+            }
+            (None, v) => self.0.push((key.to_string(), v)),
+        }
+    }
+
+    pub(crate) fn delete(&mut self, key: &str) {
+        if let Some(prefix) = list_prefix(key) {
+            self.0.retain(|(k, _)| !k.starts_with(prefix));
+        } else {
+            self.set(key, Value::None);
+        }
     }
 }

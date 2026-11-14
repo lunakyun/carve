@@ -1,8 +1,21 @@
 //! Patterns are data: strings like `send %text% [to %player%]` compiled into
 //! node lists, expanded into plain sequences, and matched with backtracking.
 
-use crate::expr::{Env, Expr, Ty, VarRef, parse_expr, parse_varref};
+use std::collections::HashMap;
+
+use crate::expr::{Env, Expr, Ty, VarRef, parse_expr_span, parse_varref};
 use crate::lexer::Tok;
+
+/// Parse results for one line, shared by every pattern tried on that line.
+/// Backtracking asks for the same token span many times; this parses each
+/// span once.
+#[derive(Default)]
+pub struct Memo {
+    exprs: HashMap<(usize, usize), Option<Expr>>,
+    vars: HashMap<usize, Option<VarRef>>,
+    /// start -> first end from which no longer span can parse.
+    dead: HashMap<usize, usize>,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SlotTy {
@@ -48,17 +61,46 @@ impl<K: Copy> Pattern<K> {
             return Err(format!("pattern '{src}': unexpected '{}'", chars[pos]));
         }
         let seqs = expand(&nodes);
-        Ok(Pattern { src, kind, slots, seqs })
+        Ok(Pattern {
+            src,
+            kind,
+            slots,
+            seqs,
+        })
     }
 
     /// Try to match tokens. On success returns captures indexed by slot.
     /// On failure returns a type error if the words matched but a value had the
     /// wrong type.
     pub fn matches(&self, toks: &[Tok], env: &Env) -> Result<Vec<Option<Capture>>, Option<String>> {
+        self.matches_memo(toks, env, &mut Memo::default())
+    }
+
+    /// [`Pattern::matches`] with a parse cache shared across patterns.
+    pub fn matches_memo(
+        &self,
+        toks: &[Tok],
+        env: &Env,
+        memo: &mut Memo,
+    ) -> Result<Vec<Option<Capture>>, Option<String>> {
         let mut type_err = None;
         for seq in &self.seqs {
+            // A literal must be one of the tokens; skip sequences that can't match.
+            let impossible = seq
+                .iter()
+                .any(|f| matches!(f, Flat::Lit(l) if !toks.iter().any(|t| t.is_lit(l))));
+            if impossible {
+                continue;
+            }
             let mut caps: Vec<Option<Capture>> = vec![None; self.slots];
-            if match_seq(seq, 0, toks, 0, env, &mut caps, &mut type_err) {
+            let mut m = Matcher {
+                toks,
+                env,
+                memo: &mut *memo,
+                caps: &mut caps,
+                type_err: &mut type_err,
+            };
+            if m.seq(seq, 0, 0) {
                 return Ok(caps);
             }
         }
@@ -66,7 +108,12 @@ impl<K: Copy> Pattern<K> {
     }
 }
 
-fn parse_seq(c: &[char], pos: &mut usize, slots: &mut usize, close: Option<char>) -> Result<Vec<Node>, String> {
+fn parse_seq(
+    c: &[char],
+    pos: &mut usize,
+    slots: &mut usize,
+    close: Option<char>,
+) -> Result<Vec<Node>, String> {
     let mut out = Vec::new();
     while *pos < c.len() {
         let ch = c[*pos];
@@ -181,56 +228,92 @@ fn expand(nodes: &[Node]) -> Vec<Vec<Flat>> {
     acc
 }
 
-fn match_seq(
-    seq: &[Flat],
-    si: usize,
-    toks: &[Tok],
-    ti: usize,
-    env: &Env,
-    caps: &mut Vec<Option<Capture>>,
-    type_err: &mut Option<String>,
-) -> bool {
-    let Some(node) = seq.get(si) else {
-        return ti == toks.len();
-    };
-    match node {
-        Flat::Lit(l) => match toks.get(ti) {
-            Some(t) if t.is_lit(l) => match_seq(seq, si + 1, toks, ti + 1, env, caps, type_err),
-            _ => false,
-        },
-        Flat::Slot(SlotTy::Variable, idx) => {
-            let Some(Tok::Var(raw)) = toks.get(ti) else {
-                return false;
-            };
-            let Ok(v) = parse_varref(raw, env) else {
-                return false;
-            };
-            caps[*idx] = Some(Capture::Var(v));
-            if match_seq(seq, si + 1, toks, ti + 1, env, caps, type_err) {
-                return true;
-            }
-            caps[*idx] = None;
-            false
+struct Matcher<'a> {
+    toks: &'a [Tok],
+    env: &'a Env,
+    memo: &'a mut Memo,
+    caps: &'a mut Vec<Option<Capture>>,
+    type_err: &'a mut Option<String>,
+}
+
+impl Matcher<'_> {
+    fn set_cap(&mut self, idx: usize, c: Option<Capture>) {
+        if let Some(slot) = self.caps.get_mut(idx) {
+            *slot = c;
         }
-        Flat::Slot(SlotTy::Ty(want), idx) => {
-            for end in ti + 1..=toks.len() {
-                let Ok(e) = parse_expr(&toks[ti..end], env) else {
-                    continue;
+    }
+
+    fn seq(&mut self, seq: &[Flat], si: usize, ti: usize) -> bool {
+        let Some(node) = seq.get(si) else {
+            return ti == self.toks.len();
+        };
+        match node {
+            Flat::Lit(l) => match self.toks.get(ti) {
+                Some(t) if t.is_lit(l) => self.seq(seq, si + 1, ti + 1),
+                _ => false,
+            },
+            Flat::Slot(SlotTy::Variable, idx) => {
+                let Some(Tok::Var(raw)) = self.toks.get(ti) else {
+                    return false;
                 };
-                let got = e.ty(env);
-                if !want.accepts(got) {
-                    if type_err.is_none() {
-                        *type_err = Some(format!("expected a {} here but got a {}", want.name(), got.name()));
-                    }
-                    continue;
-                }
-                caps[*idx] = Some(Capture::Expr(e));
-                if match_seq(seq, si + 1, toks, end, env, caps, type_err) {
+                let env = self.env;
+                let parsed = self
+                    .memo
+                    .vars
+                    .entry(ti)
+                    .or_insert_with(|| parse_varref(raw, env).ok());
+                let Some(v) = parsed.clone() else {
+                    return false;
+                };
+                self.set_cap(*idx, Some(Capture::Var(v)));
+                if self.seq(seq, si + 1, ti + 1) {
                     return true;
                 }
-                caps[*idx] = None;
+                self.set_cap(*idx, None);
+                false
             }
-            false
+            Flat::Slot(SlotTy::Ty(want), idx) => {
+                for end in ti + 1..=self.toks.len() {
+                    if self.memo.dead.get(&ti).is_some_and(|d| end > *d) {
+                        break;
+                    }
+                    let env = self.env;
+                    if !self.memo.exprs.contains_key(&(ti, end)) {
+                        let parsed = match self.toks.get(ti..end).map(|span| parse_expr_span(span, env)) {
+                            Some(Ok(e)) => Some(e),
+                            Some(Err((_, saw_end))) => {
+                                if !saw_end {
+                                    self.memo.dead.insert(ti, end);
+                                }
+                                None
+                            }
+                            None => None,
+                        };
+                        self.memo.exprs.insert((ti, end), parsed);
+                    }
+                    let Some(Some(e)) = self.memo.exprs.get(&(ti, end)) else {
+                        continue;
+                    };
+                    let got = e.ty(env);
+                    if !want.accepts(got) {
+                        if self.type_err.is_none() {
+                            *self.type_err = Some(format!(
+                                "expected a {} here but got a {}",
+                                want.name(),
+                                got.name()
+                            ));
+                        }
+                        continue;
+                    }
+                    let e = e.clone();
+                    self.set_cap(*idx, Some(Capture::Expr(e)));
+                    if self.seq(seq, si + 1, end) {
+                        return true;
+                    }
+                    self.set_cap(*idx, None);
+                }
+                false
+            }
         }
     }
 }

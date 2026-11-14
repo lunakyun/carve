@@ -4,19 +4,23 @@
 use std::collections::BTreeSet;
 use std::sync::Mutex;
 
-use pumpkin_plugin_api::command::{ArgumentType, Command, CommandError, CommandNode, CommandSender, ConsumedArgs, StringType};
+use carve_core::{
+    CommandOutcome, Engine, EventCtx, EventKind, Host, LogLevel, PlayerRef, Recipient, ScriptError, Variables,
+};
+use pumpkin_plugin_api::command::{
+    ArgumentType, Command, CommandError, CommandNode, CommandSender, ConsumedArgs, StringType,
+};
 use pumpkin_plugin_api::commands::CommandHandler;
 use pumpkin_plugin_api::events::{
-    BlockBreakEvent, BlockPlaceEvent, EventData, EventHandler, EventPriority, FromIntoEvent, PlayerChatEvent, PlayerJoinEvent,
-    PlayerLeaveEvent,
+    BlockBreakEvent, BlockPlaceEvent, EventData, EventHandler, EventPriority, FromIntoEvent, PlayerChatEvent,
+    PlayerJoinEvent, PlayerLeaveEvent,
 };
 use pumpkin_plugin_api::logging::{LogLevel as ApiLevel, log};
 use pumpkin_plugin_api::permission::{Permission, PermissionDefault, PermissionLevel};
 use pumpkin_plugin_api::scheduler::schedule_repeating_task;
 use pumpkin_plugin_api::text::TextComponent;
-use pumpkin_plugin_api::{Context, Player, Plugin, PluginMetadata, Server, permissions, register_plugin, uuid};
-use carve_core::{
-    CommandOutcome, Engine, EventCtx, EventKind, Host, LogLevel, PlayerRef, Recipient, ScriptError, Variables,
+use pumpkin_plugin_api::{
+    Context, Player, Plugin, PluginMetadata, Server, permissions, register_plugin, uuid,
 };
 
 const SCRIPTS_DIR: &str = "scripts";
@@ -57,10 +61,18 @@ fn with_state<R>(
     reply: Option<&CommandSender>,
     f: impl FnOnce(&mut State, &mut WasmHost) -> R,
 ) -> Option<R> {
-    let mut host = WasmHost { server, reply, deferred: Vec::new() };
+    let mut host = WasmHost {
+        server,
+        reply,
+        deferred: Vec::new(),
+        players: Vec::new(),
+    };
     let result = {
         let Ok(mut guard) = STATE.try_lock() else {
-            plog(ApiLevel::Warn, "skipped a nested event while a script was running");
+            plog(
+                ApiLevel::Warn,
+                "skipped a nested event while a script was running",
+            );
             return None;
         };
         let state = guard.as_mut()?;
@@ -77,22 +89,44 @@ struct WasmHost<'a> {
     /// The sender of the command being run, for console replies.
     reply: Option<&'a CommandSender>,
     deferred: Vec<String>,
+    /// Player handles looked up during this `with_state` call, by UUID.
+    /// Every lookup crosses the component boundary, so each UUID is looked
+    /// up at most once per call. `None` means offline.
+    players: Vec<(String, Option<Player>)>,
 }
 
 impl WasmHost<'_> {
-    fn get(&self, p: &PlayerRef) -> Option<Player> {
-        let id = uuid::parse(&p.uuid)?;
-        self.server.get_player_by_uuid(id)
+    fn get(&mut self, p: &PlayerRef) -> Option<&Player> {
+        self.get_by_uuid(&p.uuid)
+    }
+
+    fn get_by_uuid(&mut self, uuid_str: &str) -> Option<&Player> {
+        let i = match self.players.iter().position(|(u, _)| u == uuid_str) {
+            Some(i) => i,
+            None => {
+                let player = uuid::parse(uuid_str).and_then(|id| self.server.get_player_by_uuid(id));
+                self.players.push((uuid_str.to_string(), player));
+                self.players.len() - 1
+            }
+        };
+        self.players.get(i).and_then(|(_, p)| p.as_ref())
     }
 }
 
 /// Bare permission names live in the plugin's namespace: `vip` -> `carve:vip`.
 fn full_node(node: &str) -> String {
-    if node.contains(':') { node.to_string() } else { format!("carve:{node}") }
+    if node.contains(':') {
+        node.to_string()
+    } else {
+        format!("carve:{node}")
+    }
 }
 
 fn player_ref(p: &Player) -> PlayerRef {
-    PlayerRef { uuid: uuid::to_string(p.get_id()), name: p.get_name() }
+    PlayerRef {
+        uuid: uuid::to_string(p.get_id()),
+        name: p.get_name(),
+    }
 }
 
 // Inherent methods; `TickHost` exposes them through the `Host` trait.
@@ -164,12 +198,16 @@ impl WasmHost<'_> {
     }
 
     fn resolve_player(&mut self, uuid: &str) -> Option<String> {
-        let id = uuid::parse(uuid)?;
-        self.server.get_player_by_uuid(id).map(|p| p.get_name())
+        self.get_by_uuid(uuid).map(|p| p.get_name())
     }
 
     fn find_player(&mut self, name: &str) -> Option<PlayerRef> {
-        self.server.get_player_by_name(name).map(|p| player_ref(&p))
+        let p = self.server.get_player_by_name(name)?;
+        let r = player_ref(&p);
+        if !self.players.iter().any(|(u, _)| *u == r.uuid) {
+            self.players.push((r.uuid.clone(), Some(p)));
+        }
+        Some(r)
     }
 
     fn has_permission(&mut self, p: &PlayerRef, node: &str) -> bool {
@@ -251,7 +289,10 @@ fn read_scripts(dir: &str) -> Result<Vec<(String, String)>, String> {
     for entry in entries.flatten() {
         let path = entry.path();
         if path.extension().is_some_and(|x| x == "carve") {
-            let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+            let name = path
+                .file_name()
+                .map(|n| n.to_string_lossy().into_owned())
+                .unwrap_or_default();
             match std::fs::read_to_string(&path) {
                 Ok(src) => files.push((name, src)),
                 Err(e) => return Err(format!("can't read {name}: {e}")),
@@ -308,7 +349,12 @@ impl EventAccess for BlockBreakEvent {
     fn ctx(d: &EventData<Self>) -> EventCtx {
         match &d.player {
             Some(p) => EventCtx::player(player_ref(p)),
-            None => EventCtx { player: None, sender: Recipient::Console, message: None, args: Vec::new() },
+            None => EventCtx {
+                player: None,
+                sender: Recipient::Console,
+                message: None,
+                args: Vec::new(),
+            },
         }
     }
     fn set_cancelled(d: &mut EventData<Self>) {
@@ -333,7 +379,10 @@ impl<E: EventAccess> EventHandler<E> for OnEvent<E> {
                 return false;
             }
             let ctx = E::ctx(&data);
-            let mut th = TickHost { inner: host, hs: &mut st.hs };
+            let mut th = TickHost {
+                inner: host,
+                hs: &mut st.hs,
+            };
             st.engine.fire(kind, ctx, &mut th).cancelled
         });
         if cancelled == Some(true) {
@@ -346,10 +395,12 @@ impl<E: EventAccess> EventHandler<E> for OnEvent<E> {
 fn register_event<E: EventAccess + Send + Sync + 'static>(ctx: &Context, kind: EventKind) {
     let h = OnEvent::<E>(kind, std::marker::PhantomData);
     if let Err(e) = ctx.register_event_handler::<E, _>(h, EventPriority::Normal, true) {
-        plog(ApiLevel::Error, &format!("could not listen to {} events: {e}", kind.name()));
+        plog(
+            ApiLevel::Error,
+            &format!("could not listen to {} events: {e}", kind.name()),
+        );
     }
 }
-
 
 // ---------- commands ----------
 
@@ -368,13 +419,20 @@ struct ScriptCommand {
 
 impl CommandHandler for ScriptCommand {
     fn handle(&self, sender: CommandSender, server: Server, args: ConsumedArgs) -> Result<i32, CommandError> {
-        let raw = if self.with_args { raw_args(&args) } else { String::new() };
+        let raw = if self.with_args {
+            raw_args(&args)
+        } else {
+            String::new()
+        };
         let recipient = match sender.as_player() {
             Some(p) => Recipient::Player(player_ref(&p)),
             None => Recipient::Console,
         };
         let outcome = with_state(&server, Some(&sender), |st, host| {
-            let mut th = TickHost { inner: host, hs: &mut st.hs };
+            let mut th = TickHost {
+                inner: host,
+                hs: &mut st.hs,
+            };
             st.engine.run_command(&self.name, recipient, &raw, &mut th)
         });
         match outcome {
@@ -402,16 +460,28 @@ impl CommandHandler for ScriptCommand {
 struct ReloadCommand;
 
 impl CommandHandler for ReloadCommand {
-    fn handle(&self, sender: CommandSender, server: Server, _args: ConsumedArgs) -> Result<i32, CommandError> {
+    fn handle(
+        &self,
+        sender: CommandSender,
+        server: Server,
+        _args: ConsumedArgs,
+    ) -> Result<i32, CommandError> {
         let result = with_state(&server, None, |st, _host| -> Result<Vec<String>, String> {
             let files = read_scripts(&st.scripts_dir())?;
             match st.engine.reload(&files) {
                 Ok(sum) => {
-                    let new: Vec<String> =
-                        sum.commands.iter().filter(|c| !st.registered.contains(*c)).map(|c| format!("/{c}")).collect();
+                    let new: Vec<String> = sum
+                        .commands
+                        .iter()
+                        .filter(|c| !st.registered.contains(*c))
+                        .map(|c| format!("/{c}"))
+                        .collect();
                     let mut msg = format!("&aReloaded {} script(s), {} trigger(s).", sum.files, sum.triggers);
                     if !new.is_empty() {
-                        msg.push_str(&format!(" &eNew commands need a server restart: {}", new.join(", ")));
+                        msg.push_str(&format!(
+                            " &eNew commands need a server restart: {}",
+                            new.join(", ")
+                        ));
                     }
                     Ok(vec![msg])
                 }
@@ -456,7 +526,10 @@ fn tick(server: Server) {
         });
         due.sort();
         for (_, tok) in due {
-            let mut th = TickHost { inner: host, hs: &mut st.hs };
+            let mut th = TickHost {
+                inner: host,
+                hs: &mut st.hs,
+            };
             st.engine.resume(tok, &mut th);
         }
         if let Some(json) = st.engine.save_due(now * 50) {
@@ -479,7 +552,10 @@ impl Plugin for Carve {
             authors: vec!["Carve contributors".into()],
             description: "Skript-like scripting for Pumpkin.".into(),
             dependencies: vec![],
-            permissions: vec![permissions::FS_READ_DATA.into(), permissions::FS_WRITE_DATA.into()],
+            permissions: vec![
+                permissions::FS_READ_DATA.into(),
+                permissions::FS_WRITE_DATA.into(),
+            ],
         }
     }
 
@@ -494,7 +570,10 @@ impl Plugin for Carve {
             Ok(s) => Variables::from_json(&s).unwrap_or_else(|e| {
                 let backup = format!("{vars_path}.broken");
                 let _ = std::fs::rename(&vars_path, &backup);
-                plog(ApiLevel::Error, &format!("{e}; starting with no variables, old file moved to {backup}"));
+                plog(
+                    ApiLevel::Error,
+                    &format!("{e}; starting with no variables, old file moved to {backup}"),
+                );
                 Variables::default()
             }),
             Err(_) => Variables::default(),
@@ -506,13 +585,34 @@ impl Plugin for Carve {
         });
         let (sum, errors) = engine.load(&files);
         report(&errors);
-        plog(ApiLevel::Info, &format!("loaded {} script(s), {} trigger(s), {} error(s)", sum.files, sum.triggers, errors.len()));
+        plog(
+            ApiLevel::Info,
+            &format!(
+                "loaded {} script(s), {} trigger(s), {} error(s)",
+                sum.files,
+                sum.triggers,
+                errors.len()
+            ),
+        );
 
         for (node, desc, default) in [
-            (ADMIN_PERM, "Use /carve reload", PermissionDefault::Op(PermissionLevel::Two)),
-            (COMMAND_PERM, "Use Carve script commands", PermissionDefault::Allow),
+            (
+                ADMIN_PERM,
+                "Use /carve reload",
+                PermissionDefault::Op(PermissionLevel::Two),
+            ),
+            (
+                COMMAND_PERM,
+                "Use Carve script commands",
+                PermissionDefault::Allow,
+            ),
         ] {
-            let p = Permission { node: node.into(), description: desc.into(), default, children: vec![] };
+            let p = Permission {
+                node: node.into(),
+                description: desc.into(),
+                default,
+                children: vec![],
+            };
             if let Err(e) = context.register_permission(&p) {
                 plog(ApiLevel::Warn, &format!("permission {node}: {e}"));
             }
@@ -525,7 +625,9 @@ impl Plugin for Carve {
         let mut registered = BTreeSet::new();
         let mut perms_done = BTreeSet::new();
         for name in &sum.commands {
-            let Some(def) = engine.table().command(name) else { continue };
+            let Some(def) = engine.table().command(name) else {
+                continue;
+            };
             // Unregistered nodes are always denied by Pumpkin, so register ours.
             if let Some(node) = def.permission.as_deref().map(full_node)
                 && node.starts_with("carve:")
@@ -542,13 +644,20 @@ impl Plugin for Carve {
                 }
             }
             let desc = def.description.clone().unwrap_or_else(|| def.usage());
-            let mut cmd = Command::new(&[name.clone()], &desc);
+            let mut cmd = Command::new(std::slice::from_ref(name), &desc);
             if def.args.iter().all(|a| a.optional) {
-                cmd = cmd.execute(ScriptCommand { name: name.clone(), with_args: false });
+                cmd = cmd.execute(ScriptCommand {
+                    name: name.clone(),
+                    with_args: false,
+                });
             }
             if !def.args.is_empty() {
-                let node = CommandNode::argument("args", &ArgumentType::String(StringType::Greedy))
-                    .execute(ScriptCommand { name: name.clone(), with_args: true });
+                let node = CommandNode::argument("args", &ArgumentType::String(StringType::Greedy)).execute(
+                    ScriptCommand {
+                        name: name.clone(),
+                        with_args: true,
+                    },
+                );
                 cmd = cmd.then(node);
             }
             context.register_command(cmd, COMMAND_PERM);
@@ -562,7 +671,15 @@ impl Plugin for Carve {
         register_event::<BlockPlaceEvent>(&context, EventKind::Place);
 
         if let Ok(mut g) = STATE.try_lock() {
-            *g = Some(State { engine, hs: HostState { tick: 0, pending: Vec::new() }, data_dir, registered });
+            *g = Some(State {
+                engine,
+                hs: HostState {
+                    tick: 0,
+                    pending: Vec::new(),
+                },
+                data_dir,
+                registered,
+            });
         }
         schedule_repeating_task(1, 1, tick);
         Ok(())

@@ -11,6 +11,7 @@ struct Mock {
     waits: Vec<(u64, u64)>,          // (ticks, token)
     now: u64,
     logs: Vec<(LogLevel, String)>,
+    resolves: usize,
 }
 
 impl Mock {
@@ -23,7 +24,11 @@ impl Mock {
         std::mem::take(&mut self.calls)
     }
     fn errors(&self) -> Vec<&String> {
-        self.logs.iter().filter(|(l, _)| *l == LogLevel::Error).map(|(_, m)| m).collect()
+        self.logs
+            .iter()
+            .filter(|(l, _)| *l == LogLevel::Error)
+            .map(|(_, m)| m)
+            .collect()
     }
 }
 
@@ -42,7 +47,8 @@ impl Host for Mock {
         self.calls.push(format!("broadcast {text}"));
     }
     fn send_title(&mut self, p: &PlayerRef, title: &str, sub: Option<&str>) {
-        self.calls.push(format!("title {} {} / {}", p.name, title, sub.unwrap_or("-")));
+        self.calls
+            .push(format!("title {} {} / {}", p.name, title, sub.unwrap_or("-")));
     }
     fn send_action_bar(&mut self, p: &PlayerRef, text: &str) {
         self.calls.push(format!("actionbar {} {}", p.name, text));
@@ -63,13 +69,17 @@ impl Host for Mock {
         self.calls.push(format!("cmd {c}"));
     }
     fn resolve_player(&mut self, uuid: &str) -> Option<String> {
+        self.resolves += 1;
         self.online.get(uuid).cloned()
     }
     fn find_player(&mut self, name: &str) -> Option<PlayerRef> {
         self.online
             .iter()
             .find(|(_, n)| n.eq_ignore_ascii_case(name))
-            .map(|(u, n)| PlayerRef { uuid: u.clone(), name: n.clone() })
+            .map(|(u, n)| PlayerRef {
+                uuid: u.clone(),
+                name: n.clone(),
+            })
     }
     fn has_permission(&mut self, p: &PlayerRef, node: &str) -> bool {
         self.perms.iter().any(|(u, n)| *u == p.uuid && n == node)
@@ -86,13 +96,20 @@ impl Host for Mock {
 }
 
 fn steve() -> PlayerRef {
-    PlayerRef { uuid: "u1".into(), name: "Steve".into() }
+    PlayerRef {
+        uuid: "u1".into(),
+        name: "Steve".into(),
+    }
 }
 
 fn engine(src: &str) -> Engine {
     let mut e = Engine::default();
     let (_, errs) = e.load(&[("test.carve".into(), src.into())]);
-    assert!(errs.is_empty(), "unexpected errors: {}", errs.iter().map(|e| e.to_string()).collect::<Vec<_>>().join("\n"));
+    assert!(
+        errs.is_empty(),
+        "unexpected errors: {}",
+        errs.iter().map(|e| e.to_string()).collect::<Vec<_>>().join("\n")
+    );
     e
 }
 
@@ -185,7 +202,11 @@ fn unknown_effect_reports_line_and_did_you_mean() {
     let e = &errs[0];
     assert_eq!((e.file.as_str(), e.line), ("bad.carve", 3));
     assert_eq!(e.suggestions.len(), 3);
-    assert!(e.suggestions.iter().any(|s| s.starts_with("send %text%")), "{:?}", e.suggestions);
+    assert!(
+        e.suggestions.iter().any(|s| s.starts_with("send %text%")),
+        "{:?}",
+        e.suggestions
+    );
     assert!(e.to_string().starts_with("bad.carve:3: "));
 }
 
@@ -200,16 +221,52 @@ fn type_errors_are_reported() {
 
 #[test]
 fn structural_errors() {
-    assert!(errors_of("on jump:\n    send \"x\"\n")[0].msg.contains("unknown event"));
+    assert!(
+        errors_of("on jump:\n    send \"x\"\n")[0]
+            .msg
+            .contains("unknown event")
+    );
     assert!(errors_of("on join:\n")[0].msg.contains("empty block"));
-    assert!(errors_of("on join:\n    send \"x\"\n        send \"y\"\n")[0].msg.contains("unexpected indentation"));
-    assert!(errors_of("on join:\n    send \"x\"\n\tsend \"y\"\n")[0].msg.contains("tabs"));
-    assert!(errors_of("on join:\n    else:\n        send \"x\"\n")[0].msg.contains("without an 'if'"));
-    assert!(errors_of("on join:\n    send message\n")[0].msg.contains("can't understand"));
-    assert!(errors_of("command /x:\n    trigger:\n        cancel event\n")[0].msg.contains("no event to cancel"));
-    assert!(errors_of("command /x:\n    trigger:\n        send arg\n")[0].msg.contains("can't understand"));
-    assert!(errors_of("on join:\n    send \"100%\"\n")[0].msg.contains("unclosed '%'"));
-    assert!(errors_of("on join:\n    send \"oops\n")[0].msg.contains("unclosed text"));
+    assert!(
+        errors_of("on join:\n    send \"x\"\n        send \"y\"\n")[0]
+            .msg
+            .contains("unexpected indentation")
+    );
+    assert!(
+        errors_of("on join:\n    send \"x\"\n\tsend \"y\"\n")[0]
+            .msg
+            .contains("tabs")
+    );
+    assert!(
+        errors_of("on join:\n    else:\n        send \"x\"\n")[0]
+            .msg
+            .contains("without an 'if'")
+    );
+    assert!(
+        errors_of("on join:\n    send message\n")[0]
+            .msg
+            .contains("can't understand")
+    );
+    assert!(
+        errors_of("command /x:\n    trigger:\n        cancel event\n")[0]
+            .msg
+            .contains("no event to cancel")
+    );
+    assert!(
+        errors_of("command /x:\n    trigger:\n        send arg\n")[0]
+            .msg
+            .contains("can't understand")
+    );
+    assert!(
+        errors_of("on join:\n    send \"100%\"\n")[0]
+            .msg
+            .contains("unclosed '%'")
+    );
+    assert!(
+        errors_of("on join:\n    send \"oops\n")[0]
+            .msg
+            .contains("unclosed text")
+    );
 }
 
 #[test]
@@ -335,7 +392,13 @@ fn comparisons() {
     );
     assert_eq!(
         out,
-        ["send Steve text eq ignores case", "send Steve ne", "send Steve le", "send Steve player eq name", "send Steve none eq none"]
+        [
+            "send Steve text eq ignores case",
+            "send Steve ne",
+            "send Steve le",
+            "send Steve player eq name",
+            "send Steve none eq none"
+        ]
     );
 }
 
@@ -365,11 +428,16 @@ fn variables_global_local_lists() {
     let mut h = Mock::with_steve();
     e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
     e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
-    assert_eq!(h.take(), ["send Steve 1 0.5 local Steve", "send Steve 2 1 local Steve"]);
+    assert_eq!(
+        h.take(),
+        ["send Steve 1 0.5 local Steve", "send Steve 2 1 local Steve"]
+    );
     // locals don't leak between runs
     assert_eq!(e.vars.get("_x"), Value::None);
     // list delete
-    let mut e2 = engine("on join:\n    set {l::a} to 1\n    set {l::b} to 2\n    set {keep} to 3\n    delete {l::*}\n    delete {keep2}\n");
+    let mut e2 = engine(
+        "on join:\n    set {l::a} to 1\n    set {l::b} to 2\n    set {keep} to 3\n    delete {l::*}\n    delete {keep2}\n",
+    );
     e2.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
     assert_eq!(e2.vars.get("l::a"), Value::None);
     assert_eq!(e2.vars.get("keep"), Value::Num(3.0));
@@ -386,7 +454,9 @@ fn add_to_text_variable_is_error() {
 
 #[test]
 fn persistence_round_trip_and_debounce() {
-    let mut e = engine("on join:\n    set {n} to 4.5\n    set {t} to \"hi \"\"q\"\"\"\n    set {p} to player\n    set {list::a} to 1\n");
+    let mut e = engine(
+        "on join:\n    set {n} to 4.5\n    set {t} to \"hi \"\"q\"\"\"\n    set {p} to player\n    set {list::a} to 1\n",
+    );
     let mut h = Mock::with_steve();
     h.now = 1000;
     assert_eq!(e.save_due(1000), None);
@@ -410,7 +480,9 @@ fn persistence_round_trip_and_debounce() {
 
 #[test]
 fn wait_and_resume() {
-    let mut e = engine("on join:\n    send \"a\"\n    wait 2 seconds\n    send \"b\"\n    wait 3 ticks\n    send \"c %player%\"\n");
+    let mut e = engine(
+        "on join:\n    send \"a\"\n    wait 2 seconds\n    send \"b\"\n    wait 3 ticks\n    send \"c %player%\"\n",
+    );
     let mut h = Mock::with_steve();
     e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
     assert_eq!(h.take(), ["send Steve a"]);
@@ -430,7 +502,9 @@ fn wait_and_resume() {
 
 #[test]
 fn offline_player_after_wait_is_skipped() {
-    let mut e = engine("on join:\n    wait 1 tick\n    send \"hi\" to player\n    heal player\n    send \"you are %player%\"\n");
+    let mut e = engine(
+        "on join:\n    wait 1 tick\n    send \"hi\" to player\n    heal player\n    send \"you are %player%\"\n",
+    );
     let mut h = Mock::with_steve();
     e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
     h.online.clear();
@@ -444,8 +518,14 @@ fn offline_player_after_wait_is_skipped() {
 fn cancel_before_and_after_wait() {
     let mut e = engine("on break:\n    cancel event\n");
     let mut h = Mock::with_steve();
-    assert!(e.fire(EventKind::Break, EventCtx::player(steve()), &mut h).cancelled);
-    assert!(!e.fire(EventKind::Place, EventCtx::player(steve()), &mut h).cancelled);
+    assert!(
+        e.fire(EventKind::Break, EventCtx::player(steve()), &mut h)
+            .cancelled
+    );
+    assert!(
+        !e.fire(EventKind::Place, EventCtx::player(steve()), &mut h)
+            .cancelled
+    );
 
     let mut e = engine("on break:\n    wait 1 tick\n    cancel event\n");
     let out = e.fire(EventKind::Break, EventCtx::player(steve()), &mut h);
@@ -458,7 +538,10 @@ fn cancel_before_and_after_wait() {
 
     // cancel then wait: still cancelled
     let mut e = engine("on break:\n    cancel event\n    wait 1 tick\n    send \"later\"\n");
-    assert!(e.fire(EventKind::Break, EventCtx::player(steve()), &mut h).cancelled);
+    assert!(
+        e.fire(EventKind::Break, EventCtx::player(steve()), &mut h)
+            .cancelled
+    );
 }
 
 #[test]
@@ -467,7 +550,11 @@ fn chat_message() {
     let mut h = Mock::with_steve();
     e.fire(EventKind::Chat, EventCtx::chat(steve(), "HI"), &mut h);
     assert_eq!(h.take(), ["send Steve you said HI"]);
-    assert!(errors_of("on join:\n    send message\n")[0].msg.contains("can't understand"));
+    assert!(
+        errors_of("on join:\n    send message\n")[0]
+            .msg
+            .contains("can't understand")
+    );
 }
 
 #[test]
@@ -495,30 +582,76 @@ command /echo [<text>]:
     );
     let mut e = engine(&src);
     assert_eq!(e.table().command_names(), ["add", "echo", "greet"]);
-    assert_eq!(e.table().command("greet").unwrap().usage(), "/greet <player> [<text>]");
+    assert_eq!(
+        e.table().command("greet").unwrap().usage(),
+        "/greet <player> [<text>]"
+    );
     let mut h = Mock::with_steve();
     let me = Recipient::Player(steve());
-    assert_eq!(e.run_command("greet", me.clone(), "steve", &mut h), CommandOutcome::NoPermission);
+    assert_eq!(
+        e.run_command("greet", me.clone(), "steve", &mut h),
+        CommandOutcome::NoPermission
+    );
     h.perms.push(("u1".into(), "test.greet".into()));
-    assert_eq!(e.run_command("greet", me.clone(), "steve how are you", &mut h), CommandOutcome::Ran);
-    assert_eq!(e.run_command("/GREET", Recipient::Console, "steve", &mut h), CommandOutcome::Ran);
-    assert_eq!(h.take(), ["send Steve hi Steve how are you", "send console no text", "send Steve hi Steve <none>"]);
-    assert!(matches!(e.run_command("greet", me.clone(), "", &mut h), CommandOutcome::Usage(_)));
-    assert!(matches!(e.run_command("greet", me.clone(), "alex", &mut h), CommandOutcome::Usage(m) if m.contains("not online")));
-    assert_eq!(e.run_command("add", me.clone(), "2 3.5", &mut h), CommandOutcome::Ran);
-    assert!(matches!(e.run_command("add", me.clone(), "2 x", &mut h), CommandOutcome::Usage(_)));
-    assert!(matches!(e.run_command("add", me.clone(), "1 2 3", &mut h), CommandOutcome::Usage(_)));
-    assert_eq!(e.run_command("echo", Recipient::Console, "", &mut h), CommandOutcome::Ran);
-    assert_eq!(e.run_command("nope", Recipient::Console, "", &mut h), CommandOutcome::NotFound);
+    assert_eq!(
+        e.run_command("greet", me.clone(), "steve how are you", &mut h),
+        CommandOutcome::Ran
+    );
+    assert_eq!(
+        e.run_command("/GREET", Recipient::Console, "steve", &mut h),
+        CommandOutcome::Ran
+    );
+    assert_eq!(
+        h.take(),
+        [
+            "send Steve hi Steve how are you",
+            "send console no text",
+            "send Steve hi Steve <none>"
+        ]
+    );
+    assert!(matches!(
+        e.run_command("greet", me.clone(), "", &mut h),
+        CommandOutcome::Usage(_)
+    ));
+    assert!(
+        matches!(e.run_command("greet", me.clone(), "alex", &mut h), CommandOutcome::Usage(m) if m.contains("not online"))
+    );
+    assert_eq!(
+        e.run_command("add", me.clone(), "2 3.5", &mut h),
+        CommandOutcome::Ran
+    );
+    assert!(matches!(
+        e.run_command("add", me.clone(), "2 x", &mut h),
+        CommandOutcome::Usage(_)
+    ));
+    assert!(matches!(
+        e.run_command("add", me.clone(), "1 2 3", &mut h),
+        CommandOutcome::Usage(_)
+    ));
+    assert_eq!(
+        e.run_command("echo", Recipient::Console, "", &mut h),
+        CommandOutcome::Ran
+    );
+    assert_eq!(
+        e.run_command("nope", Recipient::Console, "", &mut h),
+        CommandOutcome::NotFound
+    );
     assert_eq!(h.take(), ["send Steve 5.5", "send console echo: <none>"]);
-    assert!(errors_of("command /x <text>:\n    trigger:\n        send arg-2\n")[0].msg.contains("can't understand"));
+    assert!(
+        errors_of("command /x <text>:\n    trigger:\n        send arg-2\n")[0]
+            .msg
+            .contains("can't understand")
+    );
 }
 
 #[test]
 fn reload_keeps_old_scripts_on_error() {
     let mut e = engine("on join:\n    send \"v1\"\n");
     let mut h = Mock::with_steve();
-    let bad = [("a.carve".to_string(), "on join:\n    send \"v2\"\n".to_string()), ("b.carve".into(), "on join:\n    oops\n".into())];
+    let bad = [
+        ("a.carve".to_string(), "on join:\n    send \"v2\"\n".to_string()),
+        ("b.carve".into(), "on join:\n    oops\n".into()),
+    ];
     let errs = e.reload(&bad).unwrap_err();
     assert_eq!(errs.len(), 1);
     assert_eq!((errs[0].file.as_str(), errs[0].line), ("b.carve", 2));
@@ -536,7 +669,8 @@ fn in_flight_wait_finishes_on_old_code() {
     let mut e = engine("on join:\n    wait 1 tick\n    send \"old\"\n");
     let mut h = Mock::with_steve();
     e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
-    e.reload(&[("t.carve".into(), "on join:\n    send \"new\"\n".into())]).unwrap();
+    e.reload(&[("t.carve".into(), "on join:\n    send \"new\"\n".into())])
+        .unwrap();
     let tok = h.waits[0].1;
     e.resume(tok, &mut h);
     assert_eq!(h.take(), ["send Steve old"]);
@@ -545,11 +679,23 @@ fn in_flight_wait_finishes_on_old_code() {
 #[test]
 fn initial_load_is_partial() {
     let mut e = Engine::default();
-    let files = [("good.carve".to_string(), "on join:\n    send \"g\"\n".to_string()), ("bad.carve".into(), "on join:\n    nope\n".into())];
+    let files = [
+        ("good.carve".to_string(), "on join:\n    send \"g\"\n".to_string()),
+        ("bad.carve".into(), "on join:\n    nope\n".into()),
+    ];
     let (sum, errs) = e.load(&files);
     assert_eq!(sum.files, 1);
     assert_eq!(errs.len(), 1);
-    let dup = [("a.carve".to_string(), "command /x:\n    trigger:\n        send \"a\"\n".to_string()), ("b.carve".into(), "command /x:\n    trigger:\n        send \"b\"\n".into())];
+    let dup = [
+        (
+            "a.carve".to_string(),
+            "command /x:\n    trigger:\n        send \"a\"\n".to_string(),
+        ),
+        (
+            "b.carve".into(),
+            "command /x:\n    trigger:\n        send \"b\"\n".into(),
+        ),
+    ];
     assert!(e.reload(&dup).unwrap_err()[0].msg.contains("defined twice"));
 }
 
@@ -562,9 +708,15 @@ fn runaway_guard() {
     e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
     assert!(h.take().is_empty());
     assert_eq!(h.errors().len(), 1);
-    assert!(h.errors()[0].contains("more than 20 instructions"), "{:?}", h.errors());
+    assert!(
+        h.errors()[0].contains("more than 20 instructions"),
+        "{:?}",
+        h.errors()
+    );
     // a wait starts a fresh slice
-    let mut e = engine("on join:\n    set {_a} to 1\n    set {_a} to 2\n    wait 1 tick\n    set {_a} to 3\n    send \"ok\"\n");
+    let mut e = engine(
+        "on join:\n    set {_a} to 1\n    set {_a} to 2\n    wait 1 tick\n    set {_a} to 3\n    send \"ok\"\n",
+    );
     e.max_instructions = 3;
     let mut h = Mock::with_steve();
     e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
@@ -582,4 +734,72 @@ fn examples_compile() {
         let errs = errors_of(&src);
         assert!(errs.is_empty(), "{f}: {errs:?}");
     }
+}
+
+// ---------- performance semantics ----------
+
+#[test]
+fn player_resolved_once_per_slice() {
+    let mut e = engine(
+        "on join:
+    send \"%player% %player%\" to player
+    heal player
+    wait 1 tick
+    heal player
+    send \"%player%\"
+",
+    );
+    let mut h = Mock::with_steve();
+    e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
+    assert_eq!(h.resolves, 1, "one lookup before the wait");
+    let tok = h.waits[0].1;
+    e.resume(tok, &mut h);
+    assert_eq!(
+        h.resolves, 2,
+        "the cache is cleared at the wait, so one more lookup after it"
+    );
+    assert_eq!(
+        h.take(),
+        [
+            "send Steve Steve Steve",
+            "heal Steve",
+            "heal Steve",
+            "send Steve Steve"
+        ]
+    );
+}
+
+#[test]
+fn local_lists_and_static_keys() {
+    let out = join(
+        r#"on join:
+    set {_l::a} to 1
+    set {_l::b} to 2
+    set {_keep} to 3
+    delete {_l::*}
+    set {_Mixed} to "m"
+    add 2 to {_KEEP}
+    send "%{_l::a}% %{_l::b}% %{_keep}% %{_mixed}%"
+"#,
+    );
+    assert_eq!(out, ["send Steve <none> <none> 5 m"]);
+}
+
+#[test]
+fn constant_folding_keeps_meaning() {
+    let out = join(
+        "on join:
+    send \"%1 + 2 * 3% %-(4 - 1)% %10 / 4% %\"\"x\"\"% %%\"
+",
+    );
+    assert_eq!(out, ["send Steve 7 -3 2.5 x %"]);
+    // division by zero is still a runtime error with its line
+    let mut e = engine(
+        "on join:
+    set {_a} to 2 / 0
+",
+    );
+    let mut h = Mock::with_steve();
+    e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
+    assert!(h.errors()[0].starts_with("test.carve:2: division by zero"));
 }
