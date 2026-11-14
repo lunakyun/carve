@@ -120,6 +120,14 @@ pub enum Expr {
     ParseNum(Box<Expr>),
     /// `random element of {list::*}`.
     RandomOf(VarRef),
+    /// `join {list::*} with ", "`.
+    Join(VarRef, Box<Expr>),
+    /// `split "a,b" at ","`: a list, only usable in `set {x::*} to` and `loop`.
+    Split(Box<Expr>, Box<Expr>),
+    /// `length of x` / `amount of characters in x`.
+    Length(Box<Expr>),
+    /// `x with all "a" replaced with "b"`: text, from, to, replace all.
+    Replaced(Box<Expr>, Box<Expr>, Box<Expr>, bool),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -251,7 +259,9 @@ impl Expr {
             Expr::Distance(..) | Expr::Random(..) | Expr::Damage => Ty::Number,
             Expr::Attacker => Ty::Player,
             Expr::Math(..) | Expr::ParseNum(_) => Ty::Number,
-            Expr::RandomOf(_) => Ty::Object,
+            Expr::RandomOf(_) | Expr::Split(..) => Ty::Object,
+            Expr::Join(..) | Expr::Replaced(..) => Ty::Text,
+            Expr::Length(_) => Ty::Number,
             Expr::Default(a, b) => {
                 let (x, y) = (a.ty(env), b.ty(env));
                 if x == y { x } else { Ty::Object }
@@ -437,6 +447,7 @@ impl P<'_> {
                 }
             }
         }
+        e = self.replaced_postfix(e);
         // `player's location`, `player's world`, ...
         while matches!(self.toks.get(self.pos), Some(Tok::Sym("'s"))) {
             let Some(Tok::Word(w)) = self.toks.get(self.pos + 1) else {
@@ -457,6 +468,36 @@ impl P<'_> {
             e = self.prop(prop, e)?;
         }
         Ok(e)
+    }
+
+    /// `<text> with [all|first] "a" replaced (with|by) "b"`. Leaves the
+    /// position alone and returns `e` when the words after it do not fit.
+    fn replaced_postfix(&mut self, e: Expr) -> Expr {
+        if !matches!(self.toks.get(self.pos), Some(t) if t.is_lit("with")) {
+            return e;
+        }
+        let save = self.pos;
+        self.pos += 1;
+        let mut all = true;
+        if matches!(self.peek(), Some(t) if t.is_lit("all")) {
+            self.pos += 1;
+        } else if matches!(self.peek(), Some(t) if t.is_lit("first")) {
+            self.pos += 1;
+            all = false;
+        }
+        if let Ok(from) = self.primary_base()
+            && matches!(self.peek(), Some(t) if t.is_lit("replaced"))
+        {
+            self.pos += 1;
+            if matches!(self.peek(), Some(t) if t.is_lit("with") || t.is_lit("by")) {
+                self.pos += 1;
+                if let Ok(to) = self.primary_base() {
+                    return Expr::Replaced(Box::new(e), Box::new(from), Box::new(to), all);
+                }
+            }
+        }
+        self.pos = save;
+        e
     }
 
     fn prop(&self, prop: Prop, of: Expr) -> Result<Expr, String> {
@@ -597,6 +638,48 @@ impl P<'_> {
                         }
                     }
                     "arg" | "argument" => self.arg(1),
+                    "join" if matches!(self.peek(), Some(Tok::Var(_))) => {
+                        let Some(Tok::Var(v)) = self.peek().cloned() else {
+                            return Err("expected 'join {list::*} with \", \"'".into());
+                        };
+                        self.pos += 1;
+                        let var = parse_varref(&v, self.env)?;
+                        if !var.is_list() {
+                            return Err("'join' needs a list variable like {x::*}".into());
+                        }
+                        if !matches!(self.peek(), Some(t) if t.is_lit("with") || t.is_lit("by")) {
+                            return Err("expected 'join {list::*} with \", \"'".into());
+                        }
+                        self.pos += 1;
+                        let sep = self.primary_base()?;
+                        Ok(Expr::Join(var, Box::new(sep)))
+                    }
+                    "split" if self.peek().is_some() && !matches!(self.peek(), Some(t) if t.is_lit("(")) => {
+                        let text = self.primary_base()?;
+                        if !matches!(self.peek(), Some(t) if t.is_lit("at") || t.is_lit("by")) {
+                            return Err("expected 'split <text> at <separator>'".into());
+                        }
+                        self.pos += 1;
+                        let sep = self.primary_base()?;
+                        Ok(Expr::Split(Box::new(text), Box::new(sep)))
+                    }
+                    "length" if matches!(self.peek(), Some(t) if t.is_lit("of")) => {
+                        self.pos += 1;
+                        let inner = self.primary_base()?;
+                        Ok(Expr::Length(Box::new(inner)))
+                    }
+                    "size" | "amount" | "count" | "number"
+                        if matches!(self.peek(), Some(t) if t.is_lit("of"))
+                            && matches!(self.toks.get(self.pos + 1), Some(t) if t.is_lit("characters") || t.is_lit("letters")) =>
+                    {
+                        self.pos += 2;
+                        if !matches!(self.peek(), Some(t) if t.is_lit("in") || t.is_lit("of")) {
+                            return Err(format!("expected '{lw} of characters in <text>'"));
+                        }
+                        self.pos += 1;
+                        let inner = self.primary_base()?;
+                        Ok(Expr::Length(Box::new(inner)))
+                    }
                     "size" | "amount" | "count" => {
                         if !matches!(self.peek(), Some(t) if t.is_lit("of")) {
                             return Err(format!("expected '{lw} of {{list::*}}'"));

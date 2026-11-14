@@ -186,9 +186,13 @@ fn bad_sound_id_is_a_runtime_error() {
 
 #[test]
 fn variable_sound_name() {
-    let (calls, errs) = run("on join:\n    set {s} to \"entity.player.levelup\"\n    play sound {s} to player\n");
+    let (calls, errs) =
+        run("on join:\n    set {s} to \"entity.player.levelup\"\n    play sound {s} to player\n");
     assert!(errs.is_empty());
-    assert_eq!(calls, ["playsound entity.player.levelup master Steve 1.5 64 -3 1 1"]);
+    assert_eq!(
+        calls,
+        ["playsound entity.player.levelup master Steve 1.5 64 -3 1 1"]
+    );
 }
 
 #[test]

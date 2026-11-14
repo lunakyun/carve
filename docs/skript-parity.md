@@ -375,7 +375,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ PvP
 - ⬜ Register Tag
 - ⬜ Release From Entity Storage
-- ⬜ Replace ⭐
+- 🟡 Replace ⭐
 - ✅ Return
 - ⬜ Ring Bell
 - ⬜ Rotate
@@ -849,7 +849,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Item with Tooltip
 - ⬜ Items
 - ⬜ Items In ⭐
-- ⬜ Join & Split ⭐
+- ✅ Join & Split ⭐
 - ⬜ Join Message ⭐
 - ⬜ Key Of Boss Bar
 - ⬜ Keyed
@@ -868,7 +868,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Last Spawned Entity
 - ⬜ Last/First Login Time
 - ⬜ Leash Holder
-- ⬜ Length ⭐
+- ✅ Length ⭐
 - ⬜ Level ⭐
 - ⬜ Level Progress
 - ⬜ Light Level
@@ -1061,7 +1061,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Text Display Line Width
 - ⬜ Text Display Opacity
 - ⬜ Text Of
-- ⬜ Text Replacement ⭐
+- 🟡 Text Replacement ⭐
 - ⬜ The Egg
 - ⬜ Time ⭐
 - ⬜ Time Lived of Entity

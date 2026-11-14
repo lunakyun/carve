@@ -11,10 +11,7 @@ pub const SOUND_PATTERNS: &[(&str, EffKind)] = &[
         "play [the] (sound|sounds) %text% [(at|with) volume %number%] [(and|and at|and with|at|with) pitch %number%] [(to|for) %player%] [at %location%]",
         EffKind::PlaySound,
     ),
-    (
-        "stop all sounds [(for|from) %player%]",
-        EffKind::StopAllSounds,
-    ),
+    ("stop all sounds [(for|from) %player%]", EffKind::StopAllSounds),
     (
         "stop [the] (sound|sounds) %text% [(for|from) %player%]",
         EffKind::StopSound,
@@ -26,13 +23,15 @@ pub const SOUND_PATTERNS: &[(&str, EffKind)] = &[
 pub fn clean_id(raw: &str) -> Result<String, String> {
     let id = raw.trim().to_ascii_lowercase();
     let ok = !id.is_empty()
-        && id
-            .chars()
-            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || matches!(c, '_' | '.' | ':' | '/' | '-'));
+        && id.chars().all(|c| {
+            c.is_ascii_lowercase() || c.is_ascii_digit() || matches!(c, '_' | '.' | ':' | '/' | '-')
+        });
     if ok {
         Ok(id)
     } else {
-        Err(format!("'{raw}' is not a valid sound id (try \"entity.experience_orb.pickup\")"))
+        Err(format!(
+            "'{raw}' is not a valid sound id (try \"entity.experience_orb.pickup\")"
+        ))
     }
 }
 
