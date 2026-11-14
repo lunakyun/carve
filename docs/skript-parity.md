@@ -708,7 +708,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Damage Source - Source Location
 - ⬜ Damage Value/Durability
 - ⬜ Damaged Item
-- ⛔ Date Ago/Later ⭐ (needs time spans, a separate slice)
+- ✅ Date Ago/Later ⭐ — `5 minutes ago`, `2 hours later`
 - ⬜ De-queue Queue (Experimental)
 - ⬜ Death Message ⭐
 - ⬜ Debug Info
@@ -1066,8 +1066,8 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Time ⭐
 - ⬜ Time Lived of Entity
 - ⬜ Time Played
-- ⬜ Time Since/Until ⭐
-- ⬜ Timespan Details ⭐
+- ✅ Time Since/Until ⭐ — `time since {d}`, `time until {d}`
+- 🟡 Timespan Details ⭐ — `minutes of {t}`, `total minutes of {t}`; no `{t}'s minutes` form
 - ⬜ Title
 - ✅ Tool — main hand
 - ✅ Total Experience — `total experience of player`
@@ -1139,7 +1139,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 
 - ⬜ Catch Runtime Errors
 - ✅ Conditionals — `if` / `else if` / `else`
-- ✅ Delay — `wait N ticks/seconds`
+- ✅ Delay — `wait N ticks/seconds`, `wait 1 minute and 30 seconds`, `wait {span}`
 - ⬜ Filter ⭐
 - 🟡 For Each Loop — `loop {list::*}` works; no `for each` wording
 - ⬜ Locally Suppress Warning
@@ -1318,7 +1318,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Text Component
 - ⬜ Time ⭐
 - ⬜ Timeperiod
-- ⬜ Timespan ⭐
+- ✅ Timespan ⭐ — `5 minutes`, `1 hour and 30 seconds`, math, comparisons
 - ⬜ Transform Reason
 - ⬜ Tree Type
 - ⬜ Type

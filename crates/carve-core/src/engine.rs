@@ -1011,7 +1011,8 @@ impl Engine {
                 CmpOp::Eq => a.loose_eq(&b),
                 CmpOp::Ne => !a.loose_eq(&b),
                 _ => {
-                    let (Some(x), Some(y)) = (to_num_opt(&a), to_num_opt(&b)) else {
+                    let (Some(x), Some(y)) = (crate::timespans::cmp_num(&a), crate::timespans::cmp_num(&b))
+                    else {
                         return Ok(false);
                     };
                     match op {
@@ -1036,7 +1037,9 @@ impl Engine {
                     CmpOp::Eq => a.loose_eq(&b),
                     CmpOp::Ne => !a.loose_eq(&b),
                     _ => {
-                        let (Some(x), Some(y)) = (to_num_opt(&a), to_num_opt(&b)) else {
+                        let (Some(x), Some(y)) =
+                            (crate::timespans::cmp_num(&a), crate::timespans::cmp_num(&b))
+                        else {
                             return Ok(false);
                         };
                         match op {
@@ -1180,6 +1183,7 @@ impl Engine {
                 };
                 return match val {
                     Some(Value::Num(n)) => Ok(*n),
+                    Some(v @ Value::Date(_)) => Err(format!("expected a number, got {} ({})", v.type_name(), v)),
                     Some(v) => to_num_opt(v)
                         .ok_or_else(|| format!("expected a number, got {} ({})", v.type_name(), v)),
                     None => Err("expected a number, got <none> (<none>)".into()),
@@ -1188,6 +1192,9 @@ impl Engine {
             _ => {}
         }
         let v = self.eval(e, ex, host)?;
+        if matches!(v, Value::Date(_)) {
+            return Err(format!("expected a number, got {} ({})", v.type_name(), v));
+        }
         to_num_opt(&v).ok_or_else(|| format!("expected a number, got {} ({})", v.type_name(), v))
     }
 
@@ -1426,8 +1433,10 @@ impl Engine {
             Expr::Bool(b) => Ok(Value::Bool(*b)),
             Expr::Var(v) => self.get_var(v, ex, host),
             Expr::Bin(a, op, b) => {
-                let x = self.num(a, ex, host)?;
-                let y = self.num(b, ex, host)?;
+                let (x, y) = match (self.num(a, ex, host), self.num(b, ex, host)) {
+                    (Ok(x), Ok(y)) => (x, y),
+                    (Err(err), _) | (_, Err(err)) => return self.bin_time(a, *op, b, err, ex, host),
+                };
                 Ok(Value::Num(match op {
                     BinOp::Add => x + y,
                     BinOp::Sub => x - y,
@@ -1447,6 +1456,27 @@ impl Engine {
             }
             _ => self.eval_rare(e, ex, host),
         }
+    }
+
+    /// `{a} + {b}` where a variable turned out to hold a timespan or date.
+    /// Any other failure keeps its original error.
+    #[inline(never)]
+    fn bin_time(
+        &mut self,
+        a: &Expr,
+        op: BinOp,
+        b: &Expr,
+        err: String,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<Value, String> {
+        let x = self.eval(a, ex, host).map_err(|_| err.clone())?;
+        let y = self.eval(b, ex, host).map_err(|_| err.clone())?;
+        let timey = |v: &Value| matches!(v, Value::Timespan { .. } | Value::Date(_));
+        if !timey(&x) && !timey(&y) {
+            return Err(err);
+        }
+        crate::timespans::arith(&x, op, &y)
     }
 
     #[inline(never)]
@@ -1607,6 +1637,25 @@ impl Engine {
                 }
                 crate::text_case_substring::apply(*f, &vals)
             }
+            Expr::Span(ms) => Value::Timespan { millis: *ms },
+            Expr::Since(d, since) => {
+                let Value::Date(millis) = self.eval(d, ex, host)? else {
+                    return Ok(Value::None);
+                };
+                let now = host.wall_clock_millis();
+                Value::Timespan {
+                    millis: if *since { now - millis } else { millis - now },
+                }
+            }
+            Expr::TBin(a, op, b) => {
+                let x = self.eval(a, ex, host)?;
+                let y = self.eval(b, ex, host)?;
+                crate::timespans::arith(&x, *op, &y)?
+            }
+            Expr::SpanPart(unit, total, e) => match self.eval(e, ex, host)? {
+                Value::Timespan { millis } => Value::Num(crate::timespans::span_part(millis, *unit, *total)),
+                _ => Value::None,
+            },
             Expr::RandomOf(v) => {
                 let items = self.list_items(v, ex, host)?;
                 if items.is_empty() {
@@ -1951,6 +2000,22 @@ impl Engine {
                     );
                 } else {
                     ex.cancelled = true;
+                }
+            }
+            Effect::Wait(amount, 0) => {
+                let v = self.eval(amount, ex, host)?;
+                let Value::Timespan { millis } = v else {
+                    return Err(format!(
+                        "can't wait {} ({v}), use a timespan like '5 seconds'",
+                        v.type_name()
+                    ));
+                };
+                if millis < 0 {
+                    return Err(format!("can't wait {v}"));
+                }
+                let ticks = crate::timespans::to_ticks(millis);
+                if ticks > 0 {
+                    return Ok(Some(ticks));
                 }
             }
             Effect::Wait(amount, mult) => {

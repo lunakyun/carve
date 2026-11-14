@@ -38,6 +38,10 @@ pub enum Value {
     Date(i64),
     /// The server console (`console`, or `sender` when the console ran the command).
     Console,
+    /// A length of time in milliseconds.
+    Timespan {
+        millis: i64,
+    },
 }
 
 impl Value {
@@ -53,6 +57,7 @@ impl Value {
             Value::World(_) => "world",
             Value::Date(_) => "date",
             Value::Console => "console",
+            Value::Timespan { .. } => "timespan",
         }
     }
 
@@ -107,6 +112,8 @@ impl Value {
                     && (aw.is_none() || bw.is_none() || aw == bw)
             }
             (Value::Date(a), Value::Date(b)) => a == b,
+            (Value::Timespan { millis: a }, Value::Timespan { millis: b })
+            => a == b,
             (Value::World(a), Value::World(b)) => a.eq_ignore_ascii_case(b),
             (Value::World(w), Value::Text(t)) | (Value::Text(t), Value::World(w)) => {
                 w.eq_ignore_ascii_case(t)
@@ -170,6 +177,7 @@ impl Value {
             Value::World(w) => out.push_str(w),
             Value::Date(d) => out.push_str(&crate::time_dates::format_date(*d, crate::time_dates::DEFAULT_FORMAT)),
             Value::Console => out.push_str("console"),
+            Value::Timespan { millis } => crate::timespans::push_span(out, *millis),
         }
     }
 }

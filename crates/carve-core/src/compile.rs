@@ -1034,11 +1034,41 @@ impl Cx<'_> {
 
     fn single_cond(&self, toks: &[Tok]) -> Option<Cond> {
         let mut memo = Memo::default();
-        registry().conditions.iter().find_map(|p| {
-            p.matches_memo(toks, &self.env, &mut memo)
-                .ok()
-                .map(|caps| build_cond(p.kind, caps))
-        })
+        registry()
+            .conditions
+            .iter()
+            .find_map(|p| {
+                p.matches_memo(toks, &self.env, &mut memo)
+                    .ok()
+                    .map(|caps| build_cond(p.kind, caps))
+            })
+            .or_else(|| self.span_cmp(toks))
+    }
+
+    /// `time since {d} > 5 minutes`: ordering for spans and dates.
+    fn span_cmp(&self, toks: &[Tok]) -> Option<Cond> {
+        let (at, op) = toks.iter().enumerate().find_map(|(i, t)| match t {
+            Tok::Sym(">=") => Some((i, CmpOp::Ge)),
+            Tok::Sym("<=") => Some((i, CmpOp::Le)),
+            Tok::Sym(">") => Some((i, CmpOp::Gt)),
+            Tok::Sym("<") => Some((i, CmpOp::Lt)),
+            _ => None,
+        })?;
+        let a = parse_expr(toks.get(..at)?, &self.env).ok()?;
+        let b = parse_expr(toks.get(at + 1..)?, &self.env).ok()?;
+        let timey = |t: Ty| matches!(t, Ty::Timespan | Ty::Date);
+        let (ta, tb) = (a.ty(&self.env), b.ty(&self.env));
+        let ok = (timey(ta) || timey(tb)) && (ta == tb || ta == Ty::Object || tb == Ty::Object);
+        ok.then_some(Cond::Cmp(a, op, b))
+    }
+
+    /// `wait 5 minutes`, `wait {span}`: the pattern table only has number forms.
+    fn wait_span(&self, toks: &[Tok]) -> Option<Effect> {
+        if !toks.first()?.is_lit("wait") {
+            return None;
+        }
+        let e = parse_expr(toks.get(1..)?, &self.env).ok()?;
+        matches!(e.ty(&self.env), Ty::Timespan | Ty::Object).then_some(Effect::Wait(e, 0))
     }
 
     /// Split at top-level separators so that every part is a condition.
@@ -1174,6 +1204,10 @@ impl Cx<'_> {
                 Err(Some(e)) if type_err.is_none() => type_err = Some(e),
                 Err(_) => {}
             }
+        }
+        if let Some(eff) = self.wait_span(&toks) {
+            self.emit(Instr::Eff(eff), num);
+            return;
         }
         // A condition on its own line stops the trigger when false.
         if let Some(c) = self.parse_cond(&toks) {
@@ -1737,6 +1771,7 @@ pub fn type_from_name(name: &str) -> Option<Ty> {
         "item" | "itemtype" | "item type" | "block" => Ty::Item,
         "location" => Ty::Location,
         "world" => Ty::World,
+        "timespan" | "time span" => Ty::Timespan,
         "date" => Ty::Date,
         "object" => Ty::Object,
         _ => return None,

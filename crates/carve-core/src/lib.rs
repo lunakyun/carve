@@ -21,6 +21,7 @@ pub mod text_case_substring;
 pub mod time_dates;
 pub mod senders;
 pub mod player_flags;
+pub mod timespans;
 pub mod value;
 pub mod vars;
 pub mod xp_level;

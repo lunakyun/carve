@@ -167,6 +167,7 @@ fn parse_seq(
                     "location" => SlotTy::Ty(Ty::Location),
                     "world" => SlotTy::Ty(Ty::World),
                     "date" => SlotTy::Ty(Ty::Date),
+                    "timespan" => SlotTy::Ty(Ty::Timespan),
                     "object" => SlotTy::Ty(Ty::Object),
                     "variable" => SlotTy::Variable,
                     _ => return Err(format!("pattern: unknown type %{name}%")),

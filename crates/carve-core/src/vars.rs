@@ -78,6 +78,7 @@ impl Variables {
                 Value::World(w) => json!({"world": w}),
                 Value::Date(d) => json!({"date": d}),
                 Value::Console => json!({"console": true}),
+                Value::Timespan { millis } => json!({"timespan": millis}),
             };
             obj.insert(k.clone(), j);
         }
@@ -142,6 +143,9 @@ fn object_value(o: &Map<String, Json>) -> Option<Value> {
     }
     if o.contains_key("console") {
         return Some(Value::Console);
+    }
+    if let Some(ms) = o.get("timespan").and_then(Json::as_i64) {
+        return Some(Value::Timespan { millis: ms });
     }
     o.get("world")
         .and_then(Json::as_str)
