@@ -49,6 +49,15 @@ impl Variables {
         self.map.len()
     }
 
+    /// Every variable name starting with `prefix`, sorted.
+    pub fn keys_with_prefix(&self, prefix: &str) -> Vec<String> {
+        self.map
+            .range(prefix.to_string()..)
+            .take_while(|(k, _)| k.starts_with(prefix))
+            .map(|(k, _)| k.clone())
+            .collect()
+    }
+
     pub fn is_empty(&self) -> bool {
         self.map.is_empty()
     }

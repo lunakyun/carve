@@ -1,6 +1,7 @@
 //! Carve core: a small Skript-like language. No game dependencies; the
 //! game is reached only through the [`Host`] trait.
 
+pub mod admin;
 pub mod blocks;
 pub mod compile;
 pub mod engine;

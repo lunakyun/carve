@@ -69,12 +69,40 @@ impl EventCtx {
     }
 }
 
+/// What one loaded script file contains, for `/carve list` and `/carve info`.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct FileInfo {
+    pub name: String,
+    /// Trigger headers, like `on join`, `command /home`, `every 100 ticks`.
+    pub triggers: Vec<String>,
+    pub commands: Vec<String>,
+    pub functions: Vec<String>,
+}
+
+/// Run counts and times of one trigger, for `/carve timings`.
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct Timing {
+    pub calls: u64,
+    pub total: std::time::Duration,
+    pub max: std::time::Duration,
+}
+
+/// `on join`, `command /home`, `every 100 ticks`.
+pub fn trigger_label(t: &Trigger) -> String {
+    match &t.kind {
+        TriggerKind::Event(k) => format!("on {}", k.name()),
+        TriggerKind::Command(d) => format!("command /{}", d.name),
+        TriggerKind::Every(n) => format!("every {n} ticks"),
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct ScriptTable {
     events: HashMap<EventKind, Vec<Arc<Trigger>>>,
     commands: BTreeMap<String, Arc<Trigger>>,
     functions: Vec<Option<Arc<Function>>>,
     every: Vec<(u64, Arc<Trigger>)>,
+    pub file_info: Vec<FileInfo>,
     pub files: usize,
     pub triggers: usize,
 }
@@ -93,6 +121,10 @@ impl ScriptTable {
 
     pub fn has_event(&self, k: EventKind) -> bool {
         self.events.get(&k).is_some_and(|v| !v.is_empty())
+    }
+
+    pub fn function_count(&self) -> usize {
+        self.functions.iter().filter(|f| f.is_some()).count()
     }
 
     pub fn has_every(&self) -> bool {
@@ -185,6 +217,8 @@ struct Frame {
 }
 
 struct Exec {
+    /// The trigger this run started from (for timings).
+    root: Arc<Code>,
     /// The code running now (a trigger or a function body).
     code: Arc<Code>,
     pc: usize,
@@ -211,6 +245,7 @@ impl Exec {
             .map(|p| (p.uuid.clone(), Some(p.name.clone())))
             .collect();
         Exec {
+            root: trig.code.clone(),
             code: trig.code.clone(),
             pc: 0,
             locals: Locals::default(),
@@ -297,6 +332,12 @@ pub struct Engine {
     budget: usize,
     /// xorshift state for `random`; seeded from the host clock on first use.
     rng: u64,
+    /// Sources of the files that are loaded now, by file name.
+    sources: BTreeMap<String, String>,
+    /// Errors of the last load or reload.
+    pub errors: Vec<ScriptError>,
+    /// Per-trigger run times while `/carve timings on`.
+    pub timings: Option<BTreeMap<String, Timing>>,
 }
 
 impl Default for Engine {
@@ -310,8 +351,32 @@ fn build_table(files: &[(String, String)]) -> (ScriptTable, Vec<ScriptError>) {
     let compiled = compile_all(files);
     let mut errors = compiled.errors;
     table.functions = compiled.functions;
-    for (_, trigs) in compiled.files {
+    for (name, trigs) in compiled.files {
         table.files += 1;
+        let mut info = FileInfo {
+            name: name.clone(),
+            ..FileInfo::default()
+        };
+        for f in table.functions.iter().flatten() {
+            if *f.code.file == *name {
+                let params: Vec<String> = f
+                    .sig
+                    .params
+                    .iter()
+                    .map(|(k, t, _)| format!("{}: {}", k.trim_start_matches('_'), t.name()))
+                    .collect();
+                let ret = f.sig.ret.map(|r| format!(" :: {}", r.name())).unwrap_or_default();
+                info.functions
+                    .push(format!("{}({}){ret}", f.sig.name, params.join(", ")));
+            }
+        }
+        for t in &trigs {
+            info.triggers.push(trigger_label(t));
+            if let TriggerKind::Command(d) = &t.kind {
+                info.commands.push(format!("/{}", d.name));
+            }
+        }
+        table.file_info.push(info);
         for t in trigs {
             table.triggers += 1;
             let t = Arc::new(t);
@@ -357,7 +422,78 @@ impl Engine {
             dirty_since: None,
             budget: 0,
             rng: 0,
+            sources: BTreeMap::new(),
+            errors: Vec::new(),
+            timings: None,
         }
+    }
+
+    /// Names of the files that are loaded now.
+    pub fn loaded_files(&self) -> Vec<String> {
+        self.sources.keys().cloned().collect()
+    }
+
+    /// Reload one file (or unload it with `None`), keeping every other file.
+    /// On any error nothing changes and the errors are returned.
+    pub fn reload_file(&mut self, name: &str, src: Option<String>) -> Result<LoadSummary, Vec<ScriptError>> {
+        let mut candidate = self.sources.clone();
+        match src {
+            Some(s) => candidate.insert(name.to_string(), s),
+            None => candidate.remove(name),
+        };
+        let files: Vec<(String, String)> = candidate.into_iter().collect();
+        self.reload(&files)
+    }
+
+    /// Mark the variables changed (saved after the debounce), for admin edits.
+    pub fn vars_changed(&mut self, host: &mut dyn Host) {
+        self.mark_dirty(host);
+    }
+
+    /// Run one line of Carve right now, as the given sender. Errors in the
+    /// line are returned with line 1 of file `run`.
+    pub fn run_line(
+        &mut self,
+        line: &str,
+        sender: Recipient,
+        host: &mut dyn Host,
+    ) -> Result<(), Vec<ScriptError>> {
+        let src = format!(
+            "command /carve-run-line:\n    trigger:\n        {}\n",
+            line.trim()
+        );
+        let mut files: Vec<(String, String)> =
+            self.sources.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
+        files.push(("run".to_string(), src));
+        let compiled = crate::compile::compile_all(&files);
+        let mine: Vec<ScriptError> = compiled
+            .errors
+            .into_iter()
+            .filter(|e| e.file == "run")
+            .map(|mut e| {
+                e.line = 1;
+                e
+            })
+            .collect();
+        if !mine.is_empty() {
+            return Err(mine);
+        }
+        let Some(trig) = compiled
+            .files
+            .into_iter()
+            .find(|(n, _)| n == "run")
+            .and_then(|(_, t)| t.into_iter().next())
+        else {
+            return Err(vec![ScriptError::new("run", 1, "nothing to run")]);
+        };
+        let mut ctx = EventCtx::console();
+        if let Recipient::Player(p) = &sender {
+            ctx.player = Some(p.clone());
+        }
+        ctx.sender = sender;
+        let ex = Exec::new(&trig, ctx);
+        self.start(ex, host);
+        Ok(())
     }
 
     pub fn table(&self) -> &ScriptTable {
@@ -375,7 +511,10 @@ impl Engine {
     /// First load: files that compile are used, the rest are reported.
     pub fn load(&mut self, files: &[(String, String)]) -> (LoadSummary, Vec<ScriptError>) {
         let (table, errors) = build_table(files);
+        let good: Vec<String> = table.file_info.iter().map(|f| f.name.clone()).collect();
+        self.sources = files.iter().filter(|(n, _)| good.contains(n)).cloned().collect();
         self.table = Arc::new(table);
+        self.errors = errors.clone();
         (self.summary(), errors)
     }
 
@@ -384,9 +523,12 @@ impl Engine {
     pub fn reload(&mut self, files: &[(String, String)]) -> Result<LoadSummary, Vec<ScriptError>> {
         let (table, errors) = build_table(files);
         if !errors.is_empty() {
+            self.errors = errors.clone();
             return Err(errors);
         }
         self.table = Arc::new(table);
+        self.sources = files.iter().cloned().collect();
+        self.errors.clear();
         Ok(self.summary())
     }
 
@@ -493,7 +635,17 @@ impl Engine {
     fn start(&mut self, mut ex: Exec, host: &mut dyn Host) -> Option<bool> {
         let resumed = ex.waited;
         self.budget = self.max_instructions;
-        match self.run(&mut ex, host, 0) {
+        let started = self.timings.as_ref().map(|_| std::time::Instant::now());
+        let step = self.run(&mut ex, host, 0);
+        if let (Some(t0), Some(map)) = (started, self.timings.as_mut()) {
+            let took = t0.elapsed();
+            let label = format!("{}:{}", ex.root.file, ex.root.line);
+            let e = map.entry(label).or_default();
+            e.calls += 1;
+            e.total += took;
+            e.max = e.max.max(took);
+        }
+        match step {
             Step::Done | Step::Returned(_) => {}
             Step::Wait(ticks) => {
                 let cancelled = ex.cancelled;
