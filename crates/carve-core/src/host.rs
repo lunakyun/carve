@@ -223,4 +223,9 @@ pub trait Host {
     fn solid_block_y(&mut self, _world: &str, _x: i32, _z: i32, _highest: bool) -> Option<i32> {
         None
     }
+
+    /// Light at a block: kind 0 block light, 1 sky light, 2 the larger of both.
+    fn light_level(&mut self, _world: &str, _x: i32, _y: i32, _z: i32, _kind: u8) -> Option<u8> {
+        None
+    }
 }

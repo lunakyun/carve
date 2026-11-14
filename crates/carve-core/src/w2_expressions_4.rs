@@ -46,6 +46,10 @@ pub enum W4Op {
     JoinMessage,
     /// `[last] resource pack response [of <player>]`
     PackResponse,
+    /// `light level at <location>`, `block light level at`, `sky light level at`
+    Light,
+    BlockLight,
+    SkyLight,
     /// `highest block at <location>`
     Highest,
     /// `lowest block at <location>`
@@ -63,7 +67,7 @@ impl W4 {
         use W4Op::*;
         match self.op {
             Not => Ty::Boolean,
-            MaxDouble | MaxFloat | ItemAmount | MaxDurability | LastDamage => Ty::Number,
+            MaxDouble | MaxFloat | ItemAmount | MaxDurability | LastDamage | Light | BlockLight | SkyLight => Ty::Number,
             LastColor | Key | Language | LastDamageCause | JoinMessage | PackResponse => Ty::Text,
             MaxUseTime | Cooldown | MaxFreeze => Ty::Timespan,
             LastDeathLoc | Highest | Lowest => Ty::Location,
@@ -222,6 +226,23 @@ pub fn apply(op: W4Op, args: &[Value], host: &mut dyn Host) -> Value {
         PackResponse => player
             .and_then(|p| host.resource_pack_status(p))
             .map_or(Value::None, Value::Text),
+        Light | BlockLight | SkyLight => match a0 {
+            Value::Location {
+                x,
+                y,
+                z,
+                world: Some(w),
+            } => {
+                let kind = match op {
+                    BlockLight => 0,
+                    SkyLight => 1,
+                    _ => 2,
+                };
+                host.light_level(w, x.floor() as i32, y.floor() as i32, z.floor() as i32, kind)
+                    .map_or(Value::None, |l| Value::Num(f64::from(l)))
+            }
+            _ => Value::None,
+        },
         Highest | Lowest => match a0 {
             Value::Location {
                 x,

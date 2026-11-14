@@ -78,6 +78,13 @@ impl Host for Mock {
     fn solid_block_y(&mut self, world: &str, x: i32, z: i32, highest: bool) -> Option<i32> {
         (world == "world" && x == 3 && z == 4).then_some(if highest { 70 } else { -64 })
     }
+    fn light_level(&mut self, _: &str, _: i32, y: i32, _: i32, kind: u8) -> Option<u8> {
+        Some(match kind {
+            0 => 7,
+            1 => 15,
+            _ => 15,
+        } - u8::try_from(y.max(0) % 2).unwrap_or(0))
+    }
     fn player_location(&mut self, _: &PlayerRef) -> Option<(f64, f64, f64, String)> {
         Some((3.5, 64.0, 4.2, "world".into()))
     }
@@ -232,4 +239,26 @@ fn existing_words_still_work() {
     assert_eq!(run("send \"%max(2, 5)%\""), vec!["5"]);
     assert_eq!(run("send \"%last 2 characters of \"hello\"%\""), vec!["lo"]);
     assert_eq!(run("send \"%first 2 characters of \"hello\"%\""), vec!["he"]);
+}
+
+#[test]
+fn light_levels() {
+    let at = "location(1, 64, 1, world \"world\")";
+    assert_eq!(run(&format!("send \"%block light level at {at}%\"")), vec!["7"]);
+    assert_eq!(run(&format!("send \"%sky light level of {at}%\"")), vec!["15"]);
+    assert_eq!(run(&format!("send \"%light level at {at}%\"")), vec!["15"]);
+    assert!(errs("send \"%light level at 5%\"") > 0);
+}
+
+#[test]
+fn location_at() {
+    assert_eq!(
+        run("set {_l} to location at (1, 2.5, -3) in world \"world\"
+send \"%x of {_l}% %y of {_l}% %z of {_l}%\""),
+        vec!["1 2.5 -3"]
+    );
+    assert_eq!(run("set {_l} to location at (4, 5, 6)
+send \"%z of {_l}%\""), vec!["6"]);
+    assert!(errs("set {_l} to location at 1, 2, 3") > 0);
+    assert!(errs("set {_l} to location at (1, 2)") > 0);
 }

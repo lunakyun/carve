@@ -47,6 +47,10 @@ impl P<'_> {
                 | "resource"
                 | "highest"
                 | "lowest"
+                | "light"
+                | "location"
+                | "block"
+                | "sky"
         ) {
             return Ok(None);
         }
@@ -146,6 +150,22 @@ impl P<'_> {
                 self.pos += 1;
                 mk(W4Op::JoinMessage, vec![])
             }
+            "location" if self.is_word(0, "at") => {
+                self.pos += 1;
+                self.location_at()
+            }
+            "light" | "block" | "sky" if self.light_words(lw) => {
+                self.pos += if lw == "light" { 1 } else { 2 };
+                let e = self.at_location("light level")?;
+                mk(
+                    match lw {
+                        "block" => W4Op::BlockLight,
+                        "sky" => W4Op::SkyLight,
+                        _ => W4Op::Light,
+                    },
+                    vec![e],
+                )
+            }
             "highest" | "lowest" => {
                 let save = self.pos;
                 if self.is_word(0, "solid") {
@@ -156,20 +176,65 @@ impl P<'_> {
                     return Ok(None);
                 }
                 self.pos += 1;
-                let e = if self.is_word(0, "at") {
-                    self.pos += 1;
-                    let e = self.primary()?;
-                    if !Ty::Location.accepts(e.ty(self.env)) {
-                        return Err("'highest block at' needs a location".into());
-                    }
-                    e
-                } else {
-                    self.of_arg(Ty::Location, "highest block")?
-                };
+                let e = self.at_location("highest block")?;
                 mk(if lw == "highest" { W4Op::Highest } else { W4Op::Lowest }, vec![e])
             }
             _ => Ok(None),
         }
+    }
+
+    /// `light level` / `block light level` / `sky light level` ahead.
+    fn light_words(&self, lw: &str) -> bool {
+        match lw {
+            "light" => self.words(&["level"]) && (self.is_word(1, "at") || self.is_word(1, "of")),
+            _ => self.words(&["light", "level"]) && (self.is_word(2, "at") || self.is_word(2, "of")),
+        }
+    }
+
+    /// `at <location>` or `of <location>`.
+    fn at_location(&mut self, what: &str) -> Result<Expr, String> {
+        if !(self.is_word(0, "at") || self.is_word(0, "of")) {
+            return Err(format!("expected 'at <location>' after '{what}'"));
+        }
+        self.pos += 1;
+        let e = self.primary()?;
+        if !Ty::Location.accepts(e.ty(self.env)) {
+            return Err(format!("'{what}' needs a location"));
+        }
+        Ok(e)
+    }
+
+    /// After `location at`: `(x, y, z)` and an optional `in <world>`.
+    fn location_at(&mut self) -> Result<Option<Expr>, String> {
+        const HELP: &str = "use 'location at (x, y, z)' or 'location at (x, y, z) in world \"name\"'";
+        if !self.eat_sym("(") {
+            return Err(HELP.into());
+        }
+        let mut c = Vec::with_capacity(3);
+        for i in 0..3 {
+            let e = self.num_arg("a coordinate")?;
+            c.push(Box::new(e));
+            if i < 2 && !self.eat_sym(",") {
+                return Err(HELP.into());
+            }
+        }
+        if !self.eat_sym(")") {
+            return Err(HELP.into());
+        }
+        let mut world = None;
+        if self.is_word(0, "in") {
+            self.pos += 1;
+            let w = self.primary()?;
+            if !matches!(w.ty(self.env), Ty::World | Ty::Object | Ty::Text) {
+                return Err("'in' needs a world".into());
+            }
+            world = Some(Box::new(w));
+        }
+        let mut it = c.into_iter();
+        let (Some(x), Some(y), Some(z)) = (it.next(), it.next(), it.next()) else {
+            return Err(HELP.into());
+        };
+        Ok(Some(Expr::Loc(x, y, z, world)))
     }
 
     /// After `cooldown`: `of <item> for <player>`.
