@@ -1,0 +1,1339 @@
+# Road to Skript: parity checklist
+
+Every syntax element of core Skript, taken from [SkriptHub's docs](https://skripthub.net/docs/)
+(addon "Skript", entries not marked as removed, fetched 2026-11-14), and where Carve stands on each.
+Addons (SkBee, skript-reflect, ...) are not included.
+
+**Legend:** ✅ done · 🟡 partly done (see the note) · ⬜ not started · ⛔ blocked or doesn't apply on Pumpkin ·
+⭐ high priority (common in real scripts, including the kixa scripts)
+
+Pumpkin's plugin API (WIT v0.1) already has most of what the ⬜ items need: blocks, entities, sounds,
+particles, scoreboards, boss bars, inventories and GUIs, potion effects, weather, world borders and about
+260 event types. Some of those events are defined in the API but not fired by Pumpkin yet, so each new
+event needs an in-game check. ⛔ items depend on Bukkit plugins (WorldGuard, Vault) or on Pumpkin bugs.
+
+## Summary
+
+| Category | Total | ✅ | 🟡 | ⬜ | ⛔ |
+|---|--:|--:|--:|--:|--:|
+| Events | 185 | 7 | 5 | 172 | 1 |
+| Effects | 154 | 10 | 5 | 138 | 1 |
+| Conditions | 170 | 5 | 3 | 159 | 3 |
+| Expressions | 545 | 20 | 14 | 501 | 10 |
+| Sections | 11 | 4 | 1 | 6 | 0 |
+| Structures | 8 | 4 | 0 | 3 | 1 |
+| Functions | 45 | 6 | 5 | 34 | 0 |
+| Types | 126 | 9 | 5 | 110 | 2 |
+| **All** | **1244** | **65** | **38** | **1123** | **18** |
+
+Counting 🟡 as half, Carve covers about **7%** of core Skript by entry count.
+By real-world use the number is much higher: the common core (events, variables, loops, conditions,
+functions, commands) is mostly done, and most ⬜ entries are niche (pandas, brewing stands, loot tables).
+
+## Roadmap
+
+### Phase 1: what real scripts need most (the ⭐ items)
+
+1. **Time:** `now`, dates, time spans (`5 minutes`), `time since`, `wait 1 minute`, formatted dates, unix timestamps.
+2. **Text:** `join`/`split`, `length of`, `replace`, `substring`, upper/lower case, new lines, `<#hex>` and colored/uncolored.
+3. **Senders:** `sender`, `console`, `me`, `send ... to sender`, `make player execute`.
+4. **Lists:** `set {x::*} to a, b and c`, sorted/reversed/shuffled, `indices of`, `filter`, lists in functions.
+5. **Player state:**
+   - Game mode, food, level and experience, flying, sneaking and sprinting.
+   - Op, kick and ban; display and tab names; ping; max health.
+6. **Sounds and effects:** `play sound`, `stop sound`, particles, potion effects, lightning, explosions.
+7. **Items:** names, lore, enchantments, `give ... named ...`.
+8. **Blocks:** `block at`, `targeted block`, set/break blocks, `location at`.
+9. **Entities:** spawn mobs, entity values, `nearest entity`, `target`, velocity and push.
+10. **Inventories:** custom chest GUIs, open/close, slots, the `on inventory click` event.
+11. **More events:**
+    - Sneak, move, swap hands and commands.
+    - First join, gamemode change, teleport.
+    - Drop and pick up, projectile hit, consume, mob spawn.
+12. **Structures:** `variables:` defaults, `do if`, `catch runtime errors`.
+
+### Phase 2: world and server
+
+Weather and time of day, world borders, scoreboards and boss bars, chunks, the server list ping,
+gamerules, the whitelist, broadcast and kick messages, and resource packs.
+
+### Phase 3: everything else
+
+Mob-specific syntax (pandas, allays, goats, villagers, ...), display entities, brewing, beacons, loot
+tables, vectors and quaternions, equippable components, and experimental Skript features.
+
+### Blocked (⛔)
+
+- **Regions, money, groups, prefixes:** these come from Bukkit plugins (WorldGuard, Vault). Carve could
+  add its own versions later.
+- **Script command tab completion:** Pumpkin 0.2.2 crashes when it asks a plugin for completions.
+- **New commands after load:** Pumpkin's API only registers commands at load, so new ones need a restart.
+
+## Events (185)
+
+- ⬜ At Time
+- ⬜ On Anvil Damage
+- ⬜ On Anvil Prepare
+- ⬜ On AoE Cloud Effect
+- ⬜ On Arm Swing
+- ⬜ On Armor Change
+- ⬜ On Attempt Attack
+- ⬜ On Bat Toggle Sleep
+- ⬜ On Beacon Change Effect
+- ⬜ On Beacon Effect
+- ⬜ On Beacon Toggle
+- ⬜ On Bed Enter
+- ⬜ On Bed Leave
+- ⬜ On Bell Resonate
+- ⬜ On Bell Ring
+- ⬜ On Block Damage
+- ⬜ On Block Drop
+- ⬜ On Block Fertilize
+- ⬜ On Block Growth
+- ⬜ On Book Edit
+- ⬜ On Book Sign
+- ✅ On Break / Mine — `on break`
+- ⬜ On Brewing Complete
+- ⬜ On Brewing Fuel
+- ⬜ On Brewing Start
+- ⬜ On Broadcast
+- ⬜ On Bucket Catch Entity
+- ⬜ On Bucket Empty
+- ⬜ On Bucket fill
+- ⬜ On Burn
+- ⬜ On Can Build Check
+- ✅ On Chat — `message`, cancellable
+- ⬜ On Chunk Generate
+- ⬜ On Chunk Load
+- ⬜ On Chunk Unload
+- 🟡 On Click — left/right, `with`/`on` filters; no entity clicks
+- ⬜ On Combust
+- ⬜ On Command ⭐
+- ⬜ On Connect
+- ⬜ On Consume ⭐
+- ⬜ On Craft
+- ⬜ On Creeper Power
+- 🟡 On Damage — players only; `damage`, `attacker`, `victim`; can't change the damage
+- 🟡 On Death — players only; no attacker or death message
+- ⬜ On Dispense
+- ⬜ On Drop ⭐
+- ⬜ On Egg Throw
+- ⬜ On Elytra Boost
+- ⬜ On Enchant
+- ⬜ On Enchant Prepare
+- ⬜ On Enderman Enrage
+- ⬜ On Enderman/Sheep/Silverfish/Falling Block
+- ⬜ On Entity Breed
+- ⬜ On Entity Dismount
+- ⬜ On Entity Jump
+- ⬜ On Entity Mount
+- ⬜ On Entity Potion Effect
+- ⬜ On Entity Shoot Bow
+- ⬜ On Entity Transform
+- ⬜ On Experience Change
+- ⬜ On Experience Cooldown Change
+- ⬜ On Experience Spawn
+- ⬜ On Explode
+- ⬜ On Explosion Prime
+- ⬜ On Fade
+- ⬜ On Firework Explode
+- ⬜ On First Join ⭐
+- ⬜ On Fishing
+- ⬜ On Flight Toggle
+- ⬜ On Flow
+- ⬜ On Form
+- ⬜ On Fuel Burn
+- ⬜ On Furnace Item Extract
+- ⬜ On Gamemode Change ⭐
+- ⬜ On Gliding State Change
+- ⬜ On Grow
+- ⬜ On Hand Item Swap ⭐
+- ⬜ On Harvest Block
+- ⬜ On Heal
+- ⬜ On Horse Jump
+- ⬜ On Hunger Meter Change
+- ⬜ On Ignition
+- ⬜ On Inventory Click ⭐
+- ⬜ On Inventory Close
+- ⬜ On Inventory Drag
+- ⬜ On Inventory Item Move
+- ⬜ On Inventory Open
+- ⬜ On Inventory Pickup
+- ⬜ On Inventory Slot Change
+- ⬜ On Item Break
+- ⬜ On Item Damage
+- ⬜ On Item Despawn
+- ⬜ On Item Mend
+- ⬜ On Item Merge
+- ⬜ On Item Spawn
+- ✅ On Join
+- ⬜ On Jump
+- ⬜ On Kick
+- ⬜ On Language Change
+- ⬜ On Leash / Unleash
+- ⬜ On Leaves Decay
+- ⬜ On Level Change
+- ⬜ On Lightning Strike
+- ⬜ On Loot Generate
+- ⬜ On Love Mode Enter
+- ⬜ On Move / Rotate ⭐
+- ⬜ On Move On
+- ⬜ On Pathfind
+- ⬜ On Physics
+- ⬜ On Pick Up ⭐
+- ⬜ On Pig Zap
+- ⬜ On Piglin Barter
+- ⬜ On Piston Extend
+- ⬜ On Piston Retract
+- ✅ On Place
+- ⬜ On Player Chunk Enter
+- ⬜ On Player Chunk Enters
+- ⬜ On Player Deep Sleep
+- ⬜ On Player GameMode Change
+- ⬜ On Player Input
+- ⬜ On Player Pick Item
+- ⬜ On Player Pickup Arrow
+- ⬜ On Player Trade
+- ⬜ On Player World Change
+- ⬜ On Portal
+- ⬜ On Portal Create
+- ⬜ On Portal Enter
+- ⬜ On Prepare Craft
+- ⬜ On Pressure Plate / Trip
+- ⬜ On Projectile Collide
+- ⬜ On Projectile Hit ⭐
+- ✅ On Quit — player still known until the first wait
+- ⬜ On Ready Arrow
+- ⬜ On Redstone
+- ⛔ On Region Enter/Leave — needs WorldGuard; no Pumpkin equivalent
+- ⬜ On Resource Pack Request Response
+- ✅ On Respawn
+- ⬜ On Resurrect Attempt
+- ⬜ On Riptide
+- 🟡 On Script Load/Unload — `on load` only
+- ⬜ On Send Command List
+- ⬜ On Server List Ping
+- 🟡 On Server Start/Stop — `on load` runs at start; no stop
+- ⬜ On Sheep Regrow Wool
+- ⬜ On Shoot
+- ⬜ On Sign Change
+- ⬜ On Slime Split
+- ⬜ On Smelt
+- ⬜ On Sneak Toggle ⭐
+- ⬜ On Spawn ⭐
+- ⬜ On Spawn Change
+- ⬜ On Spectate
+- ⬜ On Sponge Absorb
+- ⬜ On Spread
+- ⬜ On Sprint Toggle
+- ⬜ On Start Smelt
+- ⬜ On Stonecutter Recipe Select
+- ⬜ On Stop Using Item
+- ⬜ On Swim Toggle
+- ⬜ On System Time
+- ⬜ On Tame
+- ⬜ On Target
+- ⬜ On Teleport ⭐
+- ⬜ On Throwing of an Egg
+- ⬜ On Tool Change
+- ⬜ On Unknown Command Execution
+- ⬜ On Vault Display Item
+- ⬜ On Vehicle Collision
+- ⬜ On Vehicle Create
+- ⬜ On Vehicle Damage
+- ⬜ On Vehicle Destroy
+- ⬜ On Vehicle Enter
+- ⬜ On Vehicle Exit
+- ⬜ On Vehicle Move
+- ⬜ On Villager Career Change
+- ⬜ On Weather Change
+- ⬜ On World Border Bounds Change
+- ⬜ On World Border Bounds Finish Change
+- ⬜ On World Border Center Change
+- ⬜ On World Init
+- ⬜ On World Load
+- ⬜ On World Save
+- ⬜ On World Unload
+- ⬜ On Zombie Break Door
+- ✅ Periodical — `every 5 seconds:`
+
+## Effects (154)
+
+- ✅ Action Bar
+- ⬜ Allay Duplicate
+- ⬜ Allow / Prevent Leash Drop
+- ⬜ Allow Aging
+- ⬜ Apply Bone Meal
+- ⬜ Apply Fishing Lure
+- ⬜ Apply Potion Effect ⭐
+- ⬜ Ban ⭐
+- ⬜ Boss Bar Flags
+- ⬜ Break Block ⭐
+- ✅ Broadcast
+- ⬜ Cancel Active Item
+- ⬜ Cancel Command Cooldown
+- ⬜ Cancel Drops
+- ✅ Cancel Event — before the first wait
+- 🟡 Change: Set/Add/Remove/Remove All/Delete/Reset ⭐ — set/add/remove/delete on variables and lists; no `remove all`, `reset`, or changing other expressions (health is separate)
+- ⬜ Charge Creeper
+- ⬜ Charge Entity
+- ⬜ Clear Entity Storage
+- ⬜ Color Items
+- 🟡 Command — `execute console command`; no `make player execute`
+- 🟡 Conditional / Unconditional — conditions on their own line stop the trigger
+- ⬜ Connect
+- ⬜ Consume Boosting Firework
+- ⬜ Consume Brewing Fuel
+- ✅ Continue
+- ⬜ Copy Into Variable
+- 🟡 Damage/Heal/Repair — `heal`, `set health of`; no damage or repair
+- ⬜ Dance
+- ⬜ Detonate Entities
+- ⬜ Do If ⭐
+- ⬜ Drop
+- 🟡 Enable/Disable/Unload/Reload Script — through `/carve enable/disable/reload`, not as an effect
+- ⬜ Enchant/Disenchant
+- ⬜ Enderman Teleport
+- ⬜ Enforce Whitelist
+- ⬜ Entity Despawn
+- ⬜ Entity Visibility
+- ⬜ Equip
+- ⬜ Equippable Component - Dispense
+- ⬜ Equippable Component - Equip On Entities
+- ⬜ Equippable Component - Lose Durability
+- ⬜ Equippable Component - Shear Off
+- ⬜ Equippable Component - Swap Equipment
+- ✅ Exit — `exit loop`, `stop`
+- ⬜ Expand/Shrink World Border
+- ⬜ Explode Creeper
+- ⬜ Explosion ⭐
+- ⬜ Fail Command Execution
+- ⬜ Feed ⭐
+- ⬜ Force Attack
+- ⬜ Force Eating
+- ⬜ Force Enchantment Glint
+- ⬜ Force Panda On Back
+- ⬜ Force Respawn
+- ⬜ Generate Loot
+- ⬜ Goat Horns
+- ⬜ Handedness
+- ⬜ Hide Player from Server List
+- ⬜ Ignite/Extinguish
+- ⬜ Insert Entity Storage
+- ⬜ Item Despawn
+- ⬜ Item Tooltips
+- ⬜ Keep Inventory / Experience
+- ⬜ Kick ⭐
+- ✅ Kill — players
+- ⬜ Knockback
+- ⬜ Launch firework
+- ⬜ Leash entities
+- ⬜ Lightning ⭐
+- ⬜ Load Server Icon
+- ⬜ Load World
+- ⬜ Locally Suppress Warning
+- ⬜ Log
+- ⬜ Look At
+- ⬜ Make Adult/Baby
+- ⬜ Make Allay Duplicate
+- ⬜ Make Breedable
+- ⬜ Make Disturbance
+- ⬜ Make Egg Hatch
+- ⬜ Make Entity Scream
+- ⬜ Make Fire Resistant
+- ⬜ Make Fly ⭐
+- ⬜ Make Goat Ram
+- ⬜ Make Incendiary
+- ⬜ Make Interaction Responsive
+- ⬜ Make Invisible
+- ⬜ Make Invulnerable
+- ⬜ Make Panda Roll
+- ⬜ Make Panda Sneeze
+- ⬜ Make Say
+- ⬜ Make Sign Glow
+- ✅ Message — `send ... [to ...]`
+- ⬜ op/deop ⭐
+- ⬜ Open Book
+- ⬜ Open/Close Inventory ⭐
+- ⬜ Open/Close Lid
+- ⬜ Pathfind
+- ⬜ Persistent
+- ⬜ Play Dead
+- ⬜ Play Effect
+- ⬜ Play or Draw an Effect ⭐
+- ⬜ Play Sound ⭐
+- ⬜ Player Info Visibility
+- ⬜ Player Visibility
+- ⬜ Poison/Cure
+- ⬜ Potion Effect - Ambient
+- ⬜ Potion Effect - Icon
+- ⬜ Potion Effect - Infinite
+- ⬜ Potion Effect - Particles
+- ⬜ Potion Effects ⭐
+- ⬜ Pull In Hooked Entity
+- ⬜ Push ⭐
+- ⬜ PvP
+- ⬜ Register Tag
+- ⬜ Release From Entity Storage
+- ⬜ Replace ⭐
+- ✅ Return
+- ⬜ Ring Bell
+- ⬜ Rotate
+- ⬜ Run
+- ⬜ Save World
+- ⛔ Script Command Suggestion Filtering Mode — Pumpkin 0.2.2 crashes on plugin tab completion
+- ⬜ Send Block Change
+- ⬜ Send Resource Pack
+- ⬜ Shear
+- ⬜ Shoot
+- ⬜ Silence Entity
+- ⬜ Sort
+- ⬜ Spawn ⭐
+- ⬜ Sprinting
+- ⬜ Stop Server
+- ⬜ Stop Sound ⭐
+- ⬜ Strider Shivering
+- ⬜ Suppress Type Hints (Experimental)
+- ⬜ Swing Hand
+- ⬜ Tame / Untame
+- ✅ Teleport — to x, y, z or a location
+- ⬜ Text Display Drop Shadow
+- ⬜ Text Display See Through Blocks
+- ⬜ Title - Clear/Reset
+- ✅ Title - Send — title + subtitle
+- ⬜ Toggle
+- ⬜ Toggle Custom Name Visibility
+- ⬜ Toggle Flight
+- ⬜ Toggle Picking Up Items
+- ⬜ Transform List
+- ⬜ Tree
+- ⬜ Update Block
+- ⬜ Vectors - Rotate Around Vector
+- ⬜ Vectors - Rotate around XYZ
+- ⬜ Vehicle
+- ⬜ Wake And Sleep
+- ⬜ Zombify Villager
+
+## Conditions (170)
+
+- ⬜ Allay Can Duplicate
+- ⬜ Alphanumeric
+- ⬜ Beehive Is Sedated
+- ⬜ Bell Is Resonating
+- ⬜ Bell Is Ringing
+- ⬜ Brewing Will Consume Fuel
+- ⬜ Camel Is Dashing
+- ⬜ Can Age
+- ⬜ Can Breed
+- ⬜ Can Build
+- ⬜ Can Despawn
+- ⬜ Can Fly
+- ⬜ Can Hold
+- ⬜ Can Pick Up Items
+- ⬜ Can See
+- ⬜ Can See Chat Colors
+- ⬜ Can See Messages
+- ✅ Chance — `chance of 25%`
+- ⬜ Changed Sign Side
+- ✅ Comparison — is, is not, <, >, <=, >=, between, `is a or b`
+- 🟡 Contains — text, lists, inventories
+- ⬜ Contains (Property)
+- ⬜ Damage Cause
+- ⬜ Damage Source - Does Scale With Difficulty
+- ⬜ Damage Source - Was Indirectly Caused
+- ⬜ Do Respawn Anchors Work
+- ⬜ Egg Will Hatch
+- ⬜ Enderman Has Been Stared At
+- ⬜ Entity is in Liquid
+- ⬜ Entity Is Sheared
+- ⬜ Entity is Wet
+- ⬜ Entity Storage Is Full
+- ⬜ Equippable Component - Can Be Dispensed
+- ⬜ Equippable Component - Can Be Sheared Off
+- ⬜ Equippable Component - Can Equip On Entities
+- ⬜ Equippable Component - Can Swap Equipment
+- ⬜ Equippable Component - Will Lose Durability
+- ⬜ Event Cancelled ⭐
+- ✅ Exists/Is Set
+- ⬜ Fishing Lure Applied
+- ⬜ Goat Has Horns
+- ⬜ Has AI
+- ⬜ Has Boss Bar Flag
+- ⬜ Has Chat Filtering
+- ⬜ Has Client Weather
+- ⬜ Has Custom Model Data
+- ⬜ Has Glowing Text
+- ⬜ Has Item Cooldown
+- ⬜ Has Item Tooltips
+- ⬜ Has Line of Sight
+- ⬜ Has Loot Table
+- ⬜ Has Metadata
+- ✅ Has Permission
+- ⬜ Has Persistent Data Tag
+- ⬜ Has Played Before
+- ⬜ Has Potion Effect ⭐
+- ⬜ Has Resource Pack
+- ⬜ Has Scoreboard Tag
+- ⬜ Ignition Process
+- ⬜ In The Past/Future
+- ⬜ Is a Script Command
+- ⛔ Is a Skript command — not Skript
+- ⬜ Is Adult
+- ⬜ Is Alive
+- ⬜ Is Baby
+- ⬜ Is Banned
+- ⬜ Is Bed/Anchor Spawn
+- ⬜ Is Block
+- ⬜ Is Block Redstone Powered
+- ⬜ Is Blocking
+- ⬜ Is Burning
+- ⬜ Is Charged
+- ⬜ Is Charging Fireball
+- ⬜ Is Climbing
+- ⬜ Is Conditional
+- ⬜ Is Custom Name Visible
+- ⬜ Is Dancing
+- ⬜ Is Eating
+- ⬜ Is Edible
+- ⬜ Is Empty
+- ⬜ Is Enchanted
+- ⬜ Is Evenly Divisible By
+- ⬜ Is Fire Resistant
+- ⬜ Is Fish Hook in Open Water
+- ⬜ Is Flammable
+- ⬜ Is Flying ⭐
+- ⬜ Is From A Mob Spawner
+- ⬜ Is Frozen
+- ⬜ Is Fuel
+- ⬜ Is Gliding
+- ⬜ Is Hand Raised
+- 🟡 Is Holding — via `tool of player is ...`
+- ⬜ Is In Love
+- ⬜ Is in World
+- ⬜ Is Incendiary
+- ⬜ Is Infinite
+- ⬜ Is Interactable
+- ⬜ Is Invisible
+- ⬜ Is Invulnerable
+- ⬜ Is Jumping
+- ⬜ Is Leashed
+- ⬜ Is Loaded
+- ⬜ Is Lootable
+- ⛔ Is Member/Owner of Region — needs WorldGuard
+- ⬜ Is Normalized
+- ⬜ Is Occluding
+- ⬜ Is of Type
+- ⬜ Is on Ground
+- ⬜ Is Online ⭐
+- ⬜ Is Operator ⭐
+- ⬜ Is Passable
+- ⬜ Is Pathfinding
+- ⬜ Is Persistent
+- ⬜ Is Playing Dead
+- 🟡 Is Plugin Enabled — Pumpkin plugins only, not exposed yet
+- ⬜ Is Poisoned
+- ⬜ Is Preferred Tool
+- ⬜ Is Pressing Key
+- ⬜ Is Responsive
+- ⬜ Is Riding
+- ⬜ Is Riptiding
+- ⬜ Is Saddled
+- ⬜ Is Screaming
+- ⬜ Is Script Loaded
+- ⬜ Is Silent
+- ⬜ Is Sleeping
+- ⬜ Is Slime Chunk
+- ⬜ Is Sneaking ⭐
+- ⬜ Is Solid
+- ⬜ Is Spawnable
+- ⬜ Is Sprinting ⭐
+- ⬜ Is Stackable
+- ⬜ Is Swimming
+- ⬜ Is Tagged
+- ⬜ Is Tameable
+- ⬜ Is Tamed
+- ⬜ Is Ticking
+- ⬜ Is Transparent
+- ⬜ Is Unbreakable
+- ⬜ Is Using Experimental Feature
+- ⬜ Is Valid
+- ⬜ Is Wearing
+- ⬜ Is Whitelisted
+- ⬜ Is Within
+- ⬜ Is Within Radius
+- ⬜ Item Has Enchantment Glint Override
+- ⬜ Leash Will Drop
+- ⬜ Left Handed
+- ⬜ Lid Is Open/Closed
+- ⬜ Matches
+- ⬜ Panda Is On Its Back
+- ⬜ Panda Is Rolling
+- ⬜ Panda Is Scared
+- ⬜ Panda Is Sneezing
+- ⬜ Potion Effect - Has Icon
+- ⬜ Potion Effect - Has Particles
+- ⬜ Potion Effect - Is Ambient
+- ⬜ Potion Effect Type - Is Instant
+- ⬜ PvP
+- ⛔ Region Contains — needs WorldGuard
+- ⬜ Resource Pack
+- ⬜ Running Minecraft
+- ✅ Starts/Ends With
+- ⬜ Strider Is Shivering
+- ⬜ Text Display Has Drop Shadow
+- ⬜ Text Display Visible Through Blocks
+- ⬜ Time ⭐
+- ⬜ Weather ⭐
+- ⬜ Will Consume Boosting Firework
+- ⬜ Will Despawn
+
+## Expressions (545)
+
+- ⬜ Absorbed blocks
+- ⬜ Active Item
+- ⬜ Active Item Use Time
+- ⬜ Affected Entities
+- ⬜ Age of Block/Entity
+- ⬜ All Banned Players/IPs
+- ⬜ All Commands
+- ⛔ All Groups — needs a permissions plugin
+- ⬜ All Operators
+- ⬜ All Permissions
+- ⬜ All Persistent Data Keys
+- ⬜ All Scripts
+- ⬜ All Tags of a Type
+- ⬜ Allay Duplication Cooldown
+- ⬜ Allay Target Jukebox
+- ⬜ Alpha/Red/Green/Blue Color Value
+- ⬜ Alphabetical Sort
+- ⬜ Altitude
+- ✅ Amount — `amount of {list::*}`
+- ⬜ Amount of Items
+- ⬜ An Eternity
+- ⬜ Angle
+- ⬜ Anvil Repair Cost
+- ⬜ Anvil Text Input
+- ⬜ Any Of
+- ⬜ Applied Beacon Effect
+- ⬜ Applied Enchantments
+- ✅ Argument — `arg`, `arg-N`
+- ✅ Arithmetic — + - * /
+- ⬜ Armor Change Item
+- ⬜ Armor Slot
+- ⬜ Arrow Attached Block
+- ⬜ Arrow Knockback Strength
+- ⬜ Arrows Stuck
+- ⬜ Attack Cooldown
+- ✅ Attacked — `victim`
+- 🟡 Attacker — players only
+- ⬜ Banner Pattern
+- ⬜ Banner Pattern Item
+- ⬜ Banner Patterns
+- ⬜ Barter Drops
+- ⬜ Barter Input
+- ⬜ Beacon Effects
+- ⬜ Beacon Range
+- ⬜ Beacon Tier
+- ⬜ Bed
+- ⬜ Beehive Honey Level
+- ⬜ Beehive Target Flower
+- ⬜ Biome
+- ⬜ Blank Equippable Component
+- ⬜ Block ⭐
+- ⬜ Block Break Speed
+- ⬜ Block Data
+- ⬜ Block Hardness
+- ⬜ Block Sound
+- ⬜ Block Sphere
+- ⬜ Blocks
+- ⛔ Blocks in Region — needs WorldGuard
+- ⬜ Book Author
+- ⬜ Book Pages
+- ⬜ Book Title
+- ⬜ Boss Bar From Boss
+- ⬜ Boss Bar From Key
+- ⬜ Breeding Family
+- ⬜ Brewing Results
+- ⬜ Brewing Stand Fuel Level
+- ⬜ Brewing Stand Slot
+- ⬜ Brewing Time
+- ⬜ Broadcast Message
+- ⬜ Brushing Stage
+- ⬜ Buried Item
+- ⬜ Burn/Cook Time
+- ⬜ Case Text ⭐
+- ⬜ Center of World Border
+- ⬜ Character Codepoint
+- ⬜ Character from Codepoint
+- ⬜ Characters Between
+- ⬜ Chat Format
+- ✅ Chat Message — `message`
+- ⬜ Chat Recipients
+- ⬜ Choice Argument
+- ⬜ Chunk
+- 🟡 Clicked Block/Entity/Inventory/Slot — `clicked block` only
+- ⬜ Color from Hex Code ⭐
+- ⬜ Color of
+- ⬜ Colored / Uncolored ⭐
+- ⬜ Colored/Formatted/Uncolored
+- ✅ Command — args, permission, aliases, usage, executable by; no cooldown; new commands need a restart
+- ⬜ Command Block Command
+- ⬜ Command Executor
+- ⬜ Command Info
+- 🟡 Command Sender ⭐ — internal only
+- ⬜ Compass Target
+- ⬜ Config
+- ⬜ Console ⭐
+- ⬜ Consumed Item
+- ✅ Coordinate — `x/y/z of`, `x-coordinate of`
+- ⬜ Create Boss Bar
+- ⬜ Create Loot Context
+- ⬜ Create WorldBorder
+- ⬜ Created Damage Source
+- ⬜ Created Potion Effect
+- ⬜ Creature/Entity/Player/Projectile/Villager/Powered Creeper/etc.
+- ⬜ Cursor Slot
+- ⬜ Custom Chest Inventory ⭐
+- ⬜ Custom Model Data
+- ✅ Damage — read only
+- ⬜ Damage Amount of World Border
+- ⬜ Damage Buffer of World Border
+- ⬜ Damage Cause
+- ⬜ Damage Source
+- ⬜ Damage Source - Causing Entity
+- ⬜ Damage Source - Damage Location
+- ⬜ Damage Source - Damage Type
+- ⬜ Damage Source - Direct Entity
+- ⬜ Damage Source - Food Exhaustion
+- ⬜ Damage Source - Source Location
+- ⬜ Damage Value/Durability
+- ⬜ Damaged Item
+- ⬜ Date Ago/Later ⭐
+- ⬜ De-queue Queue (Experimental)
+- ⬜ Death Message ⭐
+- ⬜ Debug Info
+- ✅ Default Value — `a ? b`
+- ⬜ Difference
+- ⬜ Difficulty
+- ⬜ Direction
+- ⬜ Display Billboard
+- ⬜ Display Brightness
+- ⬜ Display Glow Color Override
+- ⬜ Display Height/Width
+- ⬜ Display Interpolation Delay/Duration
+- ⬜ Display Name ⭐
+- ⬜ Display Shadow Radius/Strength
+- ⬜ Display Teleport Duration
+- ⬜ Display Transformation Rotation
+- ⬜ Display Transformation Scale/Translation
+- ⬜ Display View Range
+- ✅ Distance
+- ⬜ Dropped Item Owner
+- ⬜ Dropped Item Thrower
+- ⬜ Drops
+- ⬜ Drops Of Block
+- ⬜ Elements
+- ⬜ Enchant Item
+- ⬜ Enchanting Experience Cost
+- ⬜ Enchantment Bonus
+- ⬜ Enchantment Hint
+- ⬜ Enchantment Level
+- ⬜ Enchantment Offer
+- ⬜ Enchantment Offer Cost
+- ⬜ Ender Chest
+- ⬜ Enderman Carrying BlockData
+- ⬜ Entities
+- ⬜ Entity AI
+- ⬜ Entity Attribute
+- ⬜ Entity Fire Burn Duration
+- ⬜ Entity Owner
+- ⬜ Entity Size
+- ⬜ Entity Snapshot
+- ⬜ Entity Sound
+- ⬜ Entity Storage Entity Count
+- ⬜ Entity/Player/World from UUID
+- ⬜ Equippable Component
+- ⬜ Equippable Component - Allowed Entities
+- ⬜ Equippable Component - Camera Overlay
+- ⬜ Equippable Component - Equip Sound
+- ⬜ Equippable Component - Equipment Slot
+- ⬜ Equippable Component - Model
+- ⬜ Equippable Component - Shear Sound
+- ⬜ Exact Item
+- ⬜ Except
+- ⬜ Exhaustion
+- ⬜ Experience ⭐
+- ⬜ Experience Cooldown Change Reason
+- ⬜ Experience Pickup Cooldown
+- ⬜ Exploded Blocks
+- ⬜ Explosion Block Yield
+- ⬜ Explosion Yield
+- ⬜ Explosive Yield
+- ⬜ Facing
+- ⬜ Fall Distance
+- ⬜ Fertilized Blocks
+- ⬜ Filter ⭐
+- ⬜ Final Damage
+- ⬜ Firework Effect
+- ⬜ First Empty Slot in Inventory
+- ⬜ Fishing Approach Angle
+- ⬜ Fishing Bite Time
+- ⬜ Fishing Hook
+- ⬜ Fishing Hooked Entity
+- ⬜ Fishing Wait Time
+- ⬜ Flight Mode
+- ⬜ Food Level ⭐
+- ⬜ Formatted Date ⭐
+- ⬜ Formatted Time
+- ⬜ Former/Future State
+- ⬜ Free / Max / Total Memory
+- ⬜ Freeze Time
+- ✅ Function
+- ⬜ Furnace Event Items
+- ⬜ Furnace Slot
+- ⬜ Furnace Times
+- ⬜ Game Effects with Data
+- ⬜ Game Mode ⭐
+- ⬜ Gamerule Value
+- ⬜ Gliding State
+- ⬜ Glowing
+- ⬜ Gravity
+- ⛔ Group — needs a permissions plugin (Vault)
+- ⬜ Hanging Entity/Remover
+- ⬜ Hash ⭐
+- ⬜ Hatching Entity Type
+- ⬜ Hatching Number
+- ⬜ Head location
+- ⬜ Heal Amount
+- ⬜ Heal Reason
+- 🟡 Health — read; set via `set health of`
+- ⬜ Hex Code
+- ⬜ Hidden Players
+- ⬜ Highest Solid Block
+- ⬜ Horse Domestication
+- ⬜ Hostname
+- ⬜ Hotbar Button
+- ⬜ Hotbar Slot
+- ⬜ Hover List
+- ⬜ Humidity
+- ⬜ Id
+- ⬜ Index Of
+- ⬜ Indices of List ⭐
+- ⬜ Indices of Value
+- ⬜ Infinity
+- ⬜ Initiator Inventory
+- ⬜ Input
+- ⬜ Interaction Height/Width
+- ⬜ Inventory ⭐
+- ⬜ Inventory Action
+- ⬜ Inventory Close Reason
+- ⬜ Inventory Holder/Viewers/Rows/Slots
+- ⬜ Inventory Slot ⭐
+- ⬜ Inverse Boolean
+- ⬜ IP
+- 🟡 Item — item literals like `2 diamonds`
+- ⬜ Item Amount
+- ⬜ Item Component - Copy
+- ⬜ Item Cooldown
+- ⬜ Item Display Transform
+- ⬜ Item Enchantments
+- ⬜ Item Flags
+- ⬜ Item Model
+- ⬜ Item of an Entity
+- ⬜ Item Rarity
+- ⬜ Item with Custom Model Data
+- ⬜ Item with Enchantment Glint
+- ⬜ Item with Item Flags
+- ⬜ Item with Lore ⭐
+- ⬜ Item With Model
+- ⬜ Item with Tooltip
+- ⬜ Items
+- ⬜ Items In ⭐
+- ⬜ Join & Split ⭐
+- ⬜ Join Message ⭐
+- ⬜ Key Of Boss Bar
+- ⬜ Keyed
+- ⬜ Kick Message
+- ⬜ Language
+- ⬜ Last Attacker
+- ⬜ Last Caught Errors
+- ⬜ Last Color
+- ⬜ Last Damage
+- ⬜ Last Damage Cause
+- ⬜ Last Death Location
+- ⬜ Last Interaction Date
+- ⬜ Last Interaction Player
+- ⬜ Last Loaded Server Icon
+- ⬜ Last Resource Pack Response
+- ⬜ Last Spawned Entity
+- ⬜ Last/First Login Time
+- ⬜ Leash Holder
+- ⬜ Length ⭐
+- ⬜ Level ⭐
+- ⬜ Level Progress
+- ⬜ Light Level
+- ⬜ Loaded Plugins
+- 🟡 Location — `location of player`
+- ⬜ Location At ⭐
+- ⬜ Location with Yaw/Pitch
+- ✅ Loop Iteration
+- ✅ Loop value — `loop-value[-N]`, `loop-player`, `loop-index`, `loop-number`
+- ⬜ Loot
+- ⬜ Loot Context
+- ⬜ Loot Location of Loot Context
+- ⬜ Loot of Loot Table
+- ⬜ Loot Table
+- ⬜ Loot Table from Key
+- ⬜ Looted Entity of Loot Context
+- ⬜ Looter of Loot Context
+- ⬜ Lore ⭐
+- ⬜ Love Time
+- ⬜ Lowest/Highest Solid Block
+- ⬜ Luck of Loot Context
+- ⬜ Max Durability
+- ⬜ Max Health ⭐
+- ⬜ Max Item Use Time
+- ⬜ Max Minecart Speed
+- ⬜ Max Players
+- ⬜ Maximum Double Value
+- ⬜ Maximum Float Value
+- ⬜ Maximum Freeze Time
+- ⬜ Maximum Integer Value
+- ⬜ Maximum Long Value
+- ⬜ Maximum Stack Size
+- ⬜ Me ⭐
+- ⬜ Mending Repair Amount
+- ✅ Message — `send ... [to ...]`
+- ⬜ Message of the Day
+- ⬜ Metadata
+- ⬜ Middle of Location
+- ⬜ Midpoint
+- ⬜ Minecart Derailed / Flying Velocity
+- ⬜ Minimum Double Value
+- ⬜ Minimum Float Value
+- ⬜ Minimum Integer Value
+- ⬜ Minimum Long Value
+- ⬜ Minimum/Maximum Enchantment Level
+- ⛔ Money — needs an economy plugin
+- ⬜ Moon Phase
+- ⬜ Moved blocks
+- 🟡 Name — `name of player`
+- 🟡 Name / Display Name / Tab List Name — name only
+- ⬜ Named Item/Inventory ⭐
+- ⬜ NaN
+- ⬜ Nearest Entity
+- ⬜ Negative Infinity
+- ⬜ New Line ⭐
+- ⬜ New Potion Effect
+- ⬜ No Damage Ticks
+- ⬜ No Damage Time
+- ⬜ Node
+- ⬜ Now ⭐
+- 🟡 Number Of — lists only
+- ⬜ Number of Characters
+- ⬜ Numbers
+- ⬜ Offline players ⭐
+- ⬜ On-Screen Kick Message
+- ⬜ Online Player Count ⭐
+- ⬜ Opened Inventory
+- ⬜ Panda Gene
+- 🟡 Parse — `parsed as number` only
+- ⬜ Parse Error
+- ⬜ Particle Count
+- ⬜ Particle Distribution
+- ⬜ Particle Offset
+- ⬜ Particle Speed/Extra Value
+- ⬜ Particle with Offset/Distribution/Velocity
+- ⬜ Particle with Speed/Extra Value
+- ⬜ Particles with Data
+- ⬜ Passenger
+- ⬜ Pathfinding Target Entity
+- ⬜ Pathfinding Target Location
+- ⬜ Percent of
+- ⬜ Persistent Data Value
+- ⬜ Pi
+- ⬜ Picked Item/Block/Entity
+- ⬜ Pickup Delay
+- ⬜ Ping ⭐
+- ⬜ Plain Item
+- ⬜ Player Chat Completions
+- ⬜ Player Input Keys
+- ⬜ Player List Header and Footer
+- ⬜ Player List Name
+- ⬜ Player List Priority
+- ⬜ Player Protocol Version
+- ⬜ Player Skull
+- ⬜ Player Weather
+- ⬜ Portal
+- ⬜ Portal Cooldown
+- ⬜ Potion (item)
+- ⬜ Potion Effect - Amplifier
+- ⬜ Potion Effect - Duration
+- ⬜ Potion Effect of Entity/Item
+- ⬜ Potion Effect Tier
+- ⬜ Potion Effect Type Category
+- ⬜ Potion Effects of Entity/Item
+- ⛔ Prefix/Suffix — needs a chat plugin (Vault)
+- ⬜ Progress
+- ⬜ Projectile Critical State
+- ⬜ Projectile Force
+- ⬜ Protocol Version
+- ⬜ Queue (Experimental)
+- ⬜ Queue Start/End (Experimental)
+- ⬜ Quit Message ⭐
+- ⬜ Quit Reason
+- 🟡 Random — `random element of {list::*}`
+- ⬜ Random Character
+- ✅ Random Numbers
+- ⬜ Random UUID ⭐
+- ⬜ Raw Name
+- ⬜ Raw String
+- ⬜ Readied Arrow/Bow
+- ⬜ Recursive
+- ⬜ Recursive Size
+- ⬜ Redstone Block Power
+- ⬜ Reduce
+- ⬜ Reduced Value
+- ⛔ Region — needs WorldGuard
+- ⛔ Region Members & Owners — needs WorldGuard
+- ⛔ Regions At — needs WorldGuard
+- ⬜ Remaining Air
+- ⬜ Repeat String
+- ⬜ Resolve Text Component
+- ⬜ Resonating Time
+- ⬜ Respawn Anchor Charges
+- ⬜ Respawn Location
+- ⬜ Respawn Reason
+- ⬜ Result
+- ⬜ Reversed List ⭐
+- ⬜ Ringing Time
+- ⬜ Rotated Quaternion/Vector
+- ⬜ Rotation Axis/Angle
+- 🟡 Rounding — as functions
+- ⬜ Saturation
+- ⬜ Scale
+- ⬜ Scoreboard Tags
+- 🟡 Script — through `/carve`
+- 🟡 Script Command Cooldown Information — no cooldowns yet
+- ⛔ Script Command Suggestion Input — same Pumpkin crash
+- ⛔ Script Command Suggestions — Pumpkin 0.2.2 crashes on plugin tab completion
+- ⬜ Sea Level
+- ⬜ Sea Pickles
+- ⬜ Seed of Loot Table
+- ⬜ Sent Command List
+- ⬜ Server Icon
+- ⬜ Sets
+- ⬜ Shooter
+- ⬜ Shuffled List ⭐
+- ⬜ Sign Text
+- ⬜ Simulation Distance
+- ✅ Size — `size of {list::*}`
+- ⬜ Size of World Border
+- ⬜ Skull Owner
+- ⬜ Skull Texture
+- ⬜ Slot Index
+- ⬜ Sorted List ⭐
+- ⬜ Source Block
+- ⬜ Spawn ⭐
+- ⬜ Spawn Egg Entity
+- ⬜ Spawn Reason
+- ⬜ Spawner Type
+- ⬜ Special Number
+- ⬜ Spectator Target
+- ⬜ Speed
+- ⬜ Stored Enchantments
+- ⬜ String Colors
+- ⬜ Style
+- ⬜ Substring ⭐
+- ⬜ Tab List Name
+- ⬜ Tablisted Players
+- ⬜ Tag
+- ⬜ Tag Namespaced Key
+- ⬜ Tags Contents
+- ⬜ Tags of X
+- ⬜ Tamer
+- ⬜ Target
+- ⬜ Targeted Block ⭐
+- ⬜ Teleport Cause
+- ⬜ Temperature
+- ⬜ Ternary ⭐
+- ⬜ Text Display Alignment
+- ⬜ Text Display Line Width
+- ⬜ Text Display Opacity
+- ⬜ Text Of
+- ⬜ Text Replacement ⭐
+- ⬜ The Egg
+- ⬜ Time ⭐
+- ⬜ Time Lived of Entity
+- ⬜ Time Played
+- ⬜ Time Since/Until ⭐
+- ⬜ Timespan Details ⭐
+- ⬜ Title
+- ✅ Tool — main hand
+- ⬜ Total Experience
+- ⬜ TPS (ticks per second)
+- ⬜ Transform Reason
+- ⬜ Transformed List
+- ⬜ Type of
+- ⬜ Unbreakable Items
+- ⬜ Unix Date
+- ⬜ Unix Timestamp ⭐
+- ⬜ Unknown Command Message
+- ⬜ Unleash Reason
+- ✅ UUID — `uuid of player`
+- ⬜ Value
+- ⬜ Value (Experimental)
+- ⬜ Value of Subnode
+- ⬜ Value Within
+- ⬜ Vector/Quaternion - WXYZ Component
+- ⬜ Vectors - Angle Between
+- ⬜ Vectors - Arithmetic
+- ⬜ Vectors - Create from Direction
+- ⬜ Vectors - Create from XYZ
+- ⬜ Vectors - Create Location from Vector
+- ⬜ Vectors - Cross Product
+- ⬜ Vectors - Cylindrical Shape
+- ⬜ Vectors - Dot Product
+- ⬜ Vectors - Length
+- ⬜ Vectors - Location Vector Offset
+- ⬜ Vectors - Normalized
+- ⬜ Vectors - Random Vector
+- ⬜ Vectors - Spherical Shape
+- ⬜ Vectors - Squared Length
+- ⬜ Vectors - Vector Between Locations
+- ⬜ Vectors - Vector from Location
+- ⬜ Vectors - Vector from Yaw and Pitch
+- ⬜ Vectors - Vector Projection
+- ⬜ Vectors - XYZ Component
+- ⬜ Vectors - Yaw and Pitch
+- ⬜ Vehicle
+- ⬜ Velocity ⭐
+- ⬜ Version
+- ⬜ Version String
+- ⬜ View Distance
+- ⬜ View Distance of Client
+- ⬜ Viewers
+- ⬜ Villager Level/Experience
+- ⬜ Villager Profession
+- ⬜ Villager Type
+- ⬜ Warden Anger Level
+- ⬜ Warden Most Angered At
+- ⬜ Warning Distance of World Border
+- ⬜ Warning Time of World Border
+- ⬜ Weather ⭐
+- ⬜ Whether
+- ⬜ Whitelist
+- ⬜ With Fire Resistance
+- ✅ World — `world of`
+- ⬜ World Border
+- ⬜ World Environment
+- ✅ World from Name — `world "name"`
+- ⬜ World Seed
+- ⬜ Worlds
+- ⬜ WXYZ Component/Coordinate
+- ⬜ X of Item/Entity Type
+- ⬜ X Times
+- ⬜ Yaw / Pitch
+
+## Sections (11)
+
+- ⬜ Catch Runtime Errors
+- ✅ Conditionals — `if` / `else if` / `else`
+- ✅ Delay — `wait N ticks/seconds`
+- ⬜ Filter ⭐
+- 🟡 For Each Loop — `loop {list::*}` works; no `for each` wording
+- ⬜ Locally Suppress Warning
+- ✅ Loop — times, lists, all players, values
+- ⬜ Shoot
+- ⬜ Spawn ⭐
+- ⬜ Suppress Type Hints (Experimental)
+- ✅ While Loop
+
+## Structures (8)
+
+- ⛔ Aliases — item aliases come from Minecraft ids; no custom aliases
+- ⬜ Auto Reload
+- ✅ Command — args, permission, aliases, usage, executable by; no cooldown; new commands need a restart
+- ✅ Event — see events
+- ✅ Function
+- ✅ Options — `{@name}`
+- ⬜ Using Experimental Feature
+- ⬜ Variables ⭐
+
+## Functions (45)
+
+- ✅ abs
+- ⬜ acos
+- ⬜ asin
+- ⬜ atan
+- ⬜ atan2
+- ⬜ axisAngle
+- ⬜ calcExperience
+- ✅ ceil
+- ✅ ceiling
+- ⬜ clamp
+- ⬜ combinations
+- ⬜ concat
+- ⬜ cos
+- ⬜ date
+- ⬜ entity
+- ⬜ exp
+- ⬜ factorial
+- ✅ floor
+- ⬜ formatNumber
+- ⬜ fromBase
+- ⬜ isNaN
+- ⬜ ln
+- 🟡 location — `location(x, y, z[, world])`, no yaw/pitch
+- ⬜ log
+- 🟡 max — two numbers only
+- ⬜ mean
+- ⬜ median
+- 🟡 min — two numbers only
+- ✅ mod
+- ⬜ offlineplayer
+- ⬜ permutations
+- ⬜ player
+- ⬜ product
+- ⬜ quaternion
+- ⬜ rgb
+- ⬜ root
+- 🟡 round — no decimal places argument
+- ⬜ sin
+- ✅ sqrt
+- ⬜ sum
+- ⬜ tan
+- ⬜ toBase
+- ⬜ uuid
+- ⬜ vector
+- 🟡 world — as `world "name"`
+
+## Types (126)
+
+- ⬜ Any Named Thing
+- ⬜ Any Numbered/Sized Thing
+- ⬜ Any Valued Thing
+- ⬜ Anything with Contents
+- ⬜ Attribute Type
+- ⬜ Audience
+- ⬜ Banner Pattern
+- ⬜ Banner Pattern Type
+- ⬜ Biome
+- ⬜ Block ⭐
+- ⬜ Block Data
+- ✅ Boolean
+- ⬜ Boss Bar Style
+- ⬜ BossBar
+- ⬜ Cat Type
+- ⬜ Chicken Variant
+- ⬜ Chunk
+- ⬜ Click Type
+- ⬜ Color
+- 🟡 Command Sender ⭐ — internal only
+- ⬜ Config
+- ⬜ Converging Particle Effect
+- ⬜ Cow Variant
+- ⬜ Damage Cause
+- ⬜ Damage Source
+- ⬜ Damage Type
+- ⬜ Date ⭐
+- ⬜ Difficulty
+- ⬜ Direction
+- ⬜ Directional Particle Effect
+- ⬜ Display Billboard
+- ⬜ Display Entity
+- ⬜ Display Text Alignment
+- ⬜ Enchantment
+- ⬜ Enchantment Offer
+- ⬜ Enchantment Type
+- ⬜ Entity
+- ⬜ Entity Effect
+- ⬜ Entity Snapshot
+- ⬜ Entity Type
+- ⬜ Entity Type with Amount
+- ⬜ Equipment Slot
+- ⬜ Equippable Components
+- ⬜ Executable
+- ⬜ Experience ⭐
+- ⬜ Firework Effect
+- ⬜ Firework Type
+- ⬜ Fishing State
+- ⬜ Frog Variant
+- ✅ Function
+- ⬜ Game Effect
+- ⬜ Game Mode ⭐
+- ⬜ Gamerule
+- ⬜ Gamerule Value
+- ⬜ Gene
+- ⬜ Header
+- ⬜ Heal Reason
+- ⬜ Input Key
+- ⬜ Inventory ⭐
+- ⬜ Inventory Action
+- ⬜ Inventory Close Reasons
+- ⬜ Inventory Type
+- 🟡 Item — type + amount; no name, lore or enchantments
+- ⬜ Item Component
+- ⬜ Item Display Transforms
+- ⬜ Item Flag
+- ⬜ Item Rarity
+- 🟡 Item Type — Minecraft ids, checked at load
+- ⬜ Living Entity
+- ✅ Location — no yaw/pitch
+- ⬜ Loot Context
+- ⬜ Loot Table
+- ⬜ Metadata Holder
+- ⬜ Minecraft Tag
+- ⛔ Money — needs an economy plugin (Vault)
+- ⬜ Moon Phase
+- ⬜ Nameable
+- ⬜ Node
+- ✅ Number
+- ✅ Object
+- 🟡 Offline Player — stored players keep their UUID; no offline lookups
+- ⬜ Particle
+- ⬜ Pig Variant
+- ✅ Player — by UUID handle
+- ⬜ Potion Effect
+- ⬜ Potion Effect Event Action
+- ⬜ Potion Effect Event Cause
+- ⬜ Potion Effect Type
+- ⬜ Potion Effect Type Category
+- ⬜ Projectile
+- ⬜ Quaternion
+- ⬜ Queue
+- ⬜ Quit Reason
+- ⛔ Region — needs WorldGuard
+- ⬜ Resource Pack State
+- ⬜ Respawn Reason
+- ⬜ Scalable Particle Effect
+- 🟡 Script — through `/carve`
+- ⬜ Server Icon
+- ⬜ Slot
+- ⬜ Sound Category
+- ⬜ Spawn Reason
+- ⬜ Teleport Cause
+- ⬜ Teleport Flag
+- ✅ Text
+- ⬜ Text Component
+- ⬜ Time ⭐
+- ⬜ Timeperiod
+- ⬜ Timespan ⭐
+- ⬜ Transform Reason
+- ⬜ Tree Type
+- ⬜ Type
+- ⬜ Unleash Reason
+- ✅ UUID — `uuid of player`
+- ⬜ Vector
+- ⬜ Vehicle
+- ⬜ Villager Career Change Reason
+- ⬜ Villager Profession
+- ⬜ Villager Type
+- ⬜ Visual Effect
+- ⬜ Weather Type
+- ⬜ Wolf Variant
+- ✅ World
+- ⬜ World Border
+- ⬜ World Environment
+- ⬜ Zombie Nautilus Variant
+

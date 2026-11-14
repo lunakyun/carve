@@ -128,6 +128,9 @@ Planned, not available yet:
 - inventory and GUI events
 - adding new commands on reload, once Pumpkin's API allows it
 
+The full list of every core Skript feature and where Carve stands is in the
+[Skript parity checklist](docs/skript-parity.md).
+
 Ideas and votes are welcome in the issues.
 
 ## Contributing
