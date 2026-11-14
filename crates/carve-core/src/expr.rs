@@ -129,6 +129,8 @@ pub enum Expr {
     Attacker,
     /// `clicked block` in click events (an item value of the block type).
     ClickedBlock,
+    /// `event-item`, `new level`, ... in the item and level events.
+    EventVal(crate::events_items::EventVal),
     /// `a ? b`: a, or b when a is not set.
     Default(Box<Expr>, Box<Expr>),
     /// `floor(x)`, `max(a, b)`, ...
@@ -320,6 +322,8 @@ pub struct Env {
     pub has_damage: bool,
     pub has_attacker: bool,
     pub has_block: bool,
+    /// Bit set of the event values of the trigger (`events_items::mask`).
+    pub event_vals: u16,
 }
 
 impl Expr {
@@ -359,6 +363,7 @@ impl Expr {
                 if x == y { x } else { Ty::Object }
             }
             Expr::ClickedBlock => Ty::Item,
+            Expr::EventVal(v) => v.ty(),
             Expr::LoopValue(d) => match env.loops.get(*d) {
                 Some(LoopKind::Times) => Ty::Number,
                 Some(LoopKind::Players) => Ty::Player,
@@ -882,6 +887,14 @@ impl P<'_> {
                 let lw = w.to_ascii_lowercase();
                 if let Some(e) = self.text_fn(&lw)? {
                     return Ok(e);
+                }
+                if self.env.event_vals != 0
+                    && !self.env.in_function
+                    && let Some((v, n)) =
+                        crate::events_items::parse_val(self.env.event_vals, &lw, self.toks.get(self.pos..).unwrap_or(&[]))
+                {
+                    self.pos += n;
+                    return Ok(Expr::EventVal(v));
                 }
                 match lw.as_str() {
                     "the" => self.primary(),

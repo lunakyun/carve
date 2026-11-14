@@ -30,6 +30,14 @@ pub enum EventKind {
     SneakToggle,
     SprintToggle,
     FlightToggle,
+    Drop,
+    PickUp,
+    Consume,
+    ProjectileHit,
+    MobSpawn,
+    GamemodeChange,
+    Craft,
+    LevelChange,
 }
 
 impl EventKind {
@@ -50,6 +58,14 @@ impl EventKind {
             EventKind::SneakToggle => "sneak toggle",
             EventKind::SprintToggle => "sprint toggle",
             EventKind::FlightToggle => "flight toggle",
+            EventKind::Drop => "drop",
+            EventKind::PickUp => "pick up",
+            EventKind::Consume => "consume",
+            EventKind::ProjectileHit => "projectile hit",
+            EventKind::MobSpawn => "mob spawn",
+            EventKind::GamemodeChange => "gamemode change",
+            EventKind::Craft => "craft",
+            EventKind::LevelChange => "level change",
         }
     }
 
@@ -75,13 +91,13 @@ impl EventKind {
             "sneak toggle" | "toggle sneak" | "player toggle sneak" => EventKind::SneakToggle,
             "sprint toggle" | "toggle sprint" | "player toggle sprint" => EventKind::SprintToggle,
             "flight toggle" | "toggle flight" | "player toggle flight" => EventKind::FlightToggle,
-            _ => return None,
+            _ => return crate::events_items::parse_kind(s),
         })
     }
 
     /// Whether `cancel event` means anything here.
     pub fn cancellable(self) -> bool {
-        !matches!(self, EventKind::Respawn | EventKind::Load)
+        !matches!(self, EventKind::Respawn | EventKind::Load | EventKind::LevelChange)
     }
 }
 
@@ -1077,6 +1093,11 @@ impl Cx<'_> {
     }
 
     fn single_cond(&self, toks: &[Tok]) -> Option<Cond> {
+        if self.env.event_vals != 0
+            && let Some(c) = crate::events_items::parse_entity_cond(toks, &self.env)
+        {
+            return Some(c);
+        }
         if let Some(c) = crate::world_effects::parse_cond(toks, &self.env) {
             return Some(c);
         }
@@ -2012,24 +2033,25 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
         let (kind, body, env, is_command): (TriggerKind, &[Line], Env, bool) = if let Some(ev) =
             lower.strip_prefix("on ")
         {
-            let (ev, filters) = split_click_filters(ev.trim());
+            let (ev, ev_filter) = crate::events_items::split_filter(ev.trim());
+            let (ev, mut filters) = split_click_filters(ev);
+            filters.extend(ev_filter);
             let Some(k) = EventKind::parse(ev) else {
                 errors.push(ScriptError::new(
                         file,
                         top.num,
                         format!(
-                            "unknown event '{ev}', known: join, quit, chat, break, place, death, damage, respawn, click, right click, left click, sneak toggle, sprint toggle, flight toggle, load (and 'every N seconds:')"
+                            "unknown event '{ev}', known: join, quit, chat, break, place, death, damage, respawn, click, right click, left click, sneak toggle, sprint toggle, flight toggle, load, {} (and 'every N seconds:')",
+                            crate::events_items::NAMES
                         ),
                     ));
                 continue;
             };
-            if !filters.is_empty()
-                && !matches!(k, EventKind::Click | EventKind::RightClick | EventKind::LeftClick)
-            {
+            if filters.iter().any(|(w, _)| !crate::events_items::filter_ok(k, w)) {
                 errors.push(ScriptError::new(
                     file,
                     top.num,
-                    "'on ... with/on <item>' only works for click events",
+                    "'on ... with/on <item>' only works for click events, 'of <mob>' for spawns and 'to <mode>' for gamemode changes",
                 ));
                 continue;
             }
@@ -2037,7 +2059,8 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                 has_message: k == EventKind::Chat,
                 arg_types: vec![],
                 trigger_name: format!("'on {}'", k.name()),
-                no_player: k == EventKind::Load,
+                no_player: matches!(k, EventKind::Load | EventKind::MobSpawn | EventKind::ProjectileHit),
+                event_vals: crate::events_items::mask(k),
                 has_damage: k == EventKind::Damage,
                 has_attacker: matches!(k, EventKind::Damage | EventKind::Death),
                 has_block: matches!(k, EventKind::Click | EventKind::RightClick | EventKind::LeftClick),
@@ -2183,15 +2206,24 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
         // `on right click with diamond on stone:` checks first.
         let mut guards = Vec::new();
         for (what, text) in std::mem::take(&mut click_filters) {
-            let item = match lex(&text).and_then(|t| parse_expr(&t, &cx.env)) {
-                Ok(e) if e.ty(&cx.env) == Ty::Item => e,
-                _ => {
-                    cx.err(top.num, format!("'{text}' is not an item or block name"));
-                    continue;
+            let item = if let Some(e) = crate::events_items::filter_rhs(what, &text) {
+                e
+            } else if matches!(what, "entity" | "mode") {
+                cx.err(top.num, format!("'{text}' is not a valid name here"));
+                continue;
+            } else {
+                match lex(&text).and_then(|t| parse_expr(&t, &cx.env)) {
+                    Ok(e) if e.ty(&cx.env) == Ty::Item => e,
+                    _ => {
+                        cx.err(top.num, format!("'{text}' is not an item or block name"));
+                        continue;
+                    }
                 }
             };
             let left = if what == "with" {
                 Expr::Prop(crate::expr::Prop::Tool, Box::new(Expr::Player))
+            } else if let Some(l) = crate::events_items::filter_lhs(what) {
+                l
             } else {
                 Expr::ClickedBlock
             };

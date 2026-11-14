@@ -35,6 +35,8 @@ pub struct EventCtx {
     pub attacker: Option<PlayerRef>,
     /// `clicked block` in click events (block id without `minecraft:`).
     pub block: Option<String>,
+    /// Values of the item and level events (see `events_items`).
+    pub extra: Option<Box<crate::events_items::EventExtra>>,
 }
 
 impl EventCtx {
@@ -47,6 +49,7 @@ impl EventCtx {
             damage: None,
             attacker: None,
             block: None,
+            extra: None,
         }
     }
 
@@ -60,6 +63,7 @@ impl EventCtx {
             damage: None,
             attacker: None,
             block: None,
+            extra: None,
         }
     }
 
@@ -1597,6 +1601,7 @@ impl Engine {
                 },
                 None => Value::None,
             },
+            Expr::EventVal(v) => crate::events_items::eval(*v, &ex.ctx),
             Expr::Arg(i) => ex.ctx.args.get(i.wrapping_sub(1)).cloned().unwrap_or(Value::None),
             Expr::NameOf(inner) => {
                 let v = self.eval(inner, ex, host)?;

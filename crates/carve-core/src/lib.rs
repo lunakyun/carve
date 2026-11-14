@@ -7,6 +7,7 @@ pub mod colors;
 pub mod compile;
 pub mod engine;
 pub mod error;
+pub mod events_items;
 pub mod expr;
 pub mod gamemode;
 pub mod health_food;
@@ -31,6 +32,7 @@ pub mod xp_level;
 pub mod world_effects;
 
 pub use compile::{CommandDef, EventKind};
+pub use events_items::{EvPos, EventExtra};
 pub use engine::{CommandOutcome, Engine, EventCtx, FireOutcome, LoadSummary};
 pub use error::ScriptError;
 pub use host::{Host, LogLevel};
