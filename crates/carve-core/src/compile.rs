@@ -2333,7 +2333,7 @@ pub fn type_from_name(name: &str) -> Option<Ty> {
         "object" => Ty::Object,
         "numbers" | "integers" | "texts" | "strings" | "players" | "booleans" | "items" | "itemtypes"
         | "locations" | "worlds" | "objects" => Ty::List,
-        _ => return None,
+        _ => return crate::types_1::ty_from_name(name),
     })
 }
 

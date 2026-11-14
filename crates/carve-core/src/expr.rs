@@ -20,6 +20,8 @@ pub enum Ty {
     Timespan,
     Date,
     Vector,
+    /// A type from `types_1`: a named-value type, color, quaternion, ...
+    T1(u8),
     /// Unknown until runtime (variables).
     Object,
     /// A list (function parameters and results like `numbers`).
@@ -39,6 +41,7 @@ impl Ty {
             Ty::Timespan => "timespan",
             Ty::Date => "date",
             Ty::Vector => "vector",
+            Ty::T1(id) => crate::types_1::ty_name(id),
             Ty::Object => "object",
             Ty::List => "list",
         }
@@ -51,6 +54,7 @@ impl Ty {
             || self == Ty::Text
             || self == got
             || (self == Ty::Number && got == Ty::Date)
+            || (matches!(self, Ty::T1(_)) && got == Ty::Text)
     }
 }
 
@@ -220,6 +224,8 @@ pub enum Expr {
     W6(Box<crate::w2_expressions_6::W6>),
     /// Vectors, server facts and other rare expressions (see `w2_expressions_7`).
     W7(Box<crate::w2_expressions_7::Node>),
+    /// Colors, named values and other types (see `types_1`).
+    T1(Box<crate::types_1::Node>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -448,6 +454,7 @@ impl Expr {
                 crate::skbee_recipes_advancements::SkbExpr::EventId => Ty::Text,
             },
             Expr::W7(n) => n.ty,
+            Expr::T1(n) => n.ty,
             Expr::Items(_) => Ty::List,
             Expr::Bound(b) => b.ty(),
             Expr::Sb(s) => s.ty(),
@@ -728,7 +735,18 @@ impl P<'_> {
                     self.pos += 3;
                     e = Expr::ParseNum(Box::new(e));
                 }
-                Some(_) => return Err("only 'parsed as number' is supported".into()),
+                Some(_) => match crate::types_1::type_at(self.toks, self.pos + 2) {
+                    Some((Ty::T1(id), n)) => {
+                        self.pos += 2 + n;
+                        e = crate::types_1::parse_as(e, id);
+                    }
+                    _ => {
+                        if self.toks.get(self.pos + 2..).is_some_and(|r| r.iter().all(|t| matches!(t, Tok::Word(_)))) {
+                            self.hit_end.set(true);
+                        }
+                        return Err("only 'parsed as number' or a type like 'parsed as click type' is supported".into());
+                    }
+                },
                 None => {
                     self.hit_end.set(true);
                     return Err("expected 'parsed as number'".into());
@@ -1597,6 +1615,9 @@ impl P<'_> {
             }
             Tok::Word(w) => {
                 let lw = w.to_ascii_lowercase();
+                if let Some(e) = self.t1_head(&lw)? {
+                    return Ok(e);
+                }
                 if let Some((e, end)) = crate::entities::parse_expr_at(self.toks, self.pos - 1, self.env, &self.hit_end)? {
                     self.pos = end;
                     return Ok(e);
@@ -2198,6 +2219,9 @@ impl P<'_> {
                         }
                         if let Some(item) = self.item(&w) {
                             return Ok(item);
+                        }
+                        if let Some(e) = self.t1_literal(&w) {
+                            return Ok(e);
                         }
                         Err(format!("unknown expression '{w}'"))
                     }

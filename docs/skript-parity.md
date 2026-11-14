@@ -1210,130 +1210,130 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 
 ## Types (126)
 
-- ⬜ Any Named Thing
-- ⬜ Any Numbered/Sized Thing
-- ⬜ Any Valued Thing
-- ⬜ Anything with Contents
-- ⬜ Attribute Type
-- ⬜ Audience
+- 🟡 Any Named Thing — works as a function parameter type (no extra checks); no value of its own
+- 🟡 Any Numbered/Sized Thing — works as a function parameter type (no extra checks); no value of its own
+- 🟡 Any Valued Thing — works as a function parameter type (no extra checks); no value of its own
+- 🟡 Anything with Contents — works as a function parameter type (no extra checks); no value of its own
+- ✅ Attribute Type — a named value: plain words or `"text" parsed as attribute type`; compares with text; usable as a function parameter type
+- 🟡 Audience — works as a function parameter type (no extra checks); no value of its own
 - ⛔ Banner Pattern — the banner block entity API has no patterns
-- ⬜ Banner Pattern Type
+- ✅ Banner Pattern Type — a named value: plain words or `"text" parsed as banner pattern type`; compares with text; usable as a function parameter type
 - ✅ Biome — `biome at {loc}`, `biome of player`: a text like `birch_forest`
 - 🟡 Block ⭐ — a block is a location with whole numbers
 - ⬜ Block Data
 - ✅ Boolean
-- 🟡 Boss Bar Style — set and create with a style; no reading
+- ✅ Boss Bar Style — a named value: plain words or `"text" parsed as boss bar style`; compares with text; usable as a function parameter type
 - 🟡 BossBar — bars are named by a text id; there is no bar value to keep in a variable
-- ⬜ Cat Type
-- ⬜ Chicken Variant
-- ⬜ Chunk
-- ⬜ Click Type
-- ⬜ Color
+- ✅ Cat Type — a named value: plain words or `"text" parsed as cat type`; compares with text; usable as a function parameter type
+- ✅ Chicken Variant — a named value: plain words or `"text" parsed as chicken variant`; compares with text; usable as a function parameter type
+- ✅ Chunk — `chunk(x, z)`, `chunk of <location>`
+- ✅ Click Type — a named value: plain words or `"text" parsed as click type`; compares with text; usable as a function parameter type
+- ✅ Color — `rgb(r, g, b)`, dye color words, `color from hex`, `hex of`
 - ✅ Command Sender ⭐ — `sender`, `command sender`, `sender is a player`
-- ⬜ Config
-- ⬜ Converging Particle Effect
-- ⬜ Cow Variant
-- ⬜ Damage Cause
-- ⬜ Damage Source
-- ⬜ Damage Type
+- ⛔ Config — Carve has no config file or node reading
+- ✅ Converging Particle Effect — a named value: plain words or `"text" parsed as converging particle effect`; compares with text; usable as a function parameter type
+- ✅ Cow Variant — a named value: plain words or `"text" parsed as cow variant`; compares with text; usable as a function parameter type
+- ✅ Damage Cause — a named value: plain words or `"text" parsed as damage cause`; compares with text; usable as a function parameter type
+- ⛔ Damage Source — the API has no damage source object
+- ✅ Damage Type — a named value: plain words or `"text" parsed as damage type`; compares with text; usable as a function parameter type
 - ✅ Date ⭐
-- 🟡 Difficulty — plain text: peaceful, easy, normal, hard
-- ⬜ Direction
-- ⬜ Directional Particle Effect
-- ⬜ Display Billboard
-- ⬜ Display Entity
-- ⬜ Display Text Alignment
-- 🟡 Enchantment — `sharpness 5` in item expressions and conditions
-- ⬜ Enchantment Offer
+- ✅ Difficulty — a named value: plain words or `"text" parsed as difficulty`; compares with text; usable as a function parameter type
+- ✅ Direction — a named value: plain words or `"text" parsed as direction`; compares with text; usable as a function parameter type
+- ✅ Directional Particle Effect — a named value: plain words or `"text" parsed as directional particle effect`; compares with text; usable as a function parameter type
+- ✅ Display Billboard — a named value: plain words or `"text" parsed as display billboard`; compares with text; usable as a function parameter type
+- 🟡 Display Entity — works as a function parameter type (no extra checks); no value of its own
+- ✅ Display Text Alignment — a named value: plain words or `"text" parsed as display text alignment`; compares with text; usable as a function parameter type
+- ✅ Enchantment — a named value: plain words or `"text" parsed as enchantment`; compares with text; usable as a function parameter type
+- ⛔ Enchantment Offer — the API has no enchanting table offers
 - ⬜ Enchantment Type
-- ⬜ Entity
-- ⬜ Entity Effect
+- 🟡 Entity — works as a function parameter type (no extra checks); no value of its own
+- ✅ Entity Effect — a named value: plain words or `"text" parsed as entity effect`; compares with text; usable as a function parameter type
 - ⛔ Entity Snapshot — the plugin API has no entity snapshots
-- 🟡 Entity Type — `type of <entity>` gives text
+- ✅ Entity Type — a named value: plain words or `"text" parsed as entity type`; compares with text; usable as a function parameter type
 - ⬜ Entity Type with Amount
-- ⬜ Equipment Slot
-- ⬜ Equippable Components
+- ✅ Equipment Slot — a named value: plain words or `"text" parsed as equipment slot`; compares with text; usable as a function parameter type
+- ⛔ Equippable Components — item components are raw bytes only
 - ⬜ Executable
-- ⬜ Experience ⭐
+- 🟡 Experience ⭐ — works as a function parameter type (no extra checks); no value of its own
 - ⛔ Firework Effect — firework effects are not in the plugin API
-- ⬜ Firework Type
-- ⬜ Fishing State
-- ⬜ Frog Variant
+- ✅ Firework Type — a named value: plain words or `"text" parsed as firework type`; compares with text; usable as a function parameter type
+- ✅ Fishing State — a named value: plain words or `"text" parsed as fishing state`; compares with text; usable as a function parameter type
+- ✅ Frog Variant — a named value: plain words or `"text" parsed as frog variant`; compares with text; usable as a function parameter type
 - ✅ Function
-- ⬜ Game Effect
+- ✅ Game Effect — a named value: plain words or `"text" parsed as game effect`; compares with text; usable as a function parameter type
 - ✅ Game Mode ⭐ — `survival`, `creative`, `adventure`, `spectator`
 - 🟡 Gamerule — a name checked at compile time; old names like doDaylightCycle are mapped
-- ⬜ Gamerule Value
-- ⬜ Gene
-- ⬜ Header
+- 🟡 Gamerule Value — works as a function parameter type (no extra checks); no value of its own
+- ✅ Gene — a named value: plain words or `"text" parsed as gene`; compares with text; usable as a function parameter type
+- ⛔ Header — Carve has no config file or node reading
 - ⛔ Heal Reason — needs the regain health event, which is not wired in Carve
-- ⬜ Input Key
-- ⬜ Inventory ⭐
-- ⬜ Inventory Action
-- ⬜ Inventory Close Reasons
-- ⬜ Inventory Type
+- ✅ Input Key — a named value: plain words or `"text" parsed as input key`; compares with text; usable as a function parameter type
+- 🟡 Inventory ⭐ — works as a function parameter type (no extra checks); no value of its own
+- ✅ Inventory Action — a named value: plain words or `"text" parsed as inventory action`; compares with text; usable as a function parameter type
+- ✅ Inventory Close Reasons — a named value: plain words or `"text" parsed as inventory close reasons`; compares with text; usable as a function parameter type
+- ✅ Inventory Type — a named value: plain words or `"text" parsed as inventory type`; compares with text; usable as a function parameter type
 - ✅ Item — type, amount, name, lore, enchantments
-- ⬜ Item Component
-- ⬜ Item Display Transforms
-- ⬜ Item Flag
+- ✅ Item Component — a named value: plain words or `"text" parsed as item component`; compares with text; usable as a function parameter type
+- ✅ Item Display Transforms — a named value: plain words or `"text" parsed as item display transforms`; compares with text; usable as a function parameter type
+- ✅ Item Flag — a named value: plain words or `"text" parsed as item flag`; compares with text; usable as a function parameter type
 - ⛔ Item Rarity — the API only exposes raw component bytes, not typed access
 - 🟡 Item Type — Minecraft ids, checked at load
-- ⬜ Living Entity
+- 🟡 Living Entity — works as a function parameter type (no extra checks); no value of its own
 - ✅ Location — no yaw/pitch
-- ⬜ Loot Context
-- ⬜ Loot Table
-- ⬜ Metadata Holder
+- ⛔ Loot Context — only the loot generate event carries one; the API cannot build contexts
+- ⛔ Loot Table — only the loot generate event carries one; the API cannot build tables
+- 🟡 Metadata Holder — works as a function parameter type (no extra checks); no value of its own
 - ⬜ Minecraft Tag
 - ⛔ Money — needs an economy plugin (Vault)
-- ⬜ Moon Phase
-- ⬜ Nameable
-- ⬜ Node
+- ✅ Moon Phase — a named value: plain words or `"text" parsed as moon phase`; compares with text; usable as a function parameter type
+- 🟡 Nameable — works as a function parameter type (no extra checks); no value of its own
+- ⛔ Node — Carve has no config file or node reading
 - ✅ Number
 - ✅ Object
 - 🟡 Offline Player — stored players keep their UUID; no offline lookups
-- ⬜ Particle
-- ⬜ Pig Variant
+- ✅ Particle — a named value: plain words or `"text" parsed as particle`; compares with text; usable as a function parameter type
+- ✅ Pig Variant — a named value: plain words or `"text" parsed as pig variant`; compares with text; usable as a function parameter type
 - ✅ Player — by UUID handle
 - ⬜ Potion Effect
-- ⬜ Potion Effect Event Action
-- ⬜ Potion Effect Event Cause
-- ⬜ Potion Effect Type
-- ⬜ Potion Effect Type Category
-- ⬜ Projectile
-- ⬜ Quaternion
-- ⬜ Queue
-- ⬜ Quit Reason
+- ✅ Potion Effect Event Action — a named value: plain words or `"text" parsed as potion effect event action`; compares with text; usable as a function parameter type
+- ✅ Potion Effect Event Cause — a named value: plain words or `"text" parsed as potion effect event cause`; compares with text; usable as a function parameter type
+- ✅ Potion Effect Type — a named value: plain words or `"text" parsed as potion effect type`; compares with text; usable as a function parameter type
+- ✅ Potion Effect Type Category — a named value: plain words or `"text" parsed as potion effect type category`; compares with text; usable as a function parameter type
+- 🟡 Projectile — works as a function parameter type (no extra checks); no value of its own
+- ✅ Quaternion — `quaternion(w, x, y, z)`, `identity quaternion`; no rotation maths yet
+- ✅ Queue — `queue(a, b, ...)`; not saved in variables.json
+- ✅ Quit Reason — a named value: plain words or `"text" parsed as quit reason`; compares with text; usable as a function parameter type
 - ⛔ Region — needs WorldGuard
-- ⬜ Resource Pack State
-- ⬜ Respawn Reason
-- ⬜ Scalable Particle Effect
+- ✅ Resource Pack State — a named value: plain words or `"text" parsed as resource pack state`; compares with text; usable as a function parameter type
+- ✅ Respawn Reason — a named value: plain words or `"text" parsed as respawn reason`; compares with text; usable as a function parameter type
+- ✅ Scalable Particle Effect — a named value: plain words or `"text" parsed as scalable particle effect`; compares with text; usable as a function parameter type
 - 🟡 Script — through `/carve`
-- ⬜ Server Icon
-- ⬜ Slot
-- ⬜ Sound Category
-- ⬜ Spawn Reason
-- ⬜ Teleport Cause
-- ⬜ Teleport Flag
+- ⛔ Server Icon — the server status icon is not in the plugin API
+- 🟡 Slot — works as a function parameter type (no extra checks); no value of its own
+- ✅ Sound Category — a named value: plain words or `"text" parsed as sound category`; compares with text; usable as a function parameter type
+- ✅ Spawn Reason — a named value: plain words or `"text" parsed as spawn reason`; compares with text; usable as a function parameter type
+- ✅ Teleport Cause — a named value: plain words or `"text" parsed as teleport cause`; compares with text; usable as a function parameter type
+- ✅ Teleport Flag — a named value: plain words or `"text" parsed as teleport flag`; compares with text; usable as a function parameter type
 - ✅ Text
 - 🟡 Text Component — as markup text (see skbee-text); no separate type
 - 🟡 Time ⭐ — a number of ticks; `6:00` and `6 pm` literals; no separate time type
-- ⬜ Timeperiod
+- ✅ Timeperiod — `timeperiod(a, b)`
 - ✅ Timespan ⭐ — `5 minutes`, `1 hour and 30 seconds`, math, comparisons
-- ⬜ Transform Reason
-- ⬜ Tree Type
+- ✅ Transform Reason — a named value: plain words or `"text" parsed as transform reason`; compares with text; usable as a function parameter type
+- ✅ Tree Type — a named value: plain words or `"text" parsed as tree type`; compares with text; usable as a function parameter type
 - ⬜ Type
-- ⬜ Unleash Reason
+- ✅ Unleash Reason — a named value: plain words or `"text" parsed as unleash reason`; compares with text; usable as a function parameter type
 - ✅ UUID — `uuid of player`
-- ⬜ Vector
-- ⬜ Vehicle
-- ⬜ Villager Career Change Reason
-- ⬜ Villager Profession
-- ⬜ Villager Type
-- ⬜ Visual Effect
-- 🟡 Weather Type — plain text: clear, rain, thunder
-- ⬜ Wolf Variant
+- 🟡 Vector — vector values and `vector(x, y, z)` exist (expressions pages); usable as a parameter type
+- 🟡 Vehicle — works as a function parameter type (no extra checks); no value of its own
+- ✅ Villager Career Change Reason — a named value: plain words or `"text" parsed as villager career change reason`; compares with text; usable as a function parameter type
+- ✅ Villager Profession — a named value: plain words or `"text" parsed as villager profession`; compares with text; usable as a function parameter type
+- ✅ Villager Type — a named value: plain words or `"text" parsed as villager type`; compares with text; usable as a function parameter type
+- ✅ Visual Effect — a named value: plain words or `"text" parsed as visual effect`; compares with text; usable as a function parameter type
+- ✅ Weather Type — a named value: plain words or `"text" parsed as weather type`; compares with text; usable as a function parameter type
+- ✅ Wolf Variant — a named value: plain words or `"text" parsed as wolf variant`; compares with text; usable as a function parameter type
 - ✅ World
-- ⬜ World Border
-- ⬜ World Environment
-- ⬜ Zombie Nautilus Variant
+- ✅ World Border — `world border of <world>` as a value
+- ✅ World Environment — a named value: plain words or `"text" parsed as world environment`; compares with text; usable as a function parameter type
+- ✅ Zombie Nautilus Variant — a named value: plain words or `"text" parsed as zombie nautilus variant`; compares with text; usable as a function parameter type
 

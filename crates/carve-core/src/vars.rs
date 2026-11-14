@@ -66,7 +66,7 @@ impl Variables {
         let mut obj = Map::new();
         for (k, v) in &self.map {
             let j = match v {
-                Value::None | Value::List(_) | Value::Entity(_) => continue,
+                Value::None | Value::List(_) | Value::Entity(_) | Value::Queue(_) => continue,
                 Value::Num(n) => json!(n),
                 Value::Text(t) => json!(t),
                 Value::Bool(b) => json!(b),
@@ -84,6 +84,10 @@ impl Variables {
                 Value::Timespan { millis } => json!({"timespan": millis}),
                 Value::Nbt(c) => json!({"nbt": c.to_snbt()}),
                 Value::Vector { x, y, z } => json!({"vector": {"x": x, "y": y, "z": z}}),
+                other => match crate::types_1::to_json(other) {
+                    Some(j) => j,
+                    None => continue,
+                },
             };
             obj.insert(k.clone(), j);
         }
@@ -162,6 +166,9 @@ fn object_value(o: &Map<String, Json>) -> Option<Value> {
     }
     if let Some(ms) = o.get("timespan").and_then(Json::as_i64) {
         return Some(Value::Timespan { millis: ms });
+    }
+    if let Some(v) = crate::types_1::from_json(o) {
+        return Some(v);
     }
     o.get("world")
         .and_then(Json::as_str)

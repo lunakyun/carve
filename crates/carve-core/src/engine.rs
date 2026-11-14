@@ -1972,6 +1972,13 @@ impl Engine {
                 }
                 crate::w2_expressions_7::apply(n.op, &vals, host)?
             }
+            Expr::T1(n) => {
+                let mut vals = Vec::with_capacity(n.args.len());
+                for a in &n.args {
+                    vals.push(self.eval(a, ex, host)?);
+                }
+                crate::types_1::apply(&n.op, &vals)?
+            }
             Expr::Items(s) => Value::List(self.eval_list(s, ex, host)?),
             Expr::Ext(f, args) => self.eval_ext(*f, args, ex, host)?,
             Expr::W5(w) => self.eval_w5(w, ex, host)?,

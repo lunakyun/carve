@@ -56,6 +56,33 @@ pub enum Value {
     Nbt(Box<crate::skbee_nbt::Compound>),
     /// A non-player entity (mob, item, ...). Not saved in global variables.
     Entity(EntityRef),
+    /// A named value like `shift left` or `full moon` (see `types_1`).
+    Enum(crate::types_1::EnumVal),
+    Color {
+        r: u8,
+        g: u8,
+        b: u8,
+    },
+    Quaternion {
+        w: f64,
+        x: f64,
+        y: f64,
+        z: f64,
+    },
+    /// A span of the day, in ticks (0 is 6:00).
+    Timeperiod {
+        start: i64,
+        end: i64,
+    },
+    Chunk {
+        x: i32,
+        z: i32,
+        world: Option<String>,
+    },
+    /// First in, first out. Not stored in variables.
+    Queue(Vec<Value>),
+    /// The world border of the named world.
+    Border(String),
 }
 
 /// A handle to an entity. Looked up through the host on every use, so a
@@ -85,6 +112,7 @@ impl Value {
             Value::List(_) => "list",
             Value::Nbt(_) => "nbt compound",
             Value::Entity(_) => "entity",
+            v => crate::types_1::type_name(v),
         }
     }
 
@@ -150,7 +178,7 @@ impl Value {
             (Value::World(w), Value::Text(t)) | (Value::Text(t), Value::World(w)) => {
                 w.eq_ignore_ascii_case(t)
             }
-            _ => false,
+            _ => crate::types_1::loose_eq(self, other).unwrap_or(false),
         }
     }
 }
@@ -225,6 +253,15 @@ impl Value {
             }
             Value::Timespan { millis } => crate::timespans::push_span(out, *millis),
             Value::Nbt(c) => c.push_snbt(out),
+            Value::Enum(_)
+            | Value::Color { .. }
+            | Value::Quaternion { .. }
+            | Value::Timeperiod { .. }
+            | Value::Chunk { .. }
+            | Value::Queue(_)
+            | Value::Border(_) => {
+                crate::types_1::push_to(self, out);
+            }
             Value::List(items) => {
                 if items.is_empty() {
                     out.push_str("<none>");
