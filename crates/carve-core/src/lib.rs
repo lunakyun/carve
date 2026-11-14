@@ -7,6 +7,7 @@ pub mod compile;
 pub mod engine;
 pub mod error;
 pub mod expr;
+pub mod gamemode;
 pub mod host;
 pub mod items;
 pub mod lexer;

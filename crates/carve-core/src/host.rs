@@ -66,4 +66,15 @@ pub trait Host {
     fn health(&mut self, _player: &PlayerRef) -> Option<f64> {
         None
     }
+
+    /// Current game mode name (`survival`, `creative`, ...).
+    fn gamemode(&mut self, _player: &PlayerRef) -> Option<String> {
+        None
+    }
+
+    /// Set the game mode. `mode` is already a canonical name. The default runs
+    /// the vanilla `gamemode` command as the console.
+    fn set_gamemode(&mut self, player: &PlayerRef, mode: &str) {
+        self.execute_command(&format!("gamemode {mode} {}", player.name));
+    }
 }

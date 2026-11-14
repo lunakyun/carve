@@ -203,6 +203,7 @@ pub enum Effect {
     },
     Heal(Expr),
     SetHealth(Expr, Expr),
+    SetGamemode(Expr, Expr),
     Kill(Expr),
     Teleport(Expr, Expr, Expr, Expr),
     TeleportTo(Expr, Expr),
@@ -299,6 +300,7 @@ pub enum EffKind {
     Broadcast,
     Heal,
     SetHealth,
+    SetGamemode,
     Kill,
     Teleport,
     TeleportTo,
@@ -327,6 +329,8 @@ pub enum CondKind {
     Lt,
     HasPerm,
     NotHasPerm,
+    InGamemode,
+    NotInGamemode,
     Contains,
     NotContains,
     StartsWith,
@@ -410,12 +414,14 @@ fn registry() -> &'static Registry {
     static R: OnceLock<Registry> = OnceLock::new();
     R.get_or_init(|| Registry {
         // The pattern strings are constants covered by tests; a bad one is skipped.
-        effects: EFFECT_PATTERNS
+        effects: crate::gamemode::EFFECT_PATTERNS
             .iter()
+            .chain(EFFECT_PATTERNS)
             .filter_map(|(s, k)| Pattern::new(s, *k).ok())
             .collect(),
-        conditions: CONDITION_PATTERNS
+        conditions: crate::gamemode::CONDITION_PATTERNS
             .iter()
+            .chain(CONDITION_PATTERNS)
             .filter_map(|(s, k)| Pattern::new(s, *k).ok())
             .collect(),
     })
@@ -423,10 +429,10 @@ fn registry() -> &'static Registry {
 
 /// Checks every registered pattern compiles. Used by tests.
 pub fn check_registry() -> Result<(), String> {
-    for (s, k) in EFFECT_PATTERNS {
+    for (s, k) in crate::gamemode::EFFECT_PATTERNS.iter().chain(EFFECT_PATTERNS) {
         Pattern::new(s, *k)?;
     }
-    for (s, k) in CONDITION_PATTERNS {
+    for (s, k) in crate::gamemode::CONDITION_PATTERNS.iter().chain(CONDITION_PATTERNS) {
         Pattern::new(s, *k)?;
     }
     Ok(())
@@ -1115,6 +1121,11 @@ fn build_cond(kind: CondKind, mut c: Vec<Option<Capture>>) -> Cond {
         CondKind::Le => CmpOp::Le,
         CondKind::Gt => CmpOp::Gt,
         CondKind::Lt => CmpOp::Lt,
+        CondKind::InGamemode | CondKind::NotInGamemode => {
+            let op = if kind == CondKind::InGamemode { CmpOp::Eq } else { CmpOp::Ne };
+            let mode = Expr::Prop(crate::expr::Prop::Gamemode, Box::new(a));
+            return Cond::Cmp(mode, op, b);
+        }
         CondKind::HasPerm => {
             return Cond::HasPerm {
                 player: a,
@@ -1197,6 +1208,7 @@ fn build_effect(kind: EffKind, mut c: Vec<Option<Capture>>) -> Option<Effect> {
         EffKind::Broadcast => Effect::Broadcast(take_expr(c, 0)?),
         EffKind::Heal => Effect::Heal(take_expr(c, 0)?),
         EffKind::SetHealth => Effect::SetHealth(take_expr(c, 0)?, take_expr(c, 1)?),
+        EffKind::SetGamemode => Effect::SetGamemode(take_expr(c, 0)?, take_expr(c, 1)?),
         EffKind::Kill => Effect::Kill(take_expr(c, 0)?),
         EffKind::Teleport => Effect::Teleport(
             take_expr(c, 0)?,

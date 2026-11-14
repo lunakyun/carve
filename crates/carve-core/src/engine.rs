@@ -901,6 +901,10 @@ impl Engine {
                     count: 1,
                 },
             },
+            Prop::Gamemode => online(v, &mut ex.seen, host)
+                .and_then(|p| host.gamemode(&p))
+                .map(Value::Text)
+                .unwrap_or(Value::None),
             Prop::Health => online(v, &mut ex.seen, host)
                 .and_then(|p| host.health(&p))
                 .map(Value::Num)
@@ -1572,6 +1576,17 @@ impl Engine {
                 let n = self.num(n, ex, host)?;
                 if let Some(p) = self.player(p, ex, host)? {
                     host.set_health(&p, n.max(0.0));
+                }
+            }
+            Effect::SetGamemode(p, m) => {
+                let m = self.text(m, ex, host)?;
+                let Some(mode) = crate::gamemode::normalize(&m) else {
+                    return Err(format!(
+                        "'{m}' is not a game mode (survival, creative, adventure, spectator)"
+                    ));
+                };
+                if let Some(p) = self.player(p, ex, host)? {
+                    host.set_gamemode(&p, mode);
                 }
             }
             Effect::Kill(p) => {

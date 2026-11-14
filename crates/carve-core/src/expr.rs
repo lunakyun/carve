@@ -158,6 +158,7 @@ pub enum Prop {
     Name,
     Tool,
     Health,
+    Gamemode,
     X,
     Y,
     Z,
@@ -172,6 +173,7 @@ impl Prop {
             "name" | "display" => Prop::Name,
             "tool" | "held" => Prop::Tool,
             "health" => Prop::Health,
+            "gamemode" => Prop::Gamemode,
             "x" => Prop::X,
             "y" => Prop::Y,
             "z" => Prop::Z,
@@ -183,7 +185,7 @@ impl Prop {
         match self {
             Prop::Location => Ty::Location,
             Prop::World => Ty::World,
-            Prop::Uuid | Prop::Name => Ty::Text,
+            Prop::Uuid | Prop::Name | Prop::Gamemode => Ty::Text,
             Prop::Tool => Ty::Item,
             Prop::Health | Prop::X | Prop::Y | Prop::Z => Ty::Number,
         }
@@ -560,6 +562,14 @@ impl P<'_> {
                 let lw = w.to_ascii_lowercase();
                 match lw.as_str() {
                     "the" => self.primary(),
+                    _ if crate::gamemode::is_mode_word(&lw) => Ok(Expr::Text(vec![Part::Lit(lw)])),
+                    "game"
+                        if matches!(self.peek(), Some(t) if t.is_lit("mode"))
+                            && matches!(self.toks.get(self.pos + 1), Some(t) if t.is_lit("of")) =>
+                    {
+                        self.pos += 1;
+                        self.prop_of(Prop::Gamemode)
+                    }
                     "true" | "yes" => Ok(Expr::Bool(true)),
                     "false" | "no" => Ok(Expr::Bool(false)),
                     "player" if self.env.in_function => {
@@ -715,8 +725,8 @@ impl P<'_> {
                         }
                         Ok(Expr::Distance(Box::new(a), Box::new(b)))
                     }
-                    "location" | "position" | "world" | "uuid" | "tool" | "health" | "x" | "y" | "z"
-                    | "held"
+                    "location" | "position" | "world" | "uuid" | "tool" | "health" | "gamemode" | "x" | "y"
+                    | "z" | "held"
                         if matches!(self.peek(), Some(t) if t.is_lit("of") || t.is_lit("item")) =>
                     {
                         let prop = Prop::from_word(&lw).ok_or("unknown property")?;
