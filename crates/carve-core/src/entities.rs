@@ -659,7 +659,7 @@ impl Engine {
                 };
                 for _ in 0..n {
                     if let Some(e) = host.spawn_entity(kind, &pos) {
-                        ex.last_entity = Some(e);
+                        ex.last_entity = Some(Box::new(e));
                     }
                 }
             }
@@ -818,7 +818,7 @@ impl Engine {
     #[inline(never)]
     pub(crate) fn ent_expr(&mut self, e: &EntExpr, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
         Ok(match e {
-            EntExpr::LastSpawned => ex.last_entity.clone().map_or(Value::None, Value::Entity),
+            EntExpr::LastSpawned => ex.last_entity.as_deref().cloned().map_or(Value::None, Value::Entity),
             EntExpr::All { kind, radius, at } => {
                 let center = match at {
                     Some(a) => match self.ent_pos(a, ex, host)? {

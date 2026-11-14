@@ -236,7 +236,7 @@ pub(crate) struct Exec {
     /// Cleared at every wait, because a player can leave while a run waits.
     pub(crate) seen: Vec<(String, Option<String>)>,
     /// `last spawned entity`.
-    pub(crate) last_entity: Option<crate::value::EntityRef>,
+    pub(crate) last_entity: Option<Box<crate::value::EntityRef>>,
 }
 
 impl Exec {
