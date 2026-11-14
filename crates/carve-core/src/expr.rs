@@ -220,6 +220,8 @@ pub enum Expr {
     W6(Box<crate::w2_expressions_6::W6>),
     /// Vectors, server facts and other rare expressions (see `w2_expressions_7`).
     W7(Box<crate::w2_expressions_7::Node>),
+    /// Ray tracing, chunks and tags (see `w4_skbee_raytrace_world`).
+    Rtw(Box<crate::w4_skbee_raytrace_world::Node>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -448,6 +450,7 @@ impl Expr {
                 crate::skbee_recipes_advancements::SkbExpr::EventId => Ty::Text,
             },
             Expr::W7(n) => n.ty,
+            Expr::Rtw(n) => n.ty,
             Expr::Items(_) => Ty::List,
             Expr::Bound(b) => b.ty(),
             Expr::Sb(s) => s.ty(),
@@ -1634,6 +1637,9 @@ impl P<'_> {
                     return Ok(e);
                 }
                 if let Some(e) = self.w2e7_head(&lw)? {
+                    return Ok(e);
+                }
+                if let Some(e) = self.rtw_head(&lw)? {
                     return Ok(e);
                 }
                 if let Some(e) = self.w6_word(&lw)? {

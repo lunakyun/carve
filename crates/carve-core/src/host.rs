@@ -946,4 +946,31 @@ pub trait Host {
 
     /// Offer a resource pack. `id` is a UUID string that is the same for the same URL.
     fn send_resource_pack(&mut self, _player: &PlayerRef, _url: &str, _hash: &str, _id: &str) {}
+    // ---- ray tracing, worlds and chunks (`w4_skbee_raytrace_world`) ----
+
+    /// Cast a ray and report the first block and the first entity on it.
+    /// The default finds nothing.
+    fn ray_trace(&mut self, _req: &crate::w4_skbee_raytrace_world::RayReq) -> crate::w4_skbee_raytrace_world::RayRaw {
+        crate::w4_skbee_raytrace_world::RayRaw::default()
+    }
+
+    /// Create a world, or load it when it exists.
+    fn create_world(&mut self, _name: &str, _env: crate::w4_skbee_raytrace_world::Env) -> Result<(), String> {
+        Err("this server cannot create worlds".into())
+    }
+
+    /// Unload and save a world.
+    fn unload_world(&mut self, _name: &str) -> Result<(), String> {
+        Err("this server cannot unload worlds".into())
+    }
+
+    /// Is the world loaded? By default: is it in `world_names`.
+    fn world_loaded(&mut self, name: &str) -> bool {
+        self.world_names().iter().any(|w| w.eq_ignore_ascii_case(name))
+    }
+
+    /// Is the chunk loaded? `None`: unknown.
+    fn chunk_loaded(&mut self, _world: &str, _x: i32, _z: i32) -> Option<bool> {
+        None
+    }
 }

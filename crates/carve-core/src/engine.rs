@@ -1000,6 +1000,11 @@ impl Engine {
     }
 
     fn property(&mut self, prop: Prop, v: &Value, ex: &mut Exec, host: &mut dyn Host) -> Value {
+        if let Value::Chunk { world, .. } = v
+            && prop == Prop::World
+        {
+            return world.clone().or_else(|| host.default_world()).map_or(Value::None, Value::World);
+        }
         if let Value::Entity(e) = v
             && let Some(r) = self.entity_prop(prop, e, host)
         {
@@ -1323,6 +1328,14 @@ impl Engine {
                 Ok(is != *negate)
             }
             Cond::Rare3(r) => self.cond_w2(r, ex, host),
+            Cond::Rtw(r) => {
+                let a = self.eval(&r.a, ex, host)?;
+                let b = match &r.b {
+                    Some(b) => Some(self.eval(b, ex, host)?),
+                    None => None,
+                };
+                Ok(crate::w4_skbee_raytrace_world::check(r, &a, b.as_ref(), host))
+            }
             Cond::PlayerFlag { player, flag, negate } => {
                 let p = self.eval(player, ex, host)?;
                 let Some(p) = online(&p, &mut ex.seen, host) else {
@@ -1965,6 +1978,13 @@ impl Engine {
                 Value::Timespan { millis } => Value::Num(crate::timespans::span_part(millis, *unit, *total)),
                 _ => Value::None,
             },
+            Expr::Rtw(n) => {
+                let mut vals = Vec::with_capacity(n.args.len());
+                for a in &n.args {
+                    vals.push(self.eval(a, ex, host)?);
+                }
+                crate::w4_skbee_raytrace_world::apply(n.op, &vals, host)?
+            }
             Expr::W7(n) => {
                 let mut vals = Vec::with_capacity(n.args.len());
                 for a in &n.args {
@@ -2159,6 +2179,10 @@ impl Engine {
                 }
             }
             Effect::W2b(w) => self.run_w2b(w, ex, host)?,
+            Effect::Rtw(w) => {
+                let name = self.eval(&w.name, ex, host)?;
+                crate::w4_skbee_raytrace_world::run_effect(w, &name, host)?;
+            }
             Effect::Hf(h) => {
                 let amount = match &h.amount {
                     Some(a) => self.num(a, ex, host)?,

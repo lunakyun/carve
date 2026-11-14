@@ -60,6 +60,9 @@ impl Engine {
             W2Op::ChunkX | W2Op::ChunkZ => {
                 let Some(l) = arg(0) else { return Ok(Value::None) };
                 let l = self.eval(l, ex, host)?;
+                if let Value::Chunk { x, z, .. } = l {
+                    return Ok(Value::Num(f64::from(if w.op == W2Op::ChunkX { x } else { z })));
+                }
                 match self.as_location(&l, ex, host) {
                     Some((x, _, z, _)) => Value::Num(w2::chunk_of(if w.op == W2Op::ChunkX { x } else { z })),
                     None => Value::None,
