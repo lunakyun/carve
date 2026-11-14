@@ -78,6 +78,7 @@ fn main() {
     events.extend(scan_names(&src.join("w2_events_1.rs"), "ExtEvent::"));
     events.extend(carve_core::w2_events_2::SPECS.iter().map(|s| s.names[0].to_string()));
     events.extend(carve_core::w2_events_3::Ev3::all().map(|e| e.name().to_string()));
+    events.extend(carve_core::w4_events_movement::MvEvent::all().map(|e| e.name().to_string()));
     events.extend(scan_table_names(&src.join("w2_events_4.rs"), "ExtEvent::"));
     events.extend(carve_core::events_items::NAMES.split(", ").map(str::to_string));
     for name in events {

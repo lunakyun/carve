@@ -60,6 +60,7 @@ mod sb;
 mod w2_events_2;
 mod w2_expressions_3;
 mod w4;
+mod w4_events_movement;
 
 const SCRIPTS_DIR: &str = "scripts";
 const VARS_FILE: &str = "variables.json";
@@ -2772,6 +2773,12 @@ impl Plugin for Carve {
             engine.table().has_event(EventKind::Ext3(ev))
         });
         w2_events_4::register_all(&context);
+        w4_events_movement::register_all(
+            &context,
+            engine
+                .table()
+                .has_event(EventKind::Mv(carve_core::w4_events_movement::MvEvent::Move)),
+        );
         for r in [
             context.register_event_handler::<PlayerInteractEvent, _>(OnInteract, EventPriority::Normal, true),
             context.register_event_handler::<InventoryCloseEvent, _>(OnInvClose, EventPriority::Normal, true),

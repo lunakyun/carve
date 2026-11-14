@@ -57,6 +57,8 @@ pub enum EventKind {
     Ext3(crate::w2_events_3::Ev3),
     /// Events of `w2_events_4`.
     Ext4(crate::w2_events_4::ExtEvent),
+    /// Movement and command events of `w4_events_movement`.
+    Mv(crate::w4_events_movement::MvEvent),
 }
 
 impl EventKind {
@@ -95,6 +97,7 @@ impl EventKind {
             EventKind::Ext2(e) => crate::w2_events_2::spec(e).names[0],
             EventKind::Ext3(e) => e.name(),
             EventKind::Ext4(e) => e.name(),
+            EventKind::Mv(e) => e.name(),
         }
     }
 
@@ -135,7 +138,8 @@ impl EventKind {
                     .or_else(|| crate::w2_events_4::ExtEvent::parse(s).map(EventKind::Ext4))
                     .or_else(|| crate::w2_events_1::ExtEvent::parse(s).map(EventKind::Ext))
                     .or_else(|| crate::w2_events_2::parse(s).map(EventKind::Ext2))
-                    .or_else(|| crate::w2_events_3::Ev3::parse(s).map(EventKind::Ext3));
+                    .or_else(|| crate::w2_events_3::Ev3::parse(s).map(EventKind::Ext3))
+                    .or_else(|| crate::w4_events_movement::MvEvent::parse(s).map(EventKind::Mv));
             }
         })
     }
@@ -146,6 +150,7 @@ impl EventKind {
             EventKind::Ext(e) => e.cancellable(),
             EventKind::Ext2(e) => crate::w2_events_2::spec(e).cancel,
             EventKind::Ext4(e) => e.cancellable(),
+            EventKind::Mv(e) => e.cancellable(),
             _ => !matches!(
                 self,
                 EventKind::Respawn
@@ -2501,8 +2506,10 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
             lower.strip_prefix("on ")
         {
             let (ev, ev_filter) = crate::events_items::split_filter(ev.trim());
+            let (ev, cmd_filter) = crate::w4_events_movement::split_command_filter(ev);
             let (ev, mut filters) = split_click_filters(ev);
             filters.extend(ev_filter);
+            filters.extend(cmd_filter.map(|t| ("command", t)));
             let Some(k) = EventKind::parse(ev) else {
                 errors.push(ScriptError::new(
                         file,
@@ -2532,7 +2539,11 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                     || matches!(k, EventKind::Ext3(e) if !e.has_player()),
                 event_vals: crate::events_items::mask(k),
                 ext4: if let EventKind::Ext4(e) = k { Some(e) } else { None },
-                ev_fields: if let EventKind::Ext(e) = k { e.fields() } else { &[] },
+                ev_fields: match k {
+                    EventKind::Ext(e) => e.fields(),
+                    EventKind::Mv(e) => e.fields(),
+                    _ => &[],
+                },
                 has_damage: k == EventKind::Damage || matches!(k, EventKind::Ext3(e) if e.has_number()),
                 has_attacker: matches!(k, EventKind::Damage | EventKind::Death),
                 has_block: matches!(k, EventKind::Click | EventKind::RightClick | EventKind::LeftClick),
@@ -2714,6 +2725,12 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
         let mut guards = Vec::new();
         let mut header_ok = true;
         for (what, text) in std::mem::take(&mut click_filters) {
+            if what == "command" {
+                let (left, right) = crate::w4_events_movement::command_guard(&text);
+                let at = cx.emit(Instr::JumpIfNot(Cond::Cmp(left, CmpOp::Eq, right), usize::MAX), top.num);
+                guards.push(at);
+                continue;
+            }
             let item = if let Some(e) = crate::events_items::filter_rhs(what, &text) {
                 e
             } else if matches!(what, "entity" | "mode") {

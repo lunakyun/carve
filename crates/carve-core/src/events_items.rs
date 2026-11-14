@@ -132,6 +132,7 @@ pub fn filter_ok(k: EventKind, what: &str) -> bool {
         "with" | "on" => matches!(k, EventKind::Click | EventKind::RightClick | EventKind::LeftClick),
         "entity" => k == EventKind::MobSpawn,
         "mode" => k == EventKind::GamemodeChange,
+        "command" => k == EventKind::Mv(crate::w4_events_movement::MvEvent::Command),
         _ => false,
     }
 }

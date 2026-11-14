@@ -2535,6 +2535,25 @@ impl P<'_> {
         Ok(Some(Self::x2(W2Op::Offset(dx, dy, dz), vec![Expr::Num(n), loc])))
     }
 
+    /// `command`, `full command` and `past event-location` of the
+    /// movement events (`w4_events_movement`).
+    fn mv_value(&mut self, lw: &str) -> Result<Option<Expr>, String> {
+        let (field, used) = match lw {
+            "command" if !self.is_word(0, "sender") => ("event-command", 0),
+            "full" if self.is_word(0, "command") => ("event-full-command", 1),
+            "past" if self.is_word(0, "event-location") => ("event-past-location", 1),
+            "past" if self.is_word(0, "event-world") => ("event-past-world", 1),
+            _ => return Ok(None),
+        };
+        match crate::w2_events_1::field_index(self.env.ev_fields, field) {
+            Some((i, _)) => {
+                self.pos += used;
+                Ok(Some(Expr::ExtVal(i)))
+            }
+            None => Ok(None),
+        }
+    }
+
     /// `codepoint of`, `character from codepoint`, `characters between`,
     /// `difference between`, `chunk x of`, `compass target of`, `death message`,
     /// `damage cause` and `chat recipients`. `None` when the words do not fit.
@@ -2622,6 +2641,9 @@ impl P<'_> {
             "damage" if self.is_word(0, "cause") && self.env.has_damage && !self.env.in_function => {
                 self.pos += 1;
                 Ok(Some(Self::x2(W2Op::DamageCause, Vec::new())))
+            }
+            "command" | "full" | "past" if !self.env.in_function && !self.env.ev_fields.is_empty() => {
+                self.mv_value(lw)
             }
             "chat" if self.is_word(0, "recipients") && self.env.has_message && !self.env.in_function => {
                 self.pos += 1;
