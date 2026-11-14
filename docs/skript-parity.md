@@ -205,7 +205,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ On Quit — player still known until the first wait
 - ⬜ On Ready Arrow
 - ⬜ On Redstone
-- ⛔ On Region Enter/Leave — needs WorldGuard; no Pumpkin equivalent
+- 🟡 On Region Enter/Leave — Carve bounds: `on bound enter` and `on bound exit` (see syntax/skbee-bound.md); no WorldGuard regions
 - ⬜ On Resource Pack Request Response
 - ✅ On Respawn
 - ⬜ On Resurrect Attempt
@@ -519,7 +519,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Is Leashed
 - ⬜ Is Loaded
 - ⬜ Is Lootable
-- ⛔ Is Member/Owner of Region — needs WorldGuard
+- 🟡 Is Member/Owner of Region — `is an owner of bound`, `is a member of bound` (Carve bounds, not WorldGuard)
 - ⬜ Is Normalized
 - ⬜ Is Occluding
 - ⬜ Is of Type
@@ -575,7 +575,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Potion Effect - Is Ambient
 - ⬜ Potion Effect Type - Is Instant
 - ⬜ PvP
-- ⛔ Region Contains — needs WorldGuard
+- 🟡 Region Contains — `is within bound` (Carve bounds, not WorldGuard)
 - ⬜ Resource Pack
 - ⬜ Running Minecraft
 - ✅ Starts/Ends With
@@ -995,8 +995,8 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Reduce
 - ⬜ Reduced Value
 - ⛔ Region — needs WorldGuard
-- ⛔ Region Members & Owners — needs WorldGuard
-- ⛔ Regions At — needs WorldGuard
+- 🟡 Region Members & Owners — `owners of bound`, `members of bound` (Carve bounds, not WorldGuard)
+- 🟡 Regions At — `bounds at <location>` (Carve bounds, not WorldGuard)
 - ⬜ Remaining Air
 - ⬜ Repeat String
 - ⬜ Resolve Text Component

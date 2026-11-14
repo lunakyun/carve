@@ -40,6 +40,7 @@ mod inv;
 
 const SCRIPTS_DIR: &str = "scripts";
 const VARS_FILE: &str = "variables.json";
+const BOUNDS_FILE: &str = "bounds.json";
 const ADMIN_PERM: &str = "carve:admin";
 const COMMAND_PERM: &str = "carve:command";
 
@@ -721,12 +722,12 @@ impl State {
         format!("{}/{SCRIPTS_DIR}", self.data_dir)
     }
 
-    fn vars_path(&self) -> String {
-        format!("{}/{VARS_FILE}", self.data_dir)
+    fn save(&self, json: &str) {
+        self.save_to(VARS_FILE, json);
     }
 
-    fn save(&self, json: &str) {
-        let path = self.vars_path();
+    fn save_to(&self, file: &str, json: &str) {
+        let path = format!("{}/{file}", self.data_dir);
         let tmp = format!("{path}.tmp");
         let r = std::fs::write(&tmp, json).and_then(|()| std::fs::rename(&tmp, &path));
         if let Err(e) = r {
@@ -1266,7 +1267,7 @@ fn tick(server: Server) {
             };
             st.engine.resume(tok, &mut th);
         }
-        if st.engine.table().has_every() {
+        if st.engine.table().has_every() || st.engine.bounds_wanted() {
             let mut th = TickHost {
                 inner: host,
                 hs: &mut st.hs,
@@ -1275,6 +1276,9 @@ fn tick(server: Server) {
         }
         if let Some(json) = st.engine.save_due(now * 50) {
             st.save(&json);
+        }
+        if let Some(json) = st.engine.bounds.save_due(now * 50) {
+            st.save_to(BOUNDS_FILE, &json);
         }
     });
 }
@@ -1333,6 +1337,17 @@ impl Plugin for Carve {
             Err(_) => Variables::default(),
         };
         let mut engine = Engine::new(vars);
+        let bounds_path = format!("{data_dir}/{BOUNDS_FILE}");
+        if let Ok(s) = std::fs::read_to_string(&bounds_path) {
+            match carve_core::skbee_bound::Bounds::from_json(&s) {
+                Ok(b) => engine.bounds = b,
+                Err(e) => {
+                    let backup = format!("{bounds_path}.broken");
+                    let _ = std::fs::rename(&bounds_path, &backup);
+                    plog(ApiLevel::Error, &format!("{e}; starting with no bounds, old file moved to {backup}"));
+                }
+            }
+        }
         let files = read_scripts(&scripts).unwrap_or_else(|e| {
             plog(ApiLevel::Error, &e);
             Vec::new()
@@ -1517,6 +1532,12 @@ impl Plugin for Carve {
             && let Some(json) = st.engine.save_now()
         {
             st.save(&json);
+        }
+        if let Ok(mut g) = STATE.try_lock()
+            && let Some(st) = g.as_mut()
+            && let Some(json) = st.engine.bounds.save_now()
+        {
+            st.save_to(BOUNDS_FILE, &json);
         }
         Ok(())
     }

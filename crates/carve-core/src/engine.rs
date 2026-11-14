@@ -359,6 +359,8 @@ pub struct Engine {
     pub errors: Vec<ScriptError>,
     /// Per-trigger run times while `/carve timings on`.
     pub timings: Option<BTreeMap<String, Timing>>,
+    /// SkBee-style bounds (see `skbee_bound`).
+    pub bounds: crate::skbee_bound::Bounds,
 }
 
 impl Default for Engine {
@@ -446,6 +448,7 @@ impl Engine {
             sources: BTreeMap::new(),
             errors: Vec::new(),
             timings: None,
+            bounds: crate::skbee_bound::Bounds::default(),
         }
     }
 
@@ -632,6 +635,9 @@ impl Engine {
     /// Call once per server tick with a counter that goes up by one. Runs the
     /// `every ...:` triggers that are due.
     pub fn tick(&mut self, tick: u64, host: &mut dyn Host) {
+        if tick.is_multiple_of(crate::skbee_bound::POLL_TICKS) && self.bounds_wanted() {
+            self.bounds_poll(host);
+        }
         if self.table.every.is_empty() {
             return;
         }
@@ -1187,6 +1193,7 @@ impl Engine {
             }
             Cond::World(w) => self.world_cond(w, ex, host),
             Cond::Block(b) => self.block_cond(b, ex, host),
+            Cond::Bound(b) => self.bound_cond(b, ex, host),
             Cond::HasPerm { player, node, negate } => {
                 let p = self.eval(player, ex, host)?;
                 let node = self.text(node, ex, host)?;
@@ -1624,6 +1631,7 @@ impl Engine {
             },
             Expr::WorldNamed(n) => Value::World(self.text(n, ex, host)?),
             Expr::Blk(b) => self.block_eval(b, ex, host)?,
+            Expr::Bound(b) => self.bound_eval(b, ex, host)?,
             Expr::Loc(x, y, z, w) => {
                 let (x, y, z) = (
                     self.num(x, ex, host)?,
@@ -2057,6 +2065,7 @@ impl Engine {
             Effect::World(w) => self.world_effect(w, ex, host)?,
             Effect::Block(b) => self.block_effect(b, ex, host)?,
             Effect::Inv(i) => self.inv_effect(i, ex, host)?,
+            Effect::Bound(b) => self.bound_effect(b, ex, host)?,
             Effect::Cancel => {
                 if ex.waited {
                     host.log(

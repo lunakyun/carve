@@ -41,6 +41,10 @@ pub enum EventKind {
     /// A player clicks a slot in an open inventory.
     InventoryClick,
     InventoryClose,
+    /// A player walks into a bound.
+    BoundEnter,
+    /// A player walks out of a bound.
+    BoundExit,
 }
 
 impl EventKind {
@@ -71,6 +75,8 @@ impl EventKind {
             EventKind::LevelChange => "level change",
             EventKind::InventoryClick => "inventory click",
             EventKind::InventoryClose => "inventory close",
+            EventKind::BoundEnter => "bound enter",
+            EventKind::BoundExit => "bound exit",
         }
     }
 
@@ -98,7 +104,7 @@ impl EventKind {
             "flight toggle" | "toggle flight" | "player toggle flight" => EventKind::FlightToggle,
             "inventory click" | "inventory clicking" | "inventory click event" => EventKind::InventoryClick,
             "inventory close" | "inventory closing" | "inventory close event" => EventKind::InventoryClose,
-            _ => return crate::events_items::parse_kind(s),
+            _ => return crate::events_items::parse_kind(s).or_else(|| crate::skbee_bound::parse_event(s)),
         })
     }
 
@@ -106,7 +112,12 @@ impl EventKind {
     pub fn cancellable(self) -> bool {
         !matches!(
             self,
-            EventKind::Respawn | EventKind::Load | EventKind::LevelChange | EventKind::InventoryClose
+            EventKind::Respawn
+            | EventKind::Load
+            | EventKind::LevelChange
+            | EventKind::InventoryClose
+            | EventKind::BoundEnter
+            | EventKind::BoundExit
         )
     }
 }
@@ -231,6 +242,8 @@ pub enum Cond {
     World(Box<crate::world_effects::WorldCond>),
     /// `block at loc is stone`.
     Block(Box<crate::block_ops::BlockCond>),
+    /// Bound conditions (`is within bound`, `bound exists`, ...).
+    Bound(Box<crate::skbee_bound::BoundCond>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -312,6 +325,8 @@ pub enum Effect {
     Block(Box<crate::block_ops::BlockFx>),
     /// Chest menus, slots, clear, add and remove items.
     Inv(Box<crate::inventories::InvEff>),
+    /// Create, delete and change bounds.
+    Bound(Box<crate::skbee_bound::BoundEff>),
 }
 
 /// What a `loop` goes over.
@@ -1123,6 +1138,9 @@ impl Cx<'_> {
         if let Some(c) = crate::block_ops::parse_cond(toks, &self.env) {
             return Some(c);
         }
+        if let Some(c) = crate::skbee_bound::parse_cond(toks, &self.env) {
+            return Some(c);
+        }
         let mut memo = Memo::default();
         registry()
             .conditions
@@ -1289,6 +1307,17 @@ impl Cx<'_> {
             }
         }
         match crate::world_effects::parse_effect(&toks, &self.env) {
+            Ok(Some(eff)) => {
+                self.emit(Instr::Eff(eff), num);
+                return;
+            }
+            Ok(None) => {}
+            Err(msg) => {
+                self.err(num, msg);
+                return;
+            }
+        }
+        match crate::skbee_bound::parse_effect(&toks, &self.env) {
             Ok(Some(eff)) => {
                 self.emit(Instr::Eff(eff), num);
                 return;
@@ -2085,7 +2114,7 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                         file,
                         top.num,
                         format!(
-                            "unknown event '{ev}', known: join, quit, chat, break, place, death, damage, respawn, click, right click, left click, inventory click, inventory close, sneak toggle, sprint toggle, flight toggle, load, {} (and 'every N seconds:')",
+                            "unknown event '{ev}', known: join, quit, chat, break, place, death, damage, respawn, click, right click, left click, inventory click, inventory close, sneak toggle, sprint toggle, flight toggle, bound enter, bound exit, load, {} (and 'every N seconds:')",
                             crate::events_items::NAMES
                         ),
                     ));
@@ -2109,6 +2138,7 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                 has_attacker: matches!(k, EventKind::Damage | EventKind::Death),
                 has_block: matches!(k, EventKind::Click | EventKind::RightClick | EventKind::LeftClick),
                 has_inv: k == EventKind::InventoryClick,
+                has_bound: matches!(k, EventKind::BoundEnter | EventKind::BoundExit),
                 ..Env::default()
             };
             click_filters.extend(filters);
