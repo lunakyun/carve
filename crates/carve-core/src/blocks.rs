@@ -26,7 +26,8 @@ enum Unit {
     Spaces(usize),
 }
 
-pub fn parse_blocks(file: &str, src: &str) -> Result<Vec<Line>, Vec<ScriptError>> {
+/// The line tree and the errors of the lines that were left out.
+pub fn parse_blocks(file: &str, src: &str) -> (Vec<Line>, Vec<ScriptError>) {
     let mut errors = Vec::new();
     let mut unit: Option<Unit> = None;
     let mut flat: Vec<(usize, usize, String)> = Vec::new(); // level, line, text
@@ -89,10 +90,12 @@ pub fn parse_blocks(file: &str, src: &str) -> Result<Vec<Line>, Vec<ScriptError>
         flat.push((level, num, text));
     }
 
-    let mut prev: Option<&(usize, usize, String)> = None;
-    for item in &flat {
-        let (level, num, _) = item;
-        let allowed = match prev {
+    // Like Skript: a badly indented line or an empty section is reported and
+    // left out; everything else still loads.
+    let mut kept: Vec<(usize, usize, String)> = Vec::with_capacity(flat.len());
+    for item in flat {
+        let (level, num, _) = &item;
+        let allowed = match kept.last() {
             None => 0,
             Some((pl, _, pt)) => {
                 if pt.ends_with(':') {
@@ -108,8 +111,9 @@ pub fn parse_blocks(file: &str, src: &str) -> Result<Vec<Line>, Vec<ScriptError>
                 *num,
                 "unexpected indentation (the line above does not end with ':')",
             ));
+            continue;
         }
-        if let Some((pl, pn, pt)) = prev
+        if let Some((pl, pn, pt)) = kept.last()
             && opens(pt)
             && *level <= *pl
         {
@@ -118,10 +122,11 @@ pub fn parse_blocks(file: &str, src: &str) -> Result<Vec<Line>, Vec<ScriptError>
                 *pn,
                 "empty block: nothing is indented under this line",
             ));
+            kept.pop();
         }
-        prev = Some(item);
+        kept.push(item);
     }
-    if let Some((_, pn, pt)) = prev
+    if let Some((_, pn, pt)) = kept.last()
         && opens(pt)
     {
         errors.push(ScriptError::new(
@@ -129,12 +134,10 @@ pub fn parse_blocks(file: &str, src: &str) -> Result<Vec<Line>, Vec<ScriptError>
             *pn,
             "empty block: nothing is indented under this line",
         ));
-    }
-    if !errors.is_empty() {
-        return Err(errors);
+        kept.pop();
     }
     let mut i = 0;
-    Ok(build(&flat, &mut i, 0))
+    (build(&kept, &mut i, 0), errors)
 }
 
 /// A line that must have an indented block. `key: value:` (an option whose

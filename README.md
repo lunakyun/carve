@@ -42,7 +42,7 @@ command /heal [<player>]:
 - **`wait`** in ticks or seconds, without blocking the server, also inside
   loops and functions.
 - **Clear errors** with file, line and "did you mean" suggestions.
-- **Safe reloads:** if a script has an error, the old scripts keep running.
+- **Skript-style loading:** a broken line or trigger is reported and skipped; the rest of the script still loads.
 - **Fast:** players are looked up once per run, and constants are worked out
   at load time. See [performance](docs/performance.md).
 
@@ -115,7 +115,7 @@ the `carve:` nodes used in commands when it loads, so a node added later needs
 a restart. See [permissions](docs/commands.md#permissions).
 
 **Does a broken script crash the server?**
-No. Load errors skip the broken file (or, on reload, keep the old scripts).
+No. Load errors skip only the broken line, section or trigger, like Skript.
 Runtime errors stop only that run and are logged with the file and line.
 
 ## Roadmap

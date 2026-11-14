@@ -31,9 +31,10 @@ fn is_structure(text: &str) -> bool {
 
 /// Take `variables:`, `aliases:` and `using ...` out of the top level, and
 /// apply the aliases to the rest.
-pub fn extract(file: &str, tree: Vec<Line>) -> Result<(Vec<Line>, FileStructs), Vec<ScriptError>> {
+/// Broken entries are reported and left out; the rest is kept.
+pub fn extract(file: &str, tree: Vec<Line>) -> (Vec<Line>, FileStructs, Vec<ScriptError>) {
     if !tree.iter().any(|t| is_structure(&t.text)) {
-        return Ok((tree, FileStructs::default()));
+        return (tree, FileStructs::default(), Vec::new());
     }
     let mut errors = Vec::new();
     let mut aliases: Vec<(String, String)> = Vec::new();
@@ -107,11 +108,7 @@ pub fn extract(file: &str, tree: Vec<Line>) -> Result<(Vec<Line>, FileStructs), 
             }
         }
     }
-    if errors.is_empty() {
-        Ok((rest, fs))
-    } else {
-        Err(errors)
-    }
+    (rest, fs, errors)
 }
 
 fn is_word_char(c: char) -> bool {
@@ -438,7 +435,7 @@ pub(crate) fn inline_if(cx: &mut Cx, line: &Line) -> bool {
         patch(cx, skip, at + 1);
         cx.emit(Instr::Jump(usize::MAX), num)
     });
-    if !cx.control(num, &eff.to_ascii_lowercase()) {
+    if !cx.control(num, eff, &eff.to_ascii_lowercase()) {
         cx.effect(num, eff);
     }
     let end = cx.code.len();

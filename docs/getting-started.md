@@ -45,7 +45,8 @@ Run `/carve reload` (or `/cv reload`) in the console or in game. You need the
 `carve:admin` permission, which ops (level 2) have by default. You should see:
 
 ```
-Reloaded 1 script(s), 1 trigger(s).
+[Carve] Reloading all scripts...
+[Carve] Successfully reloaded all scripts. (3ms)
 ```
 
 Rejoin the server, and the message shows up.
@@ -92,12 +93,15 @@ try `/hello` and `/hello <name>`. From then on, changes to the code under
 If a script has a mistake, the reload tells you where:
 
 ```
-1 error(s), old scripts kept:
-hello.carve:2: can't understand this effect: 'sned "Hi"' (did you mean: send %text% [to %player%] | ...)
+[Carve] Line 2: (hello.carve)
+    Can't understand this effect: 'sned "Hi"'
+    Line: sned "Hi"
+    Did you mean: send %text% [to %player%] | ...
+[Carve] Encountered 1 error while reloading all scripts! (3ms)
 ```
 
-Your old scripts keep running until the new ones load without errors. See
-[errors](errors.md) for more.
+Like Skript, the broken line is skipped and everything else loads. Fix it and
+reload again. See [errors](errors.md) for more.
 
 ### Troubleshooting
 

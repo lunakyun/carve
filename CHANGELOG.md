@@ -7,6 +7,19 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Changed
+
+- Loading works like Skript: a broken line is reported and skipped, a broken
+  `if`/`loop`/`while` skips its block, a broken trigger header skips that
+  trigger, and the rest of the file loads. `/carve reload` replaces the old
+  version with the new one, errors and all (it no longer keeps the old
+  version). Calls to a function that failed to load are errors at the call.
+- Load and reload messages follow Skript: `Reloading x...`, errors as
+  `Line 9: (x.carve)` / message / `Line: ...`, then `Successfully reloaded x.`
+  or `Encountered 1 error while reloading x!`, with the time. Unknown names
+  give `Can't find the script 'x'.` and match in any case. Server start logs
+  `Loaded N scripts with a total of M structures in S seconds`.
+
 ### Added (v2)
 
 - Loops: `loop N times`, `loop {list::*}`, `loop all players`, `loop a, b
@@ -79,8 +92,7 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   text templates with `%...%`, and variables.
 - Global variables saved to `variables.json`, local `{_variables}`, and
   `{list::*}` delete.
-- Load errors with file, line and "did you mean" suggestions. All-or-nothing
-  `/carve reload`.
+- Load errors with file, line and "did you mean" suggestions.
 - Runaway guard: 100,000 instructions per run slice.
 - Docs in `docs/`, example scripts in `examples/`, and a benchmark
   (`cargo run --release -p carve-core --example bench`).

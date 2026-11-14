@@ -347,6 +347,8 @@ pub struct Sig {
     /// (local variable key like `_name`, type, has a default value)
     pub params: Vec<(String, Ty, bool)>,
     pub ret: Option<Ty>,
+    /// Its header failed to load: calls to it are errors where they are.
+    pub failed: bool,
 }
 
 /// What a loop goes over. Decides the type of `loop-value`.
@@ -3090,6 +3092,9 @@ impl P<'_> {
         else {
             return Err(format!("unknown function '{name}'"));
         };
+        if env.functions.get(id).is_some_and(|s| s.failed) {
+            return Err(format!("the function '{name}' failed to load (see its errors)"));
+        }
         self.pos += 1; // (
         let mut args = Vec::new();
         if !self.eat_sym(")") {

@@ -151,23 +151,23 @@ fn help_shows_only_allowed_subcommands() {
 fn reload_all_and_one_file() {
     let mut t = T::new(&[("a.carve", A), ("b.carve", B)]);
     let out = t.run("reload");
-    assert!(out.contains("Reloaded 2 script(s), 2 trigger(s) in"), "{out}");
-    // one broken file: only that file is rejected, old version kept
+    assert!(out.contains("Reloading all scripts...") && out.contains("Successfully reloaded &fall scripts"), "{out}");
+    // one broken line: reported, the rest of the new version loads (Skript)
     t.store
         .files
-        .insert("a.carve".into(), "on join:\n    blorp\n".into());
+        .insert("a.carve".into(), "on join:\n    blorp\n    broadcast \"a1\"\n".into());
     let out = t.run("reload a");
     assert!(
-        out.contains("a.carve: 1 error(s), its old version is kept"),
+        out.contains("Encountered &f1 &cerror while reloading &fa.carve&c!"),
         "{out}"
     );
     assert!(
-        out.contains("a.carve:2:") && out.contains("did you mean"),
+        out.contains("Line 2: &c(a.carve)") && out.contains("Did you mean") && out.contains("&7Line: blorp"),
         "{out}"
     );
     t.engine.fire(EventKind::Join, EventCtx::console(), &mut t.host);
-    assert_eq!(t.host.calls, ["broadcast a"]);
-    assert!(t.run("errors").contains("a.carve:2"));
+    assert_eq!(t.host.calls, ["broadcast a1"]);
+    assert!(t.run("errors").contains("Line 2: &c(a.carve)"));
     assert!(t.run("errors b").contains("No errors"));
     // fixed: reload just that file
     t.store
@@ -175,9 +175,9 @@ fn reload_all_and_one_file() {
         .insert("a.carve".into(), "on join:\n    broadcast \"a2\"\n".into());
     assert!(
         t.run("reload a.carve")
-            .contains("Reloaded a.carve (1 trigger(s))")
+            .contains("Successfully reloaded &fa.carve")
     );
-    assert!(t.run("reload zzz").contains("No script named zzz.carve"));
+    assert!(t.run("reload zzz").contains("Can't find the script &f'zzz'"));
 }
 
 #[test]
@@ -202,11 +202,11 @@ fn enable_disable_list() {
             && out.contains("old.carve"),
         "{out}"
     );
-    assert!(t.run("enable old").contains("Enabled old.carve"));
+    assert!(t.run("enable old").contains("Successfully enabled and loaded &fold.carve"));
     assert!(t.store.files.contains_key("old.carve"));
     t.engine.fire(EventKind::Join, EventCtx::console(), &mut t.host);
     assert_eq!(t.host.calls, ["broadcast a", "broadcast old"]);
-    assert!(t.run("disable a").contains("Disabled a.carve"));
+    assert!(t.run("disable a").contains("Successfully disabled &fa.carve"));
     assert!(t.store.files.contains_key("-a.carve"));
     t.host.calls.clear();
     t.engine.fire(EventKind::Join, EventCtx::console(), &mut t.host);
@@ -214,21 +214,25 @@ fn enable_disable_list() {
     assert!(t.run("disable a").contains("already disabled"));
     assert!(t.run("list disabled").contains("a.carve") && !t.run("list disabled").contains("old.carve"));
     let out = t.run("disable all");
-    assert!(out.contains("Disabled 1 script(s)"), "{out}");
-    assert!(t.run("enable all").contains("Enabled 2 script(s)"));
+    assert!(out.contains("Successfully disabled &fall scripts"), "{out}");
+    assert!(t.run("enable all").contains("Successfully enabled and loaded &fall scripts"));
 }
 
 #[test]
-fn disable_refused_when_others_need_it() {
+fn disable_reports_errors_it_causes_elsewhere() {
     let mut t = T::new(&[("b.carve", B), ("c.carve", USES_B)]);
     let out = t.run("disable b");
-    assert!(out.contains("Can't disable b.carve"), "{out}");
-    assert!(t.store.files.contains_key("b.carve"), "renamed back");
+    // Like Skript: the script is disabled; the broken call in c is reported.
+    assert!(
+        out.contains("Line 2: &c(c.carve)") && out.contains("Encountered &f1 &cerror while disabling &fb.carve"),
+        "{out}"
+    );
+    assert!(t.store.files.contains_key("-b.carve"));
     let out = t
         .run_as(Recipient::Console, &[], "enable nothere")
         .lines
         .join("\n");
-    assert!(out.contains("No script named"));
+    assert!(out.contains("Can't find the script &f'nothere'"));
 }
 
 #[test]
@@ -250,7 +254,7 @@ fn info_general_and_per_script() {
         out.contains("command /bb") && out.contains("twice(n: number) :: number") && out.contains("p: x"),
         "{out}"
     );
-    assert!(t.run("info zz").contains("not loaded"));
+    assert!(t.run("info zz").contains("Can't find the script"));
 }
 
 #[test]
@@ -294,7 +298,7 @@ fn run_one_line() {
     assert_eq!(t.host.calls.last().unwrap(), "send Steve you are Steve");
     let out = t.run("run brodcast \"x\"");
     assert!(
-        out.contains("can't understand") && out.contains("did you mean"),
+        out.contains("Can't understand") && out.contains("Did you mean"),
         "{out}"
     );
 }

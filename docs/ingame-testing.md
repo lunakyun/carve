@@ -50,7 +50,7 @@ another folder or binary.
 subtitles, action bars, `wait`, `cancel event` after a wait, commands with
 arguments, permissions (op allowed, non-op denied), health and heal,
 teleport, console commands, global variables across `/carve reload` and
-across a restart, a broken reload keeping the old scripts, the restart notice
+across a restart, a broken reload loading everything but the broken lines, the restart notice
 for new commands, and the runaway guard.
 
 **v2:**

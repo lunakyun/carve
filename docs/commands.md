@@ -109,8 +109,8 @@ You don't have permission to use this command.
 ```
 
 `/carve reload` needs `carve:admin` (op level 2 by default). It reads every
-script again. If any file has an error, nothing changes: the old scripts stay
-active and the errors are shown to you and written to the log.
+script again. Like Skript, broken lines and triggers are skipped and the rest
+loads; the errors are shown to you and written to the log.
 
 **New commands need a restart.** Pumpkin lets a plugin register commands only
 while it loads, and it can't remove them. So after a reload:

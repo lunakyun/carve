@@ -291,7 +291,7 @@ fn structural_errors() {
     assert!(
         errors_of("on join:\n    else:\n        send \"x\"\n")[0]
             .msg
-            .contains("without an 'if'")
+            .contains("has to be placed just after another 'if'")
     );
     assert!(
         errors_of("on join:\n    send message\n")[0]
@@ -696,20 +696,22 @@ command /echo [<text>]:
 }
 
 #[test]
-fn reload_keeps_old_scripts_on_error() {
+fn reload_replaces_with_partial_version() {
     let mut e = engine("on join:\n    send \"v1\"\n");
     let mut h = Mock::with_steve();
     let bad = [
         ("a.carve".to_string(), "on join:\n    send \"v2\"\n".to_string()),
         ("b.carve".into(), "on join:\n    oops\n".into()),
     ];
-    let errs = e.reload(&bad).unwrap_err();
+    let (_, errs) = e.reload(&bad);
     assert_eq!(errs.len(), 1);
     assert_eq!((errs[0].file.as_str(), errs[0].line), ("b.carve", 2));
+    // Like Skript: the new version is live, the broken line is left out.
     e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
-    assert_eq!(h.take(), ["send Steve v1"]);
+    assert_eq!(h.take(), ["send Steve v2"]);
     let good = [("a.carve".to_string(), "on join:\n    send \"v2\"\n".to_string())];
-    let sum = e.reload(&good).unwrap();
+    let (sum, errs) = e.reload(&good);
+    assert!(errs.is_empty());
     assert_eq!((sum.files, sum.triggers), (1, 1));
     e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
     assert_eq!(h.take(), ["send Steve v2"]);
@@ -720,8 +722,8 @@ fn in_flight_wait_finishes_on_old_code() {
     let mut e = engine("on join:\n    wait 1 tick\n    send \"old\"\n");
     let mut h = Mock::with_steve();
     e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
-    e.reload(&[("t.carve".into(), "on join:\n    send \"new\"\n".into())])
-        .unwrap();
+    let (_, errs) = e.reload(&[("t.carve".into(), "on join:\n    send \"new\"\n".into())]);
+    assert!(errs.is_empty());
     let tok = h.waits[0].1;
     e.resume(tok, &mut h);
     assert_eq!(h.take(), ["send Steve old"]);
@@ -735,7 +737,7 @@ fn initial_load_is_partial() {
         ("bad.carve".into(), "on join:\n    nope\n".into()),
     ];
     let (sum, errs) = e.load(&files);
-    assert_eq!(sum.files, 1);
+    assert_eq!(sum.files, 2);
     assert_eq!(errs.len(), 1);
     let dup = [
         (
@@ -747,7 +749,7 @@ fn initial_load_is_partial() {
             "command /x:\n    trigger:\n        send \"b\"\n".into(),
         ),
     ];
-    assert!(e.reload(&dup).unwrap_err()[0].msg.contains("defined twice"));
+    assert!(e.reload(&dup).1[0].msg.contains("defined twice"));
 }
 
 #[test]
@@ -1432,18 +1434,16 @@ fn function_errors_at_load() {
 }
 
 #[test]
-fn reload_with_broken_function_keeps_old_scripts() {
+fn reload_with_broken_function_line_loads_the_rest() {
     let mut e = engine("function f() :: text:\n    return \"v1\"\non join:\n    send \"%f()%\"\n");
-    assert!(
-        e.reload(&[(
-            "t.carve".into(),
-            "function f() :: text:\n    return 5 +\non join:\n    send \"%f()%\"\n".into()
-        )])
-        .is_err()
-    );
+    let (_, errs) = e.reload(&[(
+        "t.carve".into(),
+        "function f() :: text:\n    return 5 +\n    return \"v2\"\non join:\n    send \"%f()%\"\n".into(),
+    )]);
+    assert_eq!(errs.len(), 1, "{errs:?}");
     let mut h = Mock::with_steve();
     e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
-    assert_eq!(h.take(), ["send Steve v1"]);
+    assert_eq!(h.take(), ["send Steve v2"]);
 }
 
 // ---------- v2: items, locations, worlds ----------
