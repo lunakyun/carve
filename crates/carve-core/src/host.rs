@@ -399,6 +399,44 @@ pub trait Host {
 
     /// Remove the player's sidebar board.
     fn board_clear(&mut self, _player: &PlayerRef) {}
+    // ---- recipes, advancements, statistics ----
+
+    /// Grant or revoke an advancement (or one criterion). The default runs the
+    /// `advancement` console command.
+    fn advancement(&mut self, player: &PlayerRef, id: &str, criterion: Option<&str>, grant: bool) -> bool {
+        let verb = if grant { "grant" } else { "revoke" };
+        match criterion {
+            Some(c) => self.execute_command(&format!("advancement {verb} {} only {id} {c}", player.name)),
+            None => self.execute_command(&format!("advancement {verb} {} only {id}", player.name)),
+        }
+        true
+    }
+
+    fn has_advancement(&mut self, _player: &PlayerRef, _id: &str) -> bool {
+        false
+    }
+
+    /// Register a custom recipe.
+    fn register_recipe(&mut self, _recipe: &crate::skbee_recipes_advancements::RecipeDef) -> Result<(), String> {
+        Err("custom recipes are not supported on this server".into())
+    }
+
+    /// Unlock (`true`) or lock a recipe in the recipe book. The default runs
+    /// the `recipe give` / `recipe take` console command.
+    fn discover_recipe(&mut self, player: &PlayerRef, id: &str, discover: bool) {
+        let verb = if discover { "give" } else { "take" };
+        self.execute_command(&format!("recipe {verb} {} {id}", player.name));
+    }
+
+    /// A statistic value. `category` is one of `STAT_CATEGORIES`; `name` has no namespace.
+    fn statistic(&mut self, _player: &PlayerRef, _category: &str, _name: &str) -> Option<i64> {
+        None
+    }
+
+    fn set_statistic(&mut self, _player: &PlayerRef, _category: &str, _name: &str, _value: i64) -> bool {
+        self.log(LogLevel::Warn, "statistics are not supported on this server");
+        false
+    }
 
     /// Set the player on fire for this many ticks; 0 puts the fire out.
     fn set_fire(&mut self, _player: &PlayerRef, _ticks: i32) {

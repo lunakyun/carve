@@ -45,6 +45,10 @@ pub enum EventKind {
     BoundEnter,
     /// A player walks out of a bound.
     BoundExit,
+    /// `on advancement done`: `advancement id` is the advancement.
+    AdvancementDone,
+    /// `on recipe discover`: `recipe id` is the recipe.
+    RecipeDiscover,
 }
 
 impl EventKind {
@@ -77,6 +81,8 @@ impl EventKind {
             EventKind::InventoryClose => "inventory close",
             EventKind::BoundEnter => "bound enter",
             EventKind::BoundExit => "bound exit",
+            EventKind::AdvancementDone => "advancement done",
+            EventKind::RecipeDiscover => "recipe discover",
         }
     }
 
@@ -104,6 +110,11 @@ impl EventKind {
             "flight toggle" | "toggle flight" | "player toggle flight" => EventKind::FlightToggle,
             "inventory click" | "inventory clicking" | "inventory click event" => EventKind::InventoryClick,
             "inventory close" | "inventory closing" | "inventory close event" => EventKind::InventoryClose,
+            "advancement done" | "advancement" | "player advancement" | "advancement complete"
+            | "advancement completed" | "advancement get" => EventKind::AdvancementDone,
+            "recipe discover" | "recipe discovered" | "player recipe discover" | "recipe unlock" => {
+                EventKind::RecipeDiscover
+            }
             _ => return crate::events_items::parse_kind(s).or_else(|| crate::skbee_bound::parse_event(s)),
         })
     }
@@ -258,6 +269,8 @@ pub enum Cond {
     Nbt(Box<crate::skbee_nbt::NbtCond>),
     /// `last spawned entity is a zombie`.
     Ent(Box<crate::entities::EntCond>),
+    /// `player has advancement "x"`.
+    Skb(Box<crate::skbee_recipes_advancements::SkbCond>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -351,6 +364,8 @@ pub enum Effect {
     Sbt(Box<crate::skbee_scoreboard_teams::SbFx>),
     /// Spawn, kill, push and name entities.
     Ent(Box<crate::entities::EntFx>),
+    /// Recipes, advancements, statistics.
+    Skb(Box<crate::skbee_recipes_advancements::SkbFx>),
 }
 
 /// What a `loop` goes over.
@@ -1231,6 +1246,9 @@ impl Cx<'_> {
         if let Some(c) = crate::entities::parse_cond(toks, &self.env) {
             return Some(c);
         }
+        if let Some(c) = crate::skbee_recipes_advancements::parse_cond(toks, &self.env) {
+            return Some(c);
+        }
         let mut memo = Memo::default();
         registry()
             .conditions
@@ -1474,6 +1492,17 @@ impl Cx<'_> {
             }
         }
         match crate::entities::parse_effect(&toks, &self.env) {
+            Ok(Some(eff)) => {
+                self.emit(Instr::Eff(eff), num);
+                return;
+            }
+            Ok(None) => {}
+            Err(msg) => {
+                self.err(num, msg);
+                return;
+            }
+        }
+        match crate::skbee_recipes_advancements::parse_effect(&toks, &self.env) {
             Ok(Some(eff)) => {
                 self.emit(Instr::Eff(eff), num);
                 return;

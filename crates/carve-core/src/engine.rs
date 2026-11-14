@@ -1263,6 +1263,7 @@ impl Engine {
             Cond::Sb(c, negate) => Ok(self.sb_cond(c, ex, host)? != *negate),
             Cond::Nbt(n) => self.nbt_cond(n, ex, host),
             Cond::Ent(c) => self.ent_cond(c, ex, host),
+            Cond::Skb(c) => self.skb_cond(c, ex, host),
             Cond::HasPerm { player, node, negate } => {
                 let p = self.eval(player, ex, host)?;
                 let node = self.text(node, ex, host)?;
@@ -1765,6 +1766,7 @@ impl Engine {
             Expr::Nbt(n) => self.nbt_expr(n, ex, host)?,
             Expr::Date(op, args) => self.eval_date(*op, args, ex, host)?,
             Expr::Wt(w) => self.wt_eval(w, ex, host)?,
+            Expr::Skb(s) => self.skb_eval(s, ex, host)?,
             Expr::Color(on, e) => {
                 let t = self.text(e, ex, host)?;
                 Value::Text(if *on { crate::colors::colorize(&t) } else { crate::colors::strip(&t) })
@@ -2183,6 +2185,7 @@ impl Engine {
             Effect::Sbt(s) => self.sbt_effect(s, ex, host)?,
             Effect::Nbt(n) => self.nbt_effect(n, ex, host)?,
             Effect::Ent(f) => self.ent_effect(f, ex, host)?,
+            Effect::Skb(s) => self.skb_effect(s, ex, host)?,
             Effect::Cancel => {
                 if ex.waited {
                     host.log(

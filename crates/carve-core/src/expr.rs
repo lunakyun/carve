@@ -191,6 +191,8 @@ pub enum Expr {
     Nbt(Box<crate::skbee_nbt::NbtExpr>),
     /// `last spawned entity`, `nearest zombie to player`, `all pigs in radius 5 of player`, ...
     Ent(Box<crate::entities::EntExpr>),
+    /// Statistics and the event id of advancement/recipe events.
+    Skb(Box<crate::skbee_recipes_advancements::SkbExpr>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -397,6 +399,10 @@ impl Expr {
                 DateOp::Now | DateOp::FromUnix => Ty::Date,
                 DateOp::ToUnix => Ty::Number,
                 DateOp::Format => Ty::Text,
+            },
+            Expr::Skb(b) => match **b {
+                crate::skbee_recipes_advancements::SkbExpr::Stat(..) => Ty::Number,
+                crate::skbee_recipes_advancements::SkbExpr::EventId => Ty::Text,
             },
             Expr::Items(_) => Ty::List,
             Expr::Bound(b) => b.ty(),
@@ -1444,6 +1450,31 @@ impl P<'_> {
                                 Err("expected 'last runtime error'".into())
                             }
                         }
+                    }
+                    "statistic" if !matches!(self.peek(), Some(t) if t.is_lit("of")) => {
+                        let name = self.primary()?;
+                        if !matches!(self.peek(), Some(t) if t.is_lit("of")) {
+                            return Err("expected 'statistic \"custom:jump\" of <player>'".into());
+                        }
+                        self.pos += 1;
+                        let who = self.primary()?;
+                        Ok(Expr::Skb(Box::new(crate::skbee_recipes_advancements::SkbExpr::Stat(name, who))))
+                    }
+                    "advancement"
+                        if self.env.trigger_name.contains("advancement done") && !self.env.in_function =>
+                    {
+                        if matches!(self.peek(), Some(t) if t.is_lit("id")) {
+                            self.pos += 1;
+                        }
+                        Ok(Expr::Skb(Box::new(crate::skbee_recipes_advancements::SkbExpr::EventId)))
+                    }
+                    "recipe"
+                        if self.env.trigger_name.contains("recipe discover") && !self.env.in_function =>
+                    {
+                        if matches!(self.peek(), Some(t) if t.is_lit("id")) {
+                            self.pos += 1;
+                        }
+                        Ok(Expr::Skb(Box::new(crate::skbee_recipes_advancements::SkbExpr::EventId)))
                     }
                     "now" => Ok(Expr::Date(DateOp::Now, Vec::new())),
                     "unix"

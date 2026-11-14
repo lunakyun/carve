@@ -24,6 +24,7 @@ pub mod list_ops;
 pub mod op_kick_ban;
 pub mod pattern;
 pub mod skbee_text;
+pub mod skbee_recipes_advancements;
 pub mod sounds;
 pub mod text_join_split;
 pub mod text_case_substring;
