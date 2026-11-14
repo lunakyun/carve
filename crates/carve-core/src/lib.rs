@@ -28,6 +28,7 @@ pub mod text_case_substring;
 pub mod time_dates;
 pub mod senders;
 pub mod skbee_bound;
+pub mod skbee_scoreboard_teams;
 pub mod player_flags;
 pub mod timespans;
 pub mod value;

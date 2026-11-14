@@ -365,6 +365,14 @@ pub trait Host {
     fn bossbar_hide(&mut self, _id: &str, _player: &PlayerRef) {}
     /// Hide the bar from everyone and forget it.
     fn bossbar_remove(&mut self, _id: &str) {}
+    /// Draw a per-player sidebar. `lines` is top to bottom (empty text is a
+    /// blank line). Called again with the full content after every change.
+    fn board_show(&mut self, _player: &PlayerRef, _title: &str, _lines: &[String]) {
+        self.log(LogLevel::Warn, "sidebar boards are not supported on this server");
+    }
+
+    /// Remove the player's sidebar board.
+    fn board_clear(&mut self, _player: &PlayerRef) {}
 
     /// Set the player on fire for this many ticks; 0 puts the fire out.
     fn set_fire(&mut self, _player: &PlayerRef, _ticks: i32) {

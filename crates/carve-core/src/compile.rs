@@ -252,6 +252,8 @@ pub enum Cond {
     Bound(Box<crate::skbee_bound::BoundCond>),
     /// `it is raining`, `it is night`, `weather is clear`.
     Wt(Box<crate::weather_time::WtCond>),
+    /// `team "x" exists`, `player is in team "x"`; the bool is negation.
+    Sb(Box<crate::skbee_scoreboard_teams::SbCond>, bool),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -339,6 +341,8 @@ pub enum Effect {
     Wt(Box<crate::weather_time::WtEffect>),
     /// Scoreboards, boss bars, timed titles, tab list.
     Sb(Box<crate::scoreboards_bossbars::SbFx>),
+    /// Scoreboard objectives, scores, teams and boards.
+    Sbt(Box<crate::skbee_scoreboard_teams::SbFx>),
 }
 
 /// What a `loop` goes over.
@@ -1162,6 +1166,9 @@ impl Cx<'_> {
         if let Some(c) = crate::weather_time::parse_cond(toks, &self.env) {
             return Some(c);
         }
+        if let Some(c) = crate::skbee_scoreboard_teams::parse_cond(toks, &self.env) {
+            return Some(c);
+        }
         let mut memo = Memo::default();
         registry()
             .conditions
@@ -1328,6 +1335,17 @@ impl Cx<'_> {
             }
         }
         match crate::weather_time::parse_effect(&toks, &self.env) {
+            Ok(Some(eff)) => {
+                self.emit(Instr::Eff(eff), num);
+                return;
+            }
+            Ok(None) => {}
+            Err(msg) => {
+                self.err(num, msg);
+                return;
+            }
+        }
+        match crate::skbee_scoreboard_teams::parse_effect(&toks, &self.env) {
             Ok(Some(eff)) => {
                 self.emit(Instr::Eff(eff), num);
                 return;

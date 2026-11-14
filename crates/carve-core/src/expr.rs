@@ -185,6 +185,8 @@ pub enum Expr {
     Bound(Box<crate::skbee_bound::BoundExpr>),
     /// `time in world "w"`, `weather`, `difficulty`, `gamerule keepInventory`.
     Wt(Box<crate::weather_time::WtExpr>),
+    /// Scoreboard scores, teams and objectives (SkBee style).
+    Sb(Box<crate::skbee_scoreboard_teams::SbExpr>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -393,6 +395,7 @@ impl Expr {
             },
             Expr::Items(_) => Ty::List,
             Expr::Bound(b) => b.ty(),
+            Expr::Sb(s) => s.ty(),
             Expr::ListAgg(Agg::Size | Agg::Sum, _) => Ty::Number,
             Expr::ListAgg(..) => Ty::Object,
             Expr::Default(a, b) => {
@@ -476,6 +479,18 @@ struct P<'a> {
     env: &'a Env,
     /// Set when the parser asked for a token past the end.
     hit_end: Cell<bool>,
+}
+
+impl crate::skbee_scoreboard_teams::Operands for P<'_> {
+    fn peek_tok(&self, n: usize) -> Option<&Tok> {
+        self.peek_at(n)
+    }
+    fn advance(&mut self, n: usize) {
+        self.pos += n;
+    }
+    fn operand(&mut self) -> Result<Expr, String> {
+        self.primary()
+    }
 }
 
 impl P<'_> {
@@ -1282,6 +1297,13 @@ impl P<'_> {
                 }
                 if let Some(e) = self.comp_expr(&lw)? {
                     return Ok(e);
+                }
+                if crate::skbee_scoreboard_teams::is_head(&lw) {
+                    let save = self.pos;
+                    match crate::skbee_scoreboard_teams::parse_expr_at(self, &lw) {
+                        Some(r) => return r,
+                        None => self.pos = save,
+                    }
                 }
                 match lw.as_str() {
                     "the" => self.primary(),
