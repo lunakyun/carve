@@ -18,6 +18,7 @@ pub mod text_join_split;
 pub mod text_case_substring;
 pub mod time_dates;
 pub mod senders;
+pub mod player_flags;
 pub mod value;
 pub mod vars;
 
@@ -25,5 +26,6 @@ pub use compile::{CommandDef, EventKind};
 pub use engine::{CommandOutcome, Engine, EventCtx, FireOutcome, LoadSummary};
 pub use error::ScriptError;
 pub use host::{Host, LogLevel};
+pub use player_flags::PlayerFlag;
 pub use value::{PlayerRef, Recipient, Value};
 pub use vars::Variables;

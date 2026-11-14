@@ -1,3 +1,4 @@
+use crate::player_flags::PlayerFlag;
 use crate::value::{PlayerRef, Recipient};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -118,5 +119,11 @@ pub trait Host {
     /// the vanilla `gamemode` command as the console.
     fn set_gamemode(&mut self, player: &PlayerRef, mode: &str) {
         self.execute_command(&format!("gamemode {mode} {}", player.name));
+    }
+
+    /// A yes/no state of an online player (sneaking, flying, ...).
+    /// Hosts that cannot tell answer `false`.
+    fn player_flag(&mut self, _player: &PlayerRef, _flag: PlayerFlag) -> bool {
+        false
     }
 }

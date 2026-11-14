@@ -1132,6 +1132,13 @@ impl Engine {
                 };
                 Ok(is != *negate)
             }
+            Cond::PlayerFlag { player, flag, negate } => {
+                let p = self.eval(player, ex, host)?;
+                let Some(p) = online(&p, &mut ex.seen, host) else {
+                    return Ok(false);
+                };
+                Ok(host.player_flag(&p, *flag) != *negate)
+            }
             Cond::HasPerm { player, node, negate } => {
                 let p = self.eval(player, ex, host)?;
                 let node = self.text(node, ex, host)?;

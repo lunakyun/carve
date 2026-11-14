@@ -23,6 +23,9 @@ on join:
 | `on right click:` | `on rightclick:` | a player right-clicks (air or a block) |
 | `on left click:` | `on leftclick:` | a player left-clicks (air or a block) |
 | `on click:` | | either click |
+| `on sneak toggle:` | `on toggle sneak:` | a player starts or stops sneaking |
+| `on sprint toggle:` | `on toggle sprint:` | a player starts or stops sprinting |
+| `on flight toggle:` | `on toggle flight:` | a player starts or stops flying |
 | `on load:` | `on script load:`, `on server start:` | scripts were loaded or reloaded |
 | `every 5 seconds:` | `every 20 ticks:`, `every 2 minutes:`, `every second:` | on a timer |
 
