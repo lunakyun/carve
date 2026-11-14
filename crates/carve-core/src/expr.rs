@@ -167,6 +167,8 @@ pub enum Expr {
     Items(Box<ListSrc>),
     /// `sum of {x::*}`, `max of ...`, `size of {x::*} where [...]`.
     ListAgg(Agg, Box<ListSrc>),
+    /// `time in world "w"`, `weather`, `difficulty`, `gamerule keepInventory`.
+    Wt(Box<crate::weather_time::WtExpr>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -336,6 +338,11 @@ impl Expr {
             Expr::Prop(p, _) => p.ty(),
             Expr::Loc(..) => Ty::Location,
             Expr::WorldNamed(_) => Ty::World,
+            Expr::Wt(w) => match w.kind {
+                crate::weather_time::WtKind::Time => Ty::Number,
+                crate::weather_time::WtKind::Weather | crate::weather_time::WtKind::Difficulty => Ty::Text,
+                crate::weather_time::WtKind::Gamerule(_) => Ty::Object,
+            },
             Expr::Distance(..) | Expr::Random(..) | Expr::Damage => Ty::Number,
             Expr::Attacker => Ty::Player,
             Expr::Math(..) | Expr::ParseNum(_) => Ty::Number,
@@ -784,6 +791,72 @@ impl P<'_> {
     }
 
     /// `<word> of <value>` for the properties above.
+    /// `6:30`, `6:30 pm`, `6 am`: a time of day as ticks (tick 0 is 6:00).
+    fn clock_literal(&mut self, hour: f64) -> Option<Expr> {
+        let (minute, mut end) = match (self.toks.get(self.pos), self.toks.get(self.pos + 1)) {
+            (Some(Tok::Sym(":")), Some(Tok::Num(m))) => (*m, self.pos + 2),
+            (Some(Tok::Sym(":")), None) => {
+                self.hit_end.set(true);
+                return None;
+            }
+            _ => (0.0, self.pos),
+        };
+        let ampm = match self.toks.get(end) {
+            Some(Tok::Word(w)) if w.eq_ignore_ascii_case("am") => Some(false),
+            Some(Tok::Word(w)) if w.eq_ignore_ascii_case("pm") => Some(true),
+            _ => None,
+        };
+        if end == self.pos && ampm.is_none() {
+            return None;
+        }
+        let ticks = crate::weather_time::clock_ticks(hour, minute, ampm)?;
+        if ampm.is_some() {
+            end += 1;
+        }
+        self.pos = end;
+        Some(Expr::Num(ticks))
+    }
+
+    /// `time [in world W]`, `weather [in world W]`, `difficulty ...`,
+    /// `gamerule <name> [in world W]`. `kw` is already consumed.
+    fn wt_expr(&mut self, kw: &str) -> Result<Expr, String> {
+        use crate::weather_time::{WtExpr, WtKind};
+        let kind = match kw {
+            "time" => {
+                // `time of day`
+                if matches!(self.toks.get(self.pos), Some(t) if t.is_lit("of"))
+                    && matches!(self.toks.get(self.pos + 1), Some(t) if t.is_lit("day"))
+                {
+                    self.pos += 2;
+                }
+                WtKind::Time
+            }
+            "weather" => WtKind::Weather,
+            "difficulty" => WtKind::Difficulty,
+            _ => {
+                let raw = match self.peek() {
+                    Some(Tok::Word(w) | Tok::Str(w)) => w.clone(),
+                    _ => return Err("expected a game rule name, like 'gamerule keepInventory'".into()),
+                };
+                let Some(rule) = crate::weather_time::rule_name(&raw) else {
+                    return Err(format!("unknown game rule '{raw}'"));
+                };
+                self.pos += 1;
+                WtKind::Gamerule(rule.to_string())
+            }
+        };
+        let mut world = None;
+        if matches!(self.peek(), Some(t) if t.is_lit("in") || t.is_lit("of")) {
+            self.pos += 1;
+            let w = self.primary()?;
+            if !matches!(w.ty(self.env), Ty::World | Ty::Text | Ty::Player | Ty::Object) {
+                return Err(format!("expected a world, got {}", w.ty(self.env).name()));
+            }
+            world = Some(w);
+        }
+        Ok(Expr::Wt(Box::new(WtExpr { kind, world })))
+    }
+
     fn prop_of(&mut self, prop: Prop) -> Result<Expr, String> {
         // already past the property word
         if prop == Prop::Tool && matches!(self.peek(), Some(t) if t.is_lit("item")) {
@@ -842,6 +915,9 @@ impl P<'_> {
         self.pos += 1;
         match tok {
             Tok::Num(n) => {
+                if let Some(t) = self.clock_literal(n) {
+                    return Ok(t);
+                }
                 if let Some(span) = self.span_literal(n) {
                     return Ok(span);
                 }
@@ -912,6 +988,7 @@ impl P<'_> {
                         }
                         Ok(Expr::Since(Box::new(d), since))
                     }
+                    "time" | "weather" | "difficulty" | "gamerule" => self.wt_expr(&lw),
                     "total" | "tick" | "ticks" | "millisecond" | "milliseconds" | "second" | "seconds"
                     | "minute" | "minutes" | "hour" | "hours" | "day" | "days" | "week" | "weeks"
                     | "month" | "months" | "year" | "years"

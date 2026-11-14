@@ -301,4 +301,47 @@ pub trait Host {
     fn set_fire(&mut self, _player: &PlayerRef, _ticks: i32) {
         self.log(LogLevel::Warn, "setting fire is not supported on this server");
     }
+
+    // ---- world: time, weather, game rules, difficulty ----
+    // `world: None` means the default world. The default setters run the
+    // vanilla commands, which always act on the default world.
+
+    /// Time of day in ticks. May be the whole day counter; the core wraps it.
+    fn world_time(&mut self, _world: Option<&str>) -> Option<i64> {
+        None
+    }
+
+    /// Set the time of day. Default: `/time set`.
+    fn set_world_time(&mut self, _world: Option<&str>, ticks: i64) {
+        self.execute_command(&format!("time set {ticks}"));
+    }
+
+    fn weather(&mut self, _world: Option<&str>) -> Option<crate::weather_time::Weather> {
+        None
+    }
+
+    /// Change the weather, optionally for a number of ticks. Default: `/weather`.
+    fn set_weather(&mut self, _world: Option<&str>, to: crate::weather_time::Weather, ticks: Option<u32>) {
+        self.execute_command(&to.command(ticks));
+    }
+
+    /// A game rule by vanilla name (`keep_inventory`) as `true`, `false` or a number.
+    fn game_rule(&mut self, _world: Option<&str>, _rule: &str) -> Option<String> {
+        None
+    }
+
+    /// Set a game rule. `value` is `true`, `false` or a whole number. Default: `/gamerule`.
+    fn set_game_rule(&mut self, _world: Option<&str>, rule: &str, value: &str) {
+        self.execute_command(&format!("gamerule {rule} {value}"));
+    }
+
+    /// `peaceful`, `easy`, `normal` or `hard`.
+    fn difficulty(&mut self, _world: Option<&str>) -> Option<String> {
+        None
+    }
+
+    /// Set the difficulty. Default: `/difficulty`.
+    fn set_difficulty(&mut self, _world: Option<&str>, to: &str) {
+        self.execute_command(&format!("difficulty {to}"));
+    }
 }
