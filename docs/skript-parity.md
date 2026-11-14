@@ -1069,80 +1069,80 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Text Display Alignment
 - ⬜ Text Display Line Width
 - ⬜ Text Display Opacity
-- ⬜ Text Of
+- ⛔ Text Of — no text component values in Carve
 - 🟡 Text Replacement ⭐
-- ⬜ The Egg
+- ⛔ The Egg — needs entity values and an egg-throw trigger, which Carve does not have yet
 - ⬜ Time ⭐
-- ⬜ Time Lived of Entity
-- ⬜ Time Played
+- 🟡 Time Lived of Entity — `time lived of player` only (no entity values yet)
+- ✅ Time Played — `time played of player`
 - ✅ Time Since/Until ⭐ — `time since {d}`, `time until {d}`
 - 🟡 Timespan Details ⭐ — `minutes of {t}`, `total minutes of {t}`; no `{t}'s minutes` form
 - ⬜ Title
 - ✅ Tool — main hand
 - ✅ Total Experience — `total experience of player`
-- ⬜ TPS (ticks per second)
-- ⬜ Transform Reason
-- ⬜ Transformed List
-- ⬜ Type of
+- 🟡 TPS (ticks per second) — `tps`, `server tps`, `mspt`; one current value, not the 1/5/15 minute averages
+- ⛔ Transform Reason — needs entity transform events and entity values
+- ⛔ Transformed List — needs lambdas (experimental); use `where` filters instead
+- 🟡 Type of — `type of <item>`; items only
 - ⬜ Unbreakable Items
 - ✅ Unix Date
 - ✅ Unix Timestamp ⭐
-- ⬜ Unknown Command Message
-- ⬜ Unleash Reason
+- ⛔ Unknown Command Message — the plugin API has no unknown-command event or message
+- ⛔ Unleash Reason — needs entity values and leash triggers, which Carve does not have yet
 - ✅ UUID — `uuid of player`
-- ⬜ Value
-- ⬜ Value (Experimental)
-- ⬜ Value of Subnode
-- ⬜ Value Within
-- ⬜ Vector/Quaternion - WXYZ Component
-- ⬜ Vectors - Angle Between
-- ⬜ Vectors - Arithmetic
-- ⬜ Vectors - Create from Direction
-- ⬜ Vectors - Create from XYZ
-- ⬜ Vectors - Create Location from Vector
-- ⬜ Vectors - Cross Product
-- ⬜ Vectors - Cylindrical Shape
-- ⬜ Vectors - Dot Product
-- ⬜ Vectors - Length
-- ⬜ Vectors - Location Vector Offset
-- ⬜ Vectors - Normalized
-- ⬜ Vectors - Random Vector
-- ⬜ Vectors - Spherical Shape
-- ⬜ Vectors - Squared Length
-- ⬜ Vectors - Vector Between Locations
-- ⬜ Vectors - Vector from Location
-- ⬜ Vectors - Vector from Yaw and Pitch
-- ⬜ Vectors - Vector Projection
-- ⬜ Vectors - XYZ Component
-- ⬜ Vectors - Yaw and Pitch
-- ⬜ Vehicle
+- ⛔ Value — needs typed value lists; Carve variables already hold their value
+- ⛔ Value (Experimental) — experimental Skript feature, not planned
+- ⛔ Value of Subnode — Carve has no config nodes
+- ⛔ Value Within — needs ranges and objects with an inner value, which Carve does not have
+- ⛔ Vector/Quaternion - WXYZ Component — no quaternion type; x, y and z of a vector work
+- ✅ Vectors - Angle Between — `angle between v and w` (degrees)
+- ✅ Vectors - Arithmetic — `v + w`, `v - w`, `v * n`, `v / n`, `v * w`, `-v`, `loc + v`
+- ✅ Vectors - Create from Direction — `vector from direction of player`, `vector from direction north`
+- ✅ Vectors - Create from XYZ — `vector(1, 2, 3)`, `vector from 1, 2, 3`
+- ✅ Vectors - Create Location from Vector — `location from vector v in world "w"`, `v to location`
+- ✅ Vectors - Cross Product — `v cross w`
+- ✅ Vectors - Cylindrical Shape — `cylindrical vector radius r, yaw y, height h`
+- ✅ Vectors - Dot Product — `v dot w`
+- ✅ Vectors - Length — `length of v`, `vector length of v`
+- ✅ Vectors - Location Vector Offset — `loc offset by v`
+- ✅ Vectors - Normalized — `normalized v`, `v normalized`
+- ✅ Vectors - Random Vector — `random vector` (unit length)
+- ✅ Vectors - Spherical Shape — `spherical vector radius r, yaw y, pitch p`
+- ✅ Vectors - Squared Length — `squared length of v`
+- ✅ Vectors - Vector Between Locations — `vector from a to b`, `vector between a and b`
+- ✅ Vectors - Vector from Location — `vector from loc`, `vector of player`
+- ✅ Vectors - Vector from Yaw and Pitch — `vector from yaw y and pitch p`
+- ✅ Vectors - Vector Projection — `v projected onto w`, `projection of v onto w`
+- 🟡 Vectors - XYZ Component — `x of v`, `v's y`, `z component of v`; read only (rebuild with `vector(...)` to change one)
+- 🟡 Vectors - Yaw and Pitch — `yaw of v`, `pitch of v`; read only
+- ⛔ Vehicle — needs entity values, which Carve does not have yet
 - ⬜ Velocity ⭐
-- ⬜ Version
-- ⬜ Version String
-- ⬜ View Distance
-- ⬜ View Distance of Client
+- 🟡 Version — `server version`, `minecraft version`; the Minecraft version is fixed at build time
+- 🟡 Version String — `server version string`, `version string of server`; versions are plain text
+- 🟡 View Distance — `view distance of server`, `view distance of player`; read only
+- ✅ View Distance of Client — `client view distance of player`
 - ⬜ Viewers
-- ⬜ Villager Level/Experience
-- ⬜ Villager Profession
-- ⬜ Villager Type
-- ⬜ Warden Anger Level
-- ⬜ Warden Most Angered At
+- ⛔ Villager Level/Experience — the plugin API has no villager data
+- ⛔ Villager Profession — the plugin API has no villager data
+- ⛔ Villager Type — the plugin API has no villager data
+- ⛔ Warden Anger Level — the plugin API has no warden data
+- ⛔ Warden Most Angered At — the plugin API has no warden data
 - ⬜ Warning Distance of World Border
 - ⬜ Warning Time of World Border
 - ⬜ Weather ⭐
-- ⬜ Whether
+- 🟡 Whether — `whether a is b` with is, is not, is set, is not set, greater, less, at least, at most
 - ⬜ Whitelist
-- ⬜ With Fire Resistance
+- ⛔ With Fire Resistance — item components are not reachable from the plugin API
 - ✅ World — `world of`
 - ⬜ World Border
-- ⬜ World Environment
+- ✅ World Environment — `environment of world "x"` (normal, nether, the end)
 - ✅ World from Name — `world "name"`
-- ⬜ World Seed
-- ⬜ Worlds
-- ⬜ WXYZ Component/Coordinate
-- ⬜ X of Item/Entity Type
-- ⬜ X Times
-- ⬜ Yaw / Pitch
+- ⛔ World Seed — the plugin API cannot read the world seed
+- ✅ Worlds — `all worlds`, `loop all worlds`
+- ⛔ WXYZ Component/Coordinate — no quaternion type; x, y and z of a vector work
+- 🟡 X of Item/Entity Type — `3 of diamond`; items only
+- 🟡 X Times — only in `loop N times`
+- 🟡 Yaw / Pitch — `yaw of player`, `pitch of player`, and of vectors; read only
 
 ## Sections (11)
 

@@ -941,6 +941,11 @@ impl Engine {
     }
 
     fn property(&mut self, prop: Prop, v: &Value, ex: &mut Exec, host: &mut dyn Host) -> Value {
+        if let Value::Vector { .. } = v
+            && let Some(r) = crate::w2_expressions_7::component(prop, v)
+        {
+            return r;
+        }
         match prop {
             Prop::X | Prop::Y | Prop::Z | Prop::Location | Prop::World => {
                 let Some((x, y, z, world)) = self.as_location(v, ex, host) else {
@@ -1566,6 +1571,9 @@ impl Engine {
     ) -> Result<Value, String> {
         let x = self.eval(a, ex, host).map_err(|_| err.clone())?;
         let y = self.eval(b, ex, host).map_err(|_| err.clone())?;
+        if matches!(x, Value::Vector { .. }) || matches!(y, Value::Vector { .. }) {
+            return crate::w2_expressions_7::arith(&x, op, &y);
+        }
         let timey = |v: &Value| matches!(v, Value::Timespan { .. } | Value::Date(_));
         if !timey(&x) && !timey(&y) {
             return Err(err);
@@ -1738,6 +1746,11 @@ impl Engine {
                 return Err("split makes a list: use 'set {x::*} to split ...' or 'loop split ...'".into());
             }
             Expr::Length(e) => {
+                if matches!(**e, Expr::Var(_) | Expr::W2(_) | Expr::W7(_) | Expr::Prop(..))
+                    && let Value::Vector { x, y, z } = self.eval(e, ex, host)?
+                {
+                    return Ok(Value::Num(crate::w2_expressions_7::length((x, y, z))));
+                }
                 let t = self.text(e, ex, host)?;
                 Value::Num(crate::text_join_split::char_len(&t) as f64)
             }
@@ -1777,6 +1790,13 @@ impl Engine {
                 Value::Timespan { millis } => Value::Num(crate::timespans::span_part(millis, *unit, *total)),
                 _ => Value::None,
             },
+            Expr::W7(n) => {
+                let mut vals = Vec::with_capacity(n.args.len());
+                for a in &n.args {
+                    vals.push(self.eval(a, ex, host)?);
+                }
+                crate::w2_expressions_7::apply(n.op, &vals, host)?
+            }
             Expr::Items(s) => Value::List(self.eval_list(s, ex, host)?),
             Expr::Ext(f, args) => self.eval_ext(*f, args, ex, host)?,
             Expr::W5(w) => self.eval_w5(w, ex, host)?,

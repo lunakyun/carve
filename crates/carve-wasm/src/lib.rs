@@ -7,11 +7,14 @@ use std::collections::BTreeSet;
 use std::sync::Mutex;
 
 use carve_core::health_food::Vital;
+use carve_core::w2_expressions_7::Query;
 use carve_core::{
-    CommandOutcome, Engine, EventCtx, EventKind, Host, LogLevel, PlayerFlag, PlayerRef, Recipient, ScriptError, Variables,
+    CommandOutcome, Engine, EventCtx, EventKind, Host, LogLevel, PlayerFlag, PlayerRef, Recipient, ScriptError, Value,
+    Variables,
 };
 mod w2_events_3;
 
+use pumpkin_plugin_api::CustomStatistic;
 use pumpkin_plugin_api::DamageType;
 use pumpkin_plugin_api::wit::pumpkin::plugin::status_effect::StatusEffectType;
 use pumpkin_plugin_api::{Block, GameRule, GameRuleValue};
@@ -716,6 +719,40 @@ impl WasmHost<'_> {
         Some(i64::from(self.server.get_simulation_distance()))
     }
 
+    fn w2e7_query(&mut self, q: Query<'_>) -> Option<Value> {
+        let num = |n: f64| Some(Value::Num(n));
+        match q {
+            Query::Tps => num(self.server.get_tps()),
+            Query::Mspt => num(self.server.get_mspt()),
+            Query::ServerVersion => Some(Value::Text(self.server.get_sys_info().pumpkin_version)),
+            // The Minecraft version Pumpkin was built for; the plugin API has no call for it.
+            Query::MinecraftVersion => Some(Value::Text("26.3".into())),
+            Query::ServerViewDistance => num(f64::from(self.server.get_view_distance())),
+            Query::ClientViewDistance(p) => {
+                let java = self.get(p)?.as_java()?;
+                num(f64::from(java.get_settings().view_distance))
+            }
+            Query::PlayTicks(p) => {
+                let pl = self.get(p)?;
+                num(f64::from(pl.get_custom_statistic(CustomStatistic::PlayTime)))
+            }
+            Query::LivedTicks(p) => num(f64::from(self.get(p)?.as_entity().get_ticks_lived())),
+            Query::Yaw(p) => num(f64::from(self.get(p)?.get_yaw())),
+            Query::Pitch(p) => num(f64::from(self.get(p)?.get_pitch())),
+            Query::Worlds => Some(Value::List(
+                self.server
+                    .get_all_worlds()
+                    .iter()
+                    .map(|w| Value::World(w.get_name()))
+                    .collect(),
+            )),
+            Query::Environment(name) => {
+                let w = self.server.get_world_by_name(name)?;
+                Some(Value::Text(w.get_dimension()))
+            }
+        }
+    }
+
     fn log(&mut self, level: LogLevel, msg: &str) {
         let l = match level {
             LogLevel::Info => ApiLevel::Info,
@@ -863,6 +900,10 @@ impl Host for TickHost<'_, '_> {
 
     fn resource_pack_status(&mut self, p: &PlayerRef) -> Option<String> {
         self.hs.w4.packs.get(&p.uuid).cloned()
+    }
+
+    fn w2e7_query(&mut self, q: Query<'_>) -> Option<Value> {
+        self.inner.w2e7_query(q)
     }
 
     fn schedule_wait(&mut self, ticks: u64, token: u64) {
@@ -1276,7 +1317,6 @@ fn register_event<E: EventAccess + Send + Sync + 'static>(ctx: &Context, kind: E
 
 // ---------- extra events (carve-core `w2_events_1`) ----------
 
-use carve_core::Value;
 use carve_core::w2_events_1::ExtEvent;
 use pumpkin_plugin_api::events as ev;
 

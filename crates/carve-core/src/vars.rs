@@ -79,6 +79,7 @@ impl Variables {
                 Value::Date(d) => json!({"date": d}),
                 Value::Console => json!({"console": true}),
                 Value::Timespan { millis } => json!({"timespan": millis}),
+                Value::Vector { x, y, z } => json!({"vector": {"x": x, "y": y, "z": z}}),
             };
             obj.insert(k.clone(), j);
         }
@@ -136,6 +137,13 @@ fn object_value(o: &Map<String, Json>) -> Option<Value> {
             y: l.get("y")?.as_f64()?,
             z: l.get("z")?.as_f64()?,
             world: l.get("world").and_then(Json::as_str).map(str::to_string),
+        });
+    }
+    if let Some(v) = o.get("vector").and_then(Json::as_object) {
+        return Some(Value::Vector {
+            x: v.get("x")?.as_f64()?,
+            y: v.get("y")?.as_f64()?,
+            z: v.get("z")?.as_f64()?,
         });
     }
     if let Some(d) = o.get("date").and_then(Json::as_i64) {

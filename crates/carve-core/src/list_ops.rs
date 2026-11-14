@@ -73,6 +73,9 @@ pub fn parse_src_all(toks: &[Tok], env: &Env, commas: bool) -> Result<ListSrc, S
 
 /// Does this look like a list operation (not a plain `a, b and c`)?
 pub fn looks_like_list_op(toks: &[Tok], env: &Env) -> bool {
+    if crate::w2_expressions_7::is_list_head(toks) {
+        return true;
+    }
     if let Some(Tok::Word(w)) = toks.first() {
         let lw = w.to_ascii_lowercase();
         if matches!(lw.as_str(), "sorted" | "reversed" | "shuffled" | "alphabetically" | "alphabetical") {

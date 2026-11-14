@@ -1959,6 +1959,7 @@ pub fn type_from_name(name: &str) -> Option<Ty> {
         "location" => Ty::Location,
         "world" => Ty::World,
         "timespan" | "time span" => Ty::Timespan,
+        "vector" => Ty::Vector,
         "date" => Ty::Date,
         "object" => Ty::Object,
         "numbers" | "integers" | "texts" | "strings" | "players" | "booleans" | "items" | "itemtypes"
