@@ -235,6 +235,5 @@ fn copy_list_to_single_is_an_error() {
 #[test]
 fn bad_forms_do_not_compile() {
     assert!(!compile_errors("on join:\n    connect player\n").is_empty());
-    assert!(!compile_errors("on join:\n    hide player\n").is_empty());
     assert!(!compile_errors("on join:\n    copy 5 into {x}\n").is_empty());
 }

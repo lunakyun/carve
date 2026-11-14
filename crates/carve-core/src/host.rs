@@ -369,4 +369,55 @@ pub trait Host {
     fn light_level(&mut self, _world: &str, _x: i32, _y: i32, _z: i32, _kind: u8) -> Option<u8> {
         None
     }
+
+    /// Show or hide `target` to one `viewer`. Hosts without the API do nothing.
+    fn set_visible_to(&mut self, viewer: &PlayerRef, target: &PlayerRef, visible: bool) {
+        if visible {
+            self.show_player(viewer, target);
+        } else {
+            self.hide_player(viewer, target);
+        }
+    }
+
+    /// Save every world. The default runs the vanilla `save-all` command.
+    fn save_world(&mut self) {
+        self.execute_command("save-all");
+    }
+
+    /// Stop the server. The default runs the vanilla `stop` command.
+    fn stop_server(&mut self) {
+        self.execute_command("stop");
+    }
+
+    fn set_sprinting(&mut self, _player: &PlayerRef, _on: bool) {}
+
+    /// Play the arm swing. The default runs the vanilla `swing` command.
+    fn swing_hand(&mut self, player: &PlayerRef, main: bool) {
+        let cmd = crate::w2_effects_3::swing_command(&player.name, main);
+        self.execute_command(&cmd);
+    }
+
+    /// Clear (or fully reset) the player's title. The default runs `title`.
+    fn clear_title(&mut self, player: &PlayerRef, reset: bool) {
+        let cmd = crate::w2_effects_3::title_command(&player.name, reset);
+        self.execute_command(&cmd);
+    }
+
+    /// Get off whatever the player is riding. The default runs `ride dismount`.
+    fn dismount(&mut self, player: &PlayerRef) {
+        self.execute_command(&format!("ride {} dismount", player.name));
+    }
+
+    /// Throw off everything riding the player.
+    fn eject_passengers(&mut self, _player: &PlayerRef) {}
+
+    /// Put `rider` on `vehicle`. The default runs `ride mount`.
+    fn ride(&mut self, rider: &PlayerRef, vehicle: &PlayerRef) {
+        self.execute_command(&format!("ride {} mount {}", rider.name, vehicle.name));
+    }
+
+    fn set_name_visible(&mut self, _player: &PlayerRef, _visible: bool) {}
+
+    /// Offer a resource pack. `id` is a UUID string that is the same for the same URL.
+    fn send_resource_pack(&mut self, _player: &PlayerRef, _url: &str, _hash: &str, _id: &str) {}
 }

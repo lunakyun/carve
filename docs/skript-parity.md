@@ -371,57 +371,57 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Play Effect
 - ⬜ Play or Draw an Effect ⭐
 - 🟡 Play Sound ⭐ (volume, pitch, location, via `playsound`; no categories)
-- ⬜ Player Info Visibility
-- ⬜ Player Visibility
-- ⬜ Poison/Cure
+- ⛔ Player Info Visibility — no tab-list visibility API in the plugin API
+- ✅ Player Visibility — `hide %player% [from %player%]`, `reveal %player% [to %player%]`
+- 🟡 Poison/Cure — `poison %player% [for %timespan%]`, `cure %player%`; via the `effect` command
 - ⬜ Potion Effect - Ambient
 - ⬜ Potion Effect - Icon
 - ⬜ Potion Effect - Infinite
 - ⬜ Potion Effect - Particles
 - ⬜ Potion Effects ⭐
-- ⬜ Pull In Hooked Entity
+- ⛔ Pull In Hooked Entity — no fishing hook API
 - ⬜ Push ⭐
-- ⬜ PvP
-- ⬜ Register Tag
-- ⬜ Release From Entity Storage
+- ⛔ PvP — no per-world PvP flag in the plugin API
+- ⛔ Register Tag — no tag registry in the plugin API
+- ⛔ Release From Entity Storage — no entity storage block API
 - 🟡 Replace ⭐
 - ✅ Return
-- ⬜ Ring Bell
-- ⬜ Rotate
-- ⬜ Run
-- ⬜ Save World
+- ⛔ Ring Bell — no way to ring a bell from a plugin
+- ⛔ Rotate — no block rotation API
+- ⛔ Run — needs section values, which Carve does not have
+- ✅ Save World — `save [the] world`
 - ⛔ Script Command Suggestion Filtering Mode — Pumpkin 0.2.2 crashes on plugin tab completion
-- ⬜ Send Block Change
-- ⬜ Send Resource Pack
-- ⬜ Shear
-- ⬜ Shoot
-- ⬜ Silence Entity
+- ⛔ Send Block Change — no fake block packet API
+- ✅ Send Resource Pack — `send resource pack "url" [with hash "sha1"] to %player%` (Java players)
+- ⛔ Shear — no shear API
+- ⛔ Shoot — no projectile launch API
+- ⛔ Silence Entity — no silent flag in the plugin API
 - ✅ Sort — `sort {x::*}`, `in descending order`; no `by`
 - ⬜ Spawn ⭐
-- ⬜ Sprinting
-- ⬜ Stop Server
+- ✅ Sprinting — `make %player% start/stop sprinting`
+- ✅ Stop Server — `stop [the] server`
 - 🟡 Stop Sound ⭐ (one sound or all, via `stopsound`; no categories)
-- ⬜ Strider Shivering
-- ⬜ Suppress Type Hints (Experimental)
-- ⬜ Swing Hand
-- ⬜ Tame / Untame
+- ⛔ Strider Shivering — no strider API
+- ⛔ Suppress Type Hints (Experimental) — Carve has no type hints
+- 🟡 Swing Hand — `make %player% swing [main|off] hand`; via the `swing` command
+- ⛔ Tame / Untame — no tame API
 - ✅ Teleport — to x, y, z or a location
-- ⬜ Text Display Drop Shadow
-- ⬜ Text Display See Through Blocks
-- ⬜ Title - Clear/Reset
+- ⛔ Text Display Drop Shadow — no text display API
+- ⛔ Text Display See Through Blocks — no text display API
+- 🟡 Title - Clear/Reset — `clear title of %player%`, `reset title of %player%`; via the `title` command
 - ✅ Title - Send — title + subtitle
-- ⬜ Toggle
-- ⬜ Toggle Custom Name Visibility
+- ✅ Toggle — `toggle {flag}` flips a boolean; unset becomes true
+- ✅ Toggle Custom Name Visibility — `show/hide custom name of %player%`
 - ⛔ Toggle Flight (no flight ability in the plugin API)
-- ⬜ Toggle Picking Up Items
-- ⬜ Transform List
-- ⬜ Tree
-- ⬜ Update Block
-- ⬜ Vectors - Rotate Around Vector
-- ⬜ Vectors - Rotate around XYZ
-- ⬜ Vehicle
-- ⬜ Wake And Sleep
-- ⬜ Zombify Villager
+- ⛔ Toggle Picking Up Items — no pickup flag in the plugin API
+- ✅ Transform List — `transform {list::*} with (input * 2)`
+- ⛔ Tree — no tree growth API
+- ⛔ Update Block — no block update API
+- ⛔ Vectors - Rotate Around Vector — Carve has no vector type
+- ⛔ Vectors - Rotate around XYZ — Carve has no vector type
+- 🟡 Vehicle — `dismount`, `eject`, `make %player% ride %player%`; via the `ride` command
+- ⛔ Wake And Sleep — no sleep API
+- ⛔ Zombify Villager — no villager API
 
 ## Conditions (170)
 

@@ -135,7 +135,7 @@ impl Engine {
     }
 
     /// Replace the list `v` with `items`, numbered from 1.
-    fn write_list(
+    pub(super) fn write_list(
         &mut self,
         v: &VarRef,
         items: Vec<Value>,

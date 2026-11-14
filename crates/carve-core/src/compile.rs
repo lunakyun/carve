@@ -258,6 +258,8 @@ pub enum Effect {
     /// `set exhaustion of player to 2` and friends.
     W2c(Box<crate::w2_expressions_3::StatEffect>),
     W4(Box<crate::w2_expressions_4::W4Effect>),
+    W2e3(Box<crate::w2_effects_3::W2Eff>),
+    W2Transform(Box<crate::w2_effects_3::Transform>),
     SetHealth(Expr, Expr),
     SetGamemode(Expr, Expr),
     /// Experience change; the two expressions are in pattern order.
@@ -394,6 +396,7 @@ pub enum EffKind {
     X2(crate::w2_expressions_2::W2Eff),
     W2c(crate::w2_expressions_3::PStat, crate::w2_expressions_3::Mode),
     W4(crate::w2_expressions_4::W4Eff),
+    W2e3(crate::w2_effects_3::W2Op),
     SetHealth,
     SetGamemode,
     Xp(crate::xp_level::XpOp),
@@ -608,6 +611,11 @@ fn registry() -> &'static Registry {
                     .iter()
                     .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
             )
+            .chain(
+                crate::w2_effects_3::EFFECT_PATTERNS
+                    .iter()
+                    .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
+            )
             .collect(),
         conditions: crate::w2_conditions_2::CONDITION_PATTERNS
             .iter()
@@ -636,6 +644,7 @@ pub fn check_registry() -> Result<(), String> {
         .chain(crate::w2_expressions_2::EFFECT_PATTERNS)
         .chain(crate::w2_expressions_3::EFFECT_PATTERNS)
         .chain(crate::w2_expressions_4::EFFECT_PATTERNS)
+        .chain(crate::w2_effects_3::EFFECT_PATTERNS)
     {
         Pattern::new(s, *k)?;
     }
@@ -1280,7 +1289,9 @@ impl Cx<'_> {
         let ops_first = toks.first().is_some_and(|t| t.is_lit("sort"))
             || (toks.first().is_some_and(|t| t.is_lit("set"))
                 && toks.get(3..).is_some_and(|r| crate::list_ops::looks_like_list_op(r, &self.env)));
-        let parsed = if ops_first {
+        let parsed = if let Some(t) = crate::w2_effects_3::parse_transform(&toks, &self.env) {
+            Some(t)
+        } else if ops_first {
             crate::list_ops::parse_effect(&toks, &self.env)
                 .or_else(|| crate::list_literals::parse_list_effect(&toks, &self.env))
         } else {
@@ -1356,6 +1367,7 @@ impl Cx<'_> {
             .chain(crate::w2_expressions_2::EFFECT_PATTERNS)
             .chain(crate::w2_expressions_3::EFFECT_PATTERNS)
             .chain(crate::w2_expressions_4::EFFECT_PATTERNS)
+            .chain(crate::w2_effects_3::EFFECT_PATTERNS)
             .map(|(s, _)| *s)
             .collect();
         let mut e = ScriptError::new(
@@ -1568,6 +1580,7 @@ fn build_effect(kind: EffKind, mut c: Vec<Option<Capture>>) -> Option<Effect> {
             return crate::w2_expressions_3::build(stat, mode, c).map(|e| Effect::W2c(Box::new(e)));
         }
         EffKind::W4(op) => return crate::w2_expressions_4::build(op, c),
+        EffKind::W2e3(op) => return crate::w2_effects_3::build(op, c),
         EffKind::Heal => Effect::Heal(take_expr(c, 0)?),
         EffKind::SetHealth => Effect::SetHealth(take_expr(c, 0)?, take_expr(c, 1)?),
         EffKind::SetGamemode => Effect::SetGamemode(take_expr(c, 0)?, take_expr(c, 1)?),

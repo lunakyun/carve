@@ -20,6 +20,7 @@ use pumpkin_plugin_api::command::{
 };
 use pumpkin_plugin_api::commands::CommandHandler;
 use pumpkin_plugin_api::common::{EntityPose, GameMode, Hand, RgbColor};
+use pumpkin_plugin_api::player::JavaResourcePack;
 use pumpkin_plugin_api::events::{
     BlockBreakEvent, BlockPlaceEvent, EntityDamageByEntityEvent, EntityDamageEvent, EventData, EventHandler,
     EventPriority, FromIntoEvent, InteractAction, PlayerChatEvent, PlayerDeathEvent, PlayerInteractEvent,
@@ -626,6 +627,43 @@ impl WasmHost<'_> {
         }
     }
 
+    fn save_world(&mut self) {
+        if let Err(e) = self.server.save_all() {
+            plog(ApiLevel::Warn, &format!("save world failed: {e}"));
+        }
+    }
+
+    fn set_sprinting(&mut self, p: &PlayerRef, on: bool) {
+        if let Some(pl) = self.get(p) {
+            pl.as_entity().set_sprinting(on);
+        }
+    }
+
+    fn eject_passengers(&mut self, p: &PlayerRef) {
+        if let Some(pl) = self.get(p) {
+            pl.as_entity().eject_passengers();
+        }
+    }
+
+    fn set_name_visible(&mut self, p: &PlayerRef, visible: bool) {
+        if let Some(pl) = self.get(p) {
+            pl.as_entity().set_custom_name_visible(visible);
+        }
+    }
+
+    fn send_resource_pack(&mut self, p: &PlayerRef, url: &str, hash: &str, id: &str) {
+        let Some(id) = uuid::parse(id) else { return };
+        if let Some(java) = self.get(p).and_then(Player::as_java) {
+            java.send_resource_pack(JavaResourcePack {
+                id,
+                url: url.to_string(),
+                hash: hash.to_string(),
+                forced: false,
+                prompt_message: None,
+            });
+        }
+    }
+
     fn log(&mut self, level: LogLevel, msg: &str) {
         let l = match level {
             LogLevel::Info => ApiLevel::Info,
@@ -694,6 +732,11 @@ impl Host for TickHost<'_, '_> {
         apply_knockback(p: &PlayerRef, strength: f64, x: f64, z: f64);
         set_rotation(p: &PlayerRef, yaw: f32, pitch: f32);
         open_book(p: &PlayerRef, off_hand: bool);
+        save_world();
+        set_sprinting(p: &PlayerRef, on: bool);
+        eject_passengers(p: &PlayerRef);
+        set_name_visible(p: &PlayerRef, visible: bool);
+        send_resource_pack(p: &PlayerRef, url: &str, hash: &str, id: &str);
     }
     delegate! {
         biome_at(world: &str, x: i32, y: i32, z: i32) -> Option<String>;
