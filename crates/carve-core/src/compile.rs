@@ -30,6 +30,10 @@ pub enum EventKind {
     SneakToggle,
     SprintToggle,
     FlightToggle,
+    /// `on advancement done`: `advancement id` is the advancement.
+    AdvancementDone,
+    /// `on recipe discover`: `recipe id` is the recipe.
+    RecipeDiscover,
 }
 
 impl EventKind {
@@ -50,6 +54,8 @@ impl EventKind {
             EventKind::SneakToggle => "sneak toggle",
             EventKind::SprintToggle => "sprint toggle",
             EventKind::FlightToggle => "flight toggle",
+            EventKind::AdvancementDone => "advancement done",
+            EventKind::RecipeDiscover => "recipe discover",
         }
     }
 
@@ -75,6 +81,11 @@ impl EventKind {
             "sneak toggle" | "toggle sneak" | "player toggle sneak" => EventKind::SneakToggle,
             "sprint toggle" | "toggle sprint" | "player toggle sprint" => EventKind::SprintToggle,
             "flight toggle" | "toggle flight" | "player toggle flight" => EventKind::FlightToggle,
+            "advancement done" | "advancement" | "player advancement" | "advancement complete"
+            | "advancement completed" | "advancement get" => EventKind::AdvancementDone,
+            "recipe discover" | "recipe discovered" | "player recipe discover" | "recipe unlock" => {
+                EventKind::RecipeDiscover
+            }
             _ => return None,
         })
     }
@@ -203,6 +214,8 @@ pub enum Cond {
     Admin(AdminCond, Expr, bool),
     /// `player has potion effect speed`.
     World(Box<crate::world_effects::WorldCond>),
+    /// `player has advancement "x"`.
+    Skb(Box<crate::skbee_recipes_advancements::SkbCond>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -280,6 +293,8 @@ pub enum Effect {
     Admin(AdminEff, Expr, Option<Expr>),
     /// Lightning, explosions, particles, potion effects, fire.
     World(Box<crate::world_effects::WorldFx>),
+    /// Recipes, advancements, statistics.
+    Skb(Box<crate::skbee_recipes_advancements::SkbFx>),
 }
 
 /// What a `loop` goes over.
@@ -1080,6 +1095,9 @@ impl Cx<'_> {
         if let Some(c) = crate::world_effects::parse_cond(toks, &self.env) {
             return Some(c);
         }
+        if let Some(c) = crate::skbee_recipes_advancements::parse_cond(toks, &self.env) {
+            return Some(c);
+        }
         let mut memo = Memo::default();
         registry()
             .conditions
@@ -1224,6 +1242,17 @@ impl Cx<'_> {
             None => {}
         }
         match crate::world_effects::parse_effect(&toks, &self.env) {
+            Ok(Some(eff)) => {
+                self.emit(Instr::Eff(eff), num);
+                return;
+            }
+            Ok(None) => {}
+            Err(msg) => {
+                self.err(num, msg);
+                return;
+            }
+        }
+        match crate::skbee_recipes_advancements::parse_effect(&toks, &self.env) {
             Ok(Some(eff)) => {
                 self.emit(Instr::Eff(eff), num);
                 return;

@@ -5,6 +5,7 @@ use std::collections::BTreeSet;
 use std::sync::Mutex;
 
 use carve_core::health_food::Vital;
+use carve_core::skbee_recipes_advancements::{CookKind, Ingredient as RIngredient, RecipeDef, RecipeKind};
 use carve_core::world_effects::{FxPos, ParticleFx};
 use carve_core::{
     CommandOutcome, Engine, EventCtx, EventKind, Host, LogLevel, PlayerFlag, PlayerRef, Recipient, ScriptError, Variables,
@@ -24,6 +25,7 @@ use pumpkin_plugin_api::events::{
     PlayerJoinEvent, PlayerLeaveEvent, PlayerRespawnEvent, PlayerToggleFlightEvent, PlayerToggleSneakEvent,
     PlayerToggleSprintEvent,
 };
+use pumpkin_plugin_api::events::{PlayerAdvancementDoneEvent, PlayerRecipeDiscoverEvent};
 use pumpkin_plugin_api::logging::{LogLevel as ApiLevel, log};
 use pumpkin_plugin_api::permission::{Permission, PermissionDefault, PermissionLevel};
 use pumpkin_plugin_api::scheduler::schedule_repeating_task;
@@ -32,6 +34,7 @@ use pumpkin_plugin_api::{
     Context, Player, Plugin, PluginMetadata, Server, permissions, register_plugin, uuid,
 };
 
+mod custom_stats;
 mod fx;
 
 const SCRIPTS_DIR: &str = "scripts";
@@ -451,6 +454,92 @@ impl WasmHost<'_> {
         self.get(p).is_some_and(|pl| pl.has_effect(kind))
     }
 
+    fn advancement(&mut self, p: &PlayerRef, id: &str, criterion: Option<&str>, grant: bool) -> bool {
+        let Some(pl) = self.get(p) else {
+            return false;
+        };
+        match (criterion, grant) {
+            (None, true) => pl.award_advancement(id),
+            (None, false) => pl.revoke_advancement(id),
+            (Some(c), true) => pl.award_advancement_criterion(id, c),
+            (Some(c), false) => pl.revoke_advancement_criterion(id, c),
+        }
+    }
+
+    fn has_advancement(&mut self, p: &PlayerRef, id: &str) -> bool {
+        self.get(p).is_some_and(|pl| pl.has_advancement(id))
+    }
+
+    fn register_recipe(&mut self, r: &RecipeDef) -> Result<(), String> {
+        use pumpkin_plugin_api::recipe::{CookingRecipeBuilder, Ingredient as Ing, ShapedRecipeBuilder, ShapelessRecipeBuilder};
+        let ing = |i: &RIngredient| match i {
+            RIngredient::Item(s) => Ing::item(s),
+            RIngredient::Tag(s) => Ing::tag(s),
+        };
+        let out = pumpkin_plugin_api::ItemStack::new(&r.result, r.count as u8);
+        let res = match &r.kind {
+            RecipeKind::Shaped { rows, key } => {
+                let mut b = ShapedRecipeBuilder::new(r.id.clone(), out).pattern(rows.iter().map(String::as_str));
+                for (c, i) in key {
+                    b = b.key(*c, ing(i));
+                }
+                self.server.register_recipe(b)
+            }
+            RecipeKind::Shapeless(list) => {
+                let mut b = ShapelessRecipeBuilder::new(r.id.clone(), out);
+                for i in list {
+                    b = b.ingredient(ing(i));
+                }
+                self.server.register_recipe(b)
+            }
+            RecipeKind::Cooking {
+                kind,
+                ingredient,
+                experience,
+                ticks,
+            } => {
+                let i = ing(ingredient);
+                let b = match kind {
+                    CookKind::Smelting => CookingRecipeBuilder::smelting(r.id.clone(), i, out),
+                    CookKind::Blasting => CookingRecipeBuilder::blasting(r.id.clone(), i, out),
+                    CookKind::Smoking => CookingRecipeBuilder::smoking(r.id.clone(), i, out),
+                    CookKind::Campfire => CookingRecipeBuilder::campfire(r.id.clone(), i, out),
+                };
+                self.server
+                    .register_recipe(b.cooking_time(*ticks).experience(*experience))
+            }
+        };
+        res.map_err(|e| e.to_string())
+    }
+
+    fn statistic(&mut self, p: &PlayerRef, category: &str, name: &str) -> Option<i64> {
+        if category != "custom" {
+            return None;
+        }
+        let stat = custom_stats::custom_statistic(name)?;
+        self.get(p).map(|pl| i64::from(pl.get_custom_statistic(stat)))
+    }
+
+    fn set_statistic(&mut self, p: &PlayerRef, category: &str, name: &str, value: i64) -> bool {
+        if category != "custom" {
+            self.log(
+                LogLevel::Warn,
+                "only custom statistics (custom:jump, custom:play_time, ...) can be changed on this server",
+            );
+            return false;
+        }
+        let Some(stat) = custom_stats::custom_statistic(name) else {
+            self.log(LogLevel::Warn, &format!("unknown custom statistic '{name}'"));
+            return false;
+        };
+        let Some(pl) = self.get(p) else {
+            return false;
+        };
+        pl.set_custom_statistic(stat, value.clamp(0, i64::from(i32::MAX)) as i32);
+        pl.send_stats();
+        true
+    }
+
     fn set_fire(&mut self, p: &PlayerRef, ticks: i32) {
         if let Some(pl) = self.get(p) {
             let e = pl.as_entity();
@@ -613,6 +702,11 @@ impl Host for TickHost<'_, '_> {
         clear_effects(p: &PlayerRef, effect: Option<&str>);
         has_effect(p: &PlayerRef, effect: &str) -> bool;
         set_fire(p: &PlayerRef, ticks: i32);
+        advancement(p: &PlayerRef, id: &str, criterion: Option<&str>, grant: bool) -> bool;
+        has_advancement(p: &PlayerRef, id: &str) -> bool;
+        register_recipe(r: &RecipeDef) -> Result<(), String>;
+        statistic(p: &PlayerRef, category: &str, name: &str) -> Option<i64>;
+        set_statistic(p: &PlayerRef, category: &str, name: &str, value: i64) -> bool;
     }
 
     fn schedule_wait(&mut self, ticks: u64, token: u64) {
@@ -778,6 +872,24 @@ impl EventAccess for PlayerToggleFlightEvent {
                 f.push(u);
             }
         }
+    }
+}
+
+impl EventAccess for PlayerAdvancementDoneEvent {
+    fn ctx(d: &EventData<Self>) -> EventCtx {
+        EventCtx::chat(player_ref(&d.player), d.advancement_id.clone())
+    }
+    fn set_cancelled(d: &mut EventData<Self>) {
+        d.cancelled = true;
+    }
+}
+
+impl EventAccess for PlayerRecipeDiscoverEvent {
+    fn ctx(d: &EventData<Self>) -> EventCtx {
+        EventCtx::chat(player_ref(&d.player), d.recipe_id.clone())
+    }
+    fn set_cancelled(d: &mut EventData<Self>) {
+        d.cancelled = true;
     }
 }
 
@@ -1347,6 +1459,8 @@ impl Plugin for Carve {
         register_event::<PlayerToggleSneakEvent>(&context, EventKind::SneakToggle);
         register_event::<PlayerToggleSprintEvent>(&context, EventKind::SprintToggle);
         register_event::<PlayerToggleFlightEvent>(&context, EventKind::FlightToggle);
+        register_event::<PlayerAdvancementDoneEvent>(&context, EventKind::AdvancementDone);
+        register_event::<PlayerRecipeDiscoverEvent>(&context, EventKind::RecipeDiscover);
         for r in [
             context.register_event_handler::<PlayerInteractEvent, _>(OnInteract, EventPriority::Normal, true),
             context.register_event_handler::<EntityDamageEvent, _>(OnDamage, EventPriority::Normal, true),

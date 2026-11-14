@@ -229,7 +229,7 @@ pub(crate) struct Exec {
     loops: Vec<LoopFrame>,
     /// Callers of the running function, innermost last.
     callers: Vec<Frame>,
-    ctx: EventCtx,
+    pub(crate) ctx: EventCtx,
     waited: bool,
     cancelled: bool,
     /// uuid -> current name (None = offline), for the current run slice only.
@@ -1178,6 +1178,7 @@ impl Engine {
                 Ok(crate::op_kick_ban::check(host, *kind, &name, p.as_ref()) != *negate)
             }
             Cond::World(w) => self.world_cond(w, ex, host),
+            Cond::Skb(c) => self.skb_cond(c, ex, host),
             Cond::HasPerm { player, node, negate } => {
                 let p = self.eval(player, ex, host)?;
                 let node = self.text(node, ex, host)?;
@@ -1189,7 +1190,7 @@ impl Engine {
         }
     }
 
-    fn text(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<String, String> {
+    pub(crate) fn text(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<String, String> {
         let mut s = String::new();
         self.write(e, ex, host, &mut s)?;
         Ok(s)
@@ -1641,6 +1642,7 @@ impl Engine {
                 }
             }
             Expr::Date(op, args) => self.eval_date(*op, args, ex, host)?,
+            Expr::Skb(s) => self.skb_eval(s, ex, host)?,
             Expr::Color(on, e) => {
                 let t = self.text(e, ex, host)?;
                 Value::Text(if *on { crate::colors::colorize(&t) } else { crate::colors::strip(&t) })
@@ -2043,6 +2045,7 @@ impl Engine {
                 }
             }
             Effect::World(w) => self.world_effect(w, ex, host)?,
+            Effect::Skb(s) => self.skb_effect(s, ex, host)?,
             Effect::Cancel => {
                 if ex.waited {
                     host.log(
