@@ -34,6 +34,8 @@ pub enum Value {
         world: Option<String>,
     },
     World(String),
+    /// The server console (`console`, or `sender` when the console ran the command).
+    Console,
 }
 
 impl Value {
@@ -47,6 +49,7 @@ impl Value {
             Value::Item { .. } => "item",
             Value::Location { .. } => "location",
             Value::World(_) => "world",
+            Value::Console => "console",
         }
     }
 
@@ -65,6 +68,7 @@ impl Value {
             (Value::Num(a), Value::Num(b)) => (a - b).abs() < 1e-9,
             (Value::Text(a), Value::Text(b)) => a.eq_ignore_ascii_case(b),
             (Value::Bool(a), Value::Bool(b)) => a == b,
+            (Value::Console, Value::Console) => true,
             (Value::Player(a), Value::Player(b)) => a.uuid == b.uuid,
             (Value::Player(p), Value::Text(t)) | (Value::Text(t), Value::Player(p)) => {
                 p.name.eq_ignore_ascii_case(t)
@@ -160,6 +164,7 @@ impl Value {
                 }
             }
             Value::World(w) => out.push_str(w),
+            Value::Console => out.push_str("console"),
         }
     }
 }

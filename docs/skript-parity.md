@@ -279,7 +279,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Charge Entity
 - ⬜ Clear Entity Storage
 - ⬜ Color Items
-- 🟡 Command — `execute console command`; no `make player execute`
+- ✅ Command — `execute console command`, `execute command "x" [by player]`, `make player execute command "x"`
 - 🟡 Conditional / Unconditional — conditions on their own line stop the trigger
 - ⬜ Connect
 - ⬜ Consume Boosting Firework
@@ -678,12 +678,12 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Colored/Formatted/Uncolored
 - ✅ Command — args, permission, aliases, usage, executable by; no cooldown; new commands need a restart
 - ⬜ Command Block Command
-- ⬜ Command Executor
+- ✅ Command Executor — `executor`, same as `sender`
 - ⬜ Command Info
-- 🟡 Command Sender ⭐ — internal only
+- ✅ Command Sender ⭐ — `sender`, `command sender`, `sender is a player`
 - ⬜ Compass Target
 - ⬜ Config
-- ⬜ Console ⭐
+- ✅ Console ⭐ — `console`, `send ... to console`, `sender is console`
 - ⬜ Consumed Item
 - ✅ Coordinate — `x/y/z of`, `x-coordinate of`
 - ⬜ Create Boss Bar
@@ -901,7 +901,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Maximum Integer Value
 - ⬜ Maximum Long Value
 - ⬜ Maximum Stack Size
-- ⬜ Me ⭐
+- ✅ Me ⭐ — `me`, `myself`
 - ⬜ Mending Repair Amount
 - ✅ Message — `send ... [to ...]`
 - ⬜ Message of the Day
@@ -1229,7 +1229,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Chunk
 - ⬜ Click Type
 - ⬜ Color
-- 🟡 Command Sender ⭐ — internal only
+- ✅ Command Sender ⭐ — `sender`, `command sender`, `sender is a player`
 - ⬜ Config
 - ⬜ Converging Particle Effect
 - ⬜ Cow Variant

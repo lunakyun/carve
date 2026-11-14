@@ -176,6 +176,12 @@ pub enum Cond {
         high: Expr,
         negate: bool,
     },
+    /// `sender is a player` / `sender is console` (and the negations).
+    SenderIs {
+        value: Expr,
+        console: bool,
+        negate: bool,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -209,6 +215,8 @@ pub enum Effect {
     /// player, amount (None: the item's own amount), item
     Give(Expr, Option<Expr>, Expr),
     ConsoleCommand(Expr),
+    /// who, command (`make player execute command "/x"`)
+    ExecAs(Expr, Expr),
     Cancel,
     /// amount times ticks-per-unit
     Wait(Expr, u64),
@@ -306,6 +314,8 @@ pub enum EffKind {
     GiveCount,
     GiveTo,
     ConsoleCommand,
+    ExecAs,
+    ExecAsBy,
     Cancel,
     WaitTicks,
     WaitSeconds,
@@ -338,6 +348,10 @@ pub enum CondKind {
     HasItem,
     NotHasItem,
     InvContains,
+    IsPlayer,
+    IsNotPlayer,
+    IsConsole,
+    IsNotConsole,
 }
 
 /// Effect patterns, tried in order (more specific first).
@@ -410,12 +424,14 @@ fn registry() -> &'static Registry {
     static R: OnceLock<Registry> = OnceLock::new();
     R.get_or_init(|| Registry {
         // The pattern strings are constants covered by tests; a bad one is skipped.
-        effects: EFFECT_PATTERNS
+        effects: crate::senders::SENDER_EFFECT_PATTERNS
             .iter()
+            .chain(EFFECT_PATTERNS)
             .filter_map(|(s, k)| Pattern::new(s, *k).ok())
             .collect(),
-        conditions: CONDITION_PATTERNS
+        conditions: crate::senders::SENDER_CONDITION_PATTERNS
             .iter()
+            .chain(CONDITION_PATTERNS)
             .filter_map(|(s, k)| Pattern::new(s, *k).ok())
             .collect(),
     })
@@ -1107,6 +1123,13 @@ fn build_cond(kind: CondKind, mut c: Vec<Option<Capture>>) -> Cond {
     let a = take_expr(&mut c, 0).unwrap_or(Expr::Num(0.0));
     let b = take_expr(&mut c, 1).unwrap_or(Expr::Num(0.0));
     let op = match kind {
+        CondKind::IsPlayer | CondKind::IsNotPlayer | CondKind::IsConsole | CondKind::IsNotConsole => {
+            return Cond::SenderIs {
+                value: a,
+                console: matches!(kind, CondKind::IsConsole | CondKind::IsNotConsole),
+                negate: matches!(kind, CondKind::IsNotPlayer | CondKind::IsNotConsole),
+            };
+        }
         CondKind::IsSet => return Cond::IsSet(a, true),
         CondKind::NotSet => return Cond::IsSet(a, false),
         CondKind::Ne => CmpOp::Ne,
@@ -1219,6 +1242,14 @@ fn build_effect(kind: EffKind, mut c: Vec<Option<Capture>>) -> Option<Effect> {
             Effect::Give(p, None, take_expr(c, 1)?)
         }
         EffKind::ConsoleCommand => Effect::ConsoleCommand(take_expr(c, 0)?),
+        EffKind::ExecAs => {
+            let who = take_expr(c, 0)?;
+            Effect::ExecAs(who, take_expr(c, 1)?)
+        }
+        EffKind::ExecAsBy => {
+            let cmd = take_expr(c, 0)?;
+            Effect::ExecAs(take_expr(c, 1)?, cmd)
+        }
         EffKind::Cancel => Effect::Cancel,
         EffKind::WaitTicks => Effect::Wait(take_expr(c, 0)?, 1),
         EffKind::WaitSeconds => Effect::Wait(take_expr(c, 0)?, 20),

@@ -63,6 +63,17 @@ pub trait Host {
         self.execute_command(&format!("give {} minecraft:{id} {count}", player.name));
     }
 
+    /// Run a command as this player (no leading `/`). The default asks the
+    /// console to run it with vanilla `execute as`.
+    fn execute_command_as(&mut self, player: &PlayerRef, command: &str) {
+        self.execute_command(&format!("execute as {} run {command}", player.name));
+    }
+
+    /// Text for the console itself (`send "x" to console` from a player's trigger).
+    fn send_console(&mut self, text: &str) {
+        self.send_message(&Recipient::Console, text);
+    }
+
     fn health(&mut self, _player: &PlayerRef) -> Option<f64> {
         None
     }

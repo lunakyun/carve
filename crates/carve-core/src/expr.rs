@@ -75,6 +75,10 @@ pub enum Expr {
     Text(Vec<Part>),
     Var(VarRef),
     Player,
+    /// `sender`, `executor`: whoever started the trigger (a player or the console).
+    Sender,
+    /// `console`
+    Console,
     Message,
     /// 1-based command argument.
     Arg(usize),
@@ -265,6 +269,7 @@ impl Expr {
             Expr::Text(_) | Expr::Message | Expr::NameOf(_) => Ty::Text,
             Expr::Var(_) => Ty::Object,
             Expr::Player => Ty::Player,
+            Expr::Sender | Expr::Console => Ty::Object,
             Expr::Arg(i) => env
                 .arg_types
                 .get(i.wrapping_sub(1))
@@ -569,6 +574,26 @@ impl P<'_> {
                         "'{lw}' doesn't exist in {}: nobody started it",
                         self.env.trigger_name
                     )),
+                    "sender" | "executor" | "console" if self.env.in_function => Err(format!(
+                        "'{lw}' doesn't exist inside a function; pass it as a parameter"
+                    )),
+                    "sender" | "executor" => Ok(Expr::Sender),
+                    "console" => Ok(Expr::Console),
+                    "command"
+                        if !self.env.in_function
+                            && matches!(self.peek(), Some(t) if t.is_lit("sender") || t.is_lit("executor")) =>
+                    {
+                        self.pos += 1;
+                        Ok(Expr::Sender)
+                    }
+                    "me" | "myself" if self.env.in_function => {
+                        Err("'me' doesn't exist inside a function; pass the player as a parameter".into())
+                    }
+                    "me" | "myself" if self.env.no_player => Err(format!(
+                        "'{lw}' doesn't exist in {}: nobody started it",
+                        self.env.trigger_name
+                    )),
+                    "me" | "myself" => Ok(Expr::Player),
                     "player" => Ok(Expr::Player),
                     "victim" if self.env.has_damage || self.env.has_attacker => Ok(Expr::Player),
                     "damage" if self.env.has_damage && !self.env.in_function => Ok(Expr::Damage),

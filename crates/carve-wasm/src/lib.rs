@@ -87,8 +87,15 @@ fn with_state<R>(
         let state = guard.as_mut()?;
         f(state, &mut host)
     };
-    for cmd in std::mem::take(&mut host.deferred) {
-        server.execute_command(&cmd, pumpkin_plugin_api::server::CommandSender::Console);
+    for (who, cmd) in std::mem::take(&mut host.deferred) {
+        let sender = who
+            .and_then(|u| uuid::parse(&u))
+            .and_then(|id| server.get_player_by_uuid(id))
+            .map_or(
+                pumpkin_plugin_api::server::CommandSender::Console,
+                pumpkin_plugin_api::server::CommandSender::Player,
+            );
+        server.execute_command(&cmd, sender);
     }
     Some(result)
 }
@@ -97,7 +104,8 @@ struct WasmHost<'a> {
     server: &'a Server,
     /// The sender of the command being run, for console replies.
     reply: Option<&'a CommandSender>,
-    deferred: Vec<String>,
+    /// Queued commands: the player uuid to run as (None: console), and the command.
+    deferred: Vec<(Option<String>, String)>,
     /// Player handles looked up during this `with_state` call, by UUID.
     /// Every lookup crosses the component boundary, so each UUID is looked
     /// up at most once per call. `None` means offline.
@@ -203,7 +211,15 @@ impl WasmHost<'_> {
     }
 
     fn execute_command(&mut self, command: &str) {
-        self.deferred.push(command.to_string());
+        self.deferred.push((None, command.to_string()));
+    }
+
+    fn execute_command_as(&mut self, p: &PlayerRef, command: &str) {
+        self.deferred.push((Some(p.uuid.clone()), command.to_string()));
+    }
+
+    fn send_console(&mut self, msg: &str) {
+        plog(ApiLevel::Info, msg);
     }
 
     fn resolve_player(&mut self, uuid: &str) -> Option<String> {
@@ -307,6 +323,8 @@ impl Host for TickHost<'_, '_> {
         kill(p: &PlayerRef);
         teleport(p: &PlayerRef, x: f64, y: f64, z: f64);
         execute_command(command: &str);
+        execute_command_as(p: &PlayerRef, command: &str);
+        send_console(msg: &str);
         resolve_player(uuid: &str) -> Option<String>;
         find_player(name: &str) -> Option<PlayerRef>;
         has_permission(p: &PlayerRef, node: &str) -> bool;
