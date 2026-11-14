@@ -8,6 +8,8 @@ use carve_core::health_food::Vital;
 use carve_core::{
     CommandOutcome, Engine, EventCtx, EventKind, Host, LogLevel, PlayerFlag, PlayerRef, Recipient, ScriptError, Variables,
 };
+mod w2_events_3;
+
 use pumpkin_plugin_api::DamageType;
 use pumpkin_plugin_api::command::{
     ArgumentType, Command, CommandError, CommandNode, CommandSender, ConsumedArgs, StringType,
@@ -1203,6 +1205,9 @@ impl Plugin for Carve {
         register_event::<PlayerToggleSneakEvent>(&context, EventKind::SneakToggle);
         register_event::<PlayerToggleSprintEvent>(&context, EventKind::SprintToggle);
         register_event::<PlayerToggleFlightEvent>(&context, EventKind::FlightToggle);
+        w2_events_3::register_all(&context, &|ev| {
+            engine.table().has_event(EventKind::Ext(ev))
+        });
         for r in [
             context.register_event_handler::<PlayerInteractEvent, _>(OnInteract, EventPriority::Normal, true),
             context.register_event_handler::<EntityDamageEvent, _>(OnDamage, EventPriority::Normal, true),

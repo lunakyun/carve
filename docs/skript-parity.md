@@ -163,55 +163,55 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ On Item Break
 - ⬜ On Item Damage
 - ⬜ On Item Despawn
-- ⬜ On Item Mend
-- ⬜ On Item Merge
-- ⬜ On Item Spawn
+- ✅ On Item Mend — `on item mend` — `player`, `event-text` (item), `event-number` (repair amount)
+- 🟡 On Item Merge — `on item merge` — fires, but no item or position values yet
+- 🟡 On Item Spawn — `on item spawn` — `event-text` is the item; no position value yet
 - ✅ On Join
-- ⬜ On Jump
-- ⬜ On Kick
-- ⬜ On Language Change
-- ⬜ On Leash / Unleash
-- ⬜ On Leaves Decay
+- ⛔ On Jump — Pumpkin has no jump event; `on player input` sees the jump bit (16) but there are no bit operators yet
+- ✅ On Kick — `on kick` — `player`, `event-text` (reason); can be cancelled
+- ✅ On Language Change — `on language change` — `player`, `event-text` (new locale)
+- 🟡 On Leash / Unleash — `on leash` (player) and `on unleash` (`event-text` reason); the leashed entity is not exposed
+- 🟡 On Leaves Decay — `on leaves decay` — can be cancelled; no block position value yet
 - ⬜ On Level Change
-- ⬜ On Lightning Strike
-- ⬜ On Loot Generate
-- ⬜ On Love Mode Enter
+- 🟡 On Lightning Strike — `on lightning strike` — can be cancelled; no position value yet
+- 🟡 On Loot Generate — `on loot generate` — `event-text` is the loot table; loot items are not exposed
+- 🟡 On Love Mode Enter — `on love mode enter` — `player` (the feeder, if a player), `event-number` (ticks in love)
 - ⬜ On Move / Rotate ⭐
-- ⬜ On Move On
-- ⬜ On Pathfind
-- ⬜ On Physics
+- ⛔ On Move On — no block-stepped-on event in Pumpkin; use `on move` plus a block check
+- ⛔ On Pathfind — Pumpkin has no pathfind event
+- ⛔ On Physics — Pumpkin's block physics event is too hot to bridge to scripts
 - ⬜ On Pick Up ⭐
-- ⬜ On Pig Zap
-- ⬜ On Piglin Barter
-- ⬜ On Piston Extend
-- ⬜ On Piston Retract
+- ⛔ On Pig Zap — Pumpkin never fires its pig zap event
+- 🟡 On Piglin Barter — `on piglin barter` — can be cancelled; barter items are not exposed
+- 🟡 On Piston Extend — `on piston extend` — `event-text` is the direction; no position value yet
+- 🟡 On Piston Retract — `on piston retract` — `event-text` is the direction; no position value yet
 - ✅ On Place
-- ⬜ On Player Chunk Enter
-- ⬜ On Player Chunk Enters
-- ⬜ On Player Deep Sleep
+- ⛔ On Player Chunk Enter — no chunk enter event for players in Pumpkin's plugin API
+- ⛔ On Player Chunk Enters — no chunk enter event for players in Pumpkin's plugin API
+- ⛔ On Player Deep Sleep — Pumpkin has bed enter/leave but no deep sleep event
 - ⬜ On Player GameMode Change
-- ⬜ On Player Input
-- ⬜ On Player Pick Item
-- ⬜ On Player Pickup Arrow
-- ⬜ On Player Trade
+- ✅ On Player Input — `on player input` — `event-text` is the input bits, `event-number` the same as a number (1 forward, 2 back, 4 left, 8 right, 16 jump, 32 sneak, 64 sprint)
+- ⛔ On Player Pick Item — Pumpkin has no pick item event
+- ⛔ On Player Pickup Arrow — Pumpkin has no arrow pickup event
+- ⛔ On Player Trade — Pumpkin only has trade select, not trade complete
 - ⬜ On Player World Change
-- ⬜ On Portal
-- ⬜ On Portal Create
-- ⬜ On Portal Enter
+- ✅ On Portal — `on portal` — `player` when the entity is a player
+- 🟡 On Portal Create — `on portal create` — `event-text` is the portal type; no position value yet
+- ✅ On Portal Enter — `on portal enter` — `player` when the entity is a player
 - ⬜ On Prepare Craft
-- ⬜ On Pressure Plate / Trip
-- ⬜ On Projectile Collide
+- ⛔ On Pressure Plate / Trip — no pressure plate event in the plugin API; `on redstone` sees the power change
+- ⛔ On Projectile Collide — no projectile collide event in Pumpkin (see On Projectile Hit)
 - ⬜ On Projectile Hit ⭐
 - ✅ On Quit — player still known until the first wait
-- ⬜ On Ready Arrow
-- ⬜ On Redstone
+- ⛔ On Ready Arrow — Pumpkin has no ready arrow event
+- 🟡 On Redstone — `on redstone` — `event-number` is the new power; no position value yet
 - ⛔ On Region Enter/Leave — needs WorldGuard; no Pumpkin equivalent
-- ⬜ On Resource Pack Request Response
+- ✅ On Resource Pack Request Response — `on resource pack response` — `player`, `event-text` (status)
 - ✅ On Respawn
-- ⬜ On Resurrect Attempt
-- ⬜ On Riptide
+- ✅ On Resurrect Attempt — `on resurrect attempt` — `player` when the entity is a player; can be cancelled
+- ⛔ On Riptide — Pumpkin has no riptide event
 - 🟡 On Script Load/Unload — `on load` only
-- ⬜ On Send Command List
+- ✅ On Send Command List — `on send command list` — `player`, `event-text` (command); can be cancelled
 - ⬜ On Server List Ping
 - 🟡 On Server Start/Stop — `on load` runs at start; no stop
 - ⬜ On Sheep Regrow Wool

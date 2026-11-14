@@ -92,6 +92,16 @@ pub fn lex(s: &str) -> Result<Vec<Tok>, String> {
                     word = format!("{word}-{digits}");
                 }
             }
+            // `event-text`, `event-number`: one word.
+            if word.eq_ignore_ascii_case("event") && i + 1 < n && c[i] == '-' && c[i + 1].is_alphabetic() {
+                i += 1;
+                let ws = i;
+                while i < n && c[i].is_alphabetic() {
+                    i += 1;
+                }
+                let part: String = c[ws..i].iter().collect();
+                word = format!("event-{}", part.to_ascii_lowercase());
+            }
             out.push(Tok::Word(word));
             continue;
         }

@@ -29,6 +29,8 @@ pub enum EventKind {
     SneakToggle,
     SprintToggle,
     FlightToggle,
+    /// Extra events, see `w2_events_3`.
+    Ext(crate::w2_events_3::Ev3),
 }
 
 impl EventKind {
@@ -49,6 +51,7 @@ impl EventKind {
             EventKind::SneakToggle => "sneak toggle",
             EventKind::SprintToggle => "sprint toggle",
             EventKind::FlightToggle => "flight toggle",
+            EventKind::Ext(e) => e.name(),
         }
     }
 
@@ -74,7 +77,7 @@ impl EventKind {
             "sneak toggle" | "toggle sneak" | "player toggle sneak" => EventKind::SneakToggle,
             "sprint toggle" | "toggle sprint" | "player toggle sprint" => EventKind::SprintToggle,
             "flight toggle" | "toggle flight" | "player toggle flight" => EventKind::FlightToggle,
-            _ => return None,
+            _ => return crate::w2_events_3::Ev3::parse(s).map(EventKind::Ext),
         })
     }
 
@@ -1983,7 +1986,7 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                         file,
                         top.num,
                         format!(
-                            "unknown event '{ev}', known: join, quit, chat, break, place, death, damage, respawn, click, right click, left click, sneak toggle, sprint toggle, flight toggle, load (and 'every N seconds:')"
+                            "unknown event '{ev}', known: join, quit, chat, break, place, death, damage, respawn, click, right click, left click, sneak toggle, sprint toggle, flight toggle, load, and the extra events in docs/syntax/w2-events-3.md (and 'every N seconds:')"
                         ),
                     ));
                 continue;
@@ -1999,11 +2002,11 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                 continue;
             }
             let env = Env {
-                has_message: k == EventKind::Chat,
+                has_message: k == EventKind::Chat || matches!(k, EventKind::Ext(e) if e.has_text()),
                 arg_types: vec![],
                 trigger_name: format!("'on {}'", k.name()),
-                no_player: k == EventKind::Load,
-                has_damage: k == EventKind::Damage,
+                no_player: k == EventKind::Load || matches!(k, EventKind::Ext(e) if !e.has_player()),
+                has_damage: k == EventKind::Damage || matches!(k, EventKind::Ext(e) if e.has_number()),
                 has_attacker: matches!(k, EventKind::Damage | EventKind::Death),
                 has_block: matches!(k, EventKind::Click | EventKind::RightClick | EventKind::LeftClick),
                 ..Env::default()
