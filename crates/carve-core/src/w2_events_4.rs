@@ -50,6 +50,8 @@ pub enum ExtEvent {
     WorldSave,
     WorldUnload,
     ZombieBreakDoor,
+    /// `on placeholder request for prefix "x"` (see `placeholders`).
+    PlaceholderRequest,
 }
 
 /// One named value of an event. Writable ones can be changed with `set`.
@@ -126,6 +128,7 @@ const NAMES: &[(&str, ExtEvent)] = &[
     ("zombie break door", ExtEvent::ZombieBreakDoor),
     ("entity break door", ExtEvent::ZombieBreakDoor),
     ("break door", ExtEvent::ZombieBreakDoor),
+    ("placeholder request", ExtEvent::PlaceholderRequest),
 ];
 
 impl ExtEvent {
@@ -190,6 +193,7 @@ impl ExtEvent {
             WorldInit | WorldLoad | WorldUnload => &[r!("world")],
             WorldSave => &[r!("world")],
             ZombieBreakDoor => &[r!("entity"), r!("block")],
+            PlaceholderRequest => &[r!("identifier"), w!("result"), r!("prefix")],
         }
     }
 
@@ -201,7 +205,7 @@ impl ExtEvent {
     /// Whether `cancel event` means anything here.
     pub fn cancellable(self) -> bool {
         use ExtEvent::*;
-        !matches!(self, ServerListPing | SystemTime(_) | SpawnChange | WorldInit | WorldLoad)
+        !matches!(self, ServerListPing | SystemTime(_) | SpawnChange | WorldInit | WorldLoad | PlaceholderRequest)
     }
 
     /// Events that can name a player as `player`.
@@ -279,11 +283,16 @@ pub fn parse_effect(toks: &[Tok], env: &Env) -> Option<Result<Effect, String>> {
     if !toks.first()?.is_lit("set") {
         return None;
     }
-    let name = match toks.get(1)? {
+    let at = if ev == ExtEvent::PlaceholderRequest && toks.get(1)?.is_lit("the") { 2 } else { 1 };
+    let name = match toks.get(at)? {
         Tok::Word(w) => w.to_ascii_lowercase(),
         _ => return None,
     };
-    let name = name.strip_prefix("event-")?;
+    let name = match name.strip_prefix("event-") {
+        Some(n) => n,
+        None if ev == ExtEvent::PlaceholderRequest => crate::placeholders::slot_alias(&name)?,
+        None => return None,
+    };
     let idx = match ev.slot_index(name) {
         Some(i) => i,
         None => {
@@ -298,10 +307,10 @@ pub fn parse_effect(toks: &[Tok], env: &Env) -> Option<Result<Effect, String>> {
     if !ev.slots()[idx].1 {
         return Some(Err(format!("'event-{name}' can't be changed in 'on {}'", ev.name())));
     }
-    if !toks.get(2)?.is_lit("to") {
+    if !toks.get(at + 1)?.is_lit("to") {
         return None;
     }
-    let value = match parse_expr(toks.get(3..)?, env) {
+    let value = match parse_expr(toks.get(at + 2..)?, env) {
         Ok(e) => e,
         Err(e) => return Some(Err(e)),
     };

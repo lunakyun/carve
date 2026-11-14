@@ -421,6 +421,8 @@ pub struct Engine {
     /// Event values changed by the run in progress (`w2_events_4`).
     ext_out: Vec<(u8, Value)>,
     w5: crate::w2_expressions_5::State,
+    /// Nesting of placeholder scripts that parse placeholders themselves.
+    ph_depth: u8,
 }
 
 impl Default for Engine {
@@ -516,6 +518,7 @@ impl Engine {
             boards: Default::default(),
             ext_out: Vec::new(),
             w5: Default::default(),
+            ph_depth: 0,
         }
     }
 
@@ -1975,6 +1978,7 @@ impl Engine {
             Expr::Items(s) => Value::List(self.eval_list(s, ex, host)?),
             Expr::Ext(f, args) => self.eval_ext(*f, args, ex, host)?,
             Expr::W5(w) => self.eval_w5(w, ex, host)?,
+            Expr::Ph(p) => self.eval_ph(p, ex, host)?,
             Expr::W6(w) => self.eval_w6(w, ex, host)?,
             Expr::ListAgg(a, s) => self.eval_agg(*a, s, ex, host)?,
             Expr::Sb(s) => self.sb_eval(s, ex, host)?,
@@ -2683,5 +2687,91 @@ impl Engine {
                 }
             }
         })
+    }
+}
+
+/// Placeholders (see `placeholders`).
+impl Engine {
+    #[inline(never)]
+    fn eval_ph(&mut self, p: &crate::placeholders::Ph, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
+        use crate::placeholders::Ph;
+        let (name_or_text, pl) = match p {
+            Ph::Get(a, pl) | Ph::Parse(a, pl) => (a, pl),
+        };
+        let mut s = String::new();
+        self.eval(name_or_text, ex, host)?.push_to(&mut s);
+        let player = match pl {
+            Some(e) => self.player(e, ex, host)?,
+            None => self.player(&Expr::Player, ex, host)?,
+        };
+        Ok(match p {
+            Ph::Get(..) => match self.placeholder(s.trim().trim_matches('%'), player.as_ref(), host) {
+                Some(v) => Value::Text(v),
+                None => Value::None,
+            },
+            Ph::Parse(..) => Value::Text(self.parse_placeholders(&s, player.as_ref(), host)),
+        })
+    }
+
+    /// Value of one placeholder like `player_name` or `myplugin_thing` (no
+    /// percent signs). `None` when nothing knows it.
+    pub fn placeholder(&mut self, name: &str, player: Option<&PlayerRef>, host: &mut dyn Host) -> Option<String> {
+        if let Some(v) = crate::placeholders::builtin(name, player, &self.vars, host) {
+            return Some(v);
+        }
+        let (prefix, ident) = name.split_once('_').unwrap_or((name, ""));
+        self.script_placeholder(&prefix.to_ascii_lowercase(), ident, player, host)
+    }
+
+    /// Replace the `%name%` placeholders in `text`. Unknown ones stay as written.
+    pub fn parse_placeholders(&mut self, text: &str, player: Option<&PlayerRef>, host: &mut dyn Host) -> String {
+        if text.len() > crate::placeholders::MAX_PARSE_LEN {
+            return text.to_string();
+        }
+        crate::placeholders::replace_all(text, |n| self.placeholder(n, player, host))
+    }
+
+    /// Ask the `on placeholder request` triggers. The first one that sets
+    /// `the result` wins.
+    fn script_placeholder(
+        &mut self,
+        prefix: &str,
+        ident: &str,
+        player: Option<&PlayerRef>,
+        host: &mut dyn Host,
+    ) -> Option<String> {
+        use crate::w2_events_4::ExtEvent;
+        let kind = EventKind::Ext4(ExtEvent::PlaceholderRequest);
+        if self.ph_depth >= crate::placeholders::MAX_DEPTH {
+            return None;
+        }
+        let table = self.table.clone();
+        let trigs = table.events.get(&kind)?;
+        self.ph_depth += 1;
+        let mut answer = None;
+        for trig in trigs {
+            let vals = vec![
+                Value::Text(ident.to_string()),
+                Value::None,
+                Value::Text(prefix.to_string()),
+            ];
+            let ctx = crate::w2_events_4::ctx(player.cloned(), vals);
+            let mut ex = Exec::new(trig, ctx);
+            if self.budget == 0 {
+                self.budget = self.max_instructions;
+            }
+            // A placeholder answers right away: a `wait` ends the run.
+            let _ = self.run(&mut ex, host, 0);
+            if let Some(v) = ex.ctx.args.get(1)
+                && !matches!(v, Value::None)
+            {
+                let mut s = String::new();
+                v.push_to(&mut s);
+                answer = Some(s);
+                break;
+            }
+        }
+        self.ph_depth -= 1;
+        answer
     }
 }

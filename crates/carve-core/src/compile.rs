@@ -2501,8 +2501,10 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
             lower.strip_prefix("on ")
         {
             let (ev, ev_filter) = crate::events_items::split_filter(ev.trim());
+            let (ev, ph_prefix) = crate::placeholders::split_header(ev);
             let (ev, mut filters) = split_click_filters(ev);
             filters.extend(ev_filter);
+            filters.extend(ph_prefix.map(|p| ("prefix", p)));
             let Some(k) = EventKind::parse(ev) else {
                 errors.push(ScriptError::new(
                         file,

@@ -25,6 +25,7 @@ pub mod list_literals;
 pub mod list_ops;
 pub mod op_kick_ban;
 pub mod pattern;
+pub mod placeholders;
 pub mod skbee_text;
 pub mod skbee_recipes_advancements;
 pub mod sounds;

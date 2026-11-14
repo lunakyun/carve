@@ -132,6 +132,7 @@ pub fn filter_ok(k: EventKind, what: &str) -> bool {
         "with" | "on" => matches!(k, EventKind::Click | EventKind::RightClick | EventKind::LeftClick),
         "entity" => k == EventKind::MobSpawn,
         "mode" => k == EventKind::GamemodeChange,
+        "prefix" => k == EventKind::Ext4(crate::w2_events_4::ExtEvent::PlaceholderRequest),
         _ => false,
     }
 }
@@ -146,6 +147,7 @@ pub fn filter_rhs(what: &str, text: &str) -> Option<Expr> {
             t.replace(' ', "_")
         }
         "mode" => crate::gamemode::normalize(t)?.to_string(),
+        "prefix" => t.to_ascii_lowercase(),
         _ => return None,
     };
     Some(Expr::Text(vec![Part::Lit(norm)]))
@@ -156,6 +158,7 @@ pub fn filter_lhs(what: &str) -> Option<Expr> {
     match what {
         "entity" => Some(Expr::EventVal(EventVal::Entity)),
         "mode" => Some(Expr::EventVal(EventVal::NewMode)),
+        "prefix" => Some(Expr::Ev4Val(2)),
         _ => None,
     }
 }
