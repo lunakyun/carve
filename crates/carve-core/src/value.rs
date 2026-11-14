@@ -83,6 +83,8 @@ pub enum Value {
     Queue(Vec<Value>),
     /// The world border of the named world.
     Border(String),
+    /// The result of `ray trace ...`. Not saved in global variables.
+    Ray(Box<crate::w4_skbee_raytrace_world::RayHit>),
 }
 
 /// A handle to an entity. Looked up through the host on every use, so a
@@ -112,6 +114,7 @@ impl Value {
             Value::List(_) => "list",
             Value::Nbt(_) => "nbt compound",
             Value::Entity(_) => "entity",
+            Value::Ray(_) => "ray trace result",
             v => crate::types_1::type_name(v),
         }
     }
@@ -167,6 +170,9 @@ impl Value {
                     && (aw.is_none() || bw.is_none() || aw == bw)
             }
             (Value::Entity(a), Value::Entity(b)) => a.uuid == b.uuid,
+            (Value::Chunk { world: aw, x: ax, z: az }, Value::Chunk { world: bw, x: bx, z: bz }) => {
+                ax == bx && az == bz && (aw.is_none() || bw.is_none() || aw == bw)
+            }
             (Value::Vector { x: ax, y: ay, z: az }, Value::Vector { x: bx, y: by, z: bz }) => {
                 (ax - bx).abs() < 1e-9 && (ay - by).abs() < 1e-9 && (az - bz).abs() < 1e-9
             }
@@ -243,6 +249,16 @@ impl Value {
             Value::Date(d) => out.push_str(&crate::time_dates::format_date(*d, crate::time_dates::DEFAULT_FORMAT)),
             Value::Console => out.push_str("console"),
             Value::Entity(e) => out.push_str(&e.kind.replace('_', " ")),
+            Value::Ray(r) => {
+                out.push_str("ray trace result");
+                if let Some(e) = &r.entity {
+                    out.push_str(" (hit ");
+                    e.push_to(out);
+                    out.push(')');
+                } else if let Some((x, y, z)) = r.block {
+                    out.push_str(&format!(" (hit block {x}, {y}, {z})"));
+                }
+            }
             Value::Vector { x, y, z } => {
                 out.push_str("x: ");
                 push_num(out, *x);

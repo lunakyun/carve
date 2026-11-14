@@ -232,3 +232,14 @@ Details: [syntax/skbee-utilities.md](syntax/skbee-utilities.md).
 - ✅ Main hand — `main hand of player`
 - ✅ World of, UUID of, ping — already in the base (`world of`, `uuid of`, `ping of`)
 - ⛔ Virtual furnace — Pumpkin's plugin API has no way to run a furnace without a block
+
+## Ray tracing, worlds, chunks and tags
+
+Details: [syntax/w4-skbee-raytrace-world.md](syntax/w4-skbee-raytrace-world.md).
+
+- 🟡 Ray trace — `ray trace from player [with max distance 50]`, `... from <location> in direction <vector>`, `hit block|entity|block face|position|distance of {_r}`. Blocks are found by stepping through the world and counting every non-air block as a full cube; entity hits need a host that can find entities. Thin rays only, no `with ray size`.
+- 🟡 Create, load and unload worlds — `create world "x" [with environment nether]`, `load world "x"`, `unload world "x"`. Pumpkin 0.1's plugin API cannot do this, so the script gets a normal error with the reason.
+- ✅ Chunks — `chunk at <location>`, `chunk at 3, 4 in world "w"`, `chunk x of <chunk>`, `chunks in radius 2 around player` (at most 16).
+- 🟡 Chunk and world loaded — `world "x" is loaded`, `chunk of player is loaded`; chunk answers need a host that can tell, otherwise false.
+- ✅ Minecraft tags — `block is tagged with minecraft tag "logs"`, `minecraft block tag "logs"`, `minecraft tags of oak log`. The vanilla tag list is built in, so custom datapack tags are unknown.
+- ⛔ Structure templates — the plugin API cannot load, save or place structures.

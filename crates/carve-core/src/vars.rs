@@ -66,7 +66,7 @@ impl Variables {
         let mut obj = Map::new();
         for (k, v) in &self.map {
             let j = match v {
-                Value::None | Value::List(_) | Value::Entity(_) | Value::Queue(_) => continue,
+                Value::None | Value::List(_) | Value::Entity(_) | Value::Queue(_) | Value::Ray(_) => continue,
                 Value::Num(n) => json!(n),
                 Value::Text(t) => json!(t),
                 Value::Bool(b) => json!(b),

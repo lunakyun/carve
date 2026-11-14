@@ -230,6 +230,8 @@ pub enum Expr {
     W4F(Box<crate::w4_functions::Node>),
     /// Colors, named values and other types (see `types_1`).
     T1(Box<crate::types_1::Node>),
+    /// Ray tracing, chunks and tags (see `w4_skbee_raytrace_world`).
+    Rtw(Box<crate::w4_skbee_raytrace_world::Node>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -460,6 +462,7 @@ impl Expr {
             Expr::W7(n) => n.ty,
             Expr::W4F(n) => n.f.ty(),
             Expr::T1(n) => n.ty,
+            Expr::Rtw(n) => n.ty,
             Expr::Items(_) => Ty::List,
             Expr::Bound(b) => b.ty(),
             Expr::Sb(s) => s.ty(),
@@ -1621,6 +1624,9 @@ impl P<'_> {
             }
             Tok::Word(w) => {
                 let lw = w.to_ascii_lowercase();
+                if let Some(e) = self.rtw_head(&lw)? {
+                    return Ok(e);
+                }
                 if let Some(e) = self.t1_head(&lw)? {
                     return Ok(e);
                 }

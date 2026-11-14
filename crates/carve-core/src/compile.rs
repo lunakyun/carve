@@ -239,6 +239,8 @@ pub enum Cond {
     /// Rare conditions, boxed so this enum stays small.
     Rare3(Box<crate::w2_conditions_3::W2Cond>),
     Rare4(Box<crate::w4_conditions_1::W4Cond>),
+    /// Tag and loaded checks (`w4_skbee_raytrace_world`).
+    Rtw(Box<crate::w4_skbee_raytrace_world::RtwCond>),
     HasPerm {
         player: Expr,
         node: Expr,
@@ -347,6 +349,8 @@ pub enum Effect {
     W2e3(Box<crate::w2_effects_3::W2Eff>),
     W2Transform(Box<crate::w2_effects_3::Transform>),
     W6(Box<crate::w2_expressions_6::W6Effect>),
+    /// `create world`, `unload world` (`w4_skbee_raytrace_world`).
+    Rtw(Box<crate::w4_skbee_raytrace_world::RtwEffect>),
     SetHealth(Expr, Expr),
     SetGamemode(Expr, Expr),
     /// Experience change; the two expressions are in pattern order.
@@ -514,6 +518,7 @@ pub enum EffKind {
     W4(crate::w2_expressions_4::W4Eff),
     W2e3(crate::w2_effects_3::W2Op),
     W6(crate::w2_expressions_6::W6Op),
+    Rtw(crate::w4_skbee_raytrace_world::EOp),
     SetHealth,
     SetGamemode,
     Xp(crate::xp_level::XpOp),
@@ -585,6 +590,8 @@ pub enum CondKind {
     W3(crate::w2_conditions_3::W2Kind),
     /// Conditions from `w4_conditions_1`; the bool is negation.
     W4(crate::w4_conditions_1::Kind, bool),
+    /// Tag and loaded checks from `w4_skbee_raytrace_world`; the bool is negation.
+    Rtw(crate::w4_skbee_raytrace_world::CKind, bool),
 }
 
 /// Text effects (`replace ...`). Kept apart from `EFFECT_PATTERNS` so the
@@ -755,6 +762,11 @@ fn registry() -> &'static Registry {
                     .iter()
                     .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
             )
+            .chain(
+                crate::w4_skbee_raytrace_world::EFFECT_PATTERNS
+                    .iter()
+                    .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
+            )
             .collect(),
         conditions: crate::op_kick_ban::CONDITION_PATTERNS
             .iter()
@@ -766,6 +778,7 @@ fn registry() -> &'static Registry {
             .chain(crate::w2_conditions_2::FLAG_PATTERNS)
             .chain(crate::w2_conditions_3::W2_CONDITION_PATTERNS)
             .chain(crate::w4_conditions_1::CONDITION_PATTERNS)
+            .chain(crate::w4_skbee_raytrace_world::CONDITION_PATTERNS)
             .chain(CONDITION_PATTERNS)
             .filter_map(|(s, k)| Pattern::new(s, *k).ok())
             .collect(),
@@ -791,6 +804,7 @@ pub fn check_registry() -> Result<(), String> {
         .chain(crate::w2_effects_3::EFFECT_PATTERNS)
         .chain(crate::w2_expressions_5::EFFECT_PATTERNS)
         .chain(crate::w2_expressions_6::EFFECT_PATTERNS)
+        .chain(crate::w4_skbee_raytrace_world::EFFECT_PATTERNS)
     {
         Pattern::new(s, *k)?;
     }
@@ -807,6 +821,7 @@ pub fn check_registry() -> Result<(), String> {
         .chain(crate::w2_conditions_2::FLAG_PATTERNS)
             .chain(crate::w2_conditions_3::W2_CONDITION_PATTERNS)
             .chain(crate::w4_conditions_1::CONDITION_PATTERNS)
+            .chain(crate::w4_skbee_raytrace_world::CONDITION_PATTERNS)
         .chain(CONDITION_PATTERNS)
     {
         Pattern::new(s, *k)?;
@@ -1279,7 +1294,11 @@ impl Cx<'_> {
         }
         let mut type_err = None;
         let mut memo = Memo::default();
+        let rtw = crate::w4_skbee_raytrace_world::line_may_match(&toks);
         for p in &registry().conditions {
+            if !rtw && matches!(p.kind, CondKind::Rtw(..)) {
+                continue;
+            }
             match p.matches_memo(&toks, &self.env, &mut memo) {
                 Ok(caps) => return Some(build_cond(p.kind, caps)),
                 Err(Some(e)) if type_err.is_none() => type_err = Some(e),
@@ -1295,6 +1314,7 @@ impl Cx<'_> {
             .chain(crate::w2_conditions_2::FLAG_PATTERNS)
             .chain(crate::w2_conditions_3::W2_CONDITION_PATTERNS)
             .chain(crate::w4_conditions_1::CONDITION_PATTERNS)
+            .chain(crate::w4_skbee_raytrace_world::CONDITION_PATTERNS)
             .chain(CONDITION_PATTERNS)
             .map(|(s, _)| *s)
             .collect();
@@ -1731,6 +1751,7 @@ impl Cx<'_> {
             .chain(crate::w2_expressions_4::EFFECT_PATTERNS)
             .chain(crate::w2_effects_3::EFFECT_PATTERNS)
             .chain(crate::w2_expressions_6::EFFECT_PATTERNS)
+            .chain(crate::w4_skbee_raytrace_world::EFFECT_PATTERNS)
             .map(|(s, _)| *s)
             .collect();
         let mut e = ScriptError::new(
@@ -1824,6 +1845,11 @@ fn take_var(caps: &mut [Option<Capture>], i: usize) -> Option<VarRef> {
 }
 
 fn build_cond(kind: CondKind, mut c: Vec<Option<Capture>>) -> Cond {
+    if let CondKind::Rtw(k, negate) = kind {
+        let a = take_expr(&mut c, 0).unwrap_or(Expr::Num(0.0));
+        let b = take_expr(&mut c, 1);
+        return Cond::Rtw(Box::new(crate::w4_skbee_raytrace_world::build_cond(k, negate, a, b)));
+    }
     if let CondKind::W3(k) = kind {
         return match crate::w2_conditions_3::build(k, c) {
             Some(w) => Cond::Rare3(Box::new(w)),
@@ -1857,7 +1883,7 @@ fn build_cond(kind: CondKind, mut c: Vec<Option<Capture>>) -> Cond {
             let b = crate::w4_conditions_1::has_b(kind).then_some(b);
             return Cond::Rare4(Box::new(crate::w4_conditions_1::build(kind, negate, a, b)));
         }
-        CondKind::W3(_) => CmpOp::Eq,
+        CondKind::W3(_) | CondKind::Rtw(..) => CmpOp::Eq,
         CondKind::IsSet => return Cond::IsSet(a, true),
         CondKind::NotSet => return Cond::IsSet(a, false),
         CondKind::Ne => CmpOp::Ne,
@@ -1969,6 +1995,7 @@ fn build_effect(kind: EffKind, mut c: Vec<Option<Capture>>) -> Option<Effect> {
         EffKind::W2e3(op) => return crate::w2_effects_3::build(op, c),
         EffKind::W5(op) => return crate::w2_expressions_5::build(op, c),
         EffKind::W6(op) => return crate::w2_expressions_6::build(op, c),
+        EffKind::Rtw(op) => return crate::w4_skbee_raytrace_world::build(op, c),
         EffKind::Heal => Effect::Heal(take_expr(c, 0)?),
         EffKind::SetHealth => Effect::SetHealth(take_expr(c, 0)?, take_expr(c, 1)?),
         EffKind::SetGamemode => Effect::SetGamemode(take_expr(c, 0)?, take_expr(c, 1)?),
