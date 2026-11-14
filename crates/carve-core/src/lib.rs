@@ -9,6 +9,7 @@ pub mod engine;
 pub mod error;
 pub mod expr;
 pub mod gamemode;
+pub mod hashing;
 pub mod health_food;
 pub mod host;
 pub mod items;
@@ -25,6 +26,7 @@ pub mod player_flags;
 pub mod timespans;
 pub mod value;
 pub mod vars;
+pub mod w2_expressions_3;
 pub mod xp_level;
 
 pub use compile::{CommandDef, EventKind};

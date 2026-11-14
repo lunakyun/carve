@@ -86,7 +86,7 @@ pub fn looks_like_list_op(toks: &[Tok], env: &Env) -> bool {
             return true;
         }
     }
-    toks.iter().any(|t| t.is_lit("where"))
+    toks.iter().any(|t| t.is_lit("where") || t.is_lit("except"))
 }
 
 impl Cur<'_> {
@@ -115,6 +115,13 @@ impl Cur<'_> {
         while self.toks.get(pos).is_some_and(|t| t.is_lit("where")) {
             let (c, np) = self.pred(pos + 1)?;
             s = ListSrc::Filter(Box::new(s), Box::new(c));
+            pos = np;
+        }
+        // `{a::*} except {b::*}`
+        while self.toks.get(pos).is_some_and(|t| t.is_lit("except")) {
+            let (rhs, np) = self.base(pos + 1)?;
+            let f = crate::w2_expressions_3::ExtFn::Except;
+            s = ListSrc::One(Expr::Ext(f, vec![Expr::Items(Box::new(s)), Expr::Items(Box::new(rhs))]));
             pos = np;
         }
         Ok((s, pos))

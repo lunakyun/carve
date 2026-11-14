@@ -197,6 +197,7 @@ impl LoopFrame {
 }
 
 /// `a, b and c`, like Skript prints a list.
+mod ext_eval;
 mod list_eval;
 
 fn join_list(items: &[(String, Value)], out: &mut String) {
@@ -1334,6 +1335,10 @@ impl Engine {
                 Expr::Indices(v) => {
                     out.extend(self.list_items(v, ex, host)?.into_iter().map(|(k, _)| Value::Text(k)));
                 }
+                Expr::Ext(..) => match self.eval(e, ex, host)? {
+                    Value::List(v) => out.extend(v),
+                    v => out.push(v),
+                },
                 _ => out.push(self.eval(e, ex, host)?),
             }
         }
@@ -1516,6 +1521,9 @@ impl Engine {
             });
         }
         let Value::Date(d) = first else {
+            if let (Value::Timespan { millis }, DateOp::Format, 1) = (&first, op, args.len()) {
+                return Ok(Value::Text(crate::w2_expressions_3::clock_text(*millis)));
+            }
             return Ok(Value::None);
         };
         Ok(match op {
@@ -1669,6 +1677,7 @@ impl Engine {
                 _ => Value::None,
             },
             Expr::Items(s) => Value::List(self.eval_list(s, ex, host)?),
+            Expr::Ext(f, args) => self.eval_ext(*f, args, ex, host)?,
             Expr::ListAgg(a, s) => self.eval_agg(*a, s, ex, host)?,
             Expr::RandomOf(v) => {
                 let items = self.list_items(v, ex, host)?;
@@ -1855,6 +1864,12 @@ impl Engine {
                 };
                 if let Some(p) = self.player(&h.player, ex, host)? {
                     crate::health_food::run(h, amount, &p, host);
+                }
+            }
+            Effect::W2(w) => {
+                let v = self.eval(&w.value, ex, host)?;
+                if let Some(p) = self.player(&w.player, ex, host)? {
+                    crate::w2_expressions_3::run(w, &v, &p, host);
                 }
             }
             Effect::Heal(p) => {

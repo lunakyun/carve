@@ -28,6 +28,8 @@ use pumpkin_plugin_api::{
     Context, Player, Plugin, PluginMetadata, Server, permissions, register_plugin, uuid,
 };
 
+mod w2_expressions_3;
+
 const SCRIPTS_DIR: &str = "scripts";
 const VARS_FILE: &str = "variables.json";
 const ADMIN_PERM: &str = "carve:admin";
@@ -366,6 +368,8 @@ impl WasmHost<'_> {
             }
             // No shield-blocking state in the plugin API yet.
             PlayerFlag::Blocking => false,
+            PlayerFlag::Gliding => e.is_fall_flying(),
+            PlayerFlag::Glowing => e.is_glowing(),
         }
     }
 
@@ -469,6 +473,34 @@ impl Host for TickHost<'_, '_> {
         vital(p: &PlayerRef, v: Vital) -> Option<f64>;
         set_vital(p: &PlayerRef, v: Vital, value: f64);
         damage(p: &PlayerRef, amount: f64);
+    }
+
+    fn pstat(&mut self, p: &PlayerRef, s: carve_core::w2_expressions_3::PStat) -> Option<f64> {
+        self.inner.pstat_impl(p, s)
+    }
+
+    fn set_pstat(&mut self, p: &PlayerRef, s: carve_core::w2_expressions_3::PStat, v: f64) {
+        self.inner.set_pstat_impl(p, s, v);
+    }
+
+    fn eye_location(&mut self, p: &PlayerRef) -> Option<(f64, f64, f64, String)> {
+        self.inner.eye_location_impl(p)
+    }
+
+    fn first_empty_slot(&mut self, p: &PlayerRef) -> Option<u32> {
+        self.inner.first_empty_slot_impl(p)
+    }
+
+    fn can_see(&mut self, viewer: &PlayerRef, other: &PlayerRef) -> bool {
+        self.inner.can_see_impl(viewer, other)
+    }
+
+    fn system_memory(&mut self) -> Option<(u64, u64)> {
+        self.inner.system_memory_impl()
+    }
+
+    fn top_block_y(&mut self, world: Option<&str>, x: i32, z: i32) -> Option<i32> {
+        self.inner.top_block_y_impl(world, x, z)
     }
 
     fn schedule_wait(&mut self, ticks: u64, token: u64) {
