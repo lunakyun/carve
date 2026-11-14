@@ -3,6 +3,7 @@
 use std::cell::Cell;
 
 use crate::lexer::{Tok, lex};
+use crate::list_literals::ElemSel;
 use crate::value::format_num;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -130,6 +131,10 @@ pub enum Expr {
     Replaced(Box<Expr>, Box<Expr>, Box<Expr>, bool),
     /// Text functions: case, substring, characters, index of, trimmed, reversed.
     TextFn(crate::text_case_substring::TextFn, Vec<Expr>),
+    /// `indices of {x::*}`: the index of every item, as text.
+    Indices(VarRef),
+    /// `first element of {x::*}`, `element 2 of {x::*}`.
+    Elem(ElemSel, VarRef),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -261,11 +266,12 @@ impl Expr {
             Expr::Distance(..) | Expr::Random(..) | Expr::Damage => Ty::Number,
             Expr::Attacker => Ty::Player,
             Expr::Math(..) | Expr::ParseNum(_) => Ty::Number,
-            Expr::RandomOf(_) | Expr::Split(..) => Ty::Object,
+            Expr::RandomOf(_) | Expr::Split(..) | Expr::Elem(..) => Ty::Object,
             Expr::Join(..) | Expr::Replaced(..) => Ty::Text,
             Expr::Length(_) => Ty::Number,
             Expr::TextFn(f, _) if f.returns_number() => Ty::Number,
             Expr::TextFn(..) => Ty::Text,
+            Expr::Indices(_) => Ty::Text,
             Expr::Default(a, b) => {
                 let (x, y) = (a.ty(env), b.ty(env));
                 if x == y { x } else { Ty::Object }
@@ -688,23 +694,23 @@ impl P<'_> {
                         let inner = self.primary_base()?;
                         Ok(Expr::Length(Box::new(inner)))
                     }
-                    "size" | "amount" | "count" => {
-                        if !matches!(self.peek(), Some(t) if t.is_lit("of")) {
-                            return Err(format!("expected '{lw} of {{list::*}}'"));
-                        }
-                        self.pos += 1;
-                        match self.peek().cloned() {
-                            Some(Tok::Var(v)) => {
-                                self.pos += 1;
-                                let var = parse_varref(&v, self.env)?;
-                                if !var.is_list() {
-                                    return Err(format!("'{lw} of' needs a list variable like {{x::*}}"));
-                                }
-                                Ok(Expr::Size(var))
-                            }
-                            _ => Err(format!("'{lw} of' needs a list variable like {{x::*}}")),
-                        }
+                    "number" if matches!(self.peek(), Some(t) if t.is_lit("of")) => self.size_of(&lw),
+                    "indices" | "indexes" if matches!(self.peek(), Some(t) if t.is_lit("of")) => {
+                        Ok(Expr::Indices(self.list_after_of(&lw)?))
                     }
+                    "first" | "last" if matches!(self.peek(), Some(t) if t.is_lit("element")) => {
+                        self.pos += 1;
+                        let sel = if lw == "first" { ElemSel::First } else { ElemSel::Last };
+                        Ok(Expr::Elem(sel, self.list_after_of(&format!("{lw} element"))?))
+                    }
+                    "element" if !matches!(self.peek(), Some(t) if t.is_lit("of")) => {
+                        let n = self.unary()?;
+                        if !Ty::Number.accepts(n.ty(self.env)) {
+                            return Err("'element N of' needs a number".into());
+                        }
+                        Ok(Expr::Elem(ElemSel::Nth(Box::new(n)), self.list_after_of("element N")?))
+                    }
+                    "size" | "amount" | "count" => self.size_of(&lw),
                     "location"
                         if matches!(self.peek(), Some(t) if t.is_lit("("))
                             && !self.has_function("location") =>
@@ -1070,6 +1076,27 @@ impl P<'_> {
     }
 
     /// `loop-value`, `loop-value-2`, `loop-player`, `loop-index`, `loop-number`, `loop-iteration`.
+    /// `of {x::*}` after a word like `indices`; the cursor is on `of`.
+    fn list_after_of(&mut self, what: &str) -> Result<VarRef, String> {
+        if !matches!(self.peek(), Some(t) if t.is_lit("of")) {
+            return Err(format!("expected '{what} of {{list::*}}'"));
+        }
+        self.pos += 1;
+        if let Some(Tok::Var(v)) = self.peek().cloned() {
+            self.pos += 1;
+            let var = parse_varref(&v, self.env)?;
+            if var.is_list() {
+                return Ok(var);
+            }
+        }
+        Err(format!("'{what} of' needs a list variable like {{x::*}}"))
+    }
+
+    /// `size of`, `amount of`, `number of`.
+    fn size_of(&mut self, word: &str) -> Result<Expr, String> {
+        Ok(Expr::Size(self.list_after_of(word)?))
+    }
+
     fn loop_expr(&self, word: &str) -> Result<Expr, String> {
         let loops = &self.env.loops;
         if loops.is_empty() {

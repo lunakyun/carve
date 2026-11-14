@@ -233,6 +233,12 @@ pub enum Effect {
     },
     /// sound (None: all sounds), player (None: the event player)
     StopSound(Option<Expr>, Option<Expr>),
+    /// `set {x::*} to a, b and c`.
+    ListSet(VarRef, Vec<Expr>),
+    /// `add a, b and c to {x::*}`.
+    ListAddAll(VarRef, Vec<Expr>),
+    /// `remove a, b from {x::*}`.
+    ListRemoveAll(VarRef, Vec<Expr>),
 }
 
 /// What a `loop` goes over.
@@ -859,20 +865,14 @@ impl Cx<'_> {
                 }
             };
         }
-        // `loop 1, 2 and 3:` / `loop "a" and "b":`
-        let mut items = Vec::new();
-        for part in toks.split(|t| t.is_lit(",") || t.is_lit("and")) {
-            match parse_expr(part, &self.env) {
-                Ok(e) => items.push(e),
-                Err(_) => {
-                    self.err(
-                        num,
-                        format!("can't understand 'loop {rest}' (use 'loop N times', 'loop {{x::*}}', 'loop all players' or 'loop a, b and c')"),
-                    );
-                    return None;
-                }
-            }
-        }
+        // `loop 1, 2 and 3:` / `loop "a" and "b":` / `loop indices of {x::*}:`
+        let Some(items) = crate::list_literals::split_items(&toks, &self.env) else {
+            self.err(
+                num,
+                format!("can't understand 'loop {rest}' (use 'loop N times', 'loop {{x::*}}', 'loop all players' or 'loop a, b and c')"),
+            );
+            return None;
+        };
         Some((LoopSrc::Values(items), LoopKind::Values))
     }
 
@@ -1038,6 +1038,17 @@ impl Cx<'_> {
         };
         if self.call_stmt(num, &toks) {
             return;
+        }
+        match crate::list_literals::parse_list_effect(&toks, &self.env) {
+            Some(Ok(eff)) => {
+                self.emit(Instr::Eff(eff), num);
+                return;
+            }
+            Some(Err(e)) => {
+                self.err(num, e);
+                return;
+            }
+            None => {}
         }
         let mut type_err = None;
         let mut memo = Memo::default();

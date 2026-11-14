@@ -10,6 +10,7 @@ use crate::compile::{
 };
 use crate::error::ScriptError;
 use crate::expr::{BinOp, Expr, Key, MathFn, Part, Prop, VarRef};
+use crate::list_literals::ElemSel;
 use crate::host::{Host, LogLevel};
 use crate::value::{PlayerRef, Recipient, Value, format_num, push_num};
 use crate::vars::{Locals, Variables};
@@ -918,13 +919,7 @@ impl Engine {
                     0
                 })
             }
-            LoopSrc::Values(es) => {
-                let mut v = Vec::with_capacity(es.len());
-                for e in es {
-                    v.push(self.eval(e, ex, host)?);
-                }
-                LoopItems::Values(v)
-            }
+            LoopSrc::Values(es) => LoopItems::Values(self.many(es, ex, host)?),
             LoopSrc::Players => {
                 let players = host.online_players();
                 // They are online right now: no need to ask again in this slice.
@@ -1276,6 +1271,106 @@ impl Engine {
         Ok(Value::Text(s))
     }
 
+    /// Evaluate list items: whole lists and `indices of` spread into their
+    /// values, everything else gives one value.
+    #[inline(never)]
+    fn many(&mut self, es: &[Expr], ex: &mut Exec, host: &mut dyn Host) -> Result<Vec<Value>, String> {
+        let mut out = Vec::with_capacity(es.len());
+        for e in es {
+            match e {
+                Expr::Var(v) if v.list => {
+                    out.extend(self.list_items(v, ex, host)?.into_iter().map(|(_, x)| x));
+                }
+                Expr::Indices(v) => {
+                    out.extend(self.list_items(v, ex, host)?.into_iter().map(|(k, _)| Value::Text(k)));
+                }
+                _ => out.push(self.eval(e, ex, host)?),
+            }
+        }
+        Ok(out)
+    }
+
+    /// `set {x::*} to a, b`, `add a, b to {x::*}`, `remove a, b from {x::*}`.
+    #[inline(never)]
+    fn list_bulk(&mut self, e: &Effect, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
+        let (Effect::ListSet(v, items) | Effect::ListAddAll(v, items) | Effect::ListRemoveAll(v, items)) = e
+        else {
+            return Ok(());
+        };
+        // Evaluate everything first, so `set {x::*} to {x::*}, 1` sees the old list.
+        let vals = self.many(items, ex, host)?;
+        let key = self.key(v, ex, host)?.into_owned();
+        let prefix = key.strip_suffix('*').unwrap_or(&key);
+        let local = v.local;
+        match e {
+            Effect::ListSet(..) => {
+                if local {
+                    ex.locals.delete(&key);
+                } else {
+                    self.vars.delete(&key);
+                }
+            }
+            Effect::ListRemoveAll(..) => {
+                for x in &vals {
+                    if local {
+                        ex.locals.list_remove(prefix, x);
+                    } else {
+                        self.vars.list_remove(prefix, x);
+                    }
+                }
+            }
+            _ => {}
+        }
+        if !matches!(e, Effect::ListRemoveAll(..)) {
+            for x in vals.into_iter().filter(|x| *x != Value::None) {
+                if local {
+                    ex.locals.list_push(prefix, x);
+                } else {
+                    self.vars.list_push(prefix, x);
+                }
+            }
+        }
+        if !local {
+            self.mark_dirty(host);
+        }
+        Ok(())
+    }
+
+    /// `indices of {x::*}`, `first element of {x::*}`, `element N of {x::*}`.
+    #[inline(never)]
+    fn eval_list_fn(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
+        match e {
+            Expr::Indices(v) => {
+                let items = self.list_items(v, ex, host)?;
+                if items.is_empty() {
+                    return Ok(Value::None);
+                }
+                let keys: Vec<(String, Value)> = items
+                    .into_iter()
+                    .map(|(k, _)| (String::new(), Value::Text(k)))
+                    .collect();
+                let mut s = String::new();
+                join_list(&keys, &mut s);
+                Ok(Value::Text(s))
+            }
+            Expr::Elem(sel, v) => {
+                let n = match sel {
+                    ElemSel::Nth(n) => Some(self.num(n, ex, host)?),
+                    _ => None,
+                };
+                let items = self.list_items(v, ex, host)?;
+                let i = match (sel, n) {
+                    (ElemSel::First, _) => 0,
+                    (ElemSel::Last, _) => items.len().wrapping_sub(1),
+                    (_, Some(n)) if n >= 1.0 && n.fract() == 0.0 => n as usize - 1,
+                    _ => return Ok(Value::None),
+                };
+                Ok(items.into_iter().nth(i).map(|(_, x)| x).unwrap_or(Value::None))
+            }
+            _ => Ok(Value::None),
+        }
+    }
+
     fn store(&mut self, local: bool, key: &str, val: Value, ex: &mut Exec, host: &mut dyn Host) {
         if local {
             ex.locals.set(key, val);
@@ -1498,6 +1593,7 @@ impl Engine {
                 .get(*d)
                 .map(|f| Value::Num(f.pos as f64))
                 .unwrap_or(Value::None),
+            Expr::Indices(_) | Expr::Elem(..) => return self.eval_list_fn(e, ex, host),
             Expr::Size(v) => {
                 let key = self.key(v, ex, host)?;
                 let prefix = key.strip_suffix('*').unwrap_or(&key);
@@ -1810,6 +1906,9 @@ impl Engine {
                         self.mark_dirty(host);
                     }
                 }
+            }
+            Effect::ListSet(..) | Effect::ListAddAll(..) | Effect::ListRemoveAll(..) => {
+                self.list_bulk(e, ex, host)?;
             }
             Effect::Delete(v) => {
                 let k = self.key(v, ex, host)?;
