@@ -167,6 +167,8 @@ pub enum Expr {
     Items(Box<ListSrc>),
     /// `sum of {x::*}`, `max of ...`, `size of {x::*} where [...]`.
     ListAgg(Agg, Box<ListSrc>),
+    /// SkBee-style NBT and item component expressions.
+    Nbt(Box<crate::skbee_nbt::NbtExpr>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -352,6 +354,7 @@ impl Expr {
                 DateOp::Format => Ty::Text,
             },
             Expr::Items(_) => Ty::List,
+            Expr::Nbt(n) => crate::skbee_nbt::expr_ty(n),
             Expr::ListAgg(Agg::Size | Agg::Sum, _) => Ty::Number,
             Expr::ListAgg(..) => Ty::Object,
             Expr::Default(a, b) => {
@@ -882,6 +885,14 @@ impl P<'_> {
                 let lw = w.to_ascii_lowercase();
                 if let Some(e) = self.text_fn(&lw)? {
                     return Ok(e);
+                }
+                if let Some(h) = crate::skbee_nbt::head(self.toks, self.pos - 1) {
+                    self.pos = h.after;
+                    if self.pos >= self.toks.len() {
+                        self.hit_end.set(true);
+                    }
+                    let operand = self.primary()?;
+                    return crate::skbee_nbt::build(&h, operand, self.env);
                 }
                 match lw.as_str() {
                     "the" => self.primary(),

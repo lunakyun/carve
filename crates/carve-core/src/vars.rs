@@ -79,6 +79,7 @@ impl Variables {
                 Value::Date(d) => json!({"date": d}),
                 Value::Console => json!({"console": true}),
                 Value::Timespan { millis } => json!({"timespan": millis}),
+                Value::Nbt(c) => json!({"nbt": c.to_snbt()}),
             };
             obj.insert(k.clone(), j);
         }
@@ -143,6 +144,9 @@ fn object_value(o: &Map<String, Json>) -> Option<Value> {
     }
     if o.contains_key("console") {
         return Some(Value::Console);
+    }
+    if let Some(s) = o.get("nbt").and_then(Json::as_str) {
+        return crate::skbee_nbt::Compound::parse(s).ok().map(|c| Value::Nbt(Box::new(c)));
     }
     if let Some(ms) = o.get("timespan").and_then(Json::as_i64) {
         return Some(Value::Timespan { millis: ms });
