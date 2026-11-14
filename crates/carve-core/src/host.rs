@@ -180,4 +180,25 @@ pub trait Host {
             }
         }
     }
+
+    /// Send a player to another server. The default runs the vanilla
+    /// `transfer` command as the console.
+    fn transfer(&mut self, player: &PlayerRef, host: &str, port: u16) {
+        self.execute_command(&format!("transfer {host} {port} {}", player.name));
+    }
+
+    /// Force a dead player to respawn. Hosts that cannot do it ignore this.
+    fn respawn(&mut self, _player: &PlayerRef) {}
+
+    /// Hide `target` from `viewer`'s view.
+    fn hide_player(&mut self, _viewer: &PlayerRef, _target: &PlayerRef) {}
+
+    /// Undo `hide_player`.
+    fn show_player(&mut self, _viewer: &PlayerRef, _target: &PlayerRef) {}
+
+    /// Put an item in a vanilla slot such as `armor.head`. The default runs
+    /// the `item replace` command as the console.
+    fn equip(&mut self, player: &PlayerRef, slot: &str, id: &str) {
+        self.execute_command(&format!("item replace entity {} {slot} with minecraft:{id}", player.name));
+    }
 }
