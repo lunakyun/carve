@@ -7,12 +7,14 @@ use std::sync::Mutex;
 use carve_core::health_food::Vital;
 use carve_core::block_ops::BlockPos;
 use carve_core::inventories::InvClick;
+use carve_core::weather_time::Weather;
 use carve_core::world_effects::{FxPos, ParticleFx};
 use carve_core::{
     CommandOutcome, Engine, EventCtx, EventKind, Host, LogLevel, PlayerFlag, PlayerRef, Recipient, ScriptError, Variables,
 };
 use pumpkin_plugin_api::DamageType;
 use pumpkin_plugin_api::World;
+use pumpkin_plugin_api::{GameRule, GameRuleValue};
 use pumpkin_plugin_api::wit::pumpkin::plugin::status_effect::StatusEffectInstance;
 use pumpkin_plugin_api::world::{BlockFlags, ExplosionInteraction};
 use pumpkin_plugin_api::command::{
@@ -578,6 +580,62 @@ impl WasmHost<'_> {
         }
     }
 
+    fn world_time(&mut self, world: Option<&str>) -> Option<i64> {
+        let w = self.named_world(world)?;
+        i64::try_from(w.get_time_of_day()).ok()
+    }
+
+    fn set_world_time(&mut self, world: Option<&str>, ticks: i64) {
+        if let Some(w) = self.named_world(world) {
+            w.set_time_of_day(ticks.max(0) as u64);
+        }
+    }
+
+    fn weather(&mut self, world: Option<&str>) -> Option<Weather> {
+        let w = self.named_world(world)?;
+        Some(Weather::from_flags(w.is_raining(), w.is_thundering()))
+    }
+
+    fn set_weather(&mut self, world: Option<&str>, to: Weather, ticks: Option<u32>) {
+        // The API has no length, so a length goes through the command.
+        if ticks.is_some() {
+            self.execute_command(&to.command(ticks));
+            return;
+        }
+        if let Some(w) = self.named_world(world) {
+            w.set_raining(to != Weather::Clear);
+            w.set_thundering(to == Weather::Thunder);
+        }
+    }
+
+    fn game_rule(&mut self, world: Option<&str>, rule: &str) -> Option<String> {
+        let rule = rule_enum(rule)?;
+        let w = self.named_world(world)?;
+        match w.get_game_rule(rule) {
+            GameRuleValue::Bool(b) => Some(b.to_string()),
+            GameRuleValue::Int(i) => Some(i.to_string()),
+        }
+    }
+
+    fn set_game_rule(&mut self, world: Option<&str>, rule: &str, value: &str) {
+        let (Some(r), Some(w)) = (rule_enum(rule), self.named_world(world)) else {
+            return;
+        };
+        match value {
+            "true" => w.set_game_rule_bool(r, true),
+            "false" => w.set_game_rule_bool(r, false),
+            n => match n.parse::<i32>() {
+                Ok(i) => w.set_game_rule_int(r, i),
+                Err(_) => plog(ApiLevel::Warn, &format!("bad game rule value '{n}'")),
+            },
+        }
+    }
+
+    fn set_difficulty(&mut self, _world: Option<&str>, to: &str) {
+        // There is no difficulty API yet; the command changes the default world.
+        self.execute_command(&format!("difficulty {to}"));
+    }
+
     fn vital(&mut self, p: &PlayerRef, v: Vital) -> Option<f64> {
         self.get(p).map(|pl| match v {
             Vital::Health => f64::from(pl.get_health()),
@@ -647,6 +705,26 @@ impl WasmHost<'_> {
             LogLevel::Error => ApiLevel::Error,
         };
         plog(l, msg);
+    }
+}
+
+impl WasmHost<'_> {
+    /// A world by name; with none named, the world of the first player
+    /// online, else the one called `world`.
+    fn named_world(&mut self, name: Option<&str>) -> Option<World> {
+        let found = match name {
+            Some(n) => self.server.get_world_by_name(n),
+            None => self
+                .server
+                .get_all_players()
+                .first()
+                .map(Player::get_world)
+                .or_else(|| self.server.get_world_by_name("world")),
+        };
+        if found.is_none() {
+            plog(ApiLevel::Warn, &format!("no world found: {}", name.unwrap_or("default")));
+        }
+        found
     }
 }
 
@@ -739,6 +817,13 @@ impl Host for TickHost<'_, '_> {
         inv_clear(p: &PlayerRef, current: bool);
         inv_remove(p: &PlayerRef, id: &str, count: u32) -> u32;
         close_inventory(p: &PlayerRef);
+        world_time(world: Option<&str>) -> Option<i64>;
+        set_world_time(world: Option<&str>, ticks: i64);
+        weather(world: Option<&str>) -> Option<Weather>;
+        set_weather(world: Option<&str>, to: Weather, ticks: Option<u32>);
+        game_rule(world: Option<&str>, rule: &str) -> Option<String>;
+        set_game_rule(world: Option<&str>, rule: &str, value: &str);
+        set_difficulty(world: Option<&str>, to: &str);
     }
 
     fn schedule_wait(&mut self, ticks: u64, token: u64) {
@@ -1577,3 +1662,69 @@ impl Plugin for Carve {
 }
 
 register_plugin!(Carve);
+
+/// A vanilla game rule name to the API enum.
+fn rule_enum(name: &str) -> Option<GameRule> {
+    Some(match name {
+        "advance_time" => GameRule::AdvanceTime,
+        "advance_weather" => GameRule::AdvanceWeather,
+        "allow_entering_nether_using_portals" => GameRule::AllowEnteringNetherUsingPortals,
+        "block_drops" => GameRule::BlockDrops,
+        "block_explosion_drop_decay" => GameRule::BlockExplosionDropDecay,
+        "command_block_output" => GameRule::CommandBlockOutput,
+        "command_blocks_work" => GameRule::CommandBlocksWork,
+        "drowning_damage" => GameRule::DrowningDamage,
+        "elytra_movement_check" => GameRule::ElytraMovementCheck,
+        "ender_pearls_vanish_on_death" => GameRule::EnderPearlsVanishOnDeath,
+        "entity_drops" => GameRule::EntityDrops,
+        "fall_damage" => GameRule::FallDamage,
+        "fire_damage" => GameRule::FireDamage,
+        "fire_spread_radius_around_player" => GameRule::FireSpreadRadiusAroundPlayer,
+        "forgive_dead_players" => GameRule::ForgiveDeadPlayers,
+        "freeze_damage" => GameRule::FreezeDamage,
+        "global_sound_events" => GameRule::GlobalSoundEvents,
+        "immediate_respawn" => GameRule::ImmediateRespawn,
+        "keep_inventory" => GameRule::KeepInventory,
+        "lava_source_conversion" => GameRule::LavaSourceConversion,
+        "limited_crafting" => GameRule::LimitedCrafting,
+        "locator_bar" => GameRule::LocatorBar,
+        "log_admin_commands" => GameRule::LogAdminCommands,
+        "max_block_modifications" => GameRule::MaxBlockModifications,
+        "max_command_forks" => GameRule::MaxCommandForks,
+        "max_command_sequence_length" => GameRule::MaxCommandSequenceLength,
+        "max_entity_cramming" => GameRule::MaxEntityCramming,
+        "max_minecart_speed" => GameRule::MaxMinecartSpeed,
+        "max_snow_accumulation_height" => GameRule::MaxSnowAccumulationHeight,
+        "mob_drops" => GameRule::MobDrops,
+        "mob_explosion_drop_decay" => GameRule::MobExplosionDropDecay,
+        "mob_griefing" => GameRule::MobGriefing,
+        "natural_health_regeneration" => GameRule::NaturalHealthRegeneration,
+        "player_movement_check" => GameRule::PlayerMovementCheck,
+        "players_nether_portal_creative_delay" => GameRule::PlayersNetherPortalCreativeDelay,
+        "players_nether_portal_default_delay" => GameRule::PlayersNetherPortalDefaultDelay,
+        "players_sleeping_percentage" => GameRule::PlayersSleepingPercentage,
+        "projectiles_can_break_blocks" => GameRule::ProjectilesCanBreakBlocks,
+        "pvp" => GameRule::Pvp,
+        "raids" => GameRule::Raids,
+        "random_tick_speed" => GameRule::RandomTickSpeed,
+        "reduced_debug_info" => GameRule::ReducedDebugInfo,
+        "respawn_radius" => GameRule::RespawnRadius,
+        "send_command_feedback" => GameRule::SendCommandFeedback,
+        "show_advancement_messages" => GameRule::ShowAdvancementMessages,
+        "show_death_messages" => GameRule::ShowDeathMessages,
+        "spawn_mobs" => GameRule::SpawnMobs,
+        "spawn_monsters" => GameRule::SpawnMonsters,
+        "spawn_patrols" => GameRule::SpawnPatrols,
+        "spawn_phantoms" => GameRule::SpawnPhantoms,
+        "spawn_wandering_traders" => GameRule::SpawnWanderingTraders,
+        "spawn_wardens" => GameRule::SpawnWardens,
+        "spawner_blocks_work" => GameRule::SpawnerBlocksWork,
+        "spectators_generate_chunks" => GameRule::SpectatorsGenerateChunks,
+        "spread_vines" => GameRule::SpreadVines,
+        "tnt_explodes" => GameRule::TntExplodes,
+        "tnt_explosion_drop_decay" => GameRule::TntExplosionDropDecay,
+        "universal_anger" => GameRule::UniversalAnger,
+        "water_source_conversion" => GameRule::WaterSourceConversion,
+        _ => return None,
+    })
+}

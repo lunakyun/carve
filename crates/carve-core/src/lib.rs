@@ -31,6 +31,7 @@ pub mod player_flags;
 pub mod timespans;
 pub mod value;
 pub mod vars;
+pub mod weather_time;
 pub mod xp_level;
 pub mod inventories;
 pub mod world_effects;

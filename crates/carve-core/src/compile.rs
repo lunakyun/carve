@@ -250,6 +250,8 @@ pub enum Cond {
     Block(Box<crate::block_ops::BlockCond>),
     /// Bound conditions (`is within bound`, `bound exists`, ...).
     Bound(Box<crate::skbee_bound::BoundCond>),
+    /// `it is raining`, `it is night`, `weather is clear`.
+    Wt(Box<crate::weather_time::WtCond>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -333,6 +335,8 @@ pub enum Effect {
     Inv(Box<crate::inventories::InvEff>),
     /// Create, delete and change bounds.
     Bound(Box<crate::skbee_bound::BoundEff>),
+    /// Time, weather, game rule and difficulty changes.
+    Wt(Box<crate::weather_time::WtEffect>),
 }
 
 /// What a `loop` goes over.
@@ -1151,6 +1155,9 @@ impl Cx<'_> {
         if let Some(c) = crate::skbee_bound::parse_cond(toks, &self.env) {
             return Some(c);
         }
+        if let Some(c) = crate::weather_time::parse_cond(toks, &self.env) {
+            return Some(c);
+        }
         let mut memo = Memo::default();
         registry()
             .conditions
@@ -1306,6 +1313,17 @@ impl Cx<'_> {
             }
         }
         match crate::block_ops::parse_effect(&toks, &self.env) {
+            Ok(Some(eff)) => {
+                self.emit(Instr::Eff(eff), num);
+                return;
+            }
+            Ok(None) => {}
+            Err(msg) => {
+                self.err(num, msg);
+                return;
+            }
+        }
+        match crate::weather_time::parse_effect(&toks, &self.env) {
             Ok(Some(eff)) => {
                 self.emit(Instr::Eff(eff), num);
                 return;

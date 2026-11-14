@@ -582,8 +582,8 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Strider Is Shivering
 - ⬜ Text Display Has Drop Shadow
 - ⬜ Text Display Visible Through Blocks
-- ⬜ Time ⭐
-- ⬜ Weather ⭐
+- ✅ Time ⭐ — `it is day`, `it is night`, `it is not night in world "w"`
+- ✅ Weather ⭐ — `it is raining`, `it is thundering`, `it is sunny`, `weather is clear`
 - ⬜ Will Consume Boosting Firework
 - ⬜ Will Despawn
 
@@ -714,7 +714,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Debug Info
 - ✅ Default Value — `a ? b`
 - ⬜ Difference
-- ⬜ Difficulty
+- ✅ Difficulty — `difficulty`, `difficulty of world "w"`, `set difficulty to hard`
 - ⬜ Direction
 - ⬜ Display Billboard
 - ⬜ Display Brightness
@@ -794,7 +794,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Furnace Times
 - ⬜ Game Effects with Data
 - ✅ Game Mode ⭐ — `gamemode of player`, `set gamemode of player to creative`
-- ⬜ Gamerule Value
+- ✅ Gamerule Value — `gamerule keepInventory`, `set gamerule keepInventory to true`
 - ⬜ Gliding State
 - ⬜ Glowing
 - ⬜ Gravity
@@ -1063,7 +1063,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Text Of
 - 🟡 Text Replacement ⭐
 - ⬜ The Egg
-- ⬜ Time ⭐
+- ✅ Time ⭐ — `time in world "w"`, `set time to 6:00 pm`, `add 5 minutes to time`; time is a number of ticks
 - ⬜ Time Lived of Entity
 - ⬜ Time Played
 - ✅ Time Since/Until ⭐ — `time since {d}`, `time until {d}`
@@ -1120,7 +1120,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Warden Most Angered At
 - ⬜ Warning Distance of World Border
 - ⬜ Warning Time of World Border
-- ⬜ Weather ⭐
+- ✅ Weather ⭐ — `weather in world "w"`, `set weather to rain for 5 minutes`
 - ⬜ Whether
 - ⬜ Whitelist
 - ⬜ With Fire Resistance
@@ -1237,7 +1237,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Damage Source
 - ⬜ Damage Type
 - ✅ Date ⭐
-- ⬜ Difficulty
+- 🟡 Difficulty — plain text: peaceful, easy, normal, hard
 - ⬜ Direction
 - ⬜ Directional Particle Effect
 - ⬜ Display Billboard
@@ -1262,7 +1262,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Function
 - ⬜ Game Effect
 - ✅ Game Mode ⭐ — `survival`, `creative`, `adventure`, `spectator`
-- ⬜ Gamerule
+- 🟡 Gamerule — a name checked at compile time; old names like doDaylightCycle are mapped
 - ⬜ Gamerule Value
 - ⬜ Gene
 - ⬜ Header
@@ -1316,7 +1316,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Teleport Flag
 - ✅ Text
 - ⬜ Text Component
-- ⬜ Time ⭐
+- 🟡 Time ⭐ — a number of ticks; `6:00` and `6 pm` literals; no separate time type
 - ⬜ Timeperiod
 - ✅ Timespan ⭐ — `5 minutes`, `1 hour and 30 seconds`, math, comparisons
 - ⬜ Transform Reason
@@ -1330,7 +1330,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Villager Profession
 - ⬜ Villager Type
 - ⬜ Visual Effect
-- ⬜ Weather Type
+- 🟡 Weather Type — plain text: clear, rain, thunder
 - ⬜ Wolf Variant
 - ✅ World
 - ⬜ World Border

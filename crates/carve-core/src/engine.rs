@@ -1209,6 +1209,7 @@ impl Engine {
             Cond::World(w) => self.world_cond(w, ex, host),
             Cond::Block(b) => self.block_cond(b, ex, host),
             Cond::Bound(b) => self.bound_cond(b, ex, host),
+            Cond::Wt(w) => self.wt_cond(w, ex, host),
             Cond::HasPerm { player, node, negate } => {
                 let p = self.eval(player, ex, host)?;
                 let node = self.text(node, ex, host)?;
@@ -1706,6 +1707,7 @@ impl Engine {
                 }
             }
             Expr::Date(op, args) => self.eval_date(*op, args, ex, host)?,
+            Expr::Wt(w) => self.wt_eval(w, ex, host)?,
             Expr::Color(on, e) => {
                 let t = self.text(e, ex, host)?;
                 Value::Text(if *on { crate::colors::colorize(&t) } else { crate::colors::strip(&t) })
@@ -2114,6 +2116,7 @@ impl Engine {
             Effect::Block(b) => self.block_effect(b, ex, host)?,
             Effect::Inv(i) => self.inv_effect(i, ex, host)?,
             Effect::Bound(b) => self.bound_effect(b, ex, host)?,
+            Effect::Wt(w) => self.wt_effect(w, ex, host)?,
             Effect::Cancel => {
                 if ex.waited {
                     host.log(
