@@ -19,7 +19,7 @@ hero:
       link: /reference/
     - theme: alt
       text: GitHub
-      link: https://github.com/void1z2/carve
+      link: https://github.com/lunakyun/carve
 
 features:
   - title: Almost plain English
@@ -31,7 +31,7 @@ features:
     link: /skript-parity
     linkText: Skript parity
   - title: Errors at load, not at runtime
-    details: Typos, wrong types and unknown items are caught on reload with file, line and a "did you mean" hint. A bad reload keeps the old scripts.
+    details: Typos, wrong types and unknown items are caught on reload with file, line and a "did you mean" hint. Like Skript, a broken line is skipped and the rest keeps working.
     link: /errors
     linkText: Reading errors
   - title: Fast and safe
@@ -48,18 +48,8 @@ features:
     linkText: Hosted servers
 ---
 
-## A taste
+## What is Carve?
 
-```carve
-on join:
-    add 1 to {joins::%uuid of player%}
-    if {joins::%uuid of player%} is 1:
-        broadcast "&eSay hi to %player%, they are new!"
-    else:
-        send title "Welcome back!" to player
+Carve is a scripting plugin for [Pumpkin](https://github.com/Pumpkin-MC/Pumpkin), the Minecraft server written in Rust. You write commands, events and small minigames in plain, Skript-style English, and `/carve reload` puts them live without a restart.
 
-command /heal [<player>]:
-    permission: heal
-    trigger:
-        heal player
-```
+Scripts are compiled once at load time into a flat instruction list and run by a small virtual machine inside a sandboxed WebAssembly plugin. A per-slice instruction budget stops runaway loops, and variables save to JSON on their own. If you have used Skript on Spigot or Paper, you already know most of Carve.
