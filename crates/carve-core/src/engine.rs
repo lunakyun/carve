@@ -901,6 +901,9 @@ impl Engine {
                     count: 1,
                 },
             },
+            Prop::DisplayName | Prop::TabName | Prop::Ping | Prop::Ip => online(v, &mut ex.seen, host)
+                .and_then(|p| crate::op_kick_ban::read_prop(host, prop, &p))
+                .unwrap_or(Value::None),
             Prop::Health => online(v, &mut ex.seen, host)
                 .and_then(|p| host.health(&p))
                 .map(Value::Num)
@@ -1119,6 +1122,11 @@ impl Engine {
                 let v = self.eval(e, ex, host)?;
                 Ok((v != Value::None) == *want)
             }
+            Cond::Admin(kind, target, negate) => {
+                let v = self.eval(target, ex, host)?;
+                let (name, p) = self.admin_target(&v, ex, host);
+                Ok(crate::op_kick_ban::check(host, *kind, &name, p.as_ref()) != *negate)
+            }
             Cond::HasPerm { player, node, negate } => {
                 let p = self.eval(player, ex, host)?;
                 let node = self.text(node, ex, host)?;
@@ -1171,6 +1179,18 @@ impl Engine {
         }
         let v = self.eval(e, ex, host)?;
         Ok(online(&v, &mut ex.seen, host))
+    }
+
+    /// A name for an admin target (a player or a text), and the player when
+    /// they are online.
+    fn admin_target(&mut self, v: &Value, ex: &mut Exec, host: &mut dyn Host) -> (String, Option<PlayerRef>) {
+        let p = online(v, &mut ex.seen, host);
+        let name = match (&p, v) {
+            (Some(p), _) => p.name.clone(),
+            (None, Value::Player(p)) => p.name.clone(),
+            (None, other) => other.to_string(),
+        };
+        (name, p)
     }
 
     fn key<'k>(&mut self, v: &'k VarRef, ex: &mut Exec, host: &mut dyn Host) -> Result<Cow<'k, str>, String> {
@@ -1562,6 +1582,15 @@ impl Engine {
                 if let Some(p) = self.player(to, ex, host)? {
                     host.send_action_bar(&p, &t);
                 }
+            }
+            Effect::Admin(kind, target, text) => {
+                let v = self.eval(target, ex, host)?;
+                let text = match text {
+                    Some(t) => Some(self.text(t, ex, host)?),
+                    None => None,
+                };
+                let (name, p) = self.admin_target(&v, ex, host);
+                crate::op_kick_ban::run_effect(host, *kind, &name, p.as_ref(), text.as_deref());
             }
             Effect::Heal(p) => {
                 if let Some(p) = self.player(p, ex, host)? {

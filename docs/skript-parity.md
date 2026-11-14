@@ -266,7 +266,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Apply Bone Meal
 - ⬜ Apply Fishing Lure
 - ⬜ Apply Potion Effect ⭐
-- ⬜ Ban ⭐
+- 🟡 Ban ⭐ — name, with reason, by IP; works on offline names
 - ⬜ Boss Bar Flags
 - ⬜ Break Block ⭐
 - ✅ Broadcast
@@ -323,7 +323,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Item Despawn
 - ⬜ Item Tooltips
 - ⬜ Keep Inventory / Experience
-- ⬜ Kick ⭐
+- ✅ Kick ⭐ — `kick player due to "x"`
 - ✅ Kill — players
 - ⬜ Knockback
 - ⬜ Launch firework
@@ -352,7 +352,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Make Say
 - ⬜ Make Sign Glow
 - ✅ Message — `send ... [to ...]`
-- ⬜ op/deop ⭐
+- ✅ op/deop ⭐ — `op player`, `deop player`
 - ⬜ Open Book
 - ⬜ Open/Close Inventory ⭐
 - ⬜ Open/Close Lid
@@ -481,7 +481,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Is Adult
 - ⬜ Is Alive
 - ⬜ Is Baby
-- ⬜ Is Banned
+- ⛔ Is Banned — condition parses, but Pumpkin has no way to read the ban list, so it is always false
 - ⬜ Is Bed/Anchor Spawn
 - ⬜ Is Block
 - ⬜ Is Block Redstone Powered
@@ -525,7 +525,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Is of Type
 - ⬜ Is on Ground
 - ⬜ Is Online ⭐
-- ⬜ Is Operator ⭐
+- ✅ Is Operator ⭐ — `player is op` (permission level above zero)
 - ⬜ Is Passable
 - ⬜ Is Pathfinding
 - ⬜ Is Persistent
@@ -721,7 +721,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Display Glow Color Override
 - ⬜ Display Height/Width
 - ⬜ Display Interpolation Delay/Duration
-- ⬜ Display Name ⭐
+- ✅ Display Name ⭐ — get and set, `display name`, `nickname`
 - ⬜ Display Shadow Radius/Strength
 - ⬜ Display Teleport Duration
 - ⬜ Display Transformation Rotation
@@ -830,7 +830,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Inventory Holder/Viewers/Rows/Slots
 - ⬜ Inventory Slot ⭐
 - ⬜ Inverse Boolean
-- ⬜ IP
+- ✅ IP — `ip of player`
 - 🟡 Item — item literals like `2 diamonds`
 - ⬜ Item Amount
 - ⬜ Item Component - Copy
@@ -918,7 +918,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Moon Phase
 - ⬜ Moved blocks
 - 🟡 Name — `name of player`
-- 🟡 Name / Display Name / Tab List Name — name only
+- ✅ Name / Display Name / Tab List Name
 - ⬜ Named Item/Inventory ⭐
 - ⬜ NaN
 - ⬜ Nearest Entity
@@ -954,7 +954,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Pi
 - ⬜ Picked Item/Block/Entity
 - ⬜ Pickup Delay
-- ⬜ Ping ⭐
+- ✅ Ping ⭐ — `ping of player`
 - ⬜ Plain Item
 - ⬜ Player Chat Completions
 - ⬜ Player Input Keys
@@ -1045,7 +1045,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ String Colors
 - ⬜ Style
 - ⬜ Substring ⭐
-- ⬜ Tab List Name
+- ✅ Tab List Name — get and set
 - ⬜ Tablisted Players
 - ⬜ Tag
 - ⬜ Tag Namespaced Key

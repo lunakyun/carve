@@ -6,6 +6,7 @@ use crate::blocks::{Line, parse_blocks};
 use crate::error::ScriptError;
 use crate::expr::{Env, Expr, LoopKind, Sig, Ty, VarRef, parse_expr, parse_template, parse_varref};
 use crate::lexer::{Tok, lex};
+use crate::op_kick_ban::{AdminCond, AdminEff};
 use crate::pattern::{Capture, Memo, Pattern, closest};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -176,6 +177,8 @@ pub enum Cond {
         high: Expr,
         negate: bool,
     },
+    /// `player is op`, `player is banned`.
+    Admin(AdminCond, Expr, bool),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -220,6 +223,8 @@ pub enum Effect {
     ListAdd(VarRef, Expr),
     /// `remove x from {list::*}`: remove every item equal to x.
     ListRemove(VarRef, Expr),
+    /// op, kick, ban, names: target and an optional text (reason or name).
+    Admin(AdminEff, Expr, Option<Expr>),
 }
 
 /// What a `loop` goes over.
@@ -313,6 +318,7 @@ pub enum EffKind {
     Add,
     Remove,
     Delete,
+    Admin(AdminEff),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -338,6 +344,8 @@ pub enum CondKind {
     HasItem,
     NotHasItem,
     InvContains,
+    /// negated
+    Admin(AdminCond, bool),
 }
 
 /// Effect patterns, tried in order (more specific first).
@@ -410,12 +418,14 @@ fn registry() -> &'static Registry {
     static R: OnceLock<Registry> = OnceLock::new();
     R.get_or_init(|| Registry {
         // The pattern strings are constants covered by tests; a bad one is skipped.
-        effects: EFFECT_PATTERNS
+        effects: crate::op_kick_ban::EFFECT_PATTERNS
             .iter()
+            .chain(EFFECT_PATTERNS)
             .filter_map(|(s, k)| Pattern::new(s, *k).ok())
             .collect(),
-        conditions: CONDITION_PATTERNS
+        conditions: crate::op_kick_ban::CONDITION_PATTERNS
             .iter()
+            .chain(CONDITION_PATTERNS)
             .filter_map(|(s, k)| Pattern::new(s, *k).ok())
             .collect(),
     })
@@ -423,10 +433,13 @@ fn registry() -> &'static Registry {
 
 /// Checks every registered pattern compiles. Used by tests.
 pub fn check_registry() -> Result<(), String> {
-    for (s, k) in EFFECT_PATTERNS {
+    for (s, k) in crate::op_kick_ban::EFFECT_PATTERNS.iter().chain(EFFECT_PATTERNS) {
         Pattern::new(s, *k)?;
     }
-    for (s, k) in CONDITION_PATTERNS {
+    for (s, k) in crate::op_kick_ban::CONDITION_PATTERNS
+        .iter()
+        .chain(CONDITION_PATTERNS)
+    {
         Pattern::new(s, *k)?;
     }
     Ok(())
@@ -836,7 +849,11 @@ impl Cx<'_> {
         }
         // A broken template or variable explains the failure best.
         let type_err = inner_error(&toks, &self.env).or(type_err);
-        let srcs: Vec<&'static str> = CONDITION_PATTERNS.iter().map(|(s, _)| *s).collect();
+        let srcs: Vec<&'static str> = crate::op_kick_ban::CONDITION_PATTERNS
+            .iter()
+            .chain(CONDITION_PATTERNS)
+            .map(|(s, _)| *s)
+            .collect();
         let mut e = ScriptError::new(
             self.file,
             num,
@@ -1022,7 +1039,11 @@ impl Cx<'_> {
             return;
         }
         let type_err = inner_error(&toks, &self.env).or(type_err);
-        let srcs: Vec<&'static str> = EFFECT_PATTERNS.iter().map(|(s, _)| *s).collect();
+        let srcs: Vec<&'static str> = crate::op_kick_ban::EFFECT_PATTERNS
+            .iter()
+            .chain(EFFECT_PATTERNS)
+            .map(|(s, _)| *s)
+            .collect();
         let mut e = ScriptError::new(
             self.file,
             num,
@@ -1107,6 +1128,7 @@ fn build_cond(kind: CondKind, mut c: Vec<Option<Capture>>) -> Cond {
     let a = take_expr(&mut c, 0).unwrap_or(Expr::Num(0.0));
     let b = take_expr(&mut c, 1).unwrap_or(Expr::Num(0.0));
     let op = match kind {
+        CondKind::Admin(k, negate) => return Cond::Admin(k, a, negate),
         CondKind::IsSet => return Cond::IsSet(a, true),
         CondKind::NotSet => return Cond::IsSet(a, false),
         CondKind::Ne => CmpOp::Ne,
@@ -1242,6 +1264,7 @@ fn build_effect(kind: EffKind, mut c: Vec<Option<Capture>>) -> Option<Effect> {
             }
         }
         EffKind::Delete => Effect::Delete(take_var(c, 0)?),
+        EffKind::Admin(k) => Effect::Admin(k, take_expr(c, 0)?, take_expr(c, 1)),
     })
 }
 

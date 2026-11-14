@@ -273,6 +273,42 @@ impl WasmHost<'_> {
         self.get(p).map(|pl| f64::from(pl.get_health()))
     }
 
+    fn is_op(&mut self, p: &PlayerRef) -> bool {
+        self.get(p)
+            .is_some_and(|pl| !matches!(pl.get_permission_level(), PermissionLevel::Zero))
+    }
+
+    fn display_name(&mut self, p: &PlayerRef) -> Option<String> {
+        self.get(p).map(|pl| pl.get_display_name().get_text())
+    }
+
+    fn set_display_name(&mut self, p: &PlayerRef, name: Option<&str>) {
+        if let Some(pl) = self.get(p) {
+            // Resetting means going back to the account name.
+            let t = text(name.unwrap_or(&p.name));
+            pl.set_display_name(t);
+        }
+    }
+
+    fn tab_list_name(&mut self, p: &PlayerRef) -> Option<String> {
+        self.get(p)?.get_tab_list_name().map(|t| t.get_text())
+    }
+
+    fn set_tab_list_name(&mut self, p: &PlayerRef, name: Option<&str>) {
+        if let Some(pl) = self.get(p) {
+            let t = name.map(text);
+            pl.set_tab_list_name(t);
+        }
+    }
+
+    fn ping(&mut self, p: &PlayerRef) -> Option<f64> {
+        self.get(p).map(|pl| f64::from(pl.get_ping()))
+    }
+
+    fn ip(&mut self, p: &PlayerRef) -> Option<String> {
+        self.get(p).map(|pl| pl.get_ip())
+    }
+
     fn log(&mut self, level: LogLevel, msg: &str) {
         let l = match level {
             LogLevel::Info => ApiLevel::Info,
@@ -317,6 +353,13 @@ impl Host for TickHost<'_, '_> {
         held_item(p: &PlayerRef) -> Option<(String, u32)>;
         count_item(p: &PlayerRef, id: &str) -> u32;
         health(p: &PlayerRef) -> Option<f64>;
+        is_op(p: &PlayerRef) -> bool;
+        display_name(p: &PlayerRef) -> Option<String>;
+        set_display_name(p: &PlayerRef, name: Option<&str>);
+        tab_list_name(p: &PlayerRef) -> Option<String>;
+        set_tab_list_name(p: &PlayerRef, name: Option<&str>);
+        ping(p: &PlayerRef) -> Option<f64>;
+        ip(p: &PlayerRef) -> Option<String>;
     }
 
     fn schedule_wait(&mut self, ticks: u64, token: u64) {

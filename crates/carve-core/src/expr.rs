@@ -161,6 +161,10 @@ pub enum Prop {
     X,
     Y,
     Z,
+    DisplayName,
+    TabName,
+    Ping,
+    Ip,
 }
 
 impl Prop {
@@ -172,6 +176,9 @@ impl Prop {
             "name" | "display" => Prop::Name,
             "tool" | "held" => Prop::Tool,
             "health" => Prop::Health,
+            "nickname" => Prop::DisplayName,
+            "ping" => Prop::Ping,
+            "ip" => Prop::Ip,
             "x" => Prop::X,
             "y" => Prop::Y,
             "z" => Prop::Z,
@@ -183,9 +190,9 @@ impl Prop {
         match self {
             Prop::Location => Ty::Location,
             Prop::World => Ty::World,
-            Prop::Uuid | Prop::Name => Ty::Text,
+            Prop::Uuid | Prop::Name | Prop::DisplayName | Prop::TabName | Prop::Ip => Ty::Text,
             Prop::Tool => Ty::Item,
-            Prop::Health | Prop::X | Prop::Y | Prop::Z => Ty::Number,
+            Prop::Health | Prop::X | Prop::Y | Prop::Z | Prop::Ping => Ty::Number,
         }
     }
 
@@ -446,6 +453,11 @@ impl P<'_> {
                 return Err("expected a property after 's, like player's location".into());
             };
             let lw = w.to_ascii_lowercase();
+            if let Some((prop, np)) = self.admin_prop_at(&lw, self.pos + 2) {
+                self.pos = np;
+                e = self.prop(prop, e)?;
+                continue;
+            }
             let prop = match lw.as_str() {
                 "inventory" => return Err("use 'player's inventory contains <item>' as a condition".into()),
                 _ => Prop::from_word(&lw).ok_or_else(|| format!("unknown property '{w}'"))?,
@@ -457,6 +469,29 @@ impl P<'_> {
             e = self.prop(prop, e)?;
         }
         Ok(e)
+    }
+
+    /// The admin properties (`display name`, `nickname`, `tab list name`,
+    /// `ping`, `ip [address]`) when their words start at `at`, with the
+    /// position after them.
+    fn admin_prop_at(&self, first: &str, at: usize) -> Option<(Prop, usize)> {
+        // Running out of words may just mean the span is cut short: say so,
+        // so the matcher tries a longer one.
+        let lit = |i: usize, w: &str| {
+            if i >= self.toks.len() {
+                self.hit_end.set(true);
+            }
+            matches!(self.toks.get(i), Some(t) if t.is_lit(w))
+        };
+        match first {
+            "display" if lit(at, "name") => Some((Prop::DisplayName, at + 1)),
+            "tab" if lit(at, "list") && lit(at + 1, "name") => Some((Prop::TabName, at + 2)),
+            "nickname" => Some((Prop::DisplayName, at)),
+            "ping" => Some((Prop::Ping, at)),
+            "ip" if lit(at, "address") => Some((Prop::Ip, at + 1)),
+            "ip" => Some((Prop::Ip, at)),
+            _ => None,
+        }
     }
 
     fn prop(&self, prop: Prop, of: Expr) -> Result<Expr, String> {
@@ -720,6 +755,18 @@ impl P<'_> {
                         if matches!(self.peek(), Some(t) if t.is_lit("of") || t.is_lit("item")) =>
                     {
                         let prop = Prop::from_word(&lw).ok_or("unknown property")?;
+                        self.prop_of(prop)
+                    }
+                    "display" | "tab" | "nickname" | "ping" | "ip"
+                        if self.admin_prop_at(&lw, self.pos).is_some_and(|(_, np)| {
+                            if np >= self.toks.len() {
+                                self.hit_end.set(true);
+                            }
+                            matches!(self.toks.get(np), Some(t) if t.is_lit("of"))
+                        }) =>
+                    {
+                        let (prop, np) = self.admin_prop_at(&lw, self.pos).ok_or("unknown property")?;
+                        self.pos = np;
                         self.prop_of(prop)
                     }
                     "name" => {

@@ -66,4 +66,69 @@ pub trait Host {
     fn health(&mut self, _player: &PlayerRef) -> Option<f64> {
         None
     }
+
+    // ---- admin: op, kick, ban, names, ping ----
+
+    /// Is the player an operator (permission level above zero)?
+    fn is_op(&mut self, _player: &PlayerRef) -> bool {
+        false
+    }
+
+    /// Make a player (online or not) an operator, or remove it. Default: the
+    /// `op` / `deop` console command.
+    fn set_op(&mut self, name: &str, op: bool) {
+        self.execute_command(&format!("{} {name}", if op { "op" } else { "deop" }));
+    }
+
+    /// Kick an online player. Default: the `kick` console command.
+    fn kick(&mut self, name: &str, reason: Option<&str>) {
+        match reason {
+            Some(r) => self.execute_command(&format!("kick {name} {r}")),
+            None => self.execute_command(&format!("kick {name}")),
+        }
+    }
+
+    /// Ban a player by name (or their IP). Default: `ban` / `ban-ip`.
+    fn ban(&mut self, name: &str, reason: Option<&str>, ip: bool) {
+        let cmd = if ip { "ban-ip" } else { "ban" };
+        match reason {
+            Some(r) => self.execute_command(&format!("{cmd} {name} {r}")),
+            None => self.execute_command(&format!("{cmd} {name}")),
+        }
+    }
+
+    /// Lift a ban. Default: `pardon` / `pardon-ip`.
+    fn unban(&mut self, name: &str, ip: bool) {
+        let cmd = if ip { "pardon-ip" } else { "pardon" };
+        self.execute_command(&format!("{cmd} {name}"));
+    }
+
+    /// Is this name on the ban list? Hosts with no way to read it say no.
+    fn is_banned(&mut self, _name: &str) -> bool {
+        false
+    }
+
+    /// Display name as plain text, `None` when unknown.
+    fn display_name(&mut self, _player: &PlayerRef) -> Option<String> {
+        None
+    }
+
+    /// Set the display name (`&` colors allowed); `None` resets it.
+    fn set_display_name(&mut self, _player: &PlayerRef, _name: Option<&str>) {}
+
+    fn tab_list_name(&mut self, _player: &PlayerRef) -> Option<String> {
+        None
+    }
+
+    fn set_tab_list_name(&mut self, _player: &PlayerRef, _name: Option<&str>) {}
+
+    /// Latency in milliseconds.
+    fn ping(&mut self, _player: &PlayerRef) -> Option<f64> {
+        None
+    }
+
+    /// The player's IP address.
+    fn ip(&mut self, _player: &PlayerRef) -> Option<String> {
+        None
+    }
 }

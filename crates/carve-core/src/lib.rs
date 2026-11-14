@@ -10,6 +10,7 @@ pub mod expr;
 pub mod host;
 pub mod items;
 pub mod lexer;
+pub mod op_kick_ban;
 pub mod pattern;
 pub mod value;
 pub mod vars;
