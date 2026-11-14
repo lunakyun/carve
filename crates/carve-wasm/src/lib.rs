@@ -415,6 +415,37 @@ impl WasmHost<'_> {
         }
     }
 
+    fn transfer(&mut self, p: &PlayerRef, host: &str, port: u16) {
+        if let Some(pl) = self.get(p) {
+            pl.transfer(host, port);
+        }
+    }
+
+    fn respawn(&mut self, p: &PlayerRef) {
+        if let Some(pl) = self.get(p) {
+            pl.respawn();
+        }
+    }
+
+    fn hide_player(&mut self, viewer: &PlayerRef, target: &PlayerRef) {
+        // The API takes the other player by value, so ask the server for a fresh handle.
+        let Some(t) = uuid::parse(&target.uuid).and_then(|id| self.server.get_player_by_uuid(id)) else {
+            return;
+        };
+        if let Some(v) = self.get(viewer) {
+            v.hide_player(t);
+        }
+    }
+
+    fn show_player(&mut self, viewer: &PlayerRef, target: &PlayerRef) {
+        let Some(t) = uuid::parse(&target.uuid).and_then(|id| self.server.get_player_by_uuid(id)) else {
+            return;
+        };
+        if let Some(v) = self.get(viewer) {
+            v.show_player(t);
+        }
+    }
+
     fn log(&mut self, level: LogLevel, msg: &str) {
         let l = match level {
             LogLevel::Info => ApiLevel::Info,
@@ -469,6 +500,10 @@ impl Host for TickHost<'_, '_> {
         vital(p: &PlayerRef, v: Vital) -> Option<f64>;
         set_vital(p: &PlayerRef, v: Vital, value: f64);
         damage(p: &PlayerRef, amount: f64);
+        transfer(p: &PlayerRef, host: &str, port: u16);
+        respawn(p: &PlayerRef);
+        hide_player(viewer: &PlayerRef, target: &PlayerRef);
+        show_player(viewer: &PlayerRef, target: &PlayerRef);
     }
 
     fn schedule_wait(&mut self, ticks: u64, token: u64) {

@@ -198,6 +198,7 @@ impl LoopFrame {
 
 /// `a, b and c`, like Skript prints a list.
 mod list_eval;
+mod w2_run;
 
 fn join_list(items: &[(String, Value)], out: &mut String) {
     if items.is_empty() {
@@ -1857,6 +1858,7 @@ impl Engine {
                     crate::health_food::run(h, amount, &p, host);
                 }
             }
+            Effect::W2(w) => self.run_w2(w, ex, host)?,
             Effect::Heal(p) => {
                 if let Some(p) = self.player(p, ex, host)? {
                     host.heal(&p);

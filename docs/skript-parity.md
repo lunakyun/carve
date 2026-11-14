@@ -260,60 +260,60 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 ## Effects (154)
 
 - ✅ Action Bar
-- ⬜ Allay Duplicate
-- ⬜ Allow / Prevent Leash Drop
-- ⬜ Allow Aging
-- ⬜ Apply Bone Meal
-- ⬜ Apply Fishing Lure
+- ⛔ Allay Duplicate (Pumpkin has no allay duplication)
+- ⛔ Allow / Prevent Leash Drop (no leash-drop control in the plugin API)
+- ⛔ Allow Aging (no animal age lock in the plugin API)
+- ⛔ Apply Bone Meal (no bone meal call in the plugin API)
+- ⛔ Apply Fishing Lure (no fishing lure control in the plugin API)
 - ⬜ Apply Potion Effect ⭐
 - ⬜ Ban ⭐
 - ⬜ Boss Bar Flags
 - ⬜ Break Block ⭐
 - ✅ Broadcast
-- ⬜ Cancel Active Item
+- ⛔ Cancel Active Item (no way to stop item use in the plugin API)
 - ⬜ Cancel Command Cooldown
 - ⬜ Cancel Drops
 - ✅ Cancel Event — before the first wait
 - 🟡 Change: Set/Add/Remove/Remove All/Delete/Reset ⭐ — set/add/remove/delete on variables and lists, including list literals like `set {x::*} to 1, 2 and 3`; no `remove all`, `reset`, or changing other expressions (health is separate)
-- ⬜ Charge Creeper
-- ⬜ Charge Entity
-- ⬜ Clear Entity Storage
+- ⛔ Charge Creeper (creeper state is not exposed)
+- ⛔ Charge Entity (creeper state is not exposed)
+- ⛔ Clear Entity Storage (no bee or entity storage in Pumpkin)
 - ⬜ Color Items
 - ✅ Command — `execute console command`, `execute command "x" [by player]`, `make player execute command "x"`
 - 🟡 Conditional / Unconditional — conditions on their own line stop the trigger
-- ⬜ Connect
-- ⬜ Consume Boosting Firework
-- ⬜ Consume Brewing Fuel
+- ✅ Connect (`connect player to server "host" [on port n]`)
+- ⛔ Consume Boosting Firework (no elytra firework boost control)
+- ⛔ Consume Brewing Fuel (brewing fuel use is not controllable)
 - ✅ Continue
-- ⬜ Copy Into Variable
+- ✅ Copy Into Variable (`copy {a::*} into {b::*}`)
 - 🟡 Damage/Heal/Repair — `heal`, `heal by`, `damage player by`; no repair
-- ⬜ Dance
+- ⛔ Dance (no parrot or allay dance state in the plugin API)
 - ⬜ Detonate Entities
 - ⬜ Do If ⭐
 - ⬜ Drop
 - 🟡 Enable/Disable/Unload/Reload Script — through `/carve enable/disable/reload`, not as an effect
 - ⬜ Enchant/Disenchant
-- ⬜ Enderman Teleport
+- ⛔ Enderman Teleport (enderman teleport is not exposed)
 - ⬜ Enforce Whitelist
 - ⬜ Entity Despawn
-- ⬜ Entity Visibility
-- ⬜ Equip
-- ⬜ Equippable Component - Dispense
-- ⬜ Equippable Component - Equip On Entities
-- ⬜ Equippable Component - Lose Durability
-- ⬜ Equippable Component - Shear Off
-- ⬜ Equippable Component - Swap Equipment
+- 🟡 Entity Visibility (players only: `hide p from q`, `reveal p to q`)
+- 🟡 Equip (players, one item: `equip player with diamond helmet`)
+- ⛔ Equippable Component - Dispense (no equippable component events)
+- ⛔ Equippable Component - Equip On Entities (no equippable component events)
+- ⛔ Equippable Component - Lose Durability (no equippable component events)
+- ⛔ Equippable Component - Shear Off (no equippable component events)
+- ⛔ Equippable Component - Swap Equipment (no equippable component events)
 - ✅ Exit — `exit loop`, `stop`
 - ⬜ Expand/Shrink World Border
 - ⬜ Explode Creeper
 - ⬜ Explosion ⭐
 - ⬜ Fail Command Execution
 - ✅ Feed ⭐ — `feed player [by n]`
-- ⬜ Force Attack
-- ⬜ Force Eating
+- ⛔ Force Attack (no attack call in the plugin API)
+- ⛔ Force Eating (no item use call in the plugin API)
 - ⬜ Force Enchantment Glint
-- ⬜ Force Panda On Back
-- ⬜ Force Respawn
+- ⛔ Force Panda On Back (panda state is not exposed)
+- ✅ Force Respawn
 - ⬜ Generate Loot
 - ⬜ Goat Horns
 - ⬜ Handedness
