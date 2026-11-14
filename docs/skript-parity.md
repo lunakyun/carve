@@ -108,7 +108,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ On Chunk Unload — `event-chunk-x`, `event-chunk-z`
 - 🟡 On Click — left/right, `with`/`on` filters; no entity clicks
 - 🟡 On Combust — `event-number` entity id, `event-timespan`; the entity is not a value yet
-- ⬜ On Command ⭐
+- ✅ On Command ⭐ — `on command ["name"]`, `command`, `full command`; can be cancelled
 - ✅ On Connect — cancel refuses the login
 - ✅ On Consume ⭐
 - 🟡 On Craft — recipe id only
@@ -137,7 +137,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ On Explosion Prime — `explosion radius`, `explosion fire`
 - 🟡 On Fade — wired; Pumpkin never fires block fade yet
 - ✅ On Firework Explode — `event-entity`
-- ⬜ On First Join ⭐
+- ✅ On First Join ⭐ — `on first join`; Carve remembers players in `first_join.txt`
 - ✅ On Fishing — `fishing state`, `caught type`, `fishing xp`
 - ✅ On Flight Toggle
 - ✅ On Flow — liquid flow; `flow source x/y/z`, `flow target x/y/z`
@@ -147,7 +147,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ On Gamemode Change ⭐
 - ✅ On Gliding State Change — `gliding state` is true when gliding starts
 - ✅ On Grow — `old block`, `new block`, `block x/y/z`
-- ⬜ On Hand Item Swap ⭐
+- 🟡 On Hand Item Swap ⭐ — `on swap hand items`, can be cancelled; the Pumpkin server never fires this event yet
 - ✅ On Harvest Block — `harvested count`, `block x/y/z`
 - ✅ On Heal — `heal amount`; `player` is set when a player heals
 - ✅ On Horse Jump — `jump power`
@@ -176,7 +176,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 On Lightning Strike — `on lightning strike` — can be cancelled; no position value yet
 - 🟡 On Loot Generate — `on loot generate` — `event-text` is the loot table; loot items are not exposed
 - 🟡 On Love Mode Enter — `on love mode enter` — `player` (the feeder, if a player), `event-number` (ticks in love)
-- ⬜ On Move / Rotate ⭐
+- 🟡 On Move / Rotate ⭐ — `on move`, `event-location`, `past event-location`; only when the block changes, no rotate; a restart is needed after adding the first `on move`
 - ⛔ On Move On — no block-stepped-on event in Pumpkin; use `on move` plus a block check
 - ⛔ On Pathfind — Pumpkin has no pathfind event
 - ⛔ On Physics — Pumpkin's block physics event is too hot to bridge to scripts
@@ -195,7 +195,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ On Player Pick Item — Pumpkin has no pick item event
 - ⛔ On Player Pickup Arrow — Pumpkin has no arrow pickup event
 - ⛔ On Player Trade — Pumpkin only has trade select, not trade complete
-- ⬜ On Player World Change
+- ✅ On Player World Change — `on world change`, `event-world`, `past event-world`
 - ✅ On Portal — `on portal` — `player` when the entity is a player
 - 🟡 On Portal Create — `on portal create` — `event-text` is the portal type; no position value yet
 - ✅ On Portal Enter — `on portal enter` — `player` when the entity is a player
@@ -234,7 +234,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ On System Time — `at 14:30 in real time:` (clock is UTC)
 - ✅ On Tame — `on tame:`; `player` is the new owner
 - ✅ On Target — `on target:`; `event-entity`, `event-target`
-- ⬜ On Teleport ⭐
+- ✅ On Teleport ⭐ — `on teleport`, `event-location`, `past event-location`; can be cancelled
 - ✅ On Throwing of an Egg — `on throwing of an egg:`; `event-hatching` and `event-hatches` can be set
 - 🟡 On Tool Change — `on tool change:`; gives the hotbar slots only, not the items
 - ⛔ On Unknown Command Execution — the plugin API has no such event

@@ -51,6 +51,7 @@ pub mod w2_events_1;
 pub mod w2_events_2;
 pub mod w2_events_3;
 pub mod w2_events_4;
+pub mod w4_events_movement;
 pub mod w2_effects_2;
 pub mod w2_conditions_3;
 pub mod w4_conditions_1;

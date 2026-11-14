@@ -201,7 +201,7 @@ impl WasmHost<'_> {
     }
 
     fn with_bar(id: &str, f: impl FnOnce(&BossBar)) {
-        let found = SB.with(|s| s.borrow().bars.get(id).map(|b| f(b)).is_some());
+        let found = SB.with(|s| s.borrow().bars.get(id).map(f).is_some());
         if !found {
             unknown_bar(id);
         }

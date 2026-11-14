@@ -1,5 +1,6 @@
 //! Carve as a Pumpkin WASM plugin. All game access goes through
 //! [`WasmHost`], which implements the core's `Host` trait.
+#![allow(clippy::missing_const_for_thread_local)]
 
 mod w2_events_4;
 
@@ -61,6 +62,7 @@ mod w2_events_2;
 mod w2_expressions_3;
 mod w4;
 mod w4_conditions_1;
+mod w4_events_movement;
 
 const SCRIPTS_DIR: &str = "scripts";
 const VARS_FILE: &str = "variables.json";
@@ -98,7 +100,7 @@ struct State {
 static STATE: Mutex<Option<State>> = Mutex::new(None);
 
 thread_local! {
-    /// The server handle, kept for IPC calls from other plugins (they come without one).
+    // The server handle, kept for IPC calls from other plugins (they come without one).
     static PH_SERVER: std::cell::RefCell<Option<Server>> = const { std::cell::RefCell::new(None) };
 }
 
@@ -2786,6 +2788,12 @@ impl Plugin for Carve {
             engine.table().has_event(EventKind::Ext3(ev))
         });
         w2_events_4::register_all(&context);
+        w4_events_movement::register_all(
+            &context,
+            engine
+                .table()
+                .has_event(EventKind::Mv(carve_core::w4_events_movement::MvEvent::Move)),
+        );
         for r in [
             context.register_event_handler::<PlayerInteractEvent, _>(OnInteract, EventPriority::Normal, true),
             context.register_event_handler::<InventoryCloseEvent, _>(OnInvClose, EventPriority::Normal, true),

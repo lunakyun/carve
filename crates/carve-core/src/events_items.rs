@@ -133,6 +133,7 @@ pub fn filter_ok(k: EventKind, what: &str) -> bool {
         "entity" => k == EventKind::MobSpawn,
         "mode" => k == EventKind::GamemodeChange,
         "prefix" => k == EventKind::Ext4(crate::w2_events_4::ExtEvent::PlaceholderRequest),
+        "command" => k == EventKind::Mv(crate::w4_events_movement::MvEvent::Command),
         _ => false,
     }
 }
