@@ -1530,6 +1530,21 @@ impl Engine {
         })
     }
 
+    /// Evaluate the arguments of a `w2_expressions_4` expression or effect.
+    /// A player that is offline becomes `<none>`.
+    #[inline(never)]
+    fn w4_args(&mut self, args: &[Expr], ex: &mut Exec, host: &mut dyn Host) -> Result<Vec<Value>, String> {
+        let mut vals = Vec::with_capacity(args.len());
+        for a in args {
+            let v = self.eval(a, ex, host)?;
+            vals.push(match v {
+                Value::Player(_) => online(&v, &mut ex.seen, host).map_or(Value::None, Value::Player),
+                v => v,
+            });
+        }
+        Ok(vals)
+    }
+
     #[inline(never)]
     fn eval_rare(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
         Ok(match e {
@@ -1641,6 +1656,10 @@ impl Engine {
                 let from = self.text(from, ex, host)?;
                 let to = self.text(to, ex, host)?;
                 Value::Text(crate::text_join_split::replace_text(&t, &from, &to, *all))
+            }
+            Expr::W4(w) => {
+                let vals = self.w4_args(&w.args, ex, host)?;
+                crate::w2_expressions_4::apply(w.op, &vals, host)
             }
             Expr::TextFn(f, args) => {
                 let mut vals = Vec::with_capacity(args.len());
@@ -1856,6 +1875,10 @@ impl Engine {
                 if let Some(p) = self.player(&h.player, ex, host)? {
                     crate::health_food::run(h, amount, &p, host);
                 }
+            }
+            Effect::W4(w) => {
+                let vals = self.w4_args(&w.args, ex, host)?;
+                crate::w2_expressions_4::run(w.op, &vals, host);
             }
             Effect::Heal(p) => {
                 if let Some(p) = self.player(p, ex, host)? {

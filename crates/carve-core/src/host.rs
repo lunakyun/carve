@@ -180,4 +180,47 @@ pub trait Host {
             }
         }
     }
+
+    // ---- w2_expressions_4 ----
+
+    /// Client language of an online player, like `en_us`.
+    fn player_locale(&mut self, _player: &PlayerRef) -> Option<String> {
+        None
+    }
+
+    /// Ticks left on an item cooldown, `None` when there is none.
+    fn item_cooldown(&mut self, _player: &PlayerRef, _item: &str) -> Option<i64> {
+        None
+    }
+
+    /// Start (or with 0 ticks, clear) an item cooldown.
+    fn set_item_cooldown(&mut self, _player: &PlayerRef, _item: &str, _ticks: i64) {}
+
+    /// Where the player last died: x, y, z and world name.
+    fn last_death_location(&mut self, _player: &PlayerRef) -> Option<(f64, f64, f64, String)> {
+        None
+    }
+
+    /// The last hit the player took.
+    fn last_damage(&mut self, _player: &PlayerRef) -> Option<crate::w2_expressions_4::DamageInfo> {
+        None
+    }
+
+    /// The join message of the `on join` event that is running.
+    fn join_message(&mut self) -> Option<String> {
+        None
+    }
+
+    /// Change the join message of the `on join` event that is running.
+    fn set_join_message(&mut self, _text: &str) {}
+
+    /// Last resource pack status the player reported (`loaded`, `declined`, ...).
+    fn resource_pack_status(&mut self, _player: &PlayerRef) -> Option<String> {
+        None
+    }
+
+    /// Y of the highest (or lowest) solid block in a column.
+    fn solid_block_y(&mut self, _world: &str, _x: i32, _z: i32, _highest: bool) -> Option<i32> {
+        None
+    }
 }

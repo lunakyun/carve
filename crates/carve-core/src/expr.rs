@@ -167,6 +167,8 @@ pub enum Expr {
     Items(Box<ListSrc>),
     /// `sum of {x::*}`, `max of ...`, `size of {x::*} where [...]`.
     ListAgg(Agg, Box<ListSrc>),
+    /// A rare expression from `w2_expressions_4`.
+    W4(Box<crate::w2_expressions_4::W4>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -344,6 +346,7 @@ impl Expr {
                 DateOp::Format => Ty::Text,
             },
             Expr::Items(_) => Ty::List,
+            Expr::W4(w) => w.ty(),
             Expr::ListAgg(Agg::Size | Agg::Sum, _) => Ty::Number,
             Expr::ListAgg(..) => Ty::Object,
             Expr::Default(a, b) => {
@@ -418,6 +421,9 @@ fn describe(t: &Tok) -> String {
         Tok::Sym(s) => format!("'{s}'"),
     }
 }
+
+#[path = "w2_expressions_4_parse.rs"]
+mod w4_parse;
 
 struct P<'a> {
     toks: &'a [Tok],
@@ -844,6 +850,9 @@ impl P<'_> {
             }
             Tok::Word(w) => {
                 let lw = w.to_ascii_lowercase();
+                if let Some(e) = self.w4(&lw)? {
+                    return Ok(e);
+                }
                 if let Some(e) = self.text_fn(&lw)? {
                     return Ok(e);
                 }
