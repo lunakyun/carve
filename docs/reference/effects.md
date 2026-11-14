@@ -7,99 +7,9 @@ editLink: false
 
 # Effects
 
-Effects are lines that do something. 146 entries. Search all of them on the [reference home](./index.md).
+Effects are lines that do something. 105 entries. Search all of them on the [reference home](./index.md).
 
 In a pattern, `%type%` is a value, `[...]` is optional and `(a|b)` means one of the words.
-
-## (burn|burning|fire) (duration|time) {#burn_burning_fire_duration_time}
-
-```carve
-(burn|burning|fire) (duration|time)
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## (cure|unpoison) %player% [of poison] {#cure_unpoison_player_of_poison}
-
-```carve
-(cure|unpoison) %player% [of poison]
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## (delete|clear|reset) metadata value %text% of %object% {#delete_clear_reset_metadata_value_text_of_object}
-
-```carve
-(delete|clear|reset) metadata value %text% of %object%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## (delete|clear|reset) persistent data value %text% of %object% {#delete_clear_reset_persistent_data_value_text_of_object}
-
-```carve
-(delete|clear|reset) persistent data value %text% of %object%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## (extinguish|put out) %player% {#extinguish_put_out_player}
-
-```carve
-(extinguish|put out) %player%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## (reset|clear) %player%'s (player|tab) list name {#reset_clear_player_s_player_tab_list_name}
-
-```carve
-(reset|clear) %player%'s (player|tab) list name
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## (reset|clear) (player|tab) list name of %player% {#reset_clear_player_tab_list_name_of_player}
-
-```carve
-(reset|clear) (player|tab) list name of %player%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## (toggle|switch) %variable% {#toggle_switch_variable}
-
-```carve
-(toggle|switch) %variable%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## [locally] suppress (conflict|conjunction|missing conjunction|variable save|variable saved|deprecation|deprecated syntax|unreachable code|empty script) (warning|warnings) {#locally_suppress_conflict_conjunction_missing_conjunction_variable_save_variable_saved_deprecation_deprecated_syntax_unreachable_code_empty_script_warning_warnings}
-
-```carve
-[locally] suppress (conflict|conjunction|missing conjunction|variable save|variable saved|deprecation|deprecated syntax|unreachable code|empty script) (warning|warnings)
-```
-
-_No description yet._
-
-Since **unreleased**
 
 ## Add {#add}
 
@@ -114,26 +24,6 @@ add 1 to {joins::%uuid of player%}
 ```
 
 Since **0.1.0** · Guide: [effects](../syntax/effects.md)
-
-## add %timespan% to %player%'s remaining air {#add_timespan_to_player_s_remaining_air}
-
-```carve
-add %timespan% to %player%'s remaining air
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## add %timespan% to remaining air of %player% {#add_timespan_to_remaining_air_of_player}
-
-```carve
-add %timespan% to remaining air of %player%
-```
-
-_No description yet._
-
-Since **unreleased**
 
 ## Add or remove items {#inventory_items}
 
@@ -208,15 +98,15 @@ broadcast "&e%player% joined!"
 
 Since **0.1.0** · Guide: [effects](../syntax/effects.md)
 
-## broadcast [text] (component|components) %text% {#broadcast_text_component_components_text}
+## Burn time {#burn_time}
 
 ```carve
-broadcast [text] (component|components) %text%
+(burn|burning|fire) (duration|time)
 ```
 
-_No description yet._
+Sets how long an entity stays on fire, used as `set burn time of player to 5 seconds`.
 
-Since **unreleased**
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
 ## Cancel event {#cancel}
 
@@ -374,36 +264,6 @@ set saturation of player to 5
 
 Since **unreleased** · Guide: [health-food](../syntax/health-food.md)
 
-## clear %player%'s title {#clear_player_s_title}
-
-```carve
-clear %player%'s title
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## clear [the] title {#clear_the_title}
-
-```carve
-clear [the] title
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## clear [the] title of %player% {#clear_the_title_of_player}
-
-```carve
-clear [the] title of %player%
-```
-
-_No description yet._
-
-Since **unreleased**
-
 ## Clear inventory {#clear_inventory}
 
 ```carve
@@ -432,25 +292,38 @@ close player's inventory
 
 Since **unreleased** · Guide: [inventories](../syntax/inventories.md)
 
-## connect %player% to [the] [server] %text% [on port %number%] {#connect_player_to_the_server_text_on_port_number}
+## Compass target {#compass_target}
+
+```carve
+set %player%'s compass target to %location%
+set compass target of %player% to %location%
+reset %player%'s compass target
+reset compass target of %player%
+```
+
+Sets or resets where a player's compass points.
+
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
+
+## Connect to server {#connect_server}
 
 ```carve
 connect %player% to [the] [server] %text% [on port %number%]
 ```
 
-_No description yet._
+Transfers a player to another server, on port 25565 unless one is given.
 
-Since **unreleased**
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
-## copy %variable% (into|to) %variable% {#copy_variable_into_to_variable}
+## Copy variable {#copy_variable}
 
 ```carve
 copy %variable% (into|to) %variable%
 ```
 
-_No description yet._
+Copies a variable, including every item of a list, into another variable.
 
-Since **unreleased**
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
 ## Create explosion {#explosion}
 
@@ -465,6 +338,52 @@ create explosion of force 3 at player
 ```
 
 Since **unreleased** · Guide: [world-effects](../syntax/world-effects.md)
+
+## Create, load or unload a world {#create_world}
+
+```carve
+create [a] [new] world [named] %text% [with environment (normal|nether|end)]
+load world %text%
+unload world %text%
+create [a] [new] world [named] %text%
+create [a] [new] world [named] %text% with environment (normal|overworld)
+create [a] [new] world [named] %text% with environment nether
+create [a] [new] world [named] %text% with environment end
+load world [named] %text%
+unload world [named] %text%
+```
+
+Creates a world (or loads it when it exists) or unloads one. Names are letters, digits, `_`, `-` and `.`. A refusal from the server is a script error with the reason.
+
+```carve
+on join:
+    create world "arena" with environment nether
+```
+
+Since **unreleased** · Guide: [w4-skbee-raytrace-world](../syntax/w4-skbee-raytrace-world.md)
+
+## Cure poison {#cure_poison}
+
+```carve
+(cure|unpoison) %player% [of poison]
+```
+
+Removes poison from a player.
+
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
+
+## Custom name visibility {#custom_name_visibility}
+
+```carve
+show %player%'s custom name
+show [the] custom name of %player%
+hide %player%'s custom name
+hide [the] custom name of %player%
+```
+
+Shows or hides the name tag of an entity.
+
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
 ## Damage {#damage}
 
@@ -494,15 +413,38 @@ delete {home::%uuid of player%}
 
 Since **0.1.0** · Guide: [effects](../syntax/effects.md)
 
-## dismount %player% {#dismount_player}
+## Delete metadata {#delete_metadata}
+
+```carve
+(delete|clear|reset) metadata value %text% of %object%
+```
+
+Removes a metadata value from an entity or block. Metadata is lost on restart.
+
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
+
+## Delete persistent data {#delete_persistent_data}
+
+```carve
+(delete|clear|reset) persistent data value %text% of %object%
+```
+
+Removes a persistent data value from an entity, block or item.
+
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
+
+## Dismount {#dismount}
 
 ```carve
 dismount %player%
+make %player% dismount
+eject %player%
+eject [all] passengers of %player%
 ```
 
-_No description yet._
+Makes a player get off whatever they are riding, or throws off their passengers.
 
-Since **unreleased**
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
 ## Display name {#display_name}
 
@@ -521,35 +463,15 @@ set display name of player to "&6Boss"
 
 Since **unreleased** · Guide: [op-kick-ban](../syntax/op-kick-ban.md)
 
-## eject %player% {#eject_player}
-
-```carve
-eject %player%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## eject [all] passengers of %player% {#eject_all_passengers_of_player}
-
-```carve
-eject [all] passengers of %player%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## equip %player% with %item% {#equip_player_with_item}
+## Equip {#equip}
 
 ```carve
 equip %player% with %item%
 ```
 
-_No description yet._
+Puts an item into the matching armour or hand slot of a player.
 
-Since **unreleased**
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
 ## Execute console command {#console_command}
 
@@ -565,15 +487,15 @@ execute console command "say hi"
 
 Since **0.1.0** · Guide: [effects](../syntax/effects.md)
 
-## exhaustion {#exhaustion}
+## Exhaustion {#exhaustion}
 
 ```carve
 exhaustion
 ```
 
-_No description yet._
+Sets a player's exhaustion, used as `set exhaustion of player to 2`.
 
-Since **unreleased**
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
 ## Exit loop / continue {#exit_loop}
 
@@ -593,15 +515,25 @@ loop 10 times:
 
 Since **unreleased** · Guide: [loops](../syntax/loops.md)
 
-## fall distance {#fall_distance}
+## Extinguish {#extinguish}
+
+```carve
+(extinguish|put out) %player%
+```
+
+Puts out a burning player.
+
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
+
+## Fall distance {#fall_distance}
 
 ```carve
 fall distance
 ```
 
-_No description yet._
+Sets how far a player has fallen, used as `set fall distance of player to 0`.
 
-Since **unreleased**
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
 ## Feed {#feed}
 
@@ -617,35 +549,53 @@ feed player
 
 Since **unreleased** · Guide: [health-food](../syntax/health-food.md)
 
-## force %player% to respawn {#force_player_to_respawn}
+## Filter section {#w4_filter}
+
+```carve
+filter %list variable% to match:
+```
+
+Keeps the elements of a list for which every condition below holds. `input` is the element and `input index` its index.
+
+```carve
+set {_l::*} to 1, 2, 3, 4
+filter {_l::*} to match:
+    input > 2
+```
+
+Since **unreleased** · Guide: [w4-functions-sections](../syntax/w4-functions-sections.md)
+
+## Flight {#flight}
+
+```carve
+make %player% (fly|start flying|be able to fly)
+make %player% (stop flying|not fly|stop fly|unable to fly)
+```
+
+Lets a player fly or takes flying away.
+
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
+
+## Force respawn {#force_respawn}
 
 ```carve
 force %player% to respawn
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## force [the] respawn of %player% {#force_the_respawn_of_player}
-
-```carve
 force [the] respawn of %player%
 ```
 
-_No description yet._
+Respawns a dead player without them clicking the button.
 
-Since **unreleased**
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
-## freeze (duration|time) {#freeze_duration_time}
+## Freeze time {#freeze_time}
 
 ```carve
 freeze (duration|time)
 ```
 
-_No description yet._
+Sets how long a player has been freezing in powder snow.
 
-Since **unreleased**
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
 ## Give item {#give}
 
@@ -663,25 +613,25 @@ give 2 diamonds to player
 
 Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
-## glowing [state] {#glowing_state}
+## Glowing state {#glowing_state}
 
 ```carve
 glowing [state]
 ```
 
-_No description yet._
+Turns the glowing outline of an entity on or off.
 
-Since **unreleased**
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
-## gravity [state] {#gravity_state}
+## Gravity state {#gravity_state}
 
 ```carve
 gravity [state]
 ```
 
-_No description yet._
+Turns gravity for an entity on or off.
 
-Since **unreleased**
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
 ## Heal {#heal}
 
@@ -698,45 +648,16 @@ heal player by 4
 
 Since **0.1.0** · Guide: [health-food](../syntax/health-food.md)
 
-## hide %player% {#hide_player}
+## Hide player {#hide_player}
 
 ```carve
 hide %player%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## hide %player% from %player% {#hide_player_from_player}
-
-```carve
 hide %player% from %player%
 ```
 
-_No description yet._
+Hides a player from everyone or from one player.
 
-Since **unreleased**
-
-## hide %player%'s custom name {#hide_player_s_custom_name}
-
-```carve
-hide %player%'s custom name
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## hide [the] custom name of %player% {#hide_the_custom_name_of_player}
-
-```carve
-hide [the] custom name of %player%
-```
-
-_No description yet._
-
-Since **unreleased**
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
 ## If / else {#if}
 
@@ -773,6 +694,49 @@ ignite player for 5 seconds
 
 Since **unreleased** · Guide: [world-effects](../syntax/world-effects.md)
 
+## Invisibility {#invisibility}
+
+```carve
+make %player% invisible
+make %player% (visible|not invisible)
+```
+
+Makes a player invisible or visible again.
+
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
+
+## Invulnerability {#invulnerability}
+
+```carve
+make %player% invulnerable
+make %player% (vulnerable|not invulnerable)
+```
+
+Makes a player immune to damage or vulnerable again.
+
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
+
+## Item cooldown {#item_cooldown}
+
+```carve
+set [the] [item] cooldown of %item% for %player% to %timespan%
+reset [the] [item] cooldown of %item% for %player%
+```
+
+Sets or resets the cooldown of an item type for a player.
+
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
+
+## Join message {#join_message}
+
+```carve
+set [the] join message to %text%
+```
+
+Changes the message shown when a player joins. Use in `on join`.
+
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
+
 ## Kick {#kick}
 
 ```carve
@@ -801,45 +765,37 @@ kill player
 
 Since **0.1.0** · Guide: [effects](../syntax/effects.md)
 
-## knock %player% (away from|away) %location% [with (strength|force) %number%] {#knock_player_away_from_away_location_with_strength_force_number}
+## Knockback {#knockback}
 
 ```carve
 knock %player% (away from|away) %location% [with (strength|force) %number%]
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## knock %player% (toward|towards|to) %location% [with (strength|force) %number%] {#knock_player_toward_towards_to_location_with_strength_force_number}
-
-```carve
 knock %player% (toward|towards|to) %location% [with (strength|force) %number%]
 ```
 
-_No description yet._
+Pushes a player away from or toward a location, with an optional strength.
 
-Since **unreleased**
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
-## log %text% {#log_text}
+## Log {#log}
 
 ```carve
 log %text%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## log %text% to [file] %text% {#log_text_to_file_text}
-
-```carve
 log %text% to [file] %text%
 ```
 
-_No description yet._
+Writes a line to the server log, or to a log file in the plugin folder.
 
-Since **unreleased**
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
+
+## Look at {#look_at}
+
+```carve
+make %player% (look|face) at %location%
+```
+
+Turns a player to face a location.
+
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
 ## Loop list {#loop_list}
 
@@ -873,166 +829,6 @@ loop 3 times:
 
 Since **unreleased** · Guide: [loops](../syntax/loops.md)
 
-## make %player% (fly|start flying|be able to fly) {#make_player_fly_start_flying_be_able_to_fly}
-
-```carve
-make %player% (fly|start flying|be able to fly)
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## make %player% (look|face) at %location% {#make_player_look_face_at_location}
-
-```carve
-make %player% (look|face) at %location%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## make %player% (ride|mount) %player% {#make_player_ride_mount_player}
-
-```carve
-make %player% (ride|mount) %player%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## make %player% (stop flying|not fly|stop fly|unable to fly) {#make_player_stop_flying_not_fly_stop_fly_unable_to_fly}
-
-```carve
-make %player% (stop flying|not fly|stop fly|unable to fly)
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## make %player% (visible|not invisible) {#make_player_visible_not_invisible}
-
-```carve
-make %player% (visible|not invisible)
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## make %player% (vulnerable|not invulnerable) {#make_player_vulnerable_not_invulnerable}
-
-```carve
-make %player% (vulnerable|not invulnerable)
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## make %player% dismount {#make_player_dismount}
-
-```carve
-make %player% dismount
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## make %player% invisible {#make_player_invisible}
-
-```carve
-make %player% invisible
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## make %player% invulnerable {#make_player_invulnerable}
-
-```carve
-make %player% invulnerable
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## make %player% say %text% {#make_player_say_text}
-
-```carve
-make %player% say %text%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## make %player% sprint {#make_player_sprint}
-
-```carve
-make %player% sprint
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## make %player% start sprinting {#make_player_start_sprinting}
-
-```carve
-make %player% start sprinting
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## make %player% stop sprinting {#make_player_stop_sprinting}
-
-```carve
-make %player% stop sprinting
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## make %player% swing {#make_player_swing}
-
-```carve
-make %player% swing
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## make %player% swing [their] [main] hand {#make_player_swing_their_main_hand}
-
-```carve
-make %player% swing [their] [main] hand
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## make %player% swing [their] off hand {#make_player_swing_their_off_hand}
-
-```carve
-make %player% swing [their] off hand
-```
-
-_No description yet._
-
-Since **unreleased**
-
 ## Make execute command {#make_execute}
 
 ```carve
@@ -1050,6 +846,16 @@ make player execute command "/spawn"
 
 Since **unreleased** · Guide: [senders](../syntax/senders.md)
 
+## Make say {#make_say}
+
+```carve
+make %player% say %text%
+```
+
+Makes a player send a chat message, or run a command when the text starts with `/`.
+
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
+
 ## Op / deop {#op}
 
 ```carve
@@ -1065,25 +871,16 @@ op player
 
 Since **unreleased** · Guide: [op-kick-ban](../syntax/op-kick-ban.md)
 
-## open [the] book [in [the] main hand] to %player% {#open_the_book_in_the_main_hand_to_player}
+## Open book {#open_book}
 
 ```carve
 open [the] book [in [the] main hand] to %player%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## open [the] book in [the] off hand to %player% {#open_the_book_in_the_off_hand_to_player}
-
-```carve
 open [the] book in [the] off hand to %player%
 ```
 
-_No description yet._
+Opens the book a player holds in their main or off hand.
 
-Since **unreleased**
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
 ## Open chest menu {#open_chest}
 
@@ -1127,15 +924,30 @@ play sound "block.note_block.pling" with volume 0.5 and pitch 2 to player
 
 Since **unreleased** · Guide: [sounds](../syntax/sounds.md)
 
-## poison %player% [for %timespan%] {#poison_player_for_timespan}
+## Poison {#poison}
 
 ```carve
 poison %player% [for %timespan%]
 ```
 
-_No description yet._
+Poisons a player, for 15 seconds unless a duration is given.
 
-Since **unreleased**
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
+
+## Remaining air {#remaining_air}
+
+```carve
+set %player%'s remaining air to %timespan%
+set remaining air of %player% to %timespan%
+add %timespan% to %player%'s remaining air
+add %timespan% to remaining air of %player%
+remove %timespan% from %player%'s remaining air
+remove %timespan% from remaining air of %player%
+```
+
+Changes how long a player can stay underwater before drowning.
+
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
 ## Remove {#remove}
 
@@ -1150,26 +962,6 @@ remove 5 from {coins::%uuid of player%}
 ```
 
 Since **0.1.0** · Guide: [effects](../syntax/effects.md)
-
-## remove %timespan% from %player%'s remaining air {#remove_timespan_from_player_s_remaining_air}
-
-```carve
-remove %timespan% from %player%'s remaining air
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## remove %timespan% from remaining air of %player% {#remove_timespan_from_remaining_air_of_player}
-
-```carve
-remove %timespan% from remaining air of %player%
-```
-
-_No description yet._
-
-Since **unreleased**
 
 ## Remove potion effects {#remove_potion}
 
@@ -1204,65 +996,31 @@ replace all "-" with " " in {_t}
 
 Since **unreleased** · Guide: [text-join-split](../syntax/text-join-split.md)
 
-## reset %player%'s compass target {#reset_player_s_compass_target}
+## Reset title {#reset_title}
 
 ```carve
-reset %player%'s compass target
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## reset %player%'s title {#reset_player_s_title}
-
-```carve
+clear %player%'s title
+clear [the] title
+clear [the] title of %player%
 reset %player%'s title
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## reset [the] [item] cooldown of %item% for %player% {#reset_the_item_cooldown_of_item_for_player}
-
-```carve
-reset [the] [item] cooldown of %item% for %player%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## reset [the] title {#reset_the_title}
-
-```carve
 reset [the] title
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## reset [the] title of %player% {#reset_the_title_of_player}
-
-```carve
 reset [the] title of %player%
 ```
 
-_No description yet._
+Clears the title a player is seeing.
 
-Since **unreleased**
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
-## reset compass target of %player% {#reset_compass_target_of_player}
+## Respawn location {#respawn_location}
 
 ```carve
-reset compass target of %player%
+set %player%'s respawn location to %location%
+set respawn location of %player% to %location%
 ```
 
-_No description yet._
+Sets where a player respawns after death.
 
-Since **unreleased**
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
 ## Return {#return}
 
@@ -1279,65 +1037,37 @@ function double(n: number) :: number:
 
 Since **unreleased** · Guide: [functions](../syntax/functions.md)
 
-## reveal %player% {#reveal_player}
+## Reveal player {#reveal_player}
 
 ```carve
 reveal %player%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## reveal %player% to %player% {#reveal_player_to_player}
-
-```carve
 reveal %player% to %player%
 ```
 
-_No description yet._
+Shows a hidden player again to everyone or to one player.
 
-Since **unreleased**
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
-## save [the] (world|worlds) {#save_the_world_worlds}
+## Ride {#ride}
+
+```carve
+make %player% (ride|mount) %player%
+```
+
+Makes a player ride another player.
+
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
+
+## Save worlds {#save_worlds}
 
 ```carve
 save [the] (world|worlds)
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## save all worlds {#save_all_worlds}
-
-```carve
 save all worlds
 ```
 
-_No description yet._
+Saves all worlds to disk.
 
-Since **unreleased**
-
-## send [text] (component|components) %text% [to %player%] {#send_text_component_components_text_to_player}
-
-```carve
-send [text] (component|components) %text% [to %player%]
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## send [the] resource pack %text% [with hash %text%] to %player% {#send_the_resource_pack_text_with_hash_text_to_player}
-
-```carve
-send [the] resource pack %text% [with hash %text%] to %player%
-```
-
-_No description yet._
-
-Since **unreleased**
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
 ## Send action bar {#action_bar}
 
@@ -1353,15 +1083,17 @@ send action bar "&7Coins: %{coins::%uuid of player%}%" to player
 
 Since **0.1.0** · Guide: [effects](../syntax/effects.md)
 
-## send action bar [text] (component|components) %text% to %player% {#send_action_bar_text_component_components_text_to_player}
+## Send component {#send_component}
 
 ```carve
+send [text] (component|components) %text% [to %player%]
+broadcast [text] (component|components) %text%
 send action bar [text] (component|components) %text% to %player%
 ```
 
-_No description yet._
+Sends a text component (with hover and click parts) to players or the whole server.
 
-Since **unreleased**
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
 ## Send message {#send}
 
@@ -1376,6 +1108,16 @@ send "&aHello %player%!" to player
 ```
 
 Since **0.1.0** · Guide: [effects](../syntax/effects.md)
+
+## Send resource pack {#resource_pack}
+
+```carve
+send [the] resource pack %text% [with hash %text%] to %player%
+```
+
+Asks a player to download a resource pack, optionally checked against a SHA-1 hash.
+
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
 ## Send title {#title}
 
@@ -1405,96 +1147,6 @@ set {spawn} to location of player
 
 Since **0.1.0** · Guide: [effects](../syntax/effects.md)
 
-## set %player%'s (player|tab) list name to %text% {#set_player_s_player_tab_list_name_to_text}
-
-```carve
-set %player%'s (player|tab) list name to %text%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## set %player%'s (player|tab) list priority to %number% {#set_player_s_player_tab_list_priority_to_number}
-
-```carve
-set %player%'s (player|tab) list priority to %number%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## set %player%'s compass target to %location% {#set_player_s_compass_target_to_location}
-
-```carve
-set %player%'s compass target to %location%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## set %player%'s remaining air to %timespan% {#set_player_s_remaining_air_to_timespan}
-
-```carve
-set %player%'s remaining air to %timespan%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## set %player%'s respawn location to %location% {#set_player_s_respawn_location_to_location}
-
-```carve
-set %player%'s respawn location to %location%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## set (player|tab) list name of %player% to %text% {#set_player_tab_list_name_of_player_to_text}
-
-```carve
-set (player|tab) list name of %player% to %text%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## set (player|tab) list priority of %player% to %number% {#set_player_tab_list_priority_of_player_to_number}
-
-```carve
-set (player|tab) list priority of %player% to %number%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## set [the] [item] cooldown of %item% for %player% to %timespan% {#set_the_item_cooldown_of_item_for_player_to_timespan}
-
-```carve
-set [the] [item] cooldown of %item% for %player% to %timespan%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## set [the] join message to %text% {#set_the_join_message_to_text}
-
-```carve
-set [the] join message to %text%
-```
-
-_No description yet._
-
-Since **unreleased**
-
 ## Set block {#set_block}
 
 ```carve
@@ -1508,16 +1160,6 @@ set block below player to diamond block
 ```
 
 Since **unreleased** · Guide: [blocks](../syntax/blocks.md)
-
-## set compass target of %player% to %location% {#set_compass_target_of_player_to_location}
-
-```carve
-set compass target of %player% to %location%
-```
-
-_No description yet._
-
-Since **unreleased**
 
 ## Set gamemode {#gamemode}
 
@@ -1536,45 +1178,25 @@ set gamemode of player to creative
 
 Since **unreleased** · Guide: [gamemode](../syntax/gamemode.md)
 
-## set metadata value %text% of %object% to %object% {#set_metadata_value_text_of_object_to_object}
+## Set metadata {#set_metadata}
 
 ```carve
 set metadata value %text% of %object% to %object%
 ```
 
-_No description yet._
+Stores a metadata value on an entity or block. Metadata is lost on restart.
 
-Since **unreleased**
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
-## set persistent data value %text% of %object% to %object% {#set_persistent_data_value_text_of_object_to_object}
+## Set persistent data {#set_persistent_data}
 
 ```carve
 set persistent data value %text% of %object% to %object%
 ```
 
-_No description yet._
+Stores a value on an entity, block or item that survives restarts.
 
-Since **unreleased**
-
-## set remaining air of %player% to %timespan% {#set_remaining_air_of_player_to_timespan}
-
-```carve
-set remaining air of %player% to %timespan%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## set respawn location of %player% to %location% {#set_respawn_location_of_player_to_location}
-
-```carve
-set respawn location of %player% to %location%
-```
-
-_No description yet._
-
-Since **unreleased**
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
 ## Set slot {#set_slot}
 
@@ -1589,46 +1211,6 @@ set slot 4 of player's current inventory to diamond
 ```
 
 Since **unreleased** · Guide: [inventories](../syntax/inventories.md)
-
-## show %player%'s custom name {#show_player_s_custom_name}
-
-```carve
-show %player%'s custom name
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## show [the] custom name of %player% {#show_the_custom_name_of_player}
-
-```carve
-show [the] custom name of %player%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## shut down [the] server {#shut_down_the_server}
-
-```carve
-shut down [the] server
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## shutdown [the] server {#shutdown_the_server}
-
-```carve
-shutdown [the] server
-```
-
-_No description yet._
-
-Since **unreleased**
 
 ## Sort list {#sort}
 
@@ -1645,6 +1227,33 @@ sort {_n::*}
 
 Since **unreleased** · Guide: [list-ops](../syntax/list-ops.md)
 
+## Spawn section {#w4_spawn_section}
+
+```carve
+spawn %entity% [at %location%]:
+```
+
+Spawns an entity and runs the body; `event-entity` is the new entity.
+
+```carve
+spawn a zombie at player:
+    set name of event-entity to "Bob"
+```
+
+Since **unreleased** · Guide: [w4-functions-sections](../syntax/w4-functions-sections.md)
+
+## Sprint {#sprint}
+
+```carve
+make %player% sprint
+make %player% start sprinting
+make %player% stop sprinting
+```
+
+Makes a player start or stop sprinting.
+
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
+
 ## Stop {#stop}
 
 ```carve
@@ -1660,15 +1269,17 @@ if player does not have permission "vip":
 
 Since **unreleased** · Guide: [loops](../syntax/loops.md)
 
-## stop [the] server {#stop_the_server}
+## Stop server {#stop_server}
 
 ```carve
 stop [the] server
+shut down [the] server
+shutdown [the] server
 ```
 
-_No description yet._
+Shuts the server down.
 
-Since **unreleased**
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
 ## Stop sound {#stop_sound}
 
@@ -1700,6 +1311,28 @@ strike lightning effect at player
 
 Since **unreleased** · Guide: [world-effects](../syntax/world-effects.md)
 
+## Suppress warnings {#suppress_warnings}
+
+```carve
+[locally] suppress (conflict|conjunction|missing conjunction|variable save|variable saved|deprecation|deprecated syntax|unreachable code|empty script) (warning|warnings)
+```
+
+Turns off a kind of compiler warning for the script, or for the next lines with `locally`.
+
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
+
+## Swing hand {#swing_hand}
+
+```carve
+make %player% swing
+make %player% swing [their] [main] hand
+make %player% swing [their] off hand
+```
+
+Plays the hand swing animation of a player.
+
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
+
 ## Tab list name {#tab_list_name}
 
 ```carve
@@ -1707,6 +1340,10 @@ set tab list name of %object% to %text%
 set %object%'s tab list name to %text%
 reset tab list name of %object%
 reset %object%'s tab list name
+set %player%'s (player|tab) list name to %text%
+set (player|tab) list name of %player% to %text%
+(reset|clear) %player%'s (player|tab) list name
+(reset|clear) (player|tab) list name of %player%
 ```
 
 Sets or resets the name shown in the tab list.
@@ -1716,6 +1353,17 @@ set tab list name of player to "&a[VIP] %player%"
 ```
 
 Since **unreleased** · Guide: [op-kick-ban](../syntax/op-kick-ban.md)
+
+## Tab list priority {#tab_list_priority}
+
+```carve
+set %player%'s (player|tab) list priority to %number%
+set (player|tab) list priority of %player% to %number%
+```
+
+Sets where a player is sorted in the tab list.
+
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
 ## Teleport {#teleport}
 
@@ -1742,6 +1390,16 @@ Teleports the player to a location. A location without a world keeps the player 
 ```carve
 teleport player to location(0, 64, 0, world "world")
 ```
+
+Since **unreleased** · Guide: [effects](../syntax/effects.md)
+
+## Toggle {#toggle}
+
+```carve
+(toggle|switch) %variable%
+```
+
+Flips a boolean variable between true and false.
 
 Since **unreleased** · Guide: [effects](../syntax/effects.md)
 

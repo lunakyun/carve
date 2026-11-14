@@ -7,7 +7,7 @@ editLink: false
 
 # Types
 
-Value types, used in function parameters and return types. 12 entries. Search all of them on the [reference home](./index.md).
+Value types, used in function parameters and return types. 19 entries. Search all of them on the [reference home](./index.md).
 
 In a pattern, `%type%` is a value, `[...]` is optional and `(a|b)` means one of the words.
 
@@ -20,6 +20,40 @@ boolean
 `true` or `false` (also `yes` and `no`).
 
 Since **unreleased** · Guide: [types](../syntax/types.md)
+
+## Chunk {#chunk}
+
+```carve
+chunk(%number%, %number%[, %world%])
+chunk (of|at) %location%
+```
+
+A chunk by its chunk coordinates, or the chunk a location is in. Can be stored and compared.
+
+```carve
+send "%chunk of location(17, 64, -1)%"
+```
+
+Since **unreleased** · Guide: [w4-types-1](../syntax/w4-types-1.md)
+
+## Color {#color}
+
+```carve
+color
+rgb(%number%, %number%, %number%)
+color from hex %text%
+hex of %color%
+<dye color name>
+```
+
+A color. Write a dye color (`red`, `light blue`), `rgb(r, g, b)` (0 to 255) or `color from hex "#rrggbb"`. Prints as `#rrggbb`, so `red value of` and the other channel expressions work on it.
+
+```carve
+send "%hex of rgb(255, 128, 0)%"
+send "%red value of lime%"
+```
+
+Since **unreleased** · Guide: [w4-types-1](../syntax/w4-types-1.md)
 
 ## Date {#date}
 
@@ -69,6 +103,33 @@ A point with x, y, z and an optional world. Blocks are locations with whole numb
 
 Since **unreleased** · Guide: [types](../syntax/types.md)
 
+## Named values {#named_values}
+
+```carve
+<value word>
+%text% parsed as <type>
+click type
+damage cause
+tree type
+moon phase
+spawn reason
+teleport cause
+villager profession
+```
+
+About sixty types whose values are a fixed list of names: click type, damage cause, tree type, moon phase, spawn reason, potion effect type, and so on (full list on the page). Write a value as plain words, or make it from text with `parsed as`. A value equals text with the same name and works as a function parameter type.
+
+```carve
+function describe(c: click type) :: text:
+    return "click: %{_c}%"
+on join:
+    send describe(shift left)
+    set {_m} to "waxing crescent" parsed as moon phase
+    send "%{_m}%"
+```
+
+Since **unreleased** · Guide: [w4-types-1](../syntax/w4-types-1.md)
+
 ## Number {#number}
 
 ```carve
@@ -100,6 +161,36 @@ An online player. Prints as the name.
 
 Since **0.1.0** · Guide: [types](../syntax/types.md)
 
+## Quaternion {#quaternion}
+
+```carve
+quaternion(%number%, %number%, %number%, %number%)
+identity quaternion
+```
+
+A rotation as w, x, y, z. Can be stored, compared and passed to functions.
+
+```carve
+set {q} to quaternion(1, 0, 0, 0)
+send "%{q}%"
+```
+
+Since **unreleased** · Guide: [w4-types-1](../syntax/w4-types-1.md)
+
+## Queue {#queue}
+
+```carve
+queue(%objects%)
+```
+
+A first-in-first-out collection made from values. Prints its items; not saved in variables.json.
+
+```carve
+send "%queue(1, 2, 3)%"
+```
+
+Since **unreleased** · Guide: [w4-types-1](../syntax/w4-types-1.md)
+
 ## Text {#text}
 
 ```carve
@@ -111,6 +202,21 @@ Text in quotes. A text slot accepts any value and prints it.
 
 Since **0.1.0** · Guide: [types](../syntax/types.md)
 
+## Timeperiod {#timeperiod}
+
+```carve
+timeperiod(%time%, %time%)
+time period(%time%, %time%)
+```
+
+A stretch of the day between two times, in ticks (0 is 6:00, 12000 is 18:00).
+
+```carve
+send "%timeperiod(0, 12000)%"
+```
+
+Since **unreleased** · Guide: [w4-types-1](../syntax/w4-types-1.md)
+
 ## Timespan {#timespan}
 
 ```carve
@@ -121,15 +227,15 @@ A length of time in milliseconds. One tick is 50 ms.
 
 Since **unreleased** · Guide: [timespans](../syntax/timespans.md)
 
-## vector {#vector}
+## Vector {#vector}
 
 ```carve
 vector
 ```
 
-_No description yet._
+A 3D direction or offset with x, y and z, like `vector(0, 1, 0)`.
 
-Since **unreleased**
+Since **unreleased** · Guide: [types](../syntax/types.md)
 
 ## World {#world}
 
@@ -140,4 +246,18 @@ world
 A world. Equals text with its name.
 
 Since **unreleased** · Guide: [types](../syntax/types.md)
+
+## World border {#world_border}
+
+```carve
+world border of %world%
+```
+
+The world border of a world, as a value you can keep in a variable. Size is read and set with the world border size forms.
+
+```carve
+set {b} to world border of world of player
+```
+
+Since **unreleased** · Guide: [w4-types-1](../syntax/w4-types-1.md)
 

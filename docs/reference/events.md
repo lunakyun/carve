@@ -7,9 +7,69 @@ editLink: false
 
 # Events
 
-Events and other top-level lines: what starts a trigger. 147 entries. Search all of them on the [reference home](./index.md).
+Events and other top-level lines: what starts a trigger. 150 entries. Search all of them on the [reference home](./index.md).
 
 In a pattern, `%type%` is a value, `[...]` is optional and `(a|b)` means one of the words.
+
+## Advancement done {#advancement_done}
+
+```carve
+on advancement done
+```
+
+A player completes an advancement. Has `player`.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Anvil prepare {#anvil_prepare}
+
+```carve
+on anvil prepare
+```
+
+An item is placed in an anvil and the result slot is being prepared. Has `player`.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Arm swing {#arm_swing}
+
+```carve
+on arm swing
+```
+
+A player swings their arm, for example when hitting air. Has `player`.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Bed enter {#bed_enter}
+
+```carve
+on bed enter
+```
+
+A player gets into a bed. Has `player`. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Bed leave {#bed_leave}
+
+```carve
+on bed leave
+```
+
+A player gets out of a bed. Has `player`.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Bell ring {#bell_ring}
+
+```carve
+on bell ring
+```
+
+A bell is rung. Has `player` when a player rang it.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
 
 ## Block break {#break}
 
@@ -29,6 +89,56 @@ on break:
 
 Since **0.1.0** · Guide: [triggers](../syntax/triggers.md)
 
+## Block burn {#burn}
+
+```carve
+on burn
+```
+
+A block is destroyed by fire. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Block damage {#block_damage}
+
+```carve
+on block damage
+```
+
+A player starts hitting a block. Has `player`. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Block drop {#block_drop}
+
+```carve
+on block drop
+```
+
+A broken block drops its items. Has `player`.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Block fertilize {#block_fertilize}
+
+```carve
+on block fertilize
+```
+
+A block is fertilized with bone meal. Has `player` when a player did it. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Block growth {#block_growth}
+
+```carve
+on block growth
+```
+
+A crop or plant grows a stage. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
 ## Block place {#place}
 
 ```carve
@@ -44,6 +154,126 @@ on place:
 ```
 
 Since **0.1.0** · Guide: [triggers](../syntax/triggers.md)
+
+## Book edit {#book_edit}
+
+```carve
+on book edit
+```
+
+A player edits a book and quill. Has `player`. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Book sign {#book_sign}
+
+```carve
+on book sign
+```
+
+A player signs a book and quill. Has `player`. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Bound enter {#bound_enter}
+
+```carve
+on bound enter
+```
+
+A player walks into a SkBee bound. Has `player`.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Bound exit {#bound_exit}
+
+```carve
+on bound exit
+```
+
+A player walks out of a SkBee bound. Has `player`.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Brewing complete {#brewing_complete}
+
+```carve
+on brewing complete
+```
+
+A brewing stand finishes brewing.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Brewing fuel {#brewing_fuel}
+
+```carve
+on brewing fuel
+```
+
+A brewing stand uses blaze powder as fuel. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Brewing start {#brewing_start}
+
+```carve
+on brewing start
+```
+
+A brewing stand starts brewing.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Broadcast {#broadcast}
+
+```carve
+on broadcast
+```
+
+A message is broadcast to the whole server. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Bucket catch entity {#bucket_catch_entity}
+
+```carve
+on bucket catch entity
+```
+
+A player catches a fish or axolotl in a bucket. Has `player`. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Bucket empty {#bucket_empty}
+
+```carve
+on bucket empty
+```
+
+A player empties a bucket. Has `player`. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Bucket fill {#bucket_fill}
+
+```carve
+on bucket fill
+```
+
+A player fills a bucket. Has `player`. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Can build check {#can_build_check}
+
+```carve
+on can build check
+```
+
+The server checks whether a block can be placed at a spot. Has `player`.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
 
 ## Chat {#chat}
 
@@ -62,6 +292,26 @@ on chat:
 
 Since **0.1.0** · Guide: [triggers](../syntax/triggers.md)
 
+## Chunk generate {#chunk_generate}
+
+```carve
+on chunk generate
+```
+
+A new chunk is generated.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Chunk unload {#chunk_unload}
+
+```carve
+on chunk unload
+```
+
+A chunk is unloaded.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
 ## Click {#click}
 
 ```carve
@@ -76,6 +326,16 @@ A player clicks air or a block. `with` checks the held item, `on` the clicked bl
 on right click with blaze rod:
     send "Whoosh!" to player
 ```
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Combust {#combust}
+
+```carve
+on combust
+```
+
+An entity catches fire. Can be cancelled.
 
 Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
 
@@ -95,6 +355,35 @@ command /greet <player> [<text>]:
 ```
 
 Since **0.1.0** · Guide: [commands](../commands.md)
+
+## Command (event) {#command-event}
+
+```carve
+on command
+on command "<name>"
+on player command
+```
+
+A player runs any command. `command` is the command name, `full command` the whole text without the slash. `cancel event` stops the command. With a name (`on command "home":`) it only runs for that command; a name with a space compares the full command.
+
+```carve
+on command:
+    if command is "op":
+        cancel event
+        send "No." to player
+```
+
+Since **unreleased** · Guide: [w4-events-movement](../syntax/w4-events-movement.md)
+
+## Connect {#connect}
+
+```carve
+on connect
+```
+
+A player connects, before they are fully logged in. Has `player`.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
 
 ## Consume {#consume}
 
@@ -168,6 +457,16 @@ on death of player:
 
 Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
 
+## Dispense {#dispense}
+
+```carve
+on dispense
+```
+
+A dispenser or dropper shoots out an item. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
 ## Drop {#drop}
 
 ```carve
@@ -188,6 +487,204 @@ on drop:
 
 Since **unreleased** · Guide: [events-items](../syntax/events-items.md)
 
+## Egg throw {#egg_throw}
+
+```carve
+on egg throw
+on throwing of an egg
+```
+
+A thrown egg lands. Has `player` (the thrower).
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Elytra boost {#elytra_boost}
+
+```carve
+on elytra boost
+```
+
+A player boosts their elytra flight with a firework. Has `player`. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Enchant {#enchant}
+
+```carve
+on enchant
+```
+
+A player enchants an item at an enchanting table. Has `player`. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Enchant prepare {#enchant_prepare}
+
+```carve
+on enchant prepare
+```
+
+An item is placed in an enchanting table and the offers are shown. Has `player`.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Entity breed {#entity_breed}
+
+```carve
+on entity breed
+```
+
+Two animals breed. Has `player` when a player fed them.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Entity change block {#entity_change_block}
+
+```carve
+on enderman/sheep/silverfish/falling block
+```
+
+An enderman, sheep, silverfish or falling block changes a block. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Entity dismount {#entity_dismount}
+
+```carve
+on entity dismount
+```
+
+An entity gets off another entity.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Entity mount {#entity_mount}
+
+```carve
+on entity mount
+```
+
+An entity gets on another entity. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Entity potion effect {#entity_potion_effect}
+
+```carve
+on entity potion effect
+```
+
+A potion effect is added to, changed on or removed from an entity.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Entity shoot bow {#entity_shoot_bow}
+
+```carve
+on entity shoot bow
+```
+
+An entity shoots a bow or crossbow. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Entity transform {#entity_transform}
+
+```carve
+on entity transform
+```
+
+An entity turns into another, for example a villager struck by lightning. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Experience change {#experience_change}
+
+```carve
+on experience change
+```
+
+A player's experience changes. Has `player`.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Experience cooldown change {#experience_cooldown_change}
+
+```carve
+on experience cooldown change
+```
+
+A player's experience pickup cooldown changes. Has `player`.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Explode {#explode}
+
+```carve
+on explode
+```
+
+An entity explodes, like a creeper or TNT. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Explosion prime {#explosion_prime}
+
+```carve
+on explosion prime
+```
+
+An explosive is about to explode, like a lit creeper. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Fade {#fade}
+
+```carve
+on fade
+```
+
+A block fades away, like melting ice or snow. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Firework explode {#firework_explode}
+
+```carve
+on firework explode
+```
+
+A firework rocket explodes. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## First join {#first-join}
+
+```carve
+on first join
+on first login
+on player first join
+```
+
+A player joins the server for the first time. Carve remembers who has joined in `first_join.txt` in its data folder. Has `player`.
+
+```carve
+on first join:
+    broadcast "Welcome %player% to the server!"
+```
+
+Since **unreleased** · Guide: [w4-events-movement](../syntax/w4-events-movement.md)
+
+## Fishing {#fishing}
+
+```carve
+on fishing
+```
+
+A player casts, reels in or catches something with a fishing rod. Has `player`. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
 ## Flight toggle {#flight_toggle}
 
 ```carve
@@ -204,6 +701,46 @@ on flight toggle:
 ```
 
 Since **unreleased** · Guide: [player-flags](../syntax/player-flags.md)
+
+## Flow {#flow}
+
+```carve
+on flow
+```
+
+Water or lava flows into a block. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Form {#form}
+
+```carve
+on form
+```
+
+A block forms naturally, like snow or concrete. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Fuel burn {#fuel_burn}
+
+```carve
+on fuel burn
+```
+
+A furnace starts burning a fuel item. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Furnace item extract {#furnace_item_extract}
+
+```carve
+on furnace item extract
+```
+
+A player takes smelted items out of a furnace. Has `player`.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
 
 ## Gamemode change {#gamemode_change}
 
@@ -222,6 +759,76 @@ on gamemode change to creative:
 ```
 
 Since **unreleased** · Guide: [events-items](../syntax/events-items.md)
+
+## Gliding state change {#gliding_state_change}
+
+```carve
+on gliding state change
+```
+
+An entity starts or stops gliding with an elytra. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Grow {#grow}
+
+```carve
+on grow
+```
+
+A tree or big mushroom grows from a sapling. Has `player` when bone meal was used. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Harvest block {#harvest_block}
+
+```carve
+on harvest block
+```
+
+A player harvests a block like sweet berries without breaking it. Has `player`. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Heal {#heal}
+
+```carve
+on heal
+```
+
+An entity regains health. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Horse jump {#horse_jump}
+
+```carve
+on horse jump
+```
+
+A player makes a horse jump. Has `player`. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Hunger meter change {#hunger_meter_change}
+
+```carve
+on hunger meter change
+```
+
+A player's food level changes. Has `player`. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Ignition {#ignition}
+
+```carve
+on ignition
+```
+
+A block catches fire. Has `player` when a player lit it. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
 
 ## Inventory click {#inventory_click}
 
@@ -258,6 +865,106 @@ on inventory close:
 
 Since **unreleased** · Guide: [inventories](../syntax/inventories.md)
 
+## Inventory drag {#inventory_drag}
+
+```carve
+on inventory drag
+```
+
+A player drags items across inventory slots. Has `player`. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Inventory item move {#inventory_item_move}
+
+```carve
+on inventory item move
+```
+
+A hopper or similar block moves an item between inventories. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Inventory open {#inventory_open}
+
+```carve
+on inventory open
+```
+
+A player opens an inventory. Has `player`. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Inventory pickup {#inventory_pickup}
+
+```carve
+on inventory pickup
+```
+
+A hopper picks up an item from the ground. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Item break {#item_break}
+
+```carve
+on item break
+```
+
+A player's tool or armour breaks from wear. Has `player`.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Item damage {#item_damage}
+
+```carve
+on item damage
+```
+
+A player's tool or armour loses durability. Has `player`. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Item despawn {#item_despawn}
+
+```carve
+on item despawn
+```
+
+A dropped item despawns after lying on the ground. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Item mend {#item_mend}
+
+```carve
+on item mend
+```
+
+An item is repaired by the Mending enchantment. Has `player`. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Item merge {#item_merge}
+
+```carve
+on item merge
+```
+
+Two dropped items merge into one stack. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Item spawn {#item_spawn}
+
+```carve
+on item spawn
+```
+
+A dropped item appears in the world. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
 ## Join {#join}
 
 ```carve
@@ -274,6 +981,46 @@ on join:
 ```
 
 Since **0.1.0** · Guide: [triggers](../syntax/triggers.md)
+
+## Kick {#kick}
+
+```carve
+on kick
+```
+
+A player is kicked from the server. Has `player`. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Language change {#language_change}
+
+```carve
+on language change
+```
+
+A player changes their client language. Has `player`.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Leash {#leash}
+
+```carve
+on leash
+```
+
+A player leashes an entity. Has `player`. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Leaves decay {#leaves_decay}
+
+```carve
+on leaves decay
+```
+
+Leaves decay away from a tree. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
 
 ## Level change {#level_change}
 
@@ -292,6 +1039,16 @@ on level change:
 
 Since **unreleased** · Guide: [events-items](../syntax/events-items.md)
 
+## Lightning strike {#lightning_strike}
+
+```carve
+on lightning strike
+```
+
+Lightning strikes. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
 ## Load {#load}
 
 ```carve
@@ -308,6 +1065,26 @@ on load:
     if {spawn} is not set:
         set {spawn} to location(0, 64, 0)
 ```
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Loot generate {#loot_generate}
+
+```carve
+on loot generate
+```
+
+Loot is generated for a chest or a killed entity. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Love mode enter {#love_mode_enter}
+
+```carve
+on love mode enter
+```
+
+An animal enters love mode after being fed. Has `player` when a player fed it. Can be cancelled.
 
 Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
 
@@ -329,1200 +1106,28 @@ on spawn of zombie:
 
 Since **unreleased** · Guide: [events-items](../syntax/events-items.md)
 
-## on advancement done {#on_advancement_done}
+## Move {#move}
 
 ```carve
-on advancement done
+on move
+on player move
+on walk
 ```
 
-_No description yet._
-
-Since **unreleased**
-
-## on anvil prepare {#on_anvil_prepare}
+A player moves into another block (turning the head or moving inside a block does not count). `event-location` is where to, `past event-location` where from. Can be cancelled. Needs a server restart when the first `on move` script is added.
 
 ```carve
-on anvil prepare
+on move:
+    if y of event-location < 0:
+        teleport player to spawn of world "world"
 ```
 
-_No description yet._
-
-Since **unreleased**
-
-## on arm swing {#on_arm_swing}
-
-```carve
-on arm swing
-```
-
-_No description yet._
-
-Since **unreleased**
+Since **unreleased** · Guide: [w4-events-movement](../syntax/w4-events-movement.md)
 
 ## on at time {#on_at_time}
 
 ```carve
 on at time
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on bed enter {#on_bed_enter}
-
-```carve
-on bed enter
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on bed leave {#on_bed_leave}
-
-```carve
-on bed leave
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on bell ring {#on_bell_ring}
-
-```carve
-on bell ring
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on block damage {#on_block_damage}
-
-```carve
-on block damage
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on block drop {#on_block_drop}
-
-```carve
-on block drop
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on block fertilize {#on_block_fertilize}
-
-```carve
-on block fertilize
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on block growth {#on_block_growth}
-
-```carve
-on block growth
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on book edit {#on_book_edit}
-
-```carve
-on book edit
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on book sign {#on_book_sign}
-
-```carve
-on book sign
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on bound enter {#on_bound_enter}
-
-```carve
-on bound enter
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on bound exit {#on_bound_exit}
-
-```carve
-on bound exit
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on brewing complete {#on_brewing_complete}
-
-```carve
-on brewing complete
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on brewing fuel {#on_brewing_fuel}
-
-```carve
-on brewing fuel
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on brewing start {#on_brewing_start}
-
-```carve
-on brewing start
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on broadcast {#on_broadcast}
-
-```carve
-on broadcast
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on bucket catch entity {#on_bucket_catch_entity}
-
-```carve
-on bucket catch entity
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on bucket empty {#on_bucket_empty}
-
-```carve
-on bucket empty
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on bucket fill {#on_bucket_fill}
-
-```carve
-on bucket fill
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on burn {#on_burn}
-
-```carve
-on burn
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on can build check {#on_can_build_check}
-
-```carve
-on can build check
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on chunk generate {#on_chunk_generate}
-
-```carve
-on chunk generate
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on chunk unload {#on_chunk_unload}
-
-```carve
-on chunk unload
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on combust {#on_combust}
-
-```carve
-on combust
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on connect {#on_connect}
-
-```carve
-on connect
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on dispense {#on_dispense}
-
-```carve
-on dispense
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on egg throw {#on_egg_throw}
-
-```carve
-on egg throw
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on elytra boost {#on_elytra_boost}
-
-```carve
-on elytra boost
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on enchant {#on_enchant}
-
-```carve
-on enchant
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on enchant prepare {#on_enchant_prepare}
-
-```carve
-on enchant prepare
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on enderman/sheep/silverfish/falling block {#on_enderman_sheep_silverfish_falling_block}
-
-```carve
-on enderman/sheep/silverfish/falling block
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on entity breed {#on_entity_breed}
-
-```carve
-on entity breed
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on entity dismount {#on_entity_dismount}
-
-```carve
-on entity dismount
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on entity mount {#on_entity_mount}
-
-```carve
-on entity mount
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on entity potion effect {#on_entity_potion_effect}
-
-```carve
-on entity potion effect
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on entity shoot bow {#on_entity_shoot_bow}
-
-```carve
-on entity shoot bow
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on entity transform {#on_entity_transform}
-
-```carve
-on entity transform
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on experience change {#on_experience_change}
-
-```carve
-on experience change
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on experience cooldown change {#on_experience_cooldown_change}
-
-```carve
-on experience cooldown change
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on explode {#on_explode}
-
-```carve
-on explode
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on explosion prime {#on_explosion_prime}
-
-```carve
-on explosion prime
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on fade {#on_fade}
-
-```carve
-on fade
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on firework explode {#on_firework_explode}
-
-```carve
-on firework explode
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on fishing {#on_fishing}
-
-```carve
-on fishing
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on flow {#on_flow}
-
-```carve
-on flow
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on form {#on_form}
-
-```carve
-on form
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on fuel burn {#on_fuel_burn}
-
-```carve
-on fuel burn
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on furnace item extract {#on_furnace_item_extract}
-
-```carve
-on furnace item extract
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on gliding state change {#on_gliding_state_change}
-
-```carve
-on gliding state change
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on grow {#on_grow}
-
-```carve
-on grow
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on harvest block {#on_harvest_block}
-
-```carve
-on harvest block
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on heal {#on_heal}
-
-```carve
-on heal
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on horse jump {#on_horse_jump}
-
-```carve
-on horse jump
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on hunger meter change {#on_hunger_meter_change}
-
-```carve
-on hunger meter change
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on ignition {#on_ignition}
-
-```carve
-on ignition
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on inventory drag {#on_inventory_drag}
-
-```carve
-on inventory drag
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on inventory item move {#on_inventory_item_move}
-
-```carve
-on inventory item move
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on inventory open {#on_inventory_open}
-
-```carve
-on inventory open
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on inventory pickup {#on_inventory_pickup}
-
-```carve
-on inventory pickup
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on item break {#on_item_break}
-
-```carve
-on item break
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on item damage {#on_item_damage}
-
-```carve
-on item damage
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on item despawn {#on_item_despawn}
-
-```carve
-on item despawn
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on item mend {#on_item_mend}
-
-```carve
-on item mend
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on item merge {#on_item_merge}
-
-```carve
-on item merge
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on item spawn {#on_item_spawn}
-
-```carve
-on item spawn
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on kick {#on_kick}
-
-```carve
-on kick
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on language change {#on_language_change}
-
-```carve
-on language change
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on leash {#on_leash}
-
-```carve
-on leash
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on leaves decay {#on_leaves_decay}
-
-```carve
-on leaves decay
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on lightning strike {#on_lightning_strike}
-
-```carve
-on lightning strike
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on loot generate {#on_loot_generate}
-
-```carve
-on loot generate
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on love mode enter {#on_love_mode_enter}
-
-```carve
-on love mode enter
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on piglin barter {#on_piglin_barter}
-
-```carve
-on piglin barter
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on piston extend {#on_piston_extend}
-
-```carve
-on piston extend
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on piston retract {#on_piston_retract}
-
-```carve
-on piston retract
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on player input {#on_player_input}
-
-```carve
-on player input
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on portal {#on_portal}
-
-```carve
-on portal
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on portal create {#on_portal_create}
-
-```carve
-on portal create
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on portal enter {#on_portal_enter}
-
-```carve
-on portal enter
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on recipe discover {#on_recipe_discover}
-
-```carve
-on recipe discover
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on redstone {#on_redstone}
-
-```carve
-on redstone
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on resource pack response {#on_resource_pack_response}
-
-```carve
-on resource pack response
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on resurrect attempt {#on_resurrect_attempt}
-
-```carve
-on resurrect attempt
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on send command list {#on_send_command_list}
-
-```carve
-on send command list
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on server list ping {#on_server_list_ping}
-
-```carve
-on server list ping
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on sheep regrow wool {#on_sheep_regrow_wool}
-
-```carve
-on sheep regrow wool
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on shoot {#on_shoot}
-
-```carve
-on shoot
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on sign change {#on_sign_change}
-
-```carve
-on sign change
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on slime split {#on_slime_split}
-
-```carve
-on slime split
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on smelt {#on_smelt}
-
-```carve
-on smelt
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on spawn change {#on_spawn_change}
-
-```carve
-on spawn change
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on sponge absorb {#on_sponge_absorb}
-
-```carve
-on sponge absorb
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on spread {#on_spread}
-
-```carve
-on spread
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on start smelt {#on_start_smelt}
-
-```carve
-on start smelt
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on swim toggle {#on_swim_toggle}
-
-```carve
-on swim toggle
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on tame {#on_tame}
-
-```carve
-on tame
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on target {#on_target}
-
-```carve
-on target
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on throwing of an egg {#on_throwing_of_an_egg}
-
-```carve
-on throwing of an egg
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on tool change {#on_tool_change}
-
-```carve
-on tool change
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on unleash {#on_unleash}
-
-```carve
-on unleash
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on vault display item {#on_vault_display_item}
-
-```carve
-on vault display item
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on vehicle collision {#on_vehicle_collision}
-
-```carve
-on vehicle collision
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on vehicle create {#on_vehicle_create}
-
-```carve
-on vehicle create
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on vehicle damage {#on_vehicle_damage}
-
-```carve
-on vehicle damage
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on vehicle destroy {#on_vehicle_destroy}
-
-```carve
-on vehicle destroy
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on vehicle enter {#on_vehicle_enter}
-
-```carve
-on vehicle enter
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on vehicle exit {#on_vehicle_exit}
-
-```carve
-on vehicle exit
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on vehicle move {#on_vehicle_move}
-
-```carve
-on vehicle move
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on villager career change {#on_villager_career_change}
-
-```carve
-on villager career change
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on weather change {#on_weather_change}
-
-```carve
-on weather change
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on weather change to clear {#on_weather_change_to_clear}
-
-```carve
-on weather change to clear
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on weather change to rain {#on_weather_change_to_rain}
-
-```carve
-on weather change to rain
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on world init {#on_world_init}
-
-```carve
-on world init
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on world load {#on_world_load}
-
-```carve
-on world load
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on world save {#on_world_save}
-
-```carve
-on world save
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on world unload {#on_world_unload}
-
-```carve
-on world unload
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## on zombie break door {#on_zombie_break_door}
-
-```carve
-on zombie break door
 ```
 
 _No description yet._
@@ -1582,6 +1187,36 @@ on pick up:
 
 Since **unreleased** · Guide: [events-items](../syntax/events-items.md)
 
+## Piglin barter {#piglin_barter}
+
+```carve
+on piglin barter
+```
+
+A piglin finishes bartering for gold. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Piston extend {#piston_extend}
+
+```carve
+on piston extend
+```
+
+A piston pushes out. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Piston retract {#piston_retract}
+
+```carve
+on piston retract
+```
+
+A piston pulls back. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
 ## Placeholder request {#placeholder_request}
 
 ```carve
@@ -1598,6 +1233,46 @@ on placeholder request for prefix "shop":
 ```
 
 Since **unreleased** · Guide: [w4-placeholders](../syntax/w4-placeholders.md)
+
+## Player input {#player_input}
+
+```carve
+on player input
+```
+
+A player presses or releases a movement key. Has `player`.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Portal {#portal}
+
+```carve
+on portal
+```
+
+A player is teleported by a portal. Has `player`. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Portal create {#portal_create}
+
+```carve
+on portal create
+```
+
+A nether or end portal is created. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Portal enter {#portal_enter}
+
+```carve
+on portal enter
+```
+
+An entity walks into a portal block.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
 
 ## Projectile hit {#projectile_hit}
 
@@ -1633,6 +1308,36 @@ on quit:
 
 Since **0.1.0** · Guide: [triggers](../syntax/triggers.md)
 
+## Recipe discover {#recipe_discover}
+
+```carve
+on recipe discover
+```
+
+A player unlocks a recipe. Has `player`. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Redstone {#redstone}
+
+```carve
+on redstone
+```
+
+A block's redstone power changes.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Resource pack response {#resource_pack_response}
+
+```carve
+on resource pack response
+```
+
+A player accepts, declines or finishes loading a resource pack. Has `player`.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
 ## Respawn {#respawn}
 
 ```carve
@@ -1646,6 +1351,86 @@ A player respawns. Cannot be cancelled.
 on respawn:
     send "Welcome back" to player
 ```
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Resurrect attempt {#resurrect_attempt}
+
+```carve
+on resurrect attempt
+```
+
+An entity would die and a totem of undying may save it. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Send command list {#send_command_list}
+
+```carve
+on send command list
+```
+
+The server sends a player the list of commands for tab completion. Has `player`.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Server list ping {#server_list_ping}
+
+```carve
+on server list ping
+```
+
+A client pings the server from its server list.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Sheep regrow wool {#sheep_regrow_wool}
+
+```carve
+on sheep regrow wool
+```
+
+A sheared sheep grows its wool back. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Shoot {#shoot}
+
+```carve
+on shoot
+```
+
+An entity launches a projectile. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Sign change {#sign_change}
+
+```carve
+on sign change
+```
+
+A player writes on a sign. Has `player`. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Slime split {#slime_split}
+
+```carve
+on slime split
+```
+
+A slime or magma cube splits into smaller ones. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Smelt {#smelt}
+
+```carve
+on smelt
+```
+
+A furnace finishes smelting an item. Can be cancelled.
 
 Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
 
@@ -1667,6 +1452,36 @@ on sneak toggle:
 
 Since **unreleased** · Guide: [player-flags](../syntax/player-flags.md)
 
+## Spawn change {#spawn_change}
+
+```carve
+on spawn change
+```
+
+A world's spawn point changes.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Sponge absorb {#sponge_absorb}
+
+```carve
+on sponge absorb
+```
+
+A sponge soaks up water. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Spread {#spread}
+
+```carve
+on spread
+```
+
+A block spreads, like grass, mycelium or fire. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
 ## Sprint toggle {#sprint_toggle}
 
 ```carve
@@ -1683,4 +1498,266 @@ on sprint toggle:
 ```
 
 Since **unreleased** · Guide: [player-flags](../syntax/player-flags.md)
+
+## Start smelt {#start_smelt}
+
+```carve
+on start smelt
+```
+
+A furnace starts smelting an item.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Swap hand items {#swap-hand-items}
+
+```carve
+on swap hand items
+on swap hands
+on hand swap
+```
+
+A player swaps the main hand and off hand items. Can be cancelled.
+
+```carve
+on swap hand items:
+    cancel event
+```
+
+Since **unreleased** · Guide: [w4-events-movement](../syntax/w4-events-movement.md)
+
+## Swim toggle {#swim_toggle}
+
+```carve
+on swim toggle
+```
+
+An entity starts or stops swimming. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Tame {#tame}
+
+```carve
+on tame
+```
+
+A player tames an animal. Has `player`. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Target {#target}
+
+```carve
+on target
+```
+
+A mob picks or drops a target. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Teleport {#teleport}
+
+```carve
+on teleport
+on player teleport
+```
+
+A player is teleported. `event-location` is the target, `past event-location` the start. Can be cancelled.
+
+```carve
+on teleport:
+    send "Zoom!" to player
+```
+
+Since **unreleased** · Guide: [w4-events-movement](../syntax/w4-events-movement.md)
+
+## Tool change {#tool_change}
+
+```carve
+on tool change
+```
+
+A player switches their held hotbar slot. Has `player`. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Unleash {#unleash}
+
+```carve
+on unleash
+```
+
+A leash comes off an entity. Has `player` when a player removed it.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Vault display item {#vault_display_item}
+
+```carve
+on vault display item
+```
+
+A vault block picks the item it shows. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Vehicle collision {#vehicle_collision}
+
+```carve
+on vehicle collision
+```
+
+A vehicle bumps into a block or entity.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Vehicle create {#vehicle_create}
+
+```carve
+on vehicle create
+```
+
+A boat or minecart is placed. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Vehicle damage {#vehicle_damage}
+
+```carve
+on vehicle damage
+```
+
+A boat or minecart takes damage. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Vehicle destroy {#vehicle_destroy}
+
+```carve
+on vehicle destroy
+```
+
+A boat or minecart is destroyed. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Vehicle enter {#vehicle_enter}
+
+```carve
+on vehicle enter
+```
+
+An entity gets into a vehicle. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Vehicle exit {#vehicle_exit}
+
+```carve
+on vehicle exit
+```
+
+An entity gets out of a vehicle. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Vehicle move {#vehicle_move}
+
+```carve
+on vehicle move
+```
+
+A vehicle moves.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Villager career change {#villager_career_change}
+
+```carve
+on villager career change
+```
+
+A villager gains or loses a profession. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Weather change {#weather_change}
+
+```carve
+on weather change
+on weather change to clear
+on weather change to rain
+```
+
+The weather in a world changes. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## World change {#world-change}
+
+```carve
+on world change
+on player world change
+on world switch
+```
+
+A player arrived in another world. `event-world` is the new world, `past event-world` the old one.
+
+```carve
+on world change:
+    send "Now in %event-world%" to player
+```
+
+Since **unreleased** · Guide: [w4-events-movement](../syntax/w4-events-movement.md)
+
+## World init {#world_init}
+
+```carve
+on world init
+```
+
+A world is initialized, before it loads.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## World load {#world_load}
+
+```carve
+on world load
+```
+
+A world is loaded.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## World save {#world_save}
+
+```carve
+on world save
+```
+
+A world is saved.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## World unload {#world_unload}
+
+```carve
+on world unload
+```
+
+A world is unloaded. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Zombie break door {#zombie_break_door}
+
+```carve
+on zombie break door
+```
+
+A zombie breaks down a door. Can be cancelled.
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
 

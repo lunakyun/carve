@@ -7,789 +7,9 @@ editLink: false
 
 # Conditions
 
-Conditions go after `if`, `else if` and `while`, or on a line of their own. 111 entries. Search all of them on the [reference home](./index.md).
+Conditions go after `if`, `else if` and `while`, or on a line of their own. 87 entries. Search all of them on the [reference home](./index.md).
 
 In a pattern, `%type%` is a value, `[...]` is optional and `(a|b)` means one of the words.
-
-## %date% (is not|isn't) in [the] future {#date_is_not_isn_t_in_the_future}
-
-```carve
-%date% (is not|isn't) in [the] future
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %date% (is not|isn't) in [the] past {#date_is_not_isn_t_in_the_past}
-
-```carve
-%date% (is not|isn't) in [the] past
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %date% is in [the] future {#date_is_in_the_future}
-
-```carve
-%date% is in [the] future
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %date% is in [the] past {#date_is_in_the_past}
-
-```carve
-%date% is in [the] past
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %item% (is not|isn't) passable {#item_is_not_isn_t_passable}
-
-```carve
-%item% (is not|isn't) passable
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %item% (is not|isn't) solid {#item_is_not_isn_t_solid}
-
-```carve
-%item% (is not|isn't) solid
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %item% (is not|isn't) transparent {#item_is_not_isn_t_transparent}
-
-```carve
-%item% (is not|isn't) transparent
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %item% (isn't|is not) enchanted {#item_isn_t_is_not_enchanted}
-
-```carve
-%item% (isn't|is not) enchanted
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %item% (isn't|is not) enchanted with %text% {#item_isn_t_is_not_enchanted_with_text}
-
-```carve
-%item% (isn't|is not) enchanted with %text%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %item% is enchanted {#item_is_enchanted}
-
-```carve
-%item% is enchanted
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %item% is enchanted with %text% {#item_is_enchanted_with_text}
-
-```carve
-%item% is enchanted with %text%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %item% is passable {#item_is_passable}
-
-```carve
-%item% is passable
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %item% is solid {#item_is_solid}
-
-```carve
-%item% is solid
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %item% is transparent {#item_is_transparent}
-
-```carve
-%item% is transparent
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %number% (is not|isn't) [evenly] divisible by %number% {#number_is_not_isn_t_evenly_divisible_by_number}
-
-```carve
-%number% (is not|isn't) [evenly] divisible by %number%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %number% is [evenly] divisible by %number% {#number_is_evenly_divisible_by_number}
-
-```carve
-%number% is [evenly] divisible by %number%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %object% (is not|isn't) [a] fuel {#object_is_not_isn_t_a_fuel}
-
-```carve
-%object% (is not|isn't) [a] fuel
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %object% (is not|isn't) edible {#object_is_not_isn_t_edible}
-
-```carve
-%object% (is not|isn't) edible
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %object% (is not|isn't) empty {#object_is_not_isn_t_empty}
-
-```carve
-%object% (is not|isn't) empty
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %object% (is not|isn't) fire resistant {#object_is_not_isn_t_fire_resistant}
-
-```carve
-%object% (is not|isn't) fire resistant
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %object% (is not|isn't) flammable {#object_is_not_isn_t_flammable}
-
-```carve
-%object% (is not|isn't) flammable
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %object% (is not|isn't) in [the] world %object% {#object_is_not_isn_t_in_the_world_object}
-
-```carve
-%object% (is not|isn't) in [the] world %object%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %object% (is not|isn't) of type %object% {#object_is_not_isn_t_of_type_object}
-
-```carve
-%object% (is not|isn't) of type %object%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %object% (is not|isn't) offline {#object_is_not_isn_t_offline}
-
-```carve
-%object% (is not|isn't) offline
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %object% (is not|isn't) online {#object_is_not_isn_t_online}
-
-```carve
-%object% (is not|isn't) online
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %object% (is not|isn't) valid {#object_is_not_isn_t_valid}
-
-```carve
-%object% (is not|isn't) valid
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %object% (is not|isn't) within %number% (block|blocks|meter|meters|metre|metres) (around|of|from) %object% {#object_is_not_isn_t_within_number_block_blocks_meter_meters_metre_metres_around_of_from_object}
-
-```carve
-%object% (is not|isn't) within %number% (block|blocks|meter|meters|metre|metres) (around|of|from) %object%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %object% (is not|isn't) within %object% (and|to) %object% {#object_is_not_isn_t_within_object_and_to_object}
-
-```carve
-%object% (is not|isn't) within %object% (and|to) %object%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %object% (is not|isn't) within %world% {#object_is_not_isn_t_within_world}
-
-```carve
-%object% (is not|isn't) within %world%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %object% is [a] fuel {#object_is_a_fuel}
-
-```carve
-%object% is [a] fuel
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %object% is edible {#object_is_edible}
-
-```carve
-%object% is edible
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %object% is empty {#object_is_empty}
-
-```carve
-%object% is empty
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %object% is fire resistant {#object_is_fire_resistant}
-
-```carve
-%object% is fire resistant
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %object% is flammable {#object_is_flammable}
-
-```carve
-%object% is flammable
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %object% is in [the] world %object% {#object_is_in_the_world_object}
-
-```carve
-%object% is in [the] world %object%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %object% is of type %object% {#object_is_of_type_object}
-
-```carve
-%object% is of type %object%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %object% is offline {#object_is_offline}
-
-```carve
-%object% is offline
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %object% is online {#object_is_online}
-
-```carve
-%object% is online
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %object% is valid {#object_is_valid}
-
-```carve
-%object% is valid
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %object% is within %number% (block|blocks|meter|meters|metre|metres) (around|of|from) %object% {#object_is_within_number_block_blocks_meter_meters_metre_metres_around_of_from_object}
-
-```carve
-%object% is within %number% (block|blocks|meter|meters|metre|metres) (around|of|from) %object%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %object% is within %object% (and|to) %object% {#object_is_within_object_and_to_object}
-
-```carve
-%object% is within %object% (and|to) %object%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %object% is within %world% {#object_is_within_world}
-
-```carve
-%object% is within %world%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %player% (does not|doesn't) have [a] resource pack [loaded] {#player_does_not_doesn_t_have_a_resource_pack_loaded}
-
-```carve
-%player% (does not|doesn't) have [a] resource pack [loaded]
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %player% (is not|isn't) (burning|on fire) {#player_is_not_isn_t_burning_on_fire}
-
-```carve
-%player% (is not|isn't) (burning|on fire)
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %player% (is not|isn't) (gliding|fall flying) {#player_is_not_isn_t_gliding_fall_flying}
-
-```carve
-%player% (is not|isn't) (gliding|fall flying)
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %player% (is not|isn't) alive {#player_is_not_isn_t_alive}
-
-```carve
-%player% (is not|isn't) alive
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %player% (is not|isn't) dead {#player_is_not_isn_t_dead}
-
-```carve
-%player% (is not|isn't) dead
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %player% (is not|isn't) frozen {#player_is_not_isn_t_frozen}
-
-```carve
-%player% (is not|isn't) frozen
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %player% (is not|isn't) gliding {#player_is_not_isn_t_gliding}
-
-```carve
-%player% (is not|isn't) gliding
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %player% (is not|isn't) glowing {#player_is_not_isn_t_glowing}
-
-```carve
-%player% (is not|isn't) glowing
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %player% (is not|isn't) invisible {#player_is_not_isn_t_invisible}
-
-```carve
-%player% (is not|isn't) invisible
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %player% (is not|isn't) invulnerable {#player_is_not_isn_t_invulnerable}
-
-```carve
-%player% (is not|isn't) invulnerable
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %player% (is not|isn't|are not|aren't) poisoned {#player_is_not_isn_t_are_not_aren_t_poisoned}
-
-```carve
-%player% (is not|isn't|are not|aren't) poisoned
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %player% (is not|isn't|are not|aren't) riding {#player_is_not_isn_t_are_not_aren_t_riding}
-
-```carve
-%player% (is not|isn't|are not|aren't) riding
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %player% (is not|isn't|are not|aren't) silent {#player_is_not_isn_t_are_not_aren_t_silent}
-
-```carve
-%player% (is not|isn't|are not|aren't) silent
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %player% (is|are) poisoned {#player_is_are_poisoned}
-
-```carve
-%player% (is|are) poisoned
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %player% (is|are) riding {#player_is_are_riding}
-
-```carve
-%player% (is|are) riding
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %player% (is|are) silent {#player_is_are_silent}
-
-```carve
-%player% (is|are) silent
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %player% has [a] resource pack [loaded] {#player_has_a_resource_pack_loaded}
-
-```carve
-%player% has [a] resource pack [loaded]
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %player% is (burning|on fire) {#player_is_burning_on_fire}
-
-```carve
-%player% is (burning|on fire)
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %player% is (gliding|fall flying) {#player_is_gliding_fall_flying}
-
-```carve
-%player% is (gliding|fall flying)
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %player% is alive {#player_is_alive}
-
-```carve
-%player% is alive
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %player% is dead {#player_is_dead}
-
-```carve
-%player% is dead
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %player% is frozen {#player_is_frozen}
-
-```carve
-%player% is frozen
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %player% is gliding {#player_is_gliding}
-
-```carve
-%player% is gliding
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %player% is glowing {#player_is_glowing}
-
-```carve
-%player% is glowing
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %player% is invisible {#player_is_invisible}
-
-```carve
-%player% is invisible
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %player% is invulnerable {#player_is_invulnerable}
-
-```carve
-%player% is invulnerable
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %player%'s custom name (is not|isn't) visible {#player_s_custom_name_is_not_isn_t_visible}
-
-```carve
-%player%'s custom name (is not|isn't) visible
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %player%'s custom name is visible {#player_s_custom_name_is_visible}
-
-```carve
-%player%'s custom name is visible
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %text% (contains|contain) regex %text% {#text_contains_contain_regex_text}
-
-```carve
-%text% (contains|contain) regex %text%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %text% (doesn't|does not|don't|do not) contain regex %text% {#text_doesn_t_does_not_don_t_do_not_contain_regex_text}
-
-```carve
-%text% (doesn't|does not|don't|do not) contain regex %text%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %text% (doesn't|does not|don't|do not) match %text% {#text_doesn_t_does_not_don_t_do_not_match_text}
-
-```carve
-%text% (doesn't|does not|don't|do not) match %text%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %text% (is not|isn't|are not|aren't) instant {#text_is_not_isn_t_are_not_aren_t_instant}
-
-```carve
-%text% (is not|isn't|are not|aren't) instant
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %text% (is|are) instant {#text_is_are_instant}
-
-```carve
-%text% (is|are) instant
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## %text% (matches|match) %text% {#text_matches_match_text}
-
-```carve
-%text% (matches|match) %text%
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## [the] command %text% (is not|isn't) a [script] command {#the_command_text_is_not_isn_t_a_script_command}
-
-```carve
-[the] command %text% (is not|isn't) a [script] command
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## [the] command %text% is a [script] command {#the_command_text_is_a_script_command}
-
-```carve
-[the] command %text% is a [script] command
-```
-
-_No description yet._
-
-Since **unreleased**
 
 ## And / or {#and_or}
 
@@ -823,6 +43,28 @@ if block below player is grass block or dirt:
 
 Since **unreleased** · Guide: [blocks](../syntax/blocks.md)
 
+## Can breed {#can_breed}
+
+```carve
+%object% can breed
+%object% (can't|cannot|can not) breed
+```
+
+Whether an animal is old enough and ready to breed.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Can build {#can_build}
+
+```carve
+%player% can build [(at|in|on)] %location%
+%player% (can't|cannot|can not) build [(at|in|on)] %location%
+```
+
+Whether a player is allowed to build at a location.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
 ## Can fly {#can_fly}
 
 ```carve
@@ -838,6 +80,54 @@ if player can fly:
 ```
 
 Since **unreleased** · Guide: [player-flags](../syntax/player-flags.md)
+
+## Can hold {#can_hold}
+
+```carve
+%player% can hold %item%
+%player% (can't|cannot|can not) hold %item%
+%player%'s inventory can hold %item%
+%player%'s inventory (can't|cannot|can not) hold %item%
+```
+
+Whether a player's inventory has room for an item.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Can pick up items {#can_pick_up_items}
+
+```carve
+%player% can pick up items
+%player% (can't|cannot|can not) pick up items
+```
+
+Whether a player picks up items from the ground.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Can see {#can_see}
+
+```carve
+%player% can see %player%
+%player% (can't|cannot|can not) see %player%
+```
+
+Whether a player can see another player, i.e. they are not hidden from them.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Can see chat {#can_see_chat}
+
+```carve
+%player% can see [chat] messages
+%player% (can't|cannot|can not) see [chat] messages
+%player% can see chat (colors|colours)
+%player% (can't|cannot|can not) see chat (colors|colours)
+```
+
+Whether a player's chat settings show messages, or chat colours.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
 ## Chance {#chance}
 
@@ -872,6 +162,30 @@ if health of player < 6:
 
 Since **0.1.0** · Guide: [conditions](../syntax/conditions.md)
 
+## Custom name visible {#custom_name_visible}
+
+```carve
+%player%'s custom name is visible
+%player%'s custom name (is not|isn't) visible
+```
+
+Whether an entity's name tag is shown.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Date in future or past {#date_future_past}
+
+```carve
+%date% is in [the] future
+%date% (is not|isn't) in [the] future
+%date% is in [the] past
+%date% (is not|isn't) in [the] past
+```
+
+Whether a date is later or earlier than now.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
 ## Ends with {#ends_with}
 
 ```carve
@@ -889,6 +203,83 @@ on chat:
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
+## Event is cancelled {#event_cancelled}
+
+```carve
+[the] event is cancelled
+[the] event (is not|isn't) cancelled
+```
+
+Whether the current event has been cancelled.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Has AI {#has_ai}
+
+```carve
+%object% (has|have) (ai|artificial intelligence)
+%object% (doesn't|does not|don't|do not) have (ai|artificial intelligence)
+```
+
+Whether a mob has its AI turned on.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Has been stared at {#stared_at}
+
+```carve
+%object% (has|have) been stared at
+%object% (has not|hasn't|have not|haven't) been stared at
+```
+
+Whether an enderman has been looked at by a player.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Has chat filtering {#chat_filtering}
+
+```carve
+%player% (has|have) chat filtering
+%player% (doesn't|does not|don't|do not) have chat filtering
+```
+
+Whether a player has text filtering turned on in their client.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Has client weather {#client_weather}
+
+```carve
+%player% (has|have) (custom|client) weather
+%player% (doesn't|does not|don't|do not) have (custom|client) weather
+```
+
+Whether a player sees their own weather instead of the world's.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Has custom model data {#has_custom_model_data}
+
+```carve
+%player% (has|have) [a] custom model data
+%player% (doesn't|does not|don't|do not) have [a] custom model data
+```
+
+Whether an item has custom model data.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Has glowing text {#glowing_text}
+
+```carve
+%location% (has|have) glowing text
+%location% (doesn't|does not|don't|do not) have glowing text
+```
+
+Whether the sign at a location has glowing text.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
 ## Has item {#has_item}
 
 ```carve
@@ -902,6 +293,28 @@ Whether the player has at least that many of an item.
 if player has 3 diamonds:
     send "rich" to player
 ```
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Has item cooldown {#has_cooldown}
+
+```carve
+%player% (has|have) [(a|an)] [item] cooldown (for|on) %item%
+%player% (doesn't|does not|don't|do not) have [(a|an)] [item] cooldown (for|on) %item%
+```
+
+Whether an item type is on cooldown for a player.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Has line of sight {#line_of_sight}
+
+```carve
+%object% (has|have) [a] [direct] line of sight (to|of) %object%
+%object% (doesn't|does not|don't|do not) have [a] [direct] line of sight (to|of) %object%
+```
+
+Whether an entity can see another entity with nothing in between.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
@@ -937,6 +350,17 @@ if player has potion effect speed:
 
 Since **unreleased** · Guide: [world-effects](../syntax/world-effects.md)
 
+## Has resource pack {#has_resource_pack}
+
+```carve
+%player% has [a] resource pack [loaded]
+%player% (does not|doesn't) have [a] resource pack [loaded]
+```
+
+Whether a player has a server resource pack loaded.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
 ## Inventory contains {#inventory_contains}
 
 ```carve
@@ -969,6 +393,30 @@ if sender is a player:
 ```
 
 Since **unreleased** · Guide: [senders](../syntax/senders.md)
+
+## Is alive {#alive}
+
+```carve
+%player% is alive
+%player% (is not|isn't) alive
+%player% is dead
+%player% (is not|isn't) dead
+```
+
+Whether a player is alive or dead.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Is alphanumeric {#alphanumeric}
+
+```carve
+%object% (is|are) alphanumeric
+%object% (is not|isn't|are not|aren't) alphanumeric
+```
+
+Whether a text has only letters and digits.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
 ## Is banned {#banned}
 
@@ -1018,6 +466,63 @@ if player is blocking:
 
 Since **unreleased** · Guide: [player-flags](../syntax/player-flags.md)
 
+## Is burning {#burning}
+
+```carve
+%player% is (burning|on fire)
+%player% (is not|isn't) (burning|on fire)
+```
+
+Whether a player is on fire.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Is divisible {#divisible}
+
+```carve
+%number% is [evenly] divisible by %number%
+%number% (is not|isn't) [evenly] divisible by %number%
+```
+
+Whether a number divides evenly by another.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Is edible {#edible}
+
+```carve
+%object% is edible
+%object% (is not|isn't) edible
+```
+
+Whether an item can be eaten.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Is empty {#is_empty}
+
+```carve
+%object% is empty
+%object% (is not|isn't) empty
+```
+
+Whether a text, list or inventory has nothing in it.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Is enchanted {#enchanted}
+
+```carve
+%item% is enchanted
+%item% (isn't|is not) enchanted
+%item% is enchanted with %text%
+%item% (isn't|is not) enchanted with %text%
+```
+
+Whether an item has any enchantment, or a given one.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
 ## Is equal {#equal}
 
 ```carve
@@ -1036,6 +541,28 @@ command /toggle <text>:
 
 Since **0.1.0** · Guide: [conditions](../syntax/conditions.md)
 
+## Is fire resistant {#fire_resistant}
+
+```carve
+%object% is fire resistant
+%object% (is not|isn't) fire resistant
+```
+
+Whether an item survives fire and lava, like netherite.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Is flammable {#flammable}
+
+```carve
+%object% is flammable
+%object% (is not|isn't) flammable
+```
+
+Whether a block type can catch fire.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
 ## Is flying {#flying}
 
 ```carve
@@ -1051,6 +578,52 @@ if player is flying:
 ```
 
 Since **unreleased** · Guide: [player-flags](../syntax/player-flags.md)
+
+## Is frozen {#frozen}
+
+```carve
+%player% is frozen
+%player% (is not|isn't) frozen
+```
+
+Whether a player is fully frozen in powder snow.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Is fuel {#is_fuel}
+
+```carve
+%object% is [a] fuel
+%object% (is not|isn't) [a] fuel
+```
+
+Whether an item can be burned in a furnace.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Is gliding {#gliding}
+
+```carve
+%player% is gliding
+%player% (is not|isn't) gliding
+%player% is (gliding|fall flying)
+%player% (is not|isn't) (gliding|fall flying)
+```
+
+Whether a player is flying with an elytra.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Is glowing {#glowing}
+
+```carve
+%player% is glowing
+%player% (is not|isn't) glowing
+```
+
+Whether a player has a glowing outline.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
 ## Is in gamemode {#in_gamemode}
 
@@ -1068,6 +641,86 @@ if player is in creative:
 
 Since **unreleased** · Guide: [gamemode](../syntax/gamemode.md)
 
+## Is in liquid {#in_liquid}
+
+```carve
+%object% (is|are) in (liquid|a liquid)
+%object% (is not|isn't|are not|aren't) in (liquid|a liquid)
+```
+
+Whether an entity is in water or lava.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Is in world {#in_world}
+
+```carve
+%object% is in [the] world %object%
+%object% (is not|isn't) in [the] world %object%
+%object% is within %world%
+%object% (is not|isn't) within %world%
+```
+
+Whether an entity or location is in a given world.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Is instant {#instant}
+
+```carve
+%text% (is|are) instant
+%text% (is not|isn't|are not|aren't) instant
+```
+
+Whether a potion effect type is instant, like instant health.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Is invisible {#invisible}
+
+```carve
+%player% is invisible
+%player% (is not|isn't) invisible
+```
+
+Whether a player is invisible.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Is invulnerable {#invulnerable}
+
+```carve
+%player% is invulnerable
+%player% (is not|isn't) invulnerable
+```
+
+Whether a player takes no damage.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Is loaded {#loaded}
+
+```carve
+%object% is loaded
+%object% (is not|isn't) loaded
+%object% is unloaded
+```
+
+Whether a chunk or world is loaded.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Is of type {#of_type}
+
+```carve
+%object% is of type %object%
+%object% (is not|isn't) of type %object%
+```
+
+Whether a value is of a given type, like `entity type`.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
 ## Is on ground {#on_ground}
 
 ```carve
@@ -1083,6 +736,19 @@ if player is not on the ground:
 ```
 
 Since **unreleased** · Guide: [player-flags](../syntax/player-flags.md)
+
+## Is online {#online}
+
+```carve
+%object% is online
+%object% (is not|isn't) online
+%object% is offline
+%object% (is not|isn't) offline
+```
+
+Whether a player is online.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
 ## Is op {#op}
 
@@ -1100,6 +766,72 @@ if player is op:
 
 Since **unreleased** · Guide: [op-kick-ban](../syntax/op-kick-ban.md)
 
+## Is passable {#item_passable}
+
+```carve
+%item% is passable
+%item% (is not|isn't) passable
+```
+
+Whether a block type can be walked through, like tall grass.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Is poisoned {#poisoned}
+
+```carve
+%player% (is|are) poisoned
+%player% (is not|isn't|are not|aren't) poisoned
+```
+
+Whether a player has the poison effect.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Is riding {#riding}
+
+```carve
+%player% (is|are) riding
+%player% (is not|isn't|are not|aren't) riding
+```
+
+Whether a player is riding an entity or vehicle.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Is ringing {#bell_ringing}
+
+```carve
+%location% (is|are) ringing
+%location% (is not|isn't|are not|aren't) ringing
+```
+
+Whether the bell at a location is ringing.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Is script command {#script_command}
+
+```carve
+[the] command %text% is a [script] command
+[the] command %text% (is not|isn't) a [script] command
+```
+
+Whether a command was defined by a script.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Is sedated {#sedated}
+
+```carve
+%location% (is|are) sedated
+%location% (is not|isn't|are not|aren't) sedated
+```
+
+Whether the beehive at a location is calmed by a campfire below it.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
 ## Is set {#is_set}
 
 ```carve
@@ -1115,6 +847,28 @@ if {home::%uuid of player%} is not set:
 ```
 
 Since **0.1.0** · Guide: [conditions](../syntax/conditions.md)
+
+## Is sheared {#sheared}
+
+```carve
+%object% (is|are) sheared
+%object% (is not|isn't|are not|aren't) sheared
+```
+
+Whether a sheep or snow golem has been sheared.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Is silent {#silent}
+
+```carve
+%player% (is|are) silent
+%player% (is not|isn't|are not|aren't) silent
+```
+
+Whether an entity makes no sounds.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
 ## Is sleeping {#sleeping}
 
@@ -1148,6 +902,17 @@ if player is sneaking:
 
 Since **unreleased** · Guide: [player-flags](../syntax/player-flags.md)
 
+## Is solid {#item_solid}
+
+```carve
+%item% is solid
+%item% (is not|isn't) solid
+```
+
+Whether a block type is solid.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
 ## Is sprinting {#sprinting}
 
 ```carve
@@ -1180,6 +945,35 @@ if player is swimming:
 
 Since **unreleased** · Guide: [player-flags](../syntax/player-flags.md)
 
+## Is tagged {#is_tagged}
+
+```carve
+%object% is tagged (as|with) [minecraft] [block|item] tag %text%
+```
+
+Checks a block, item or item name against a vanilla tag. An unknown tag logs a warning and the check is false.
+
+```carve
+on join:
+    if stone is tagged with minecraft tag "base_stone_overworld":
+        send "stone"
+```
+
+Since **unreleased** · Guide: [w4-skbee-raytrace-world](../syntax/w4-skbee-raytrace-world.md)
+
+## Is tagged {#tagged}
+
+```carve
+%object% is tagged (as|with) %text%
+%object% (is not|isn't) tagged (as|with) %text%
+%object% is tagged (as|with) [a] [the] [minecraft] [(block|item)] tag[s] %text%
+%object% (is not|isn't) tagged (as|with) [a] [the] [minecraft] [(block|item)] tag[s] %text%
+```
+
+Whether a block or item is in a Minecraft tag, like `minecraft:logs`.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
 ## Is the console {#is_console}
 
 ```carve
@@ -1196,65 +990,108 @@ if sender is console:
 
 Since **unreleased** · Guide: [senders](../syntax/senders.md)
 
-## pvp is (disabled|not enabled) {#pvp_is_disabled_not_enabled}
+## Is transparent {#item_transparent}
 
 ```carve
-pvp is (disabled|not enabled)
+%item% is transparent
+%item% (is not|isn't) transparent
 ```
 
-_No description yet._
+Whether a block type lets light through.
 
-Since **unreleased**
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
-## pvp is (disabled|not enabled) in %world% {#pvp_is_disabled_not_enabled_in_world}
+## Is valid {#valid}
 
 ```carve
-pvp is (disabled|not enabled) in %world%
+%object% is valid
+%object% (is not|isn't) valid
 ```
 
-_No description yet._
+Whether an entity still exists in the world.
 
-Since **unreleased**
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
-## pvp is enabled {#pvp_is_enabled}
+## Is wet {#wet}
+
+```carve
+%object% (is|are) wet
+%object% (is not|isn't|are not|aren't) wet
+```
+
+Whether an entity is in water or rain.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Is within area {#within_area}
+
+```carve
+%object% is within %object% (and|to) %object%
+%object% (is not|isn't) within %object% (and|to) %object%
+```
+
+Whether a location lies in the box between two corners.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Is within radius {#within_radius}
+
+```carve
+%object% is within %number% (block|blocks|meter|meters|metre|metres) (around|of|from) %object%
+%object% (is not|isn't) within %number% (block|blocks|meter|meters|metre|metres) (around|of|from) %object%
+```
+
+Whether a location or entity is within a distance of another.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Matches regex {#regex}
+
+```carve
+%text% (contains|contain) regex %text%
+%text% (doesn't|does not|don't|do not) contain regex %text%
+%text% (matches|match) %text%
+%text% (doesn't|does not|don't|do not) match %text%
+```
+
+Whether a text contains or fully matches a regular expression.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## PvP enabled {#pvp}
 
 ```carve
 pvp is enabled
-```
-
-_No description yet._
-
-Since **unreleased**
-
-## pvp is enabled in %world% {#pvp_is_enabled_in_world}
-
-```carve
+pvp is (disabled|not enabled)
 pvp is enabled in %world%
+pvp is (disabled|not enabled) in %world%
 ```
 
-_No description yet._
+Whether players can hurt each other, server-wide or in a world.
 
-Since **unreleased**
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
-## script %text% (is not|isn't) loaded {#script_text_is_not_isn_t_loaded}
+## Respawn anchors work {#respawn_anchors}
 
 ```carve
-script %text% (is not|isn't) loaded
+respawn anchors (work|are active) in %world%
+respawn anchors (don't|do not|doesn't|does not) work in %world%
 ```
 
-_No description yet._
+Whether respawn anchors can be used in a world.
 
-Since **unreleased**
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
-## script %text% is loaded {#script_text_is_loaded}
+## Script is loaded {#script_loaded}
 
 ```carve
 script %text% is loaded
+script %text% (is not|isn't) loaded
 ```
 
-_No description yet._
+Whether a script file is loaded.
 
-Since **unreleased**
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
 ## Starts with {#starts_with}
 
@@ -1290,4 +1127,21 @@ on chat:
 ```
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## World or chunk is loaded {#world_loaded}
+
+```carve
+%world|chunk% is loaded
+%world|chunk% is not loaded
+```
+
+Is the world or chunk loaded right now. Chunks answer false when the server cannot tell.
+
+```carve
+on join:
+    if chunk of player is loaded:
+        send "loaded"
+```
+
+Since **unreleased** · Guide: [w4-skbee-raytrace-world](../syntax/w4-skbee-raytrace-world.md)
 

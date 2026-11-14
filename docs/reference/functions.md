@@ -7,7 +7,7 @@ editLink: false
 
 # Functions
 
-Built-in functions, and how to write your own. 7 entries. Search all of them on the [reference home](./index.md).
+Built-in functions, and how to write your own. 12 entries. Search all of them on the [reference home](./index.md).
 
 In a pattern, `%type%` is a value, `[...]` is optional and `(a|b)` means one of the words.
 
@@ -24,6 +24,55 @@ send "%abs(-3)%" to player
 ```
 
 Since **unreleased** · Guide: [expressions](../syntax/expressions.md)
+
+## clamp, median, product {#w4_clamp}
+
+```carve
+clamp(%number%, %min%, %max%)
+median(%numbers%)
+product(%numbers%)
+```
+
+Keeps a number between two bounds; median and product take numbers or a list.
+
+```carve
+send "%clamp(15, 0, 10)%" to player
+```
+
+Since **unreleased** · Guide: [w4-functions-sections](../syntax/w4-functions-sections.md)
+
+## concat, formatNumber, toBase, fromBase, rgb, uuid {#w4_text}
+
+```carve
+concat(%objects%)
+formatNumber(%number%, %pattern%)
+toBase(%number%, %base%)
+rgb(%r%, %g%, %b%[, %a%])
+```
+
+Text helpers: join values, format a number with a pattern, convert between bases, build a hex colour, parse a UUID.
+
+```carve
+send "%toBase(255, 16)%" to player
+```
+
+Since **unreleased** · Guide: [w4-functions-sections](../syntax/w4-functions-sections.md)
+
+## exp, ln, log, root, factorial, combinations, permutations, isNaN {#w4_math}
+
+```carve
+log(%number%[, %base%])
+root(%number%[, %n%])
+combinations(%n%, %k%)
+```
+
+Exponent, logarithms, roots and counting functions. `log` is base 10 unless a base is given.
+
+```carve
+send "%combinations(5, 2)%" to player
+```
+
+Since **unreleased** · Guide: [w4-functions-sections](../syntax/w4-functions-sections.md)
 
 ## floor / ceil / round {#floor}
 
@@ -85,6 +134,22 @@ send "%mod(7, 3)%" to player
 
 Since **unreleased** · Guide: [expressions](../syntax/expressions.md)
 
+## player, offlinePlayer, calcExperience {#w4_player}
+
+```carve
+player(%name or uuid%)
+offlinePlayer(%name or uuid%)
+calcExperience(%level%)
+```
+
+Looks a player up by name or UUID, and gives the experience points a level needs.
+
+```carve
+send "%calcExperience(10)%" to player
+```
+
+Since **unreleased** · Guide: [w4-functions-sections](../syntax/w4-functions-sections.md)
+
 ## Script functions {#script_function}
 
 ```carve
@@ -101,6 +166,21 @@ on join:
 ```
 
 Since **unreleased** · Guide: [functions](../syntax/functions.md)
+
+## sin, cos, tan, asin, acos, atan, atan2 {#w4_trig}
+
+```carve
+sin(%number%)
+atan2(%number%, %number%)
+```
+
+Trigonometry in degrees. The inverse functions return degrees.
+
+```carve
+send "%sin(30)%" to player
+```
+
+Since **unreleased** · Guide: [w4-functions-sections](../syntax/w4-functions-sections.md)
 
 ## sqrt {#sqrt}
 

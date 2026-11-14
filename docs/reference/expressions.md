@@ -7,7 +7,7 @@ editLink: false
 
 # Expressions
 
-Expressions are values you put into effects and conditions. 64 entries. Search all of them on the [reference home](./index.md).
+Expressions are values you put into effects and conditions. 67 entries. Search all of them on the [reference home](./index.md).
 
 In a pattern, `%type%` is a value, `[...]` is optional and `(a|b)` means one of the words.
 
@@ -122,6 +122,24 @@ on chat:
 ```
 
 Since **0.1.0** · Guide: [expressions](../syntax/expressions.md)
+
+## Chunk {#chunk_at}
+
+```carve
+chunk at %location%
+chunk at %number%, %number% [in %world%]
+chunks in radius %number% around %location|chunk%
+```
+
+A chunk value, or the list of chunks in a square radius (at most 32).
+
+```carve
+on join:
+    set {_c::*} to chunks in radius 1 around player
+    send "%size of {_c::*}%"
+```
+
+Since **unreleased** · Guide: [w4-skbee-raytrace-world](../syntax/w4-skbee-raytrace-world.md)
 
 ## Clicked block {#clicked_block}
 
@@ -567,6 +585,23 @@ loop 3 times:
 
 Since **unreleased** · Guide: [loops](../syntax/loops.md)
 
+## Minecraft tag {#minecraft_tag}
+
+```carve
+minecraft [block|item] tag %text%
+minecraft tags of %object%
+```
+
+The blocks or items in a vanilla tag such as "logs", or the tags a block or item belongs to. The tag list is built in.
+
+```carve
+on join:
+    set {_l::*} to minecraft block tag "logs"
+    send "%size of {_l::*}%"
+```
+
+Since **unreleased** · Guide: [w4-skbee-raytrace-world](../syntax/w4-skbee-raytrace-world.md)
+
 ## Name {#name}
 
 ```carve
@@ -781,6 +816,23 @@ set {_roll} to random integer between 1 and 6
 ```
 
 Since **unreleased** · Guide: [expressions](../syntax/expressions.md)
+
+## Ray trace {#ray_trace}
+
+```carve
+ray trace from %player|location% [in direction %vector%] [with max distance %number%] [including fluids] [ignoring blocks|entities|fluids]
+hit (block|entity|block face|position|distance) of %ray%
+```
+
+Casts a thin ray and keeps the result in a variable. The hit is the nearer of the first block and the first entity. From a location, give a direction.
+
+```carve
+on join:
+    set {_r} to ray trace from player with max distance 50
+    send "you look at %hit block of {_r}%"
+```
+
+Since **unreleased** · Guide: [w4-skbee-raytrace-world](../syntax/w4-skbee-raytrace-world.md)
 
 ## Replaced text {#replaced}
 
