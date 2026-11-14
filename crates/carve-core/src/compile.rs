@@ -233,6 +233,7 @@ pub enum Cond {
     Cmp(Expr, CmpOp, Expr),
     /// Rare conditions, boxed so this enum stays small.
     Rare3(Box<crate::w2_conditions_3::W2Cond>),
+    Rare4(Box<crate::w4_conditions_1::W4Cond>),
     HasPerm {
         player: Expr,
         node: Expr,
@@ -577,6 +578,8 @@ pub enum CondKind {
     W2(crate::w2_conditions_2::W2Kind, bool),
     /// Rare conditions from `w2_conditions_3`.
     W3(crate::w2_conditions_3::W2Kind),
+    /// Conditions from `w4_conditions_1`; the bool is negation.
+    W4(crate::w4_conditions_1::Kind, bool),
 }
 
 /// Text effects (`replace ...`). Kept apart from `EFFECT_PATTERNS` so the
@@ -757,6 +760,7 @@ fn registry() -> &'static Registry {
             .chain(PLAYER_FLAG_PATTERNS)
             .chain(crate::w2_conditions_2::FLAG_PATTERNS)
             .chain(crate::w2_conditions_3::W2_CONDITION_PATTERNS)
+            .chain(crate::w4_conditions_1::CONDITION_PATTERNS)
             .chain(CONDITION_PATTERNS)
             .filter_map(|(s, k)| Pattern::new(s, *k).ok())
             .collect(),
@@ -797,6 +801,7 @@ pub fn check_registry() -> Result<(), String> {
         .chain(crate::w2_conditions_2::CONDITION_PATTERNS)
         .chain(crate::w2_conditions_2::FLAG_PATTERNS)
             .chain(crate::w2_conditions_3::W2_CONDITION_PATTERNS)
+            .chain(crate::w4_conditions_1::CONDITION_PATTERNS)
         .chain(CONDITION_PATTERNS)
     {
         Pattern::new(s, *k)?;
@@ -1284,6 +1289,7 @@ impl Cx<'_> {
             .chain(crate::w2_conditions_2::CONDITION_PATTERNS)
             .chain(crate::w2_conditions_2::FLAG_PATTERNS)
             .chain(crate::w2_conditions_3::W2_CONDITION_PATTERNS)
+            .chain(crate::w4_conditions_1::CONDITION_PATTERNS)
             .chain(CONDITION_PATTERNS)
             .map(|(s, _)| *s)
             .collect();
@@ -1840,6 +1846,11 @@ fn build_cond(kind: CondKind, mut c: Vec<Option<Capture>>) -> Cond {
         CondKind::W2(kind, negate) => {
             let b = (kind_has_b(kind)).then_some(b);
             return Cond::Rare(Box::new(crate::w2_conditions_2::build(kind, negate, a, b)));
+        }
+        CondKind::W4(kind, negate) => {
+            let a = if crate::w4_conditions_1::has_a(kind) { a } else { Expr::Num(0.0) };
+            let b = crate::w4_conditions_1::has_b(kind).then_some(b);
+            return Cond::Rare4(Box::new(crate::w4_conditions_1::build(kind, negate, a, b)));
         }
         CondKind::W3(_) => CmpOp::Eq,
         CondKind::IsSet => return Cond::IsSet(a, true),

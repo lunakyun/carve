@@ -861,6 +861,12 @@ pub trait Host {
     // ---- w2_expressions_4 ----
 
 
+    /// Answer a yes/no question about a player, entity or block (see
+    /// `w4_conditions_1::Check`). `None` means the game cannot tell.
+    fn w4c1_check(&mut self, _c: crate::w4_conditions_1::Check, _subject: &crate::value::Value) -> Option<bool> {
+        None
+    }
+
     /// Ticks left on an item cooldown, `None` when there is none.
     fn item_cooldown(&mut self, _player: &PlayerRef, _item: &str) -> Option<i64> {
         None
