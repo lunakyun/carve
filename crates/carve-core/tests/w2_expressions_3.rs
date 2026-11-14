@@ -134,8 +134,10 @@ fn bad(line: &str) -> bool {
 
 /// Run one line that sends a value and return the text sent.
 fn eval(expr: &str) -> String {
-    let h = run(&format!("set {{_v}} to {expr}
-send \"%{{_v}}%\" to player"));
+    let h = run(&format!(
+        "set {{_v}} to {expr}
+send \"%{{_v}}%\" to player"
+    ));
     h.sent.join("|")
 }
 
@@ -146,7 +148,10 @@ fn registry_is_valid() {
 
 #[test]
 fn hashes() {
-    assert_eq!(eval("\"abc\" hashed with MD5"), "900150983cd24fb0d6963f7d28e17f72");
+    assert_eq!(
+        eval("\"abc\" hashed with MD5"),
+        "900150983cd24fb0d6963f7d28e17f72"
+    );
     assert_eq!(
         eval("\"abc\" hashed with SHA-256"),
         "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
@@ -156,7 +161,10 @@ fn hashes() {
         128,
         "sha-512 is 64 bytes of hex"
     );
-    assert_eq!(eval("\"abc\" hashed with SHA-1"), "a9993e364706816aba3e25717850c26c9cd0d89d");
+    assert_eq!(
+        eval("\"abc\" hashed with SHA-1"),
+        "a9993e364706816aba3e25717850c26c9cd0d89d"
+    );
     assert!(bad("send \"a\" hashed with CRC32 to player"));
 }
 
@@ -186,7 +194,9 @@ fn player_stats() {
 
 #[test]
 fn set_add_remove() {
-    let h = run("set exhaustion of player to 4\nadd 1 to exhaustion of player\nremove 0.5 from player's exhaustion");
+    let h = run(
+        "set exhaustion of player to 4\nadd 1 to exhaustion of player\nremove 0.5 from player's exhaustion",
+    );
     assert_eq!(h.stats[&PStat::Exhaustion], 4.5);
     let h = run("set exhaustion of player to 99");
     assert_eq!(h.stats[&PStat::Exhaustion], 40.0);
@@ -204,7 +214,9 @@ fn set_add_remove() {
 
 #[test]
 fn flags() {
-    let h = run("if player is glowing:\n    send \"glow\" to player\nif player is not gliding:\n    send \"walk\" to player");
+    let h = run(
+        "if player is glowing:\n    send \"glow\" to player\nif player is not gliding:\n    send \"walk\" to player",
+    );
     assert_eq!(h.sent, vec!["glow", "walk"]);
 }
 
@@ -230,9 +242,13 @@ fn players() {
 #[test]
 fn lists() {
     let pre = "set {l::*} to \"a\", \"b\", \"a\", \"c\"\n";
-    let h = run(&format!("{pre}send \"%first index of value \"a\" in {{l::*}}%\" to player"));
+    let h = run(&format!(
+        "{pre}send \"%first index of value \"a\" in {{l::*}}%\" to player"
+    ));
     assert_eq!(h.sent, vec!["1"]);
-    let h = run(&format!("{pre}send \"%last index of value \"a\" in {{l::*}}%\" to player"));
+    let h = run(&format!(
+        "{pre}send \"%last index of value \"a\" in {{l::*}}%\" to player"
+    ));
     assert_eq!(h.sent, vec!["3"]);
     let h = run(&format!(
         "{pre}loop indices of value \"a\" in {{l::*}}:\n    send \"i%loop-value%\" to player"

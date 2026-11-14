@@ -167,14 +167,19 @@ fn per_axis_offset_and_force() {
 #[test]
 fn offset_is_clamped() {
     let c = run("play 1 cloud particles at player with offset 1000, -5, 2");
-    assert_eq!(c, ["particle cloud n=1 off=[64.0, 0.0, 2.0] speed=0 force=false data=None"]);
+    assert_eq!(
+        c,
+        ["particle cloud n=1 off=[64.0, 0.0, 2.0] speed=0 force=false data=None"]
+    );
 }
 
 #[test]
 fn dust_color_and_size() {
     assert_eq!(
         run_data("play 10 dust particles at player with color rgb 255, 128, 0 with size 2"),
-        ["particle dust n=10 off=[0.0, 0.0, 0.0] speed=0 force=false data=Dust { color: [255, 128, 0], size: 2.0 }"]
+        [
+            "particle dust n=10 off=[0.0, 0.0, 0.0] speed=0 force=false data=Dust { color: [255, 128, 0], size: 2.0 }"
+        ]
     );
 }
 
@@ -226,7 +231,9 @@ fn data_particles_skipped_when_host_cannot_send_data() {
     let h = run_with("play 10 dust particles at player with color red", Mock::steve());
     assert!(h.calls.is_empty());
     assert!(
-        h.logs.iter().any(|(l, m)| *l == LogLevel::Warn && m.contains("dust")),
+        h.logs
+            .iter()
+            .any(|(l, m)| *l == LogLevel::Warn && m.contains("dust")),
         "{:?}",
         h.logs
     );
@@ -257,8 +264,16 @@ fn default_command_has_offsets_and_force() {
 
 #[test]
 fn particle_option_errors() {
-    assert!(errors_of("play 5 dust particles at player with color").iter().any(|e| e.contains("color")));
-    assert!(errors_of("play 5 dust particles at player with color rgb 1, 2").iter().any(|e| e.contains("color")));
+    assert!(
+        errors_of("play 5 dust particles at player with color")
+            .iter()
+            .any(|e| e.contains("color"))
+    );
+    assert!(
+        errors_of("play 5 dust particles at player with color rgb 1, 2")
+            .iter()
+            .any(|e| e.contains("color"))
+    );
 }
 
 #[test]
@@ -269,7 +284,9 @@ fn bad_color_is_a_runtime_error() {
         m
     });
     assert!(
-        h.logs.iter().any(|(l, m)| *l == LogLevel::Error && m.contains("unknown color")),
+        h.logs
+            .iter()
+            .any(|(l, m)| *l == LogLevel::Error && m.contains("unknown color")),
         "{:?}",
         h.logs
     );
@@ -284,7 +301,10 @@ fn spec_of(body: &str) -> String {
 #[test]
 fn text_display_basic() {
     let c = run("spawn text display at player with text \"Hello\"");
-    assert_eq!(c[0], "display Text (1.5, 64.0, -3.0) text=Some(\"Hello\") id=None");
+    assert_eq!(
+        c[0],
+        "display Text (1.5, 64.0, -3.0) text=Some(\"Hello\") id=None"
+    );
 }
 
 #[test]
@@ -321,10 +341,13 @@ fn text_display_options() {
 
 #[test]
 fn scale_three_axes_translation_and_clamp() {
-    let s = spec_of("spawn text display at player with text \"x\" with scale 1, 2, 3 with translation 0, 1.5, 0");
+    let s =
+        spec_of("spawn text display at player with text \"x\" with scale 1, 2, 3 with translation 0, 1.5, 0");
     assert!(s.contains("scale: Some([1.0, 2.0, 3.0])"), "{s}");
     assert!(s.contains("translation: Some([0.0, 1.5, 0.0])"), "{s}");
-    let s = spec_of("spawn text display at player with text \"x\" with scale 5000 with brightness 99 with opacity 999");
+    let s = spec_of(
+        "spawn text display at player with text \"x\" with scale 5000 with brightness 99 with opacity 999",
+    );
     assert!(s.contains("[100.0, 100.0, 100.0]"), "{s}");
     assert!(s.contains("brightness: Some(15)"), "{s}");
     assert!(s.contains("opacity: Some(255)"), "{s}");
@@ -345,14 +368,20 @@ fn text_with_variable_and_color_codes() {
 #[test]
 fn block_display() {
     let c = run("spawn block display of stone at player with scale 0.5 with billboard fixed");
-    assert!(c[0].contains("display Block") && c[0].contains("id=Some(\"stone\")"), "{c:?}");
+    assert!(
+        c[0].contains("display Block") && c[0].contains("id=Some(\"stone\")"),
+        "{c:?}"
+    );
     assert!(c[1].contains("scale: Some([0.5, 0.5, 0.5])"), "{c:?}");
 }
 
 #[test]
 fn item_display() {
     let c = run("spawn item display of diamond sword at player with mode head");
-    assert!(c[0].contains("display Item") && c[0].contains("id=Some(\"diamond_sword\")"), "{c:?}");
+    assert!(
+        c[0].contains("display Item") && c[0].contains("id=Some(\"diamond_sword\")"),
+        "{c:?}"
+    );
     assert!(c[1].contains("item_mode: Some(\"head\")"), "{c:?}");
     let c = run("spawn item display of diamond at player with item mode third person left hand");
     assert!(c[1].contains("thirdperson_lefthand"), "{c:?}");
@@ -366,13 +395,41 @@ fn other_verbs_and_articles() {
 
 #[test]
 fn display_errors() {
-    assert!(errors_of("spawn text display with text \"x\"").iter().any(|e| e.contains("place")));
-    assert!(errors_of("spawn block display at player").iter().any(|e| e.contains("id")));
-    assert!(errors_of("spawn text display at player with billboard sideways").iter().any(|e| e.contains("billboard")));
-    assert!(errors_of("spawn text display at player with banana 3").iter().any(|e| e.contains("unknown display option")));
-    assert!(errors_of("spawn block display of stone at player with text \"x\"").iter().any(|e| e.contains("only text")));
-    assert!(errors_of("spawn item display of diamond at player with mode sideways").iter().any(|e| e.contains("mode")));
-    assert!(errors_of("spawn item display of notanitem at player").iter().any(|e| e.contains("unknown item")));
+    assert!(
+        errors_of("spawn text display with text \"x\"")
+            .iter()
+            .any(|e| e.contains("place"))
+    );
+    assert!(
+        errors_of("spawn block display at player")
+            .iter()
+            .any(|e| e.contains("id"))
+    );
+    assert!(
+        errors_of("spawn text display at player with billboard sideways")
+            .iter()
+            .any(|e| e.contains("billboard"))
+    );
+    assert!(
+        errors_of("spawn text display at player with banana 3")
+            .iter()
+            .any(|e| e.contains("unknown display option"))
+    );
+    assert!(
+        errors_of("spawn block display of stone at player with text \"x\"")
+            .iter()
+            .any(|e| e.contains("only text"))
+    );
+    assert!(
+        errors_of("spawn item display of diamond at player with mode sideways")
+            .iter()
+            .any(|e| e.contains("mode"))
+    );
+    assert!(
+        errors_of("spawn item display of notanitem at player")
+            .iter()
+            .any(|e| e.contains("unknown item"))
+    );
 }
 
 struct Bare(Vec<String>, Vec<String>);
@@ -419,7 +476,10 @@ fn text_display_default_summon_command() {
     e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
     assert_eq!(h.0.len(), 1, "{:?}", h.0);
     let cmd = &h.0[0];
-    assert!(cmd.starts_with("summon minecraft:text_display 1 2 3 {text:'"), "{cmd}");
+    assert!(
+        cmd.starts_with("summon minecraft:text_display 1 2 3 {text:'"),
+        "{cmd}"
+    );
     assert!(cmd.contains("\"color\":\"#55ff55\""), "{cmd}");
     assert!(cmd.contains("it\\'s"), "{cmd}");
     assert!(cmd.contains("billboard:\"center\""), "{cmd}");

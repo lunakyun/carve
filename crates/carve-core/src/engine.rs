@@ -10,8 +10,8 @@ use crate::compile::{
 };
 use crate::error::ScriptError;
 use crate::expr::{BinOp, Expr, Key, MathFn, Part, Prop, VarRef};
-use crate::list_literals::ElemSel;
 use crate::host::{Host, LogLevel};
+use crate::list_literals::ElemSel;
 use crate::value::{PlayerRef, Recipient, Value, format_num, push_num};
 use crate::vars::{Locals, Variables};
 
@@ -242,14 +242,14 @@ mod ext_eval;
 mod list_eval;
 mod structures_rt;
 pub(crate) use structures_rt::ERROR_KEY;
-mod w2_run;
 mod w2;
 mod w2_eval;
-mod x2_eval;
+mod w2_run;
 mod w2e3;
+mod w4_eval;
 mod w5_eval;
 mod w6_eval;
-mod w4_eval;
+mod x2_eval;
 
 fn join_list(items: &[(String, Value)], out: &mut String) {
     if items.is_empty() {
@@ -437,7 +437,11 @@ fn build_table(files: &[(String, String)]) -> (ScriptTable, Vec<ScriptError>) {
     let compiled = compile_all(files);
     let mut errors = compiled.errors;
     table.functions = compiled.functions;
-    table.var_defaults = compiled.var_defaults.into_iter().map(|(p, t)| (p, Arc::new(t))).collect();
+    table.var_defaults = compiled
+        .var_defaults
+        .into_iter()
+        .map(|(p, t)| (p, Arc::new(t)))
+        .collect();
     for (name, trigs) in compiled.files {
         table.files += 1;
         let mut info = FileInfo {
@@ -1007,7 +1011,10 @@ impl Engine {
         if let Value::Chunk { world, .. } = v
             && prop == Prop::World
         {
-            return world.clone().or_else(|| host.default_world()).map_or(Value::None, Value::World);
+            return world
+                .clone()
+                .or_else(|| host.default_world())
+                .map_or(Value::None, Value::World);
         }
         if let Value::Entity(e) = v
             && let Some(r) = self.entity_prop(prop, e, host)
@@ -1109,7 +1116,12 @@ impl Engine {
             }
             LoopSrc::Items(s) => {
                 let v = self.eval_list(s, ex, host)?;
-                LoopItems::List(v.into_iter().enumerate().map(|(i, x)| ((i + 1).to_string(), x)).collect())
+                LoopItems::List(
+                    v.into_iter()
+                        .enumerate()
+                        .map(|(i, x)| ((i + 1).to_string(), x))
+                        .collect(),
+                )
             }
             LoopSrc::List(v) => {
                 let key = self.key(v, ex, host)?;
@@ -1322,7 +1334,11 @@ impl Engine {
                 let v = self.eval(e, ex, host)?;
                 Ok((v != Value::None) == *want)
             }
-            Cond::SenderIs { value, console, negate } => {
+            Cond::SenderIs {
+                value,
+                console,
+                negate,
+            } => {
                 let v = self.eval(value, ex, host)?;
                 let is = if *console {
                     matches!(v, Value::Console)
@@ -1338,7 +1354,10 @@ impl Engine {
                     Some(b) => Some(self.eval(b, ex, host)?),
                     None => None,
                 };
-                Ok(crate::w4_conditions_1::check(r.kind, &a, b.as_ref(), ex.cancelled, host).is_some_and(|hit| hit != r.negate))
+                Ok(
+                    crate::w4_conditions_1::check(r.kind, &a, b.as_ref(), ex.cancelled, host)
+                        .is_some_and(|hit| hit != r.negate),
+                )
             }
             Cond::Rtw(r) => {
                 let a = self.eval(&r.a, ex, host)?;
@@ -1399,7 +1418,9 @@ impl Engine {
                 };
                 return match val {
                     Some(Value::Num(n)) => Ok(*n),
-                    Some(v @ Value::Date(_)) => Err(format!("expected a number, got {} ({})", v.type_name(), v)),
+                    Some(v @ Value::Date(_)) => {
+                        Err(format!("expected a number, got {} ({})", v.type_name(), v))
+                    }
                     Some(v) => to_num_opt(v)
                         .ok_or_else(|| format!("expected a number, got {} ({})", v.type_name(), v)),
                     None => Err("expected a number, got <none> (<none>)".into()),
@@ -1444,7 +1465,12 @@ impl Engine {
         (name, p)
     }
 
-    pub(crate) fn key<'k>(&mut self, v: &'k VarRef, ex: &mut Exec, host: &mut dyn Host) -> Result<Cow<'k, str>, String> {
+    pub(crate) fn key<'k>(
+        &mut self,
+        v: &'k VarRef,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<Cow<'k, str>, String> {
         match &v.key {
             Key::Static(k) => Ok(Cow::Borrowed(k)),
             Key::Dynamic(parts) => {
@@ -1553,7 +1579,11 @@ impl Engine {
                     out.extend(self.list_items(v, ex, host)?.into_iter().map(|(_, x)| x));
                 }
                 Expr::Indices(v) => {
-                    out.extend(self.list_items(v, ex, host)?.into_iter().map(|(k, _)| Value::Text(k)));
+                    out.extend(
+                        self.list_items(v, ex, host)?
+                            .into_iter()
+                            .map(|(k, _)| Value::Text(k)),
+                    );
                 }
                 Expr::ItemInfo(..) => match self.eval(e, ex, host)? {
                     Value::List(l) => out.extend(l),
@@ -1904,7 +1934,11 @@ impl Engine {
             Expr::X2(w) => self.eval_x2(w, ex, host)?,
             Expr::Color(on, e) => {
                 let t = self.text(e, ex, host)?;
-                Value::Text(if *on { crate::colors::colorize(&t) } else { crate::colors::strip(&t) })
+                Value::Text(if *on {
+                    crate::colors::colorize(&t)
+                } else {
+                    crate::colors::strip(&t)
+                })
             }
             Expr::ParseNum(e) => {
                 let t = self.text(e, ex, host)?;
@@ -2646,13 +2680,22 @@ impl Engine {
                 let name = self.text(e, ex, host)?;
                 self.sources.keys().any(|f| w::script_name_matches(f, &name)) != *negate
             }
-            C::Regex { text, pattern, whole, negate } => {
+            C::Regex {
+                text,
+                pattern,
+                whole,
+                negate,
+            } => {
                 let t = self.text(text, ex, host)?;
                 let p = self.text(pattern, ex, host)?;
                 w::regex_test(&t, &p, *whole)? != *negate
             }
             C::WithinBox { loc, a, b, negate } => {
-                let (l, a, b) = (self.eval(loc, ex, host)?, self.eval(a, ex, host)?, self.eval(b, ex, host)?);
+                let (l, a, b) = (
+                    self.eval(loc, ex, host)?,
+                    self.eval(a, ex, host)?,
+                    self.eval(b, ex, host)?,
+                );
                 let (l, a, b) = (
                     w2_loc(&l, &mut ex.seen, host),
                     w2_loc(&a, &mut ex.seen, host),
@@ -2668,14 +2711,21 @@ impl Engine {
                 };
                 ok != *negate
             }
-            C::WithinRadius { loc, radius, center, negate } => {
+            C::WithinRadius {
+                loc,
+                radius,
+                center,
+                negate,
+            } => {
                 let r = self.num(radius, ex, host)?;
                 let (l, m) = (self.eval(loc, ex, host)?, self.eval(center, ex, host)?);
                 let (l, m) = (w2_loc(&l, &mut ex.seen, host), w2_loc(&m, &mut ex.seen, host));
                 let ok = match (l, m) {
-                    (Some(l), Some(m)) => {
-                        w::in_radius((l.0, l.1, l.2, l.3.as_deref()), (m.0, m.1, m.2, m.3.as_deref()), r)
-                    }
+                    (Some(l), Some(m)) => w::in_radius(
+                        (l.0, l.1, l.2, l.3.as_deref()),
+                        (m.0, m.1, m.2, m.3.as_deref()),
+                        r,
+                    ),
                     _ => return Ok(false),
                 };
                 ok != *negate
@@ -2734,7 +2784,12 @@ impl Engine {
 /// Placeholders (see `placeholders`).
 impl Engine {
     #[inline(never)]
-    fn eval_ph(&mut self, p: &crate::placeholders::Ph, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
+    fn eval_ph(
+        &mut self,
+        p: &crate::placeholders::Ph,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<Value, String> {
         use crate::placeholders::Ph;
         let (name_or_text, pl) = match p {
             Ph::Get(a, pl) | Ph::Parse(a, pl) => (a, pl),
@@ -2756,7 +2811,12 @@ impl Engine {
 
     /// Value of one placeholder like `player_name` or `myplugin_thing` (no
     /// percent signs). `None` when nothing knows it.
-    pub fn placeholder(&mut self, name: &str, player: Option<&PlayerRef>, host: &mut dyn Host) -> Option<String> {
+    pub fn placeholder(
+        &mut self,
+        name: &str,
+        player: Option<&PlayerRef>,
+        host: &mut dyn Host,
+    ) -> Option<String> {
         if let Some(v) = crate::placeholders::builtin(name, player, &self.vars, host) {
             return Some(v);
         }
@@ -2765,7 +2825,12 @@ impl Engine {
     }
 
     /// Replace the `%name%` placeholders in `text`. Unknown ones stay as written.
-    pub fn parse_placeholders(&mut self, text: &str, player: Option<&PlayerRef>, host: &mut dyn Host) -> String {
+    pub fn parse_placeholders(
+        &mut self,
+        text: &str,
+        player: Option<&PlayerRef>,
+        host: &mut dyn Host,
+    ) -> String {
         if text.len() > crate::placeholders::MAX_PARSE_LEN {
             return text.to_string();
         }

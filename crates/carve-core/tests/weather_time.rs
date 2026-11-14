@@ -19,7 +19,10 @@ impl Mock {
         Mock {
             time: 1000,
             weather: Weather::Clear,
-            rules: vec![("keep_inventory".into(), "false".into()), ("random_tick_speed".into(), "3".into())],
+            rules: vec![
+                ("keep_inventory".into(), "false".into()),
+                ("random_tick_speed".into(), "3".into()),
+            ],
             difficulty: "normal".into(),
             bare: false,
             calls: Vec::new(),
@@ -27,7 +30,11 @@ impl Mock {
         }
     }
     fn errors(&self) -> Vec<&String> {
-        self.logs.iter().filter(|(l, _)| *l == LogLevel::Error).map(|(_, m)| m).collect()
+        self.logs
+            .iter()
+            .filter(|(l, _)| *l == LogLevel::Error)
+            .map(|(_, m)| m)
+            .collect()
     }
 }
 
@@ -90,7 +97,8 @@ impl Host for Mock {
             self.execute_command(&to.command(ticks));
         } else {
             self.weather = to;
-            self.calls.push(format!("weather {} {} {:?}", w(world), to.name(), ticks));
+            self.calls
+                .push(format!("weather {} {} {:?}", w(world), to.name(), ticks));
         }
     }
     fn game_rule(&mut self, _: Option<&str>, rule: &str) -> Option<String> {
@@ -164,7 +172,11 @@ fn reads_time_weather_difficulty() {
 "#;
     assert_eq!(
         run(src),
-        ["send Steve 1000 1000 1000", "send Steve clear clear", "send Steve normal normal"]
+        [
+            "send Steve 1000 1000 1000",
+            "send Steve clear clear",
+            "send Steve normal normal"
+        ]
     );
 }
 
@@ -185,7 +197,10 @@ fn clock_literals_are_ticks() {
     // 6:00 = 0, noon = 6000, 18:00 = 12000, midnight = 18000, 6:30 = 500.
     assert_eq!(
         run(src),
-        ["send Steve 0 6000 12000 18000 500", "send Steve 0 12000 18000 6500 0"]
+        [
+            "send Steve 0 6000 12000 18000 500",
+            "send Steve 0 12000 18000 6500 0"
+        ]
     );
 }
 
@@ -375,7 +390,10 @@ fn day_and_night_conditions() {
         (13_000, vec!["send Steve night", "send Steve not day"]),
         (22_999, vec!["send Steve night", "send Steve not day"]),
         (23_000, vec!["send Steve day"]),
-        (24_000 * 2 + 14_000, vec!["send Steve night", "send Steve not day"]),
+        (
+            24_000 * 2 + 14_000,
+            vec!["send Steve night", "send Steve not day"],
+        ),
     ] {
         let mut h = Mock::new();
         h.time = t;
@@ -460,7 +478,11 @@ fn bad_gamerule_value_is_a_runtime_error() {
     );
     assert!(calls.is_empty());
     assert_eq!(h.errors().len(), 1);
-    assert!(h.errors()[0].contains("true, false or a whole number"), "{:?}", h.errors());
+    assert!(
+        h.errors()[0].contains("true, false or a whole number"),
+        "{:?}",
+        h.errors()
+    );
 }
 
 #[test]
@@ -471,7 +493,13 @@ fn gamerule_defaults_to_commands() {
         "on join:\n    set gamerule keepInventory to true\n    set gamerule randomTickSpeed to 0\n",
         h,
     );
-    assert_eq!(calls, ["cmd gamerule keep_inventory true", "cmd gamerule random_tick_speed 0"]);
+    assert_eq!(
+        calls,
+        [
+            "cmd gamerule keep_inventory true",
+            "cmd gamerule random_tick_speed 0"
+        ]
+    );
 }
 
 #[test]

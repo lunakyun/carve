@@ -48,11 +48,14 @@ impl WasmHost<'_> {
 
     pub(crate) fn first_empty_slot_impl(&mut self, p: &PlayerRef) -> Option<u32> {
         let pl = self.get(p)?;
-        (0u8..36).find(|s| pl.get_inventory_item(*s).is_none()).map(u32::from)
+        (0u8..36)
+            .find(|s| pl.get_inventory_item(*s).is_none())
+            .map(u32::from)
     }
 
     pub(crate) fn can_see_impl(&mut self, viewer: &PlayerRef, other: &PlayerRef) -> bool {
-        let Some(other_pl) = pumpkin_plugin_api::uuid::parse(&other.uuid).and_then(|id| self.server.get_player_by_uuid(id))
+        let Some(other_pl) =
+            pumpkin_plugin_api::uuid::parse(&other.uuid).and_then(|id| self.server.get_player_by_uuid(id))
         else {
             return true;
         };

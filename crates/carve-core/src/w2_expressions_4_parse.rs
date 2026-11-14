@@ -23,7 +23,11 @@ impl P<'_> {
         self.pos += 1;
         let e = self.primary()?;
         if !ty.accepts(e.ty(self.env)) {
-            return Err(format!("'{what}' needs a {}, got {}", ty.name(), e.ty(self.env).name()));
+            return Err(format!(
+                "'{what}' needs a {}, got {}",
+                ty.name(),
+                e.ty(self.env).name()
+            ));
         }
         Ok(e)
     }
@@ -177,7 +181,14 @@ impl P<'_> {
                 }
                 self.pos += 1;
                 let e = self.at_location("highest block")?;
-                mk(if lw == "highest" { W4Op::Highest } else { W4Op::Lowest }, vec![e])
+                mk(
+                    if lw == "highest" {
+                        W4Op::Highest
+                    } else {
+                        W4Op::Lowest
+                    },
+                    vec![e],
+                )
             }
             _ => Ok(None),
         }
@@ -255,7 +266,10 @@ impl P<'_> {
             self.of_arg(Ty::Player, "resource pack response")?
         } else {
             if self.env.in_function || self.env.no_player {
-                return Err("'resource pack response' needs a player: use 'resource pack response of <player>'".into());
+                return Err(
+                    "'resource pack response' needs a player: use 'resource pack response of <player>'"
+                        .into(),
+                );
             }
             Expr::Player
         };

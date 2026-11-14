@@ -138,7 +138,9 @@ fn canonical(joined: &str) -> Option<&'static str> {
 pub fn could_start(word: &str) -> bool {
     let w = word.to_ascii_lowercase();
     let i = ENCHANTS.partition_point(|n| *n < w.as_str());
-    ENCHANTS.get(i).is_some_and(|n| n.starts_with(&w) && (n.len() == w.len() || n.as_bytes()[w.len()] == b'_'))
+    ENCHANTS
+        .get(i)
+        .is_some_and(|n| n.starts_with(&w) && (n.len() == w.len() || n.as_bytes()[w.len()] == b'_'))
         || ALIASES.iter().any(|(a, _)| a.starts_with(&w))
 }
 
@@ -193,7 +195,9 @@ pub fn enchant_at(toks: &[Tok], at: usize) -> Option<(&'static str, u32, usize)>
 pub fn split_spec(s: &str) -> Option<(String, u32)> {
     let s = s.trim().to_ascii_lowercase().replace(' ', "_");
     let (name, level) = match s.rsplit_once('_') {
-        Some((n, l)) if l.chars().all(|c| c.is_ascii_digit()) && !l.is_empty() => (n.to_string(), l.parse().ok()?),
+        Some((n, l)) if l.chars().all(|c| c.is_ascii_digit()) && !l.is_empty() => {
+            (n.to_string(), l.parse().ok()?)
+        }
         _ => (s, 0),
     };
     let id = canonical(&name)?;
@@ -202,10 +206,34 @@ pub fn split_spec(s: &str) -> Option<(String, u32)> {
 
 /// Condition patterns. Tried before the main list.
 pub const CONDITION_PATTERNS: &[(&str, CondKind)] = &[
-    ("%item% is enchanted with %text%", CondKind::ItemEnchanted { any: false, negate: false }),
-    ("%item% (isn't|is not) enchanted with %text%", CondKind::ItemEnchanted { any: false, negate: true }),
-    ("%item% is enchanted", CondKind::ItemEnchanted { any: true, negate: false }),
-    ("%item% (isn't|is not) enchanted", CondKind::ItemEnchanted { any: true, negate: true }),
+    (
+        "%item% is enchanted with %text%",
+        CondKind::ItemEnchanted {
+            any: false,
+            negate: false,
+        },
+    ),
+    (
+        "%item% (isn't|is not) enchanted with %text%",
+        CondKind::ItemEnchanted {
+            any: false,
+            negate: true,
+        },
+    ),
+    (
+        "%item% is enchanted",
+        CondKind::ItemEnchanted {
+            any: true,
+            negate: false,
+        },
+    ),
+    (
+        "%item% (isn't|is not) enchanted",
+        CondKind::ItemEnchanted {
+            any: true,
+            negate: true,
+        },
+    ),
 ];
 
 /// Text of a JSON text component, without styling. Used to read names and lore.
@@ -254,11 +282,19 @@ pub fn give_command(player: &str, id: &str, count: u32, meta: &ItemMeta) -> Stri
         parts.push(format!("custom_name={}", snbt_str(&crate::colors::colorize(n))));
     }
     if !meta.lore.is_empty() {
-        let l: Vec<String> = meta.lore.iter().map(|l| snbt_str(&crate::colors::colorize(l))).collect();
+        let l: Vec<String> = meta
+            .lore
+            .iter()
+            .map(|l| snbt_str(&crate::colors::colorize(l)))
+            .collect();
         parts.push(format!("lore=[{}]", l.join(",")));
     }
     if !meta.enchants.is_empty() {
-        let e: Vec<String> = meta.enchants.iter().map(|(k, v)| format!("\"minecraft:{k}\":{v}")).collect();
+        let e: Vec<String> = meta
+            .enchants
+            .iter()
+            .map(|(k, v)| format!("\"minecraft:{k}\":{v}"))
+            .collect();
         parts.push(format!("enchantments={{{}}}", e.join(",")));
     }
     if parts.is_empty() {
@@ -346,7 +382,12 @@ pub fn info(what: ItemInfo, v: &Value) -> Value {
         ),
         (ItemInfo::Enchants, Value::Item { meta, .. }) => Value::List(
             meta.as_ref()
-                .map(|m| m.enchants.iter().map(|(k, l)| Value::Text(spec_text(k, *l))).collect())
+                .map(|m| {
+                    m.enchants
+                        .iter()
+                        .map(|(k, l)| Value::Text(spec_text(k, *l)))
+                        .collect()
+                })
                 .unwrap_or_default(),
         ),
         (ItemInfo::Lore | ItemInfo::Enchants, _) => Value::List(Vec::new()),

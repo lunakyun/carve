@@ -7,53 +7,54 @@ mod w2_events_4;
 use std::collections::BTreeSet;
 use std::sync::Mutex;
 
-use carve_core::health_food::Vital;
 use carve_core::block_ops::BlockPos;
+use carve_core::health_food::Vital;
 use carve_core::inventories::InvClick;
-use carve_core::weather_time::Weather;
-use carve_core::skbee_text::{Click, Hover, Kind, Part};
 use carve_core::skbee_recipes_advancements::{CookKind, Ingredient as RIngredient, RecipeDef, RecipeKind};
+use carve_core::skbee_text::{Click, Hover, Kind, Part};
 use carve_core::skbee_utilities::Info;
-use carve_core::world_effects::{FxPos, ParticleFx};
 use carve_core::w2_expressions_7::Query;
+use carve_core::weather_time::Weather;
+use carve_core::world_effects::{FxPos, ParticleFx};
 use carve_core::{
-    CommandOutcome, Engine, EventCtx, EventKind, Host, LogLevel, PlayerFlag, PlayerRef, Recipient, Value, Variables,
+    CommandOutcome, Engine, EventCtx, EventKind, Host, LogLevel, PlayerFlag, PlayerRef, Recipient, Value,
+    Variables,
 };
 mod w2_events_3;
 
 use pumpkin_plugin_api::CustomStatistic;
 use pumpkin_plugin_api::DamageType;
 use pumpkin_plugin_api::World;
-use pumpkin_plugin_api::wit::pumpkin::plugin::status_effect::StatusEffectInstance;
-use pumpkin_plugin_api::world::{BlockFlags, ExplosionInteraction};
-use pumpkin_plugin_api::wit::pumpkin::plugin::status_effect::StatusEffectType;
-use pumpkin_plugin_api::{Block, GameRule, GameRuleValue};
 use pumpkin_plugin_api::command::{
     ArgumentType, Command, CommandError, CommandNode, CommandSender, ConsumedArgs, StringType,
 };
 use pumpkin_plugin_api::commands::CommandHandler;
 use pumpkin_plugin_api::common::{BlockPos as WitPos, EntityPose, GameMode, Hand, RgbColor};
-use pumpkin_plugin_api::player::JavaResourcePack;
 use pumpkin_plugin_api::events::{
-    BlockBreakEvent, BlockPlaceEvent, EntityDamageByEntityEvent, InventoryClickEvent, InventoryCloseEvent, EntityDamageEvent, EventData, EventHandler,
-    EventPriority, FromIntoEvent, InteractAction, PlayerChatEvent, PlayerDeathEvent, PlayerInteractEvent,
-    PlayerJoinEvent, PlayerLeaveEvent, PlayerRespawnEvent, PlayerToggleFlightEvent, PlayerToggleSneakEvent,
-    PlayerToggleSprintEvent,
+    BlockBreakEvent, BlockPlaceEvent, EntityDamageByEntityEvent, EntityDamageEvent, EventData, EventHandler,
+    EventPriority, FromIntoEvent, InteractAction, InventoryClickEvent, InventoryCloseEvent, PlayerChatEvent,
+    PlayerDeathEvent, PlayerInteractEvent, PlayerJoinEvent, PlayerLeaveEvent, PlayerRespawnEvent,
+    PlayerToggleFlightEvent, PlayerToggleSneakEvent, PlayerToggleSprintEvent,
 };
 use pumpkin_plugin_api::events::{PlayerAdvancementDoneEvent, PlayerRecipeDiscoverEvent};
 use pumpkin_plugin_api::logging::{LogLevel as ApiLevel, log};
 use pumpkin_plugin_api::permission::{Permission, PermissionDefault, PermissionLevel};
+use pumpkin_plugin_api::player::JavaResourcePack;
 use pumpkin_plugin_api::scheduler::schedule_repeating_task;
 use pumpkin_plugin_api::text::TextComponent;
+use pumpkin_plugin_api::wit::pumpkin::plugin::status_effect::StatusEffectInstance;
+use pumpkin_plugin_api::wit::pumpkin::plugin::status_effect::StatusEffectType;
+use pumpkin_plugin_api::world::{BlockFlags, ExplosionInteraction};
+use pumpkin_plugin_api::{Block, GameRule, GameRuleValue};
 use pumpkin_plugin_api::{
     Context, Player, Plugin, PluginMetadata, Server, permissions, register_plugin, uuid,
 };
 
-mod events_items;
+mod custom_stats;
+mod displays;
 mod ent_host;
 mod ents;
-mod displays;
-mod custom_stats;
+mod events_items;
 mod fx;
 mod inv;
 mod sb;
@@ -470,7 +471,11 @@ impl WasmHost<'_> {
         let stack = self.get(p)?.get_item_in_hand(Hand::Right)?;
         let meta = ItemMeta {
             name: stack.get_custom_name().map(|n| plain_from_json(&n.to_json())),
-            lore: stack.get_lore().iter().map(|l| plain_from_json(&l.to_json())).collect(),
+            lore: stack
+                .get_lore()
+                .iter()
+                .map(|l| plain_from_json(&l.to_json()))
+                .collect(),
             enchants: stack
                 .get_enchantments()
                 .into_iter()
@@ -521,7 +526,11 @@ impl WasmHost<'_> {
         Some(carve_core::w2_expressions_1::snake(&format!("{b:?}")))
     }
 
-    fn armor_item(&mut self, p: &PlayerRef, slot: carve_core::w2_expressions_1::ArmorSlot) -> Option<(String, u32)> {
+    fn armor_item(
+        &mut self,
+        p: &PlayerRef,
+        slot: carve_core::w2_expressions_1::ArmorSlot,
+    ) -> Option<(String, u32)> {
         use carve_core::w2_expressions_1::ArmorSlot;
         use pumpkin_plugin_api::world::EquipmentSlot;
         let slot = match slot {
@@ -602,7 +611,6 @@ impl WasmHost<'_> {
         }
     }
 
-
     fn player_state(&mut self, p: &PlayerRef, state: carve_core::w2_conditions_3::PlayerState) -> bool {
         use carve_core::w2_conditions_3::PlayerState;
         let Some(pl) = self.get(p) else {
@@ -682,14 +690,22 @@ impl WasmHost<'_> {
 
     fn block_type(&mut self, at: &BlockPos) -> Option<String> {
         let w = self.block_world(at)?;
-        let b = w.get_block(WitPos { x: at.x, y: at.y, z: at.z });
+        let b = w.get_block(WitPos {
+            x: at.x,
+            y: at.y,
+            z: at.z,
+        });
         Some(b.name.strip_prefix("minecraft:").unwrap_or(&b.name).to_string())
     }
 
     fn set_block(&mut self, at: &BlockPos, id: &str) {
         if let Some(w) = self.block_world(at) {
             let flags = BlockFlags::NOTIFY_NEIGHBORS | BlockFlags::NOTIFY_LISTENERS;
-            let pos = WitPos { x: at.x, y: at.y, z: at.z };
+            let pos = WitPos {
+                x: at.x,
+                y: at.y,
+                z: at.z,
+            };
             if !w.set_block_by_name(pos, &format!("minecraft:{id}"), flags) {
                 plog(ApiLevel::Warn, &format!("set block: unknown block type '{id}'"));
             }
@@ -699,7 +715,15 @@ impl WasmHost<'_> {
     fn break_block(&mut self, at: &BlockPos) {
         if let Some(w) = self.block_world(at) {
             let flags = BlockFlags::NOTIFY_NEIGHBORS | BlockFlags::NOTIFY_LISTENERS;
-            w.set_block_by_name(WitPos { x: at.x, y: at.y, z: at.z }, "minecraft:air", flags);
+            w.set_block_by_name(
+                WitPos {
+                    x: at.x,
+                    y: at.y,
+                    z: at.z,
+                },
+                "minecraft:air",
+                flags,
+            );
         }
     }
 
@@ -725,7 +749,13 @@ impl WasmHost<'_> {
         }
         if let Some(w) = self.fx_world(&p.at) {
             let [dx, dy, dz] = p.offsets();
-            w.spawn_particle(kind, (p.at.x, p.at.y, p.at.z), (dx, dy, dz), p.speed as f32, p.count as i32);
+            w.spawn_particle(
+                kind,
+                (p.at.x, p.at.y, p.at.z),
+                (dx, dy, dz),
+                p.speed as f32,
+                p.count as i32,
+            );
         }
     }
 
@@ -824,7 +854,9 @@ impl WasmHost<'_> {
     }
 
     fn register_recipe(&mut self, r: &RecipeDef) -> Result<(), String> {
-        use pumpkin_plugin_api::recipe::{CookingRecipeBuilder, Ingredient as Ing, ShapedRecipeBuilder, ShapelessRecipeBuilder};
+        use pumpkin_plugin_api::recipe::{
+            CookingRecipeBuilder, Ingredient as Ing, ShapedRecipeBuilder, ShapelessRecipeBuilder,
+        };
         let ing = |i: &RIngredient| match i {
             RIngredient::Item(s) => Ing::item(s),
             RIngredient::Tag(s) => Ing::tag(s),
@@ -832,7 +864,8 @@ impl WasmHost<'_> {
         let out = pumpkin_plugin_api::ItemStack::new(&r.result, r.count as u8);
         let res = match &r.kind {
             RecipeKind::Shaped { rows, key } => {
-                let mut b = ShapedRecipeBuilder::new(r.id.clone(), out).pattern(rows.iter().map(String::as_str));
+                let mut b =
+                    ShapedRecipeBuilder::new(r.id.clone(), out).pattern(rows.iter().map(String::as_str));
                 for (c, i) in key {
                     b = b.key(*c, ing(i));
                 }
@@ -1167,12 +1200,18 @@ impl WasmHost<'_> {
             }
             return;
         }
-        self.deferred
-            .push((None, format!("whitelist {} {name}", if on { "add" } else { "remove" })));
+        self.deferred.push((
+            None,
+            format!("whitelist {} {name}", if on { "add" } else { "remove" }),
+        ));
     }
 
     fn world_names(&mut self) -> Vec<String> {
-        self.server.get_all_worlds().iter().map(|w| w.get_name()).collect()
+        self.server
+            .get_all_worlds()
+            .iter()
+            .map(|w| w.get_name())
+            .collect()
     }
 
     fn broadcast_world(&mut self, world: &str, msg: &str) {
@@ -1192,7 +1231,12 @@ impl WasmHost<'_> {
     }
 
     fn border_size(&mut self, world: &str) -> Option<f64> {
-        Some(self.server.get_world_by_name(world)?.get_world_border().get_diameter())
+        Some(
+            self.server
+                .get_world_by_name(world)?
+                .get_world_border()
+                .get_diameter(),
+        )
     }
 
     fn set_border_size(&mut self, world: &str, size: f64, seconds: f64) {
@@ -1289,7 +1333,8 @@ impl WasmHost<'_> {
     }
 
     fn remaining_air(&mut self, p: &PlayerRef) -> Option<i64> {
-        self.get(p).map(|pl| i64::from(pl.as_entity().get_remaining_air()))
+        self.get(p)
+            .map(|pl| i64::from(pl.as_entity().get_remaining_air()))
     }
 
     fn set_remaining_air(&mut self, p: &PlayerRef, ticks: i64) {
@@ -1370,7 +1415,10 @@ impl WasmHost<'_> {
                 .or_else(|| self.server.get_world_by_name("world")),
         };
         if found.is_none() {
-            plog(ApiLevel::Warn, &format!("no world found: {}", name.unwrap_or("default")));
+            plog(
+                ApiLevel::Warn,
+                &format!("no world found: {}", name.unwrap_or("default")),
+            );
         }
         found
     }
@@ -1748,9 +1796,10 @@ impl EventAccess for PlayerDeathEvent {
     }
     fn observe(d: &EventData<Self>, hs: &mut HostState) {
         let (x, y, z) = d.player.get_position();
-        hs.w4
-            .deaths
-            .insert(uuid::to_string(d.player.get_id()), (x, y, z, d.player.get_world().get_name()));
+        hs.w4.deaths.insert(
+            uuid::to_string(d.player.get_id()),
+            (x, y, z, d.player.get_world().get_name()),
+        );
     }
     fn set_cancelled(d: &mut EventData<Self>) {
         d.cancelled = true;
@@ -1838,7 +1887,8 @@ impl EventHandler<InventoryCloseEvent> for OnInvClose {
                 inner: host,
                 hs: &mut st.hs,
             };
-            st.engine.fire(EventKind::InventoryClose, EventCtx::player(who), &mut th);
+            st.engine
+                .fire(EventKind::InventoryClose, EventCtx::player(who), &mut th);
         });
         data
     }
@@ -2020,7 +2070,11 @@ impl EventHandler<EntityDamageByEntityEvent> for OnDamageByEntity {
                 return false;
             };
             let attacker = st.player_by_entity(host, data.damager_id);
-            let cause = data.cause.strip_prefix("minecraft:").unwrap_or(&data.cause).to_string();
+            let cause = data
+                .cause
+                .strip_prefix("minecraft:")
+                .unwrap_or(&data.cause)
+                .to_string();
             st.fire_damage(host, victim, data.damage, attacker, cause)
         });
         if cancelled == Some(true) {
@@ -2152,145 +2206,301 @@ fn ev_item(id: &str) -> Value {
     }
 }
 
-ext_event!(ev::PrepareAnvilEvent, |d| ExtEvent::AnvilPrepare,
-    |d| ev_ctx(Some(&d.player), vec![Value::Text(d.rename_text.clone()), Value::Num(f64::from(d.repair_cost))]),
-    |d| {});
-ext_event!(ev::PlayerAnimationEvent, |d| ExtEvent::ArmSwing,
+ext_event!(
+    ev::PrepareAnvilEvent,
+    |d| ExtEvent::AnvilPrepare,
+    |d| ev_ctx(
+        Some(&d.player),
+        vec![
+            Value::Text(d.rename_text.clone()),
+            Value::Num(f64::from(d.repair_cost))
+        ]
+    ),
+    |d| {}
+);
+ext_event!(
+    ev::PlayerAnimationEvent,
+    |d| ExtEvent::ArmSwing,
     |d| ev_ctx(Some(&d.player), vec![Value::Text(d.animation_type.clone())]),
-    |d| d.cancelled = true);
-ext_event!(ev::PlayerBedEnterEvent, |d| ExtEvent::BedEnter,
-    |d| ev_ctx(Some(&d.player), vec![at_pos(Some(d.player.get_world().get_name()), &d.bed_pos)]),
-    |d| d.cancelled = true);
-ext_event!(ev::PlayerBedLeaveEvent, |d| ExtEvent::BedLeave,
-    |d| ev_ctx(Some(&d.player), vec![at_pos(Some(d.player.get_world().get_name()), &d.bed_pos)]),
-    |d| {});
-ext_event!(ev::BellRingEvent, |d| ExtEvent::BellRing,
-    |d| ev_ctx(None, vec![
-        at_pos(Some(d.target_world.get_name()), &d.block_pos),
-        Value::World(d.target_world.get_name()),
-        d.entity_id.map_or(Value::None, |i| Value::Num(f64::from(i))),
-        d.direction.clone().map_or(Value::None, Value::Text),
-    ]),
-    |d| d.cancelled = true);
-ext_event!(ev::BlockDamageEvent, |d| ExtEvent::BlockDamage,
-    |d| ev_ctx(Some(&d.player), vec![
-        at_pos(Some(d.player.get_world().get_name()), &d.block_pos),
-        Value::Bool(d.insta_break),
-    ]),
-    |d| d.cancelled = true);
-ext_event!(ev::BlockDropItemEvent, |d| ExtEvent::BlockDrop,
-    |d| ev_ctx(d.player.as_ref(), vec![
-        at_pos(Some(d.target_world.get_name()), &d.block_pos),
-        Value::World(d.target_world.get_name()),
-        d.items.first().map_or(Value::None, |s| {
-            let mut v = ev_item(&s.get_registry_key());
-            if let Value::Item { count, .. } = &mut v {
-                *count = u32::from(s.get_count());
-            }
-            v
-        }),
-        Value::Num(d.items.len() as f64),
-    ]),
-    |d| d.cancelled = true);
-ext_event!(ev::BlockFertilizeEvent, |d| ExtEvent::BlockFertilize,
-    |d| ev_ctx(d.player.as_ref(), vec![
-        at_pos(Some(d.target_world.get_name()), &d.block_pos),
-        Value::World(d.target_world.get_name()),
-        Value::Num(d.changed_blocks.len() as f64),
-    ]),
-    |d| d.cancelled = true);
-ext_event!(ev::BlockGrowEvent, |d| ExtEvent::BlockGrowth,
-    |d| ev_ctx(None, vec![
-        at_pos(Some(d.target_world.get_name()), &d.block_pos),
-        Value::World(d.target_world.get_name()),
-        ev_item(&d.new_block),
-        ev_item(&d.old_block),
-    ]),
-    |d| d.cancelled = true);
-ext_event!(ev::PlayerEditBookEvent, |d| if d.signing { ExtEvent::BookSign } else { ExtEvent::BookEdit },
-    |d| ev_ctx(Some(&d.player), vec![
-        d.title.clone().map_or(Value::None, Value::Text),
-        Value::Num(f64::from(d.slot)),
-        Value::Text(d.pages.join("\n")),
-    ]),
-    |d| d.cancelled = true);
-ext_event!(ev::BrewEvent, |d| ExtEvent::BrewingComplete,
-    |d| ev_ctx(None, vec![at_pos(None, &d.block_pos), Value::Num(f64::from(d.fuel_level))]),
-    |d| d.cancelled = true);
-ext_event!(ev::BrewingStandFuelEvent, |d| ExtEvent::BrewingFuel,
-    |d| ev_ctx(None, vec![at_pos(None, &d.block_pos), Value::Num(f64::from(d.fuel_power))]),
-    |d| d.cancelled = true);
-ext_event!(ev::BrewingStartEvent, |d| ExtEvent::BrewingStart,
-    |d| ev_ctx(None, vec![
-        at_pos(Some(d.target_world.get_name()), &d.block_pos),
-        Value::World(d.target_world.get_name()),
-        Value::Num(f64::from(d.brewing_time)),
-    ]),
-    |d| d.cancelled = true);
-ext_event!(ev::ServerBroadcastEvent, |d| ExtEvent::Broadcast,
-    |d| ev_ctx(None, vec![Value::Text(d.message.get_text()), Value::Text(d.sender.get_text())]),
-    |d| d.cancelled = true);
-ext_event!(ev::PlayerBucketEntityEvent, |d| ExtEvent::BucketCatch,
-    |d| ev_ctx(Some(&d.player), vec![ev_item(&d.bucket_item), Value::Num(f64::from(d.entity_id))]),
-    |d| d.cancelled = true);
-ext_event!(ev::PlayerBucketEmptyEvent, |d| ExtEvent::BucketEmpty,
-    |d| ev_ctx(Some(&d.player), vec![
-        at_pos(Some(d.player.get_world().get_name()), &d.block_pos),
-        ev_item(&d.bucket),
-    ]),
-    |d| d.cancelled = true);
-ext_event!(ev::PlayerBucketFillEvent, |d| ExtEvent::BucketFill,
-    |d| ev_ctx(Some(&d.player), vec![
-        at_pos(Some(d.player.get_world().get_name()), &d.block_pos),
-        ev_item(&d.bucket),
-    ]),
-    |d| d.cancelled = true);
-ext_event!(ev::BlockBurnEvent, |d| ExtEvent::Burn,
-    |d| ev_ctx(None, vec![
-        at_pos(Some(d.target_world.get_name()), &d.block_pos),
-        Value::World(d.target_world.get_name()),
-        ev_item(&d.block),
-        ev_item(&d.igniting_block),
-    ]),
-    |d| d.cancelled = true);
-ext_event!(ev::BlockCanBuildEvent, |d| ExtEvent::CanBuild,
-    |d| ev_ctx(Some(&d.player), vec![
-        ev_item(&d.block_to_build),
-        ev_item(&d.block),
-        Value::Bool(d.buildable),
-    ]),
+    |d| d.cancelled = true
+);
+ext_event!(
+    ev::PlayerBedEnterEvent,
+    |d| ExtEvent::BedEnter,
+    |d| ev_ctx(
+        Some(&d.player),
+        vec![at_pos(Some(d.player.get_world().get_name()), &d.bed_pos)]
+    ),
+    |d| d.cancelled = true
+);
+ext_event!(
+    ev::PlayerBedLeaveEvent,
+    |d| ExtEvent::BedLeave,
+    |d| ev_ctx(
+        Some(&d.player),
+        vec![at_pos(Some(d.player.get_world().get_name()), &d.bed_pos)]
+    ),
+    |d| {}
+);
+ext_event!(
+    ev::BellRingEvent,
+    |d| ExtEvent::BellRing,
+    |d| ev_ctx(
+        None,
+        vec![
+            at_pos(Some(d.target_world.get_name()), &d.block_pos),
+            Value::World(d.target_world.get_name()),
+            d.entity_id.map_or(Value::None, |i| Value::Num(f64::from(i))),
+            d.direction.clone().map_or(Value::None, Value::Text),
+        ]
+    ),
+    |d| d.cancelled = true
+);
+ext_event!(
+    ev::BlockDamageEvent,
+    |d| ExtEvent::BlockDamage,
+    |d| ev_ctx(
+        Some(&d.player),
+        vec![
+            at_pos(Some(d.player.get_world().get_name()), &d.block_pos),
+            Value::Bool(d.insta_break),
+        ]
+    ),
+    |d| d.cancelled = true
+);
+ext_event!(
+    ev::BlockDropItemEvent,
+    |d| ExtEvent::BlockDrop,
+    |d| ev_ctx(
+        d.player.as_ref(),
+        vec![
+            at_pos(Some(d.target_world.get_name()), &d.block_pos),
+            Value::World(d.target_world.get_name()),
+            d.items.first().map_or(Value::None, |s| {
+                let mut v = ev_item(&s.get_registry_key());
+                if let Value::Item { count, .. } = &mut v {
+                    *count = u32::from(s.get_count());
+                }
+                v
+            }),
+            Value::Num(d.items.len() as f64),
+        ]
+    ),
+    |d| d.cancelled = true
+);
+ext_event!(
+    ev::BlockFertilizeEvent,
+    |d| ExtEvent::BlockFertilize,
+    |d| ev_ctx(
+        d.player.as_ref(),
+        vec![
+            at_pos(Some(d.target_world.get_name()), &d.block_pos),
+            Value::World(d.target_world.get_name()),
+            Value::Num(d.changed_blocks.len() as f64),
+        ]
+    ),
+    |d| d.cancelled = true
+);
+ext_event!(
+    ev::BlockGrowEvent,
+    |d| ExtEvent::BlockGrowth,
+    |d| ev_ctx(
+        None,
+        vec![
+            at_pos(Some(d.target_world.get_name()), &d.block_pos),
+            Value::World(d.target_world.get_name()),
+            ev_item(&d.new_block),
+            ev_item(&d.old_block),
+        ]
+    ),
+    |d| d.cancelled = true
+);
+ext_event!(
+    ev::PlayerEditBookEvent,
+    |d| if d.signing {
+        ExtEvent::BookSign
+    } else {
+        ExtEvent::BookEdit
+    },
+    |d| ev_ctx(
+        Some(&d.player),
+        vec![
+            d.title.clone().map_or(Value::None, Value::Text),
+            Value::Num(f64::from(d.slot)),
+            Value::Text(d.pages.join("\n")),
+        ]
+    ),
+    |d| d.cancelled = true
+);
+ext_event!(
+    ev::BrewEvent,
+    |d| ExtEvent::BrewingComplete,
+    |d| ev_ctx(
+        None,
+        vec![at_pos(None, &d.block_pos), Value::Num(f64::from(d.fuel_level))]
+    ),
+    |d| d.cancelled = true
+);
+ext_event!(
+    ev::BrewingStandFuelEvent,
+    |d| ExtEvent::BrewingFuel,
+    |d| ev_ctx(
+        None,
+        vec![at_pos(None, &d.block_pos), Value::Num(f64::from(d.fuel_power))]
+    ),
+    |d| d.cancelled = true
+);
+ext_event!(
+    ev::BrewingStartEvent,
+    |d| ExtEvent::BrewingStart,
+    |d| ev_ctx(
+        None,
+        vec![
+            at_pos(Some(d.target_world.get_name()), &d.block_pos),
+            Value::World(d.target_world.get_name()),
+            Value::Num(f64::from(d.brewing_time)),
+        ]
+    ),
+    |d| d.cancelled = true
+);
+ext_event!(
+    ev::ServerBroadcastEvent,
+    |d| ExtEvent::Broadcast,
+    |d| ev_ctx(
+        None,
+        vec![
+            Value::Text(d.message.get_text()),
+            Value::Text(d.sender.get_text())
+        ]
+    ),
+    |d| d.cancelled = true
+);
+ext_event!(
+    ev::PlayerBucketEntityEvent,
+    |d| ExtEvent::BucketCatch,
+    |d| ev_ctx(
+        Some(&d.player),
+        vec![ev_item(&d.bucket_item), Value::Num(f64::from(d.entity_id))]
+    ),
+    |d| d.cancelled = true
+);
+ext_event!(
+    ev::PlayerBucketEmptyEvent,
+    |d| ExtEvent::BucketEmpty,
+    |d| ev_ctx(
+        Some(&d.player),
+        vec![
+            at_pos(Some(d.player.get_world().get_name()), &d.block_pos),
+            ev_item(&d.bucket),
+        ]
+    ),
+    |d| d.cancelled = true
+);
+ext_event!(
+    ev::PlayerBucketFillEvent,
+    |d| ExtEvent::BucketFill,
+    |d| ev_ctx(
+        Some(&d.player),
+        vec![
+            at_pos(Some(d.player.get_world().get_name()), &d.block_pos),
+            ev_item(&d.bucket),
+        ]
+    ),
+    |d| d.cancelled = true
+);
+ext_event!(
+    ev::BlockBurnEvent,
+    |d| ExtEvent::Burn,
+    |d| ev_ctx(
+        None,
+        vec![
+            at_pos(Some(d.target_world.get_name()), &d.block_pos),
+            Value::World(d.target_world.get_name()),
+            ev_item(&d.block),
+            ev_item(&d.igniting_block),
+        ]
+    ),
+    |d| d.cancelled = true
+);
+ext_event!(
+    ev::BlockCanBuildEvent,
+    |d| ExtEvent::CanBuild,
+    |d| ev_ctx(
+        Some(&d.player),
+        vec![
+            ev_item(&d.block_to_build),
+            ev_item(&d.block),
+            Value::Bool(d.buildable),
+        ]
+    ),
     |d| {
         d.cancelled = true;
         d.buildable = false;
-    });
-ext_event!(ev::ChunkPopulateEvent, |d| ExtEvent::ChunkGenerate,
-    |d| ev_ctx(None, vec![Value::Num(f64::from(d.chunk_x)), Value::Num(f64::from(d.chunk_z))]),
-    |d| d.cancelled = true);
-ext_event!(ev::ChunkUnloadEvent, |d| ExtEvent::ChunkUnload,
-    |d| ev_ctx(None, vec![Value::Num(f64::from(d.chunk_x)), Value::Num(f64::from(d.chunk_z))]),
-    |d| d.cancelled = true);
-ext_event!(ev::EntityCombustEvent, |d| ExtEvent::Combust,
-    |d| ev_ctx(None, vec![
-        Value::Num(f64::from(d.entity_id)),
-        Value::Timespan { millis: (f64::from(d.duration_secs) * 1000.0) as i64 },
-    ]),
-    |d| d.cancelled = true);
-ext_event!(ev::PlayerLoginEvent, |d| ExtEvent::Connect,
+    }
+);
+ext_event!(
+    ev::ChunkPopulateEvent,
+    |d| ExtEvent::ChunkGenerate,
+    |d| ev_ctx(
+        None,
+        vec![Value::Num(f64::from(d.chunk_x)), Value::Num(f64::from(d.chunk_z))]
+    ),
+    |d| d.cancelled = true
+);
+ext_event!(
+    ev::ChunkUnloadEvent,
+    |d| ExtEvent::ChunkUnload,
+    |d| ev_ctx(
+        None,
+        vec![Value::Num(f64::from(d.chunk_x)), Value::Num(f64::from(d.chunk_z))]
+    ),
+    |d| d.cancelled = true
+);
+ext_event!(
+    ev::EntityCombustEvent,
+    |d| ExtEvent::Combust,
+    |d| ev_ctx(
+        None,
+        vec![
+            Value::Num(f64::from(d.entity_id)),
+            Value::Timespan {
+                millis: (f64::from(d.duration_secs) * 1000.0) as i64
+            },
+        ]
+    ),
+    |d| d.cancelled = true
+);
+ext_event!(
+    ev::PlayerLoginEvent,
+    |d| ExtEvent::Connect,
     |d| ev_ctx(Some(&d.player), vec![]),
-    |d| d.cancelled = true);
-ext_event!(ev::BlockDispenseEvent, |d| ExtEvent::Dispense,
+    |d| d.cancelled = true
+);
+ext_event!(
+    ev::BlockDispenseEvent,
+    |d| ExtEvent::Dispense,
     |d| ev_ctx(None, vec![at_pos(None, &d.block_pos), ev_item(&d.item_name)]),
-    |d| d.cancelled = true);
-ext_event!(ev::PlayerEggThrowEvent, |d| ExtEvent::EggThrow,
-    |d| ev_ctx(Some(&d.player), vec![
-        Value::Bool(d.hatching),
-        Value::Num(f64::from(d.num_hatches)),
-        Value::Text(d.hatching_type.clone()),
-    ]),
-    |d| d.cancelled = true);
-ext_event!(ev::PlayerElytraBoostEvent, |d| ExtEvent::ElytraBoost,
+    |d| d.cancelled = true
+);
+ext_event!(
+    ev::PlayerEggThrowEvent,
+    |d| ExtEvent::EggThrow,
+    |d| ev_ctx(
+        Some(&d.player),
+        vec![
+            Value::Bool(d.hatching),
+            Value::Num(f64::from(d.num_hatches)),
+            Value::Text(d.hatching_type.clone()),
+        ]
+    ),
+    |d| d.cancelled = true
+);
+ext_event!(
+    ev::PlayerElytraBoostEvent,
+    |d| ExtEvent::ElytraBoost,
     |d| ev_ctx(Some(&d.player), vec![Value::Num(f64::from(d.firework_id))]),
-    |d| d.cancelled = true);
+    |d| d.cancelled = true
+);
 
 /// Attach the listeners for the extra events that the loaded scripts use.
 /// Listeners can only be added at load, so a trigger added by a later
@@ -2638,7 +2848,10 @@ impl Plugin for Carve {
                 Err(e) => {
                     let backup = format!("{bounds_path}.broken");
                     let _ = std::fs::rename(&bounds_path, &backup);
-                    plog(ApiLevel::Error, &format!("{e}; starting with no bounds, old file moved to {backup}"));
+                    plog(
+                        ApiLevel::Error,
+                        &format!("{e}; starting with no bounds, old file moved to {backup}"),
+                    );
                 }
             }
         }
@@ -2784,9 +2997,7 @@ impl Plugin for Carve {
         register_event::<PlayerAdvancementDoneEvent>(&context, EventKind::AdvancementDone);
         register_event::<PlayerRecipeDiscoverEvent>(&context, EventKind::RecipeDiscover);
         w2_events_2::register_all(&context);
-        w2_events_3::register_all(&context, &|ev| {
-            engine.table().has_event(EventKind::Ext3(ev))
-        });
+        w2_events_3::register_all(&context, &|ev| engine.table().has_event(EventKind::Ext3(ev)));
         w2_events_4::register_all(&context);
         w4_events_movement::register_all(
             &context,

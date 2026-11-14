@@ -84,7 +84,9 @@ impl W2 {
         match self {
             W2::Eternity => Ty::Timespan,
             W2::BlockEntity(f, _) if f.is_span() => Ty::Timespan,
-            W2::Angle(..) | W2::Altitude(_) | W2::Channel(..) | W2::ItemCount(..) | W2::BlockEntity(..) => Ty::Number,
+            W2::Angle(..) | W2::Altitude(_) | W2::Channel(..) | W2::ItemCount(..) | W2::BlockEntity(..) => {
+                Ty::Number
+            }
             W2::Biome(_) => Ty::Text,
             W2::Armor(..) => Ty::Item,
             W2::AllScripts => Ty::List,
@@ -171,7 +173,9 @@ pub(crate) fn parse(toks: &[Tok], pos: usize, lw: &str, env: &Env) -> Result<Opt
             };
             hit(of(0)?, &|e| W2::Armor(slot, e))
         }
-        "beacon" if is(at(0), "tier") || is(at(0), "level") => hit(of(1)?, &|e| W2::BlockEntity(BeField::BeaconTier, e)),
+        "beacon" if is(at(0), "tier") || is(at(0), "level") => {
+            hit(of(1)?, &|e| W2::BlockEntity(BeField::BeaconTier, e))
+        }
         "beacon" if is(at(0), "range") => hit(of(1)?, &|e| W2::BlockEntity(BeField::BeaconRange, e)),
         "brewing" => {
             // `brewing [stand] time of`, `brewing [stand] fuel [level] of`
@@ -244,7 +248,10 @@ pub(crate) fn angle_suffix(toks: &[Tok], pos: usize, n: f64) -> Option<(Expr, us
 pub fn channel_of(text: &str, ch: Channel) -> Option<f64> {
     let t = text.trim();
     let tag = {
-        let bare = t.trim_start_matches('&').trim_start_matches('<').trim_end_matches('>');
+        let bare = t
+            .trim_start_matches('&')
+            .trim_start_matches('<')
+            .trim_end_matches('>');
         if bare.starts_with('#') {
             format!("<{bare}>x")
         } else {
@@ -311,7 +318,8 @@ impl Rd<'_> {
         self.take(1).map(|s| s[0])
     }
     fn u16(&mut self) -> Option<usize> {
-        self.take(2).map(|s| usize::from(u16::from_be_bytes([s[0], s[1]])))
+        self.take(2)
+            .map(|s| usize::from(u16::from_be_bytes([s[0], s[1]])))
     }
     fn i32(&mut self) -> Option<i32> {
         self.take(4).map(|s| i32::from_be_bytes([s[0], s[1], s[2], s[3]]))

@@ -16,7 +16,10 @@ impl ScriptStore for Store {
         Ok(self.files.keys().cloned().collect())
     }
     fn read(&mut self, name: &str) -> Result<String, String> {
-        self.files.get(name).cloned().ok_or_else(|| format!("no file {name}"))
+        self.files
+            .get(name)
+            .cloned()
+            .ok_or_else(|| format!("no file {name}"))
     }
     fn rename(&mut self, from: &str, to: &str) -> Result<(), String> {
         let v = self.files.remove(from).ok_or_else(|| format!("no file {from}"))?;
@@ -94,9 +97,15 @@ fn bad_if_skips_its_block_and_dangling_else() {
     let (mut e, errs) = load(src);
     assert_eq!(errs.len(), 2, "{errs:?}");
     assert_eq!(errs[0].line, 2);
-    assert!(errs[0].msg.contains("can't understand this condition"), "{errs:?}");
+    assert!(
+        errs[0].msg.contains("can't understand this condition"),
+        "{errs:?}"
+    );
     assert_eq!(errs[1].line, 4);
-    assert!(errs[1].msg.contains("'else' has to be placed just after"), "{errs:?}");
+    assert!(
+        errs[1].msg.contains("'else' has to be placed just after"),
+        "{errs:?}"
+    );
     assert_eq!(join(&mut e), ["after"]);
 }
 
@@ -104,7 +113,11 @@ fn bad_if_skips_its_block_and_dangling_else() {
 fn bad_else_if_ends_the_chain() {
     let src = "on join:\n    if 1 is 2:\n        broadcast \"a\"\n    else if blorp blorp:\n        broadcast \"b\"\n    else:\n        broadcast \"c\"\n    broadcast \"after\"\n";
     let (mut e, errs) = load(src);
-    assert_eq!(errs.iter().map(|e| e.line).collect::<Vec<_>>(), [4, 6], "{errs:?}");
+    assert_eq!(
+        errs.iter().map(|e| e.line).collect::<Vec<_>>(),
+        [4, 6],
+        "{errs:?}"
+    );
     assert_eq!(join(&mut e), ["after"]);
 }
 
@@ -120,7 +133,11 @@ fn bad_while_and_loop_skip_their_block() {
 fn bad_trigger_header_skips_only_that_trigger() {
     let src = "on wibble:\n    broadcast \"no\"\non join:\n    broadcast \"yes\"\ncommand /x <thing>:\n    trigger:\n        broadcast \"no\"\n";
     let (mut e, errs) = load(src);
-    assert_eq!(errs.iter().map(|e| e.line).collect::<Vec<_>>(), [1, 5], "{errs:?}");
+    assert_eq!(
+        errs.iter().map(|e| e.line).collect::<Vec<_>>(),
+        [1, 5],
+        "{errs:?}"
+    );
     assert_eq!(join(&mut e), ["yes"]);
     assert!(e.table().command_names().is_empty());
 }
@@ -137,7 +154,11 @@ fn bad_indentation_and_options_skip_only_those_lines() {
 fn call_of_function_that_failed_to_load_is_reported_at_the_call() {
     let src = "function f(n: number = blorp blorp):\n    broadcast \"f\"\non join:\n    f(1)\n    broadcast \"after\"\n";
     let (mut e, errs) = load(src);
-    assert_eq!(errs.iter().map(|e| e.line).collect::<Vec<_>>(), [1, 4], "{errs:?}");
+    assert_eq!(
+        errs.iter().map(|e| e.line).collect::<Vec<_>>(),
+        [1, 4],
+        "{errs:?}"
+    );
     assert!(errs[1].msg.contains("failed to load"), "{errs:?}");
     assert_eq!(join(&mut e), ["after"]);
 }
@@ -153,7 +174,10 @@ fn function_with_a_bad_line_still_loads() {
 #[test]
 fn reload_replaces_with_the_partial_version() {
     let (mut e, _) = load("on join:\n    broadcast \"old\"\n");
-    let (sum, errs) = e.reload(&[("t.carve".into(), "on join:\n    broadcast \"new\"\n    blorp\n".into())]);
+    let (sum, errs) = e.reload(&[(
+        "t.carve".into(),
+        "on join:\n    broadcast \"new\"\n    blorp\n".into(),
+    )]);
     assert_eq!(errs.len(), 1);
     assert_eq!(sum.triggers, 1);
     assert_eq!(join(&mut e), ["new"]);
@@ -210,7 +234,10 @@ fn reload_messages_in_skript_layout() {
     let mut t = T::new(&[("bank.carve", "on join:\n    broadcast \"a\"\n")]);
     let ok = t.lines("reload bank");
     assert_eq!(ok[0], format!("{P}&7Reloading &fbank.carve&7..."));
-    assert!(ok[1].starts_with(&format!("{P}&aSuccessfully reloaded &fbank.carve&a. &7(")), "{ok:?}");
+    assert!(
+        ok[1].starts_with(&format!("{P}&aSuccessfully reloaded &fbank.carve&a. &7(")),
+        "{ok:?}"
+    );
     assert!(ok[1].ends_with("ms)"), "{ok:?}");
 
     let bad = "function f() :: number:\n    return d...\non join:\n    broadcast \"a\"\n";
@@ -221,7 +248,9 @@ fn reload_messages_in_skript_layout() {
     assert_eq!(out[2], "    &cCan't understand this expression: 'd...'");
     assert_eq!(out[3], "    &7Line: return d...");
     assert!(
-        out[4].starts_with(&format!("{P}&cEncountered &f1 &cerror while reloading &fbank.carve&c! &7(")),
+        out[4].starts_with(&format!(
+            "{P}&cEncountered &f1 &cerror while reloading &fbank.carve&c! &7("
+        )),
         "{out:?}"
     );
     // the partial version is live
@@ -235,7 +264,8 @@ fn reload_messages_in_skript_layout() {
     let all = t.lines("reload all");
     assert_eq!(all[0], format!("{P}&7Reloading all scripts..."));
     assert!(
-        all.iter().any(|l| l.contains("&cEncountered &f2 &cerrors while reloading &fall scripts&c!")),
+        all.iter()
+            .any(|l| l.contains("&cEncountered &f2 &cerrors while reloading &fall scripts&c!")),
         "{all:?}"
     );
 }
@@ -245,8 +275,14 @@ fn suggestions_are_an_extra_indented_line() {
     let mut t = T::new(&[("a.carve", "on join:\n    sendd \"hi\" to player\n")]);
     let out = t.lines("errors a");
     assert!(out[1].starts_with("    &c"), "{out:?}");
-    assert!(out.iter().any(|l| l.starts_with("    &7Did you mean: ")), "{out:?}");
-    assert!(out.iter().any(|l| l == "    &7Line: sendd \"hi\" to player"), "{out:?}");
+    assert!(
+        out.iter().any(|l| l.starts_with("    &7Did you mean: ")),
+        "{out:?}"
+    );
+    assert!(
+        out.iter().any(|l| l == "    &7Line: sendd \"hi\" to player"),
+        "{out:?}"
+    );
 }
 
 #[test]
@@ -266,14 +302,20 @@ fn run_errors_use_the_same_layout() {
     let mut t = T::new(&[]);
     let out = t.lines("run blorp blorp");
     assert_eq!(out[0], format!("{P}&4Line 1: &c(run)"));
-    assert!(out[1].starts_with("    &cCan't understand this effect: 'blorp blorp'"), "{out:?}");
+    assert!(
+        out[1].starts_with("    &cCan't understand this effect: 'blorp blorp'"),
+        "{out:?}"
+    );
 }
 
 #[test]
 fn server_start_report() {
     let mut e = Engine::default();
     let files = [
-        ("a.carve".to_string(), "on join:\n    blorp\nfunction f():\n    stop\n".to_string()),
+        (
+            "a.carve".to_string(),
+            "on join:\n    blorp\nfunction f():\n    stop\n".to_string(),
+        ),
         ("b.carve".to_string(), "on quit:\n    stop\n".to_string()),
     ];
     let (sum, errs) = e.load(&files);
@@ -281,9 +323,15 @@ fn server_start_report() {
     assert_eq!(rep[0], (true, "Line 2: (a.carve)".to_string()));
     assert_eq!(rep[2], (true, "    Line: blorp".to_string()));
     assert!(rep[3].1.starts_with("    Did you mean: "), "{rep:?}");
-    assert_eq!(rep[4], (true, "Encountered 1 error while loading the scripts!".to_string()));
+    assert_eq!(
+        rep[4],
+        (true, "Encountered 1 error while loading the scripts!".to_string())
+    );
     assert_eq!(
         rep[5],
-        (false, "Loaded 2 scripts with a total of 3 structures in 0.04 seconds".to_string())
+        (
+            false,
+            "Loaded 2 scripts with a total of 3 structures in 0.04 seconds".to_string()
+        )
     );
 }

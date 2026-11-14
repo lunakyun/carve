@@ -157,7 +157,10 @@ impl ExtEvent {
 
     /// Whether `cancel event` means anything.
     pub fn cancellable(self) -> bool {
-        !matches!(self, ExtEvent::At(_) | ExtEvent::AnvilPrepare | ExtEvent::BedLeave)
+        !matches!(
+            self,
+            ExtEvent::At(_) | ExtEvent::AnvilPrepare | ExtEvent::BedLeave
+        )
     }
 
     /// The `event-...` values of the event, in the order the host fills
@@ -173,14 +176,24 @@ impl ExtEvent {
             BlockDamage => &[LOC, ("event-boolean", Ty::Boolean)],
             BlockDrop => &[LOC, WORLD, ITEM, NUM],
             BlockFertilize => &[LOC, WORLD, NUM],
-            BlockGrowth => &[LOC, WORLD, ("event-block", Ty::Item), ("event-old-block", Ty::Item)],
+            BlockGrowth => &[
+                LOC,
+                WORLD,
+                ("event-block", Ty::Item),
+                ("event-old-block", Ty::Item),
+            ],
             BookEdit | BookSign => &[TEXT, NUM, ("event-pages", Ty::Text)],
             BrewingComplete | BrewingFuel => &[LOC, NUM],
             BrewingStart => &[LOC, WORLD, NUM],
             Broadcast => &[TEXT, ("event-sender", Ty::Text)],
             BucketCatch => &[ITEM, NUM],
             BucketEmpty | BucketFill => &[LOC, ITEM],
-            Burn => &[LOC, WORLD, ("event-block", Ty::Item), ("event-igniting-block", Ty::Item)],
+            Burn => &[
+                LOC,
+                WORLD,
+                ("event-block", Ty::Item),
+                ("event-igniting-block", Ty::Item),
+            ],
             CanBuild => &[
                 ("event-block", Ty::Item),
                 ("event-existing-block", Ty::Item),

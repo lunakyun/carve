@@ -65,9 +65,21 @@ const ROWS: &[Row] = &[
     (Ev3::PistonExtend, &["piston extend"], true, false, false),
     (Ev3::PistonRetract, &["piston retract"], true, false, false),
     (Ev3::Portal, &["portal", "entity portal"], false, false, true),
-    (Ev3::PortalEnter, &["portal enter", "entity portal enter"], false, false, true),
+    (
+        Ev3::PortalEnter,
+        &["portal enter", "entity portal enter"],
+        false,
+        false,
+        true,
+    ),
     (Ev3::PortalCreate, &["portal create"], true, false, false),
-    (Ev3::Redstone, &["redstone", "redstone change"], false, true, false),
+    (
+        Ev3::Redstone,
+        &["redstone", "redstone change"],
+        false,
+        true,
+        false,
+    ),
     (
         Ev3::ResourcePackResponse,
         &[

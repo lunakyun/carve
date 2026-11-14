@@ -112,7 +112,10 @@ fn kind_words(toks: &[Tok]) -> Option<&'static str> {
 
 /// Words that mean "any entity".
 fn any_entity(toks: &[Tok]) -> bool {
-    matches!(joined(toks).as_deref(), Some("entity" | "entities" | "mob" | "mobs" | "creature" | "creatures"))
+    matches!(
+        joined(toks).as_deref(),
+        Some("entity" | "entities" | "mob" | "mobs" | "creature" | "creatures")
+    )
 }
 
 /// `None` inside: every entity. `Err`: not a kind at all.
@@ -142,13 +145,18 @@ fn expr_end(toks: &[Tok], from: usize) -> usize {
     pos_of(
         toks,
         from,
-        &["is", "isn't", "are", "aren't", "has", "hasn't", "then", "in", "within"],
+        &[
+            "is", "isn't", "are", "aren't", "has", "hasn't", "then", "in", "within",
+        ],
     )
     .unwrap_or(toks.len())
 }
 
 fn sub(toks: &[Tok], a: usize, b: usize, env: &Env) -> Result<Expr, String> {
-    let s = toks.get(a..b).filter(|s| !s.is_empty()).ok_or("missing expression")?;
+    let s = toks
+        .get(a..b)
+        .filter(|s| !s.is_empty())
+        .ok_or("missing expression")?;
     parse_expr(s, env)
 }
 
@@ -163,9 +171,11 @@ fn radius_at(toks: &[Tok], mut i: usize, env: &Env) -> Result<(Expr, usize), Str
     let end = pos_of(toks, i, PREPS).unwrap_or(toks.len());
     let mut num_end = end;
     if end > i
-        && toks
-            .get(end - 1)
-            .is_some_and(|u| ["block", "blocks", "meter", "meters", "metre", "metres"].iter().any(|w| is(u, w)))
+        && toks.get(end - 1).is_some_and(|u| {
+            ["block", "blocks", "meter", "meters", "metre", "metres"]
+                .iter()
+                .any(|w| is(u, w))
+        })
     {
         num_end = end - 1;
     }
@@ -319,7 +329,10 @@ fn velocity(toks: &[Tok], s: usize, env: &Env) -> Parsed {
         _ => 2,
     };
     let stop = expr_end(toks, s + 3);
-    Ok(Some((ent(EntExpr::Vel(axis, sub(toks, s + 3, stop, env)?)), stop)))
+    Ok(Some((
+        ent(EntExpr::Vel(axis, sub(toks, s + 3, stop, env)?)),
+        stop,
+    )))
 }
 
 pub(crate) fn ty(e: &EntExpr) -> Ty {
@@ -377,7 +390,10 @@ pub fn parse_effect(toks: &[Tok], env: &Env) -> Result<Option<Effect>, String> {
 fn spawn(toks: &[Tok], env: &Env) -> Result<Option<EntFx>, String> {
     let at_i = pos_of(toks, 1, &["at", "on", "near"]);
     let mut head = toks.get(1..at_i.unwrap_or(toks.len())).unwrap_or_default();
-    while head.first().is_some_and(|t| is(t, "a") || is(t, "an") || is(t, "the")) {
+    while head
+        .first()
+        .is_some_and(|t| is(t, "a") || is(t, "an") || is(t, "the"))
+    {
         head = head.get(1..).unwrap_or_default();
     }
     let mut count = None;
@@ -412,7 +428,9 @@ fn spawn(toks: &[Tok], env: &Env) -> Result<Option<EntFx>, String> {
 }
 
 fn kill(toks: &[Tok], env: &Env) -> Result<Option<EntFx>, String> {
-    let verb = toks.first().map(|t| matches!(t, Tok::Word(w) if w.eq_ignore_ascii_case("kill")));
+    let verb = toks
+        .first()
+        .map(|t| matches!(t, Tok::Word(w) if w.eq_ignore_ascii_case("kill")));
     let (rest, said) = strip_entity(toks.get(1..).unwrap_or_default());
     if rest.is_empty() {
         return Ok(None);
@@ -487,7 +505,13 @@ fn set(toks: &[Tok], env: &Env) -> Result<Option<EntFx>, String> {
         return Ok(None);
     };
     if (is(w, "x") || is(w, "y") || is(w, "z")) && is(n, "velocity") {
-        let axis = if is(w, "x") { 0 } else if is(w, "y") { 1 } else { 2 };
+        let axis = if is(w, "x") {
+            0
+        } else if is(w, "y") {
+            1
+        } else {
+            2
+        };
         if !toks.get(i + 2).is_some_and(|t| is(t, "of")) {
             return Ok(None);
         }
@@ -639,11 +663,22 @@ impl Engine {
         })
     }
 
-    fn ent_num(&mut self, e: &Option<Expr>, default: f64, max: f64, ex: &mut Exec, host: &mut dyn Host) -> Result<f64, String> {
+    fn ent_num(
+        &mut self,
+        e: &Option<Expr>,
+        default: f64,
+        max: f64,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<f64, String> {
         match e {
             Some(e) => {
                 let n = self.num(e, ex, host)?;
-                Ok(if n.is_finite() { n.clamp(-max, max) } else { default })
+                Ok(if n.is_finite() {
+                    n.clamp(-max, max)
+                } else {
+                    default
+                })
             }
             None => Ok(default),
         }
@@ -653,7 +688,9 @@ impl Engine {
     pub(crate) fn ent_effect(&mut self, f: &EntFx, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
         match f {
             EntFx::Spawn { kind, count, at } => {
-                let n = self.ent_num(count, 1.0, MAX_SPAWN, ex, host)?.clamp(0.0, MAX_SPAWN) as u32;
+                let n = self
+                    .ent_num(count, 1.0, MAX_SPAWN, ex, host)?
+                    .clamp(0.0, MAX_SPAWN) as u32;
                 let at = match at {
                     Some(a) => a,
                     None => &Expr::Player,
@@ -681,13 +718,20 @@ impl Engine {
                 for v in self.ent_targets(who, ex, host)? {
                     if let Some(r) = self.live_handle(&v, ex, host) {
                         let cur = host.entity_velocity(&r).unwrap_or((0.0, 0.0, 0.0));
-                        host.set_entity_velocity(&r, (cur.0 + dir.0 * s, cur.1 + dir.1 * s, cur.2 + dir.2 * s));
+                        host.set_entity_velocity(
+                            &r,
+                            (cur.0 + dir.0 * s, cur.1 + dir.1 * s, cur.2 + dir.2 * s),
+                        );
                     }
                 }
             }
             EntFx::SetVel { who, axis, value } => {
                 let n = self.num(value, ex, host)?;
-                let n = if n.is_finite() { n.clamp(-MAX_SPEED, MAX_SPEED) } else { 0.0 };
+                let n = if n.is_finite() {
+                    n.clamp(-MAX_SPEED, MAX_SPEED)
+                } else {
+                    0.0
+                };
                 for v in self.ent_targets(who, ex, host)? {
                     if let Some(r) = self.live_handle(&v, ex, host) {
                         let mut cur = host.entity_velocity(&r).unwrap_or((0.0, 0.0, 0.0));
@@ -720,7 +764,9 @@ impl Engine {
                 };
                 for v in self.ent_targets(who, ex, host)? {
                     match &v {
-                        Value::Entity(r) => host.entity_teleport(r, pos.x, pos.y, pos.z, pos.world.as_deref()),
+                        Value::Entity(r) => {
+                            host.entity_teleport(r, pos.x, pos.y, pos.z, pos.world.as_deref())
+                        }
                         Value::Player(_) => {
                             if let Some(p) = online(&v, &mut ex.seen, host) {
                                 host.teleport_to(&p, pos.x, pos.y, pos.z, pos.world.as_deref());
@@ -738,10 +784,12 @@ impl Engine {
     fn live_handle(&mut self, v: &Value, ex: &mut Exec, host: &mut dyn Host) -> Option<EntityRef> {
         match v {
             Value::Entity(r) => Some(r.clone()),
-            Value::Player(_) | Value::Text(_) => online(v, &mut ex.seen, host).map(|p: PlayerRef| EntityRef {
-                uuid: p.uuid,
-                kind: "player".into(),
-            }),
+            Value::Player(_) | Value::Text(_) => {
+                online(v, &mut ex.seen, host).map(|p: PlayerRef| EntityRef {
+                    uuid: p.uuid,
+                    kind: "player".into(),
+                })
+            }
             _ => None,
         }
     }
@@ -763,7 +811,12 @@ impl Engine {
     }
 
     #[inline(never)]
-    pub(crate) fn ent_cond(&mut self, c: &EntCond, ex: &mut Exec, host: &mut dyn Host) -> Result<bool, String> {
+    pub(crate) fn ent_cond(
+        &mut self,
+        c: &EntCond,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<bool, String> {
         let v = self.eval(&c.subject, ex, host)?;
         let is_kind = match &v {
             Value::Player(_) => c.kind == "player",
@@ -821,9 +874,18 @@ impl Engine {
     }
 
     #[inline(never)]
-    pub(crate) fn ent_expr(&mut self, e: &EntExpr, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
+    pub(crate) fn ent_expr(
+        &mut self,
+        e: &EntExpr,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<Value, String> {
         Ok(match e {
-            EntExpr::LastSpawned => ex.last_entity.as_deref().cloned().map_or(Value::None, Value::Entity),
+            EntExpr::LastSpawned => ex
+                .last_entity
+                .as_deref()
+                .cloned()
+                .map_or(Value::None, Value::Entity),
             EntExpr::All { kind, radius, at } => {
                 let center = match at {
                     Some(a) => match self.ent_pos(a, ex, host)? {
@@ -833,7 +895,12 @@ impl Engine {
                     None => None,
                 };
                 let r = self.ent_num(radius, UNLIMITED, UNLIMITED, ex, host)?.max(0.0);
-                Value::List(self.gather(kind, center.as_ref(), r, host).into_iter().map(|(v, _)| v).collect())
+                Value::List(
+                    self.gather(kind, center.as_ref(), r, host)
+                        .into_iter()
+                        .map(|(v, _)| v)
+                        .collect(),
+                )
             }
             EntExpr::Nearest { kind, to, radius } => {
                 let skip = self.eval(to, ex, host)?;
@@ -876,7 +943,12 @@ impl Engine {
     }
 
     /// Properties of an entity that need the host. `None`: use the shared path.
-    pub(crate) fn entity_prop(&mut self, prop: crate::expr::Prop, e: &EntityRef, host: &mut dyn Host) -> Option<Value> {
+    pub(crate) fn entity_prop(
+        &mut self,
+        prop: crate::expr::Prop,
+        e: &EntityRef,
+        host: &mut dyn Host,
+    ) -> Option<Value> {
         use crate::expr::Prop;
         Some(match prop {
             Prop::Uuid => Value::Text(e.uuid.clone()),

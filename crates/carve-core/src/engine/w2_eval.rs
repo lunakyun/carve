@@ -29,7 +29,11 @@ impl Engine {
                 let p = self.eval(player, ex, host)?;
                 let id = match &item {
                     Value::Item { id, .. } => id.clone(),
-                    Value::Text(t) => t.trim().trim_start_matches("minecraft:").replace(' ', "_").to_ascii_lowercase(),
+                    Value::Text(t) => t
+                        .trim()
+                        .trim_start_matches("minecraft:")
+                        .replace(' ', "_")
+                        .to_ascii_lowercase(),
                     _ => return Ok(Value::None),
                 };
                 match online(&p, &mut ex.seen, host) {
@@ -49,7 +53,11 @@ impl Engine {
             W2::Armor(slot, e) => {
                 let v = self.eval(e, ex, host)?;
                 match online(&v, &mut ex.seen, host).and_then(|p| host.armor_item(&p, *slot)) {
-                    Some((id, count)) => Value::Item { id, count, meta: None },
+                    Some((id, count)) => Value::Item {
+                        id,
+                        count,
+                        meta: None,
+                    },
                     None => Value::None,
                 }
             }
@@ -59,7 +67,8 @@ impl Engine {
                     return Ok(Value::None);
                 };
                 let world = world.unwrap_or_default();
-                let bytes = host.block_entity_nbt(&world, x.floor() as i32, y.floor() as i32, z.floor() as i32);
+                let bytes =
+                    host.block_entity_nbt(&world, x.floor() as i32, y.floor() as i32, z.floor() as i32);
                 match bytes.and_then(|b| w2::block_entity_value(*field, &b)) {
                     Some(n) if field.is_span() => Value::Timespan { millis: n as i64 },
                     Some(n) => Value::Num(n),

@@ -171,7 +171,9 @@ fn connect_default_uses_transfer_command() {
 
 #[test]
 fn force_respawn_both_forms() {
-    let out = run("on join:\n    force player to respawn\n    force respawn of player\n    force the respawn of player\n");
+    let out = run(
+        "on join:\n    force player to respawn\n    force respawn of player\n    force the respawn of player\n",
+    );
     assert_eq!(out, ["respawn Steve", "respawn Steve", "respawn Steve"]);
 }
 
@@ -191,7 +193,9 @@ fn hide_offline_viewer_does_nothing() {
 
 #[test]
 fn copy_single_value() {
-    let out = run("on join:\n    set {a} to 5\n    copy {a} into {b}\n    set {a} to 6\n    send \"%{a}% %{b}%\"\n");
+    let out = run(
+        "on join:\n    set {a} to 5\n    copy {a} into {b}\n    set {a} to 6\n    send \"%{a}% %{b}%\"\n",
+    );
     assert_eq!(out, ["send Steve 6 5"]);
 }
 

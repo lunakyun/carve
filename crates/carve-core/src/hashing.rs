@@ -56,9 +56,9 @@ fn pad(data: &[u8], block: usize, big_endian: bool) -> Vec<u8> {
 
 fn md5(data: &[u8]) -> Vec<u8> {
     const S: [u32; 64] = [
-        7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9,
-        14, 20, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15,
-        21, 6, 10, 15, 21,
+        7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20,
+        5, 9, 14, 20, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 6, 10, 15, 21, 6, 10, 15,
+        21, 6, 10, 15, 21, 6, 10, 15, 21,
     ];
     static K: OnceLock<[u32; 64]> = OnceLock::new();
     let k = K.get_or_init(|| {
@@ -244,7 +244,16 @@ fn sha256(data: &[u8]) -> Vec<u8> {
             let s0 = v[0].rotate_right(2) ^ v[0].rotate_right(13) ^ v[0].rotate_right(22);
             let maj = (v[0] & v[1]) ^ (v[0] & v[2]) ^ (v[1] & v[2]);
             let t2 = s0.wrapping_add(maj);
-            v = [t1.wrapping_add(t2), v[0], v[1], v[2], v[3].wrapping_add(t1), v[4], v[5], v[6]];
+            v = [
+                t1.wrapping_add(t2),
+                v[0],
+                v[1],
+                v[2],
+                v[3].wrapping_add(t1),
+                v[4],
+                v[5],
+                v[6],
+            ];
         }
         for (x, y) in h.iter_mut().zip(v) {
             *x = x.wrapping_add(y);
@@ -278,7 +287,16 @@ fn sha512(data: &[u8]) -> Vec<u8> {
             let s0 = v[0].rotate_right(28) ^ v[0].rotate_right(34) ^ v[0].rotate_right(39);
             let maj = (v[0] & v[1]) ^ (v[0] & v[2]) ^ (v[1] & v[2]);
             let t2 = s0.wrapping_add(maj);
-            v = [t1.wrapping_add(t2), v[0], v[1], v[2], v[3].wrapping_add(t1), v[4], v[5], v[6]];
+            v = [
+                t1.wrapping_add(t2),
+                v[0],
+                v[1],
+                v[2],
+                v[3].wrapping_add(t1),
+                v[4],
+                v[5],
+                v[6],
+            ];
         }
         for (x, y) in h.iter_mut().zip(v) {
             *x = x.wrapping_add(y);
@@ -294,8 +312,14 @@ mod tests {
     #[test]
     fn known_digests() {
         assert_eq!(digest_hex(HashAlg::Md5, b""), "d41d8cd98f00b204e9800998ecf8427e");
-        assert_eq!(digest_hex(HashAlg::Md5, b"abc"), "900150983cd24fb0d6963f7d28e17f72");
-        assert_eq!(digest_hex(HashAlg::Sha1, b"abc"), "a9993e364706816aba3e25717850c26c9cd0d89d");
+        assert_eq!(
+            digest_hex(HashAlg::Md5, b"abc"),
+            "900150983cd24fb0d6963f7d28e17f72"
+        );
+        assert_eq!(
+            digest_hex(HashAlg::Sha1, b"abc"),
+            "a9993e364706816aba3e25717850c26c9cd0d89d"
+        );
         assert_eq!(
             digest_hex(HashAlg::Sha256, b"abc"),
             "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"

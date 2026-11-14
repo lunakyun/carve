@@ -44,7 +44,10 @@ impl Engine {
         };
         let want = self.eval(want, ex, host)?;
         let items = self.list_items(list, ex, host)?;
-        let mut hits = items.iter().filter(|(_, v)| v.loose_eq(&want)).map(|(k, _)| key_value(k));
+        let mut hits = items
+            .iter()
+            .filter(|(_, v)| v.loose_eq(&want))
+            .map(|(k, _)| key_value(k));
         Ok(match sel {
             IndexSel::First => hits.next().unwrap_or(Value::None),
             IndexSel::Last => hits.next_back().unwrap_or(Value::None),

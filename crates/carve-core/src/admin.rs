@@ -125,7 +125,11 @@ fn can(env: &AdminEnv, node: &str) -> bool {
 /// The file in `names` that `arg` means: with or without `.carve`, any case,
 /// `/` or `\` for folders.
 fn find_script(arg: &str, names: &[String]) -> Option<String> {
-    let mut want = arg.trim().trim_start_matches(DISABLED).replace('\\', "/").to_ascii_lowercase();
+    let mut want = arg
+        .trim()
+        .trim_start_matches(DISABLED)
+        .replace('\\', "/")
+        .to_ascii_lowercase();
     if !want.ends_with(SCRIPT_EXT) {
         want.push_str(SCRIPT_EXT);
     }
@@ -173,7 +177,11 @@ fn ms(t: Instant) -> String {
 }
 
 fn plural(n: usize, one: &str) -> String {
-    if n == 1 { format!("{n} {one}") } else { format!("{n} {one}s") }
+    if n == 1 {
+        format!("{n} {one}")
+    } else {
+        format!("{n} {one}s")
+    }
 }
 
 /// Errors in Skript's layout; at most 10 in chat, the rest are in `/carve errors`.
@@ -234,7 +242,10 @@ pub fn load_report(sum: &LoadSummary, errors: &[ScriptError], secs: f64) -> Vec<
     if !errors.is_empty() {
         out.push((
             true,
-            format!("Encountered {} while loading the scripts!", plural(errors.len(), "error")),
+            format!(
+                "Encountered {} while loading the scripts!",
+                plural(errors.len(), "error")
+            ),
         ));
     }
     out.push((
@@ -324,7 +335,12 @@ pub fn admin(
     out
 }
 
-fn errors(engine: &Engine, store: &mut dyn ScriptStore, rest: &str, out: &mut AdminOut) -> Result<(), String> {
+fn errors(
+    engine: &Engine,
+    store: &mut dyn ScriptStore,
+    rest: &str,
+    out: &mut AdminOut,
+) -> Result<(), String> {
     let want = if rest.is_empty() {
         None
     } else {

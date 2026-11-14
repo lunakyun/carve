@@ -2293,7 +2293,13 @@ on join:
         "Color",
         NEXT,
         "syntax/w4-types-1",
-        &["color", "rgb(%number%, %number%, %number%)", "color from hex %text%", "hex of %color%", "<dye color name>"],
+        &[
+            "color",
+            "rgb(%number%, %number%, %number%)",
+            "color from hex %text%",
+            "hex of %color%",
+            "<dye color name>",
+        ],
         "A color. Write a dye color (`red`, `light blue`), `rgb(r, g, b)` (0 to 255) or `color from hex \"#rrggbb\"`. Prints as `#rrggbb`, so `red value of` and the other channel expressions work on it.",
         "send \"%hex of rgb(255, 128, 0)%\"
 send \"%red value of lime%\"",
@@ -2304,7 +2310,10 @@ send \"%red value of lime%\"",
         "Quaternion",
         NEXT,
         "syntax/w4-types-1",
-        &["quaternion(%number%, %number%, %number%, %number%)", "identity quaternion"],
+        &[
+            "quaternion(%number%, %number%, %number%, %number%)",
+            "identity quaternion",
+        ],
         "A rotation as w, x, y, z. Can be stored, compared and passed to functions.",
         "set {q} to quaternion(1, 0, 0, 0)
 send \"%{q}%\"",

@@ -56,7 +56,11 @@ impl Host for Mock {
         self.states.contains(&s)
     }
     fn pvp_enabled(&mut self, world: Option<&str>) -> Option<bool> {
-        Some(self.pvp_on.iter().any(|w| Some(w.as_str()) == world.or(Some("world"))))
+        Some(
+            self.pvp_on
+                .iter()
+                .any(|w| Some(w.as_str()) == world.or(Some("world"))),
+        )
     }
     fn block_trait(&mut self, id: &str, t: BlockTrait) -> Option<bool> {
         let known = ["stone", "glass", "air", "grass"];
@@ -79,10 +83,17 @@ fn run_with(mut h: Mock, src: &str) -> (Vec<String>, Vec<(LogLevel, String)>) {
     let mut e = Engine::default();
     let files = vec![
         ("t.carve".to_string(), src.to_string()),
-        ("scripts/Shop.carve".to_string(), "on quit:\n    send \"bye\"\n".to_string()),
+        (
+            "scripts/Shop.carve".to_string(),
+            "on quit:\n    send \"bye\"\n".to_string(),
+        ),
     ];
     let (_, errs) = e.load(&files);
-    assert!(errs.is_empty(), "errors: {:?}", errs.iter().map(|e| e.to_string()).collect::<Vec<_>>());
+    assert!(
+        errs.is_empty(),
+        "errors: {:?}",
+        errs.iter().map(|e| e.to_string()).collect::<Vec<_>>()
+    );
     e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
     (h.calls, h.logs)
 }
@@ -90,7 +101,10 @@ fn run_with(mut h: Mock, src: &str) -> (Vec<String>, Vec<(LogLevel, String)>) {
 fn check_with(h: Mock, cond: &str) -> bool {
     let src = format!("on join:\n    if {cond}:\n        send \"yes\"\n    else:\n        send \"no\"\n");
     let (calls, logs) = run_with(h, &src);
-    assert!(logs.iter().all(|(l, _)| *l != LogLevel::Error), "runtime errors: {logs:?}");
+    assert!(
+        logs.iter().all(|(l, _)| *l != LogLevel::Error),
+        "runtime errors: {logs:?}"
+    );
     calls[0].ends_with("yes")
 }
 
@@ -155,7 +169,11 @@ fn regex_with_variables() {
 fn bad_regex_is_a_runtime_error() {
     let src = "on join:\n    if \"a\" matches \"(\":\n        send \"yes\"\n    send \"after\"\n";
     let (calls, logs) = run_with(Mock::default(), src);
-    assert!(logs.iter().any(|(l, m)| *l == LogLevel::Error && m.contains("invalid regex")), "{logs:?}");
+    assert!(
+        logs.iter()
+            .any(|(l, m)| *l == LogLevel::Error && m.contains("invalid regex")),
+        "{logs:?}"
+    );
     assert!(!calls.iter().any(|c| c.ends_with("yes")));
 }
 
@@ -175,13 +193,25 @@ fn text_conditions_still_work() {
 
 #[test]
 fn within_box() {
-    assert!(check("location(5, 5, 5) is within location(0, 0, 0) and location(10, 10, 10)"));
-    assert!(check("location(5, 5, 5) is within location(10, 10, 10) to location(0, 0, 0)"));
-    assert!(!check("location(11, 5, 5) is within location(0, 0, 0) and location(10, 10, 10)"));
-    assert!(check("location(11, 5, 5) isn't within location(0, 0, 0) and location(10, 10, 10)"));
-    assert!(check("location(10, 10, 10) is within location(0, 0, 0) and location(10, 10, 10)"));
+    assert!(check(
+        "location(5, 5, 5) is within location(0, 0, 0) and location(10, 10, 10)"
+    ));
+    assert!(check(
+        "location(5, 5, 5) is within location(10, 10, 10) to location(0, 0, 0)"
+    ));
+    assert!(!check(
+        "location(11, 5, 5) is within location(0, 0, 0) and location(10, 10, 10)"
+    ));
+    assert!(check(
+        "location(11, 5, 5) isn't within location(0, 0, 0) and location(10, 10, 10)"
+    ));
+    assert!(check(
+        "location(10, 10, 10) is within location(0, 0, 0) and location(10, 10, 10)"
+    ));
     // The player is at 10, 64, 10 in world.
-    assert!(check("player is within location(0, 60, 0) and location(20, 70, 20)"));
+    assert!(check(
+        "player is within location(0, 60, 0) and location(20, 70, 20)"
+    ));
     assert!(!check("player is within location(0, 0, 0) and location(5, 5, 5)"));
     assert!(check("player is within player's location and player's location"));
 }
@@ -199,9 +229,15 @@ fn within_box_checks_worlds() {
 #[test]
 fn within_radius() {
     assert!(check("location(3, 0, 4) is within 5 blocks of location(0, 0, 0)"));
-    assert!(!check("location(3, 0, 5) is within 5 blocks around location(0, 0, 0)"));
-    assert!(check("location(3, 0, 5) isn't within 5 blocks of location(0, 0, 0)"));
-    assert!(check("location(0, 0, 1) is within 1 block from location(0, 0, 0)"));
+    assert!(!check(
+        "location(3, 0, 5) is within 5 blocks around location(0, 0, 0)"
+    ));
+    assert!(check(
+        "location(3, 0, 5) isn't within 5 blocks of location(0, 0, 0)"
+    ));
+    assert!(check(
+        "location(0, 0, 1) is within 1 block from location(0, 0, 0)"
+    ));
     assert!(check("location(0, 0, 1) is within 2 meters of location(0, 0, 0)"));
     assert!(check("player is within 1 block of player"));
     assert!(check("player is within 3 blocks of location(10, 64, 12)"));
@@ -213,7 +249,9 @@ fn within_world() {
     assert!(check("player is within world \"world\""));
     assert!(!check("player is within world \"nether\""));
     assert!(check("player isn't within world \"nether\""));
-    assert!(check("location(1, 2, 3, world \"nether\") is within world \"nether\""));
+    assert!(check(
+        "location(1, 2, 3, world \"nether\") is within world \"nether\""
+    ));
 }
 
 #[test]
@@ -231,7 +269,10 @@ fn player_states() {
         assert!(!check(&format!("player is {word}")), "{word} off");
         assert!(check(&format!("player isn't {word}")), "isn't {word}");
         assert!(check(&format!("player is not {word}")), "not {word}");
-        assert!(!check_with(on(), &format!("player is not {word}")), "not {word} on");
+        assert!(
+            !check_with(on(), &format!("player is not {word}")),
+            "not {word} on"
+        );
     }
 }
 
@@ -304,7 +345,9 @@ fn combine_with_and_or() {
         ..Mock::default()
     };
     assert!(check_with(h, "player is silent and \"ab\" matches \"a.\""));
-    assert!(check("player is poisoned or location(1, 1, 1) is within 2 blocks of location(1, 1, 2)"));
+    assert!(check(
+        "player is poisoned or location(1, 1, 1) is within 2 blocks of location(1, 1, 2)"
+    ));
 }
 
 #[test]

@@ -46,7 +46,10 @@ pub const CONDITION_PATTERNS: &[(&str, CondKind)] = &[
     ("%date% (is not|isn't) in [the] past", k(W2Kind::InPast, true)),
     ("%date% is in [the] future", k(W2Kind::InFuture, false)),
     ("%date% (is not|isn't) in [the] future", k(W2Kind::InFuture, true)),
-    ("%number% is [evenly] divisible by %number%", k(W2Kind::Divisible, false)),
+    (
+        "%number% is [evenly] divisible by %number%",
+        k(W2Kind::Divisible, false),
+    ),
     (
         "%number% (is not|isn't) [evenly] divisible by %number%",
         k(W2Kind::Divisible, true),
@@ -62,18 +65,30 @@ pub const CONDITION_PATTERNS: &[(&str, CondKind)] = &[
     ("%player% is dead", k(W2Kind::Alive, true)),
     ("%player% (is not|isn't) dead", k(W2Kind::Alive, false)),
     ("%object% is in [the] world %object%", k(W2Kind::InWorld, false)),
-    ("%object% (is not|isn't) in [the] world %object%", k(W2Kind::InWorld, true)),
+    (
+        "%object% (is not|isn't) in [the] world %object%",
+        k(W2Kind::InWorld, true),
+    ),
     ("%object% is edible", k(W2Kind::Edible, false)),
     ("%object% (is not|isn't) edible", k(W2Kind::Edible, true)),
     ("%object% is [a] fuel", k(W2Kind::Fuel, false)),
     ("%object% (is not|isn't) [a] fuel", k(W2Kind::Fuel, true)),
     ("%object% is fire resistant", k(W2Kind::FireResistant, false)),
-    ("%object% (is not|isn't) fire resistant", k(W2Kind::FireResistant, true)),
+    (
+        "%object% (is not|isn't) fire resistant",
+        k(W2Kind::FireResistant, true),
+    ),
     ("%object% is flammable", k(W2Kind::Flammable, false)),
     ("%object% (is not|isn't) flammable", k(W2Kind::Flammable, true)),
     ("%object% is of type %object%", k(W2Kind::OfType, false)),
-    ("%object% (is not|isn't) of type %object%", k(W2Kind::OfType, true)),
-    ("[the] command %text% is a [script] command", k(W2Kind::ScriptCommand, false)),
+    (
+        "%object% (is not|isn't) of type %object%",
+        k(W2Kind::OfType, true),
+    ),
+    (
+        "[the] command %text% is a [script] command",
+        k(W2Kind::ScriptCommand, false),
+    ),
     (
         "[the] command %text% (is not|isn't) a [script] command",
         k(W2Kind::ScriptCommand, true),
@@ -114,7 +129,11 @@ pub fn check(kind: W2Kind, a: &Value, b: Option<&Value>, host: &mut dyn Host) ->
         W2Kind::InPast | W2Kind::InFuture => {
             let Value::Date(ms) = a else { return false };
             let now = host.wall_clock_millis();
-            if kind == W2Kind::InPast { *ms < now } else { *ms > now }
+            if kind == W2Kind::InPast {
+                *ms < now
+            } else {
+                *ms > now
+            }
         }
         W2Kind::Divisible => {
             let (Some(x), Some(y)) = (a.as_num(), b.and_then(Value::as_num)) else {
@@ -266,7 +285,8 @@ fn is_fuel(id: &str) -> bool {
     ) {
         return true;
     }
-    if id.ends_with("_wool") || id.ends_with("_carpet") || id.ends_with("_banner") || id.ends_with("_sapling") {
+    if id.ends_with("_wool") || id.ends_with("_carpet") || id.ends_with("_banner") || id.ends_with("_sapling")
+    {
         return true;
     }
     wood_part(id).is_some_and(|p| {
@@ -325,7 +345,12 @@ fn is_flammable(id: &str) -> bool {
     if id.ends_with("_wool") || id.ends_with("_carpet") || id.ends_with("_leaves") {
         return true;
     }
-    wood_part(id).is_some_and(|p| matches!(p, "planks" | "log" | "wood" | "slab" | "stairs" | "fence" | "fence_gate"))
+    wood_part(id).is_some_and(|p| {
+        matches!(
+            p,
+            "planks" | "log" | "wood" | "slab" | "stairs" | "fence" | "fence_gate"
+        )
+    })
 }
 
 use crate::player_flags::PlayerFlag;
@@ -337,21 +362,36 @@ const fn f(flag: PlayerFlag, negate: bool) -> CondKind {
 /// Player state checks that ask the host (see `Host::player_flag`).
 pub const FLAG_PATTERNS: &[(&str, CondKind)] = &[
     ("%player% is (burning|on fire)", f(PlayerFlag::Burning, false)),
-    ("%player% (is not|isn't) (burning|on fire)", f(PlayerFlag::Burning, true)),
+    (
+        "%player% (is not|isn't) (burning|on fire)",
+        f(PlayerFlag::Burning, true),
+    ),
     ("%player% is invisible", f(PlayerFlag::Invisible, false)),
-    ("%player% (is not|isn't) invisible", f(PlayerFlag::Invisible, true)),
+    (
+        "%player% (is not|isn't) invisible",
+        f(PlayerFlag::Invisible, true),
+    ),
     ("%player% is invulnerable", f(PlayerFlag::Invulnerable, false)),
-    ("%player% (is not|isn't) invulnerable", f(PlayerFlag::Invulnerable, true)),
+    (
+        "%player% (is not|isn't) invulnerable",
+        f(PlayerFlag::Invulnerable, true),
+    ),
     ("%player% is gliding", f(PlayerFlag::Gliding, false)),
     ("%player% (is not|isn't) gliding", f(PlayerFlag::Gliding, true)),
     ("%player% is frozen", f(PlayerFlag::Frozen, false)),
     ("%player% (is not|isn't) frozen", f(PlayerFlag::Frozen, true)),
-    ("%player%'s custom name is visible", f(PlayerFlag::CustomNameVisible, false)),
+    (
+        "%player%'s custom name is visible",
+        f(PlayerFlag::CustomNameVisible, false),
+    ),
     (
         "%player%'s custom name (is not|isn't) visible",
         f(PlayerFlag::CustomNameVisible, true),
     ),
-    ("%player% has [a] resource pack [loaded]", f(PlayerFlag::ResourcePack, false)),
+    (
+        "%player% has [a] resource pack [loaded]",
+        f(PlayerFlag::ResourcePack, false),
+    ),
     (
         "%player% (does not|doesn't) have [a] resource pack [loaded]",
         f(PlayerFlag::ResourcePack, true),

@@ -314,7 +314,12 @@ fn item_of(v: Value) -> Result<Option<(String, u32)>, String> {
 
 impl Engine {
     #[inline(never)]
-    pub(crate) fn inv_effect(&mut self, e: &InvEff, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
+    pub(crate) fn inv_effect(
+        &mut self,
+        e: &InvEff,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<(), String> {
         match e {
             InvEff::Open { rows, title, to } => {
                 let rows = self.num(rows, ex, host)?;
@@ -333,7 +338,12 @@ impl Engine {
                 let slot = slot_index(self.num(slot, ex, host)?)?;
                 let item = item_of(self.eval(item, ex, host)?)?;
                 if let Some(p) = self.player(&inv.who, ex, host)? {
-                    host.inv_set(&p, inv.current, slot, item.as_ref().map(|(i, c)| (i.as_str(), *c)));
+                    host.inv_set(
+                        &p,
+                        inv.current,
+                        slot,
+                        item.as_ref().map(|(i, c)| (i.as_str(), *c)),
+                    );
                 }
             }
             InvEff::Close(who) => {
@@ -363,24 +373,42 @@ impl Engine {
     }
 
     #[inline(never)]
-    pub(crate) fn inv_expr(&mut self, e: &InvExpr, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
+    pub(crate) fn inv_expr(
+        &mut self,
+        e: &InvExpr,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<Value, String> {
         Ok(match e {
             InvExpr::Slot { slot, inv } => {
                 let slot = slot_index(self.num(slot, ex, host)?)?;
                 match self.player(&inv.who, ex, host)? {
                     Some(p) => host
                         .inv_get(&p, inv.current, slot)
-                        .map_or(Value::None, |(id, count)| Value::Item { id, count, meta: None }),
+                        .map_or(Value::None, |(id, count)| Value::Item {
+                            id,
+                            count,
+                            meta: None,
+                        }),
                     None => Value::None,
                 }
             }
-            InvExpr::ClickedSlot => ex.ctx.inv.as_ref().map_or(Value::None, |c| Value::Num(f64::from(c.slot))),
-            InvExpr::ClickedItem => ex
+            InvExpr::ClickedSlot => ex
                 .ctx
                 .inv
                 .as_ref()
-                .and_then(|c| c.item.clone())
-                .map_or(Value::None, |(id, count)| Value::Item { id, count, meta: None }),
+                .map_or(Value::None, |c| Value::Num(f64::from(c.slot))),
+            InvExpr::ClickedItem => {
+                ex.ctx
+                    .inv
+                    .as_ref()
+                    .and_then(|c| c.item.clone())
+                    .map_or(Value::None, |(id, count)| Value::Item {
+                        id,
+                        count,
+                        meta: None,
+                    })
+            }
             InvExpr::ClickType => ex
                 .ctx
                 .inv

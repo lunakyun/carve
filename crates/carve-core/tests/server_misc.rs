@@ -67,7 +67,6 @@ impl Host for Mock {
         self.logs.push((level, msg.to_string()));
     }
 
-
     fn online_players(&mut self) -> Vec<PlayerRef> {
         let mut v: Vec<_> = self
             .online
@@ -230,7 +229,8 @@ fn add_to_list_still_works() {
 
 #[test]
 fn remove_from_list_still_works() {
-    let out = join("on join:\n    add 5 to {x::*}\n    remove 5 from {x::*}\n    send \"%size of {x::*}%\"\n");
+    let out =
+        join("on join:\n    add 5 to {x::*}\n    remove 5 from {x::*}\n    send \"%size of {x::*}%\"\n");
     assert_eq!(out, ["send Steve 0"]);
 }
 
@@ -251,7 +251,10 @@ fn broadcast_with_to_inside_text_is_plain() {
 #[test]
 fn all_worlds_list() {
     let src = "on join:\n    loop all worlds:\n        send \"w %loop-value%\"\n    set {w::*} to all worlds\n    send \"%size of {w::*}%\"\n";
-    assert_eq!(join(src), ["send Steve w world", "send Steve w nether", "send Steve 2"]);
+    assert_eq!(
+        join(src),
+        ["send Steve w world", "send Steve w nether", "send Steve 2"]
+    );
 }
 
 #[test]
@@ -267,13 +270,7 @@ fn teleport_to_spawn_words() {
     let out = join(
         "on join:\n    teleport player to spawn\n    teleport player to the world spawn of world \"nether\"\n",
     );
-    assert_eq!(
-        out,
-        [
-            "tp Steve 0.5 70 0.5 world",
-            "tp Steve 8.5 40 8.5 nether"
-        ]
-    );
+    assert_eq!(out, ["tp Steve 0.5 70 0.5 world", "tp Steve 8.5 40 8.5 nether"]);
 }
 
 #[test]
@@ -365,7 +362,11 @@ fn default_host_uses_commands() {
     e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
     assert_eq!(
         h.0,
-        ["whitelist add Bob", "whitelist remove Bob", "worldborder set 300 10s"]
+        [
+            "whitelist add Bob",
+            "whitelist remove Bob",
+            "worldborder set 300 10s"
+        ]
     );
 }
 

@@ -248,7 +248,10 @@ fn shaped_recipe() {
         r.kind,
         RecipeKind::Shaped {
             rows: vec![" d ".into(), " d ".into(), " s ".into()],
-            key: vec![('d', item("minecraft:diamond_block")), ('s', item("minecraft:stick"))],
+            key: vec![
+                ('d', item("minecraft:diamond_block")),
+                ('s', item("minecraft:stick"))
+            ],
         }
     );
 }
@@ -273,9 +276,13 @@ fn shaped_recipe_with_text_ingredients_and_tag() {
 #[test]
 fn shaped_recipe_errors() {
     let pre = "register shaped recipe \"x\" for stick with shape ";
-    assert!(first_error(&format!("{pre}\"ab\", \"a\" where a is stick and b is stick")).contains("same length"));
+    assert!(
+        first_error(&format!("{pre}\"ab\", \"a\" where a is stick and b is stick")).contains("same length")
+    );
     assert!(first_error(&format!("{pre}\"ab\" where a is stick")).contains("'b'"));
-    assert!(first_error(&format!("{pre}\"a\", \"a\", \"a\", \"a\" where a is stick")).contains("1 to 3 rows"));
+    assert!(
+        first_error(&format!("{pre}\"a\", \"a\", \"a\", \"a\" where a is stick")).contains("1 to 3 rows")
+    );
     assert!(first_error(&format!("{pre}\"a\" where a is stick and a is dirt")).contains("twice"));
     assert!(first_error(&format!("{pre}\"a\" where a is banana")).contains("expected an item"));
     assert!(first_error("register shaped recipe for stick with shape \"a\"").contains("plain text id"));
@@ -399,9 +406,18 @@ fn statistic_removal_stops_at_zero() {
 #[test]
 fn statistic_names() {
     use carve_core::skbee_recipes_advancements::split_stat;
-    assert_eq!(split_stat("mined:minecraft:stone").unwrap(), ("mined".into(), "stone".into()));
-    assert_eq!(split_stat("minecraft:jump").unwrap(), ("custom".into(), "jump".into()));
-    assert_eq!(split_stat("Walk One Cm").unwrap(), ("custom".into(), "walk_one_cm".into()));
+    assert_eq!(
+        split_stat("mined:minecraft:stone").unwrap(),
+        ("mined".into(), "stone".into())
+    );
+    assert_eq!(
+        split_stat("minecraft:jump").unwrap(),
+        ("custom".into(), "jump".into())
+    );
+    assert_eq!(
+        split_stat("Walk One Cm").unwrap(),
+        ("custom".into(), "walk_one_cm".into())
+    );
     assert!(split_stat("").is_err());
 }
 
@@ -460,7 +476,10 @@ fn event_names() {
         ("recipe discover", EventKind::RecipeDiscover),
     ] {
         let mut e = Engine::default();
-        let (_, errs) = e.load(&[("t.carve".into(), format!("on {name}:\n    send \"x\" to player\n"))]);
+        let (_, errs) = e.load(&[(
+            "t.carve".into(),
+            format!("on {name}:\n    send \"x\" to player\n"),
+        )]);
         assert!(errs.is_empty(), "{name}: {errs:?}");
         let mut h = Mock::steve();
         e.fire(kind, EventCtx::player(steve()), &mut h);

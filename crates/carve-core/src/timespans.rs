@@ -122,8 +122,9 @@ pub fn arith(a: &Value, op: BinOp, b: &Value) -> Result<Value, String> {
         (Timespan { millis: x }, BinOp::Sub, Timespan { millis: y }) => Timespan {
             millis: x.checked_sub(*y).ok_or_else(over)?,
         },
-        (Date(x), BinOp::Add, Timespan { millis: y })
-        | (Timespan { millis: y }, BinOp::Add, Date(x)) => Date(x.checked_add(*y).ok_or_else(over)?),
+        (Date(x), BinOp::Add, Timespan { millis: y }) | (Timespan { millis: y }, BinOp::Add, Date(x)) => {
+            Date(x.checked_add(*y).ok_or_else(over)?)
+        }
         (Date(x), BinOp::Sub, Timespan { millis: y }) => Date(x.checked_sub(*y).ok_or_else(over)?),
         (Date(x), BinOp::Sub, Date(y)) => Timespan {
             millis: x.checked_sub(*y).ok_or_else(over)?,

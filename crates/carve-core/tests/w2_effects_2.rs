@@ -202,7 +202,13 @@ fn ignite_and_extinguish() {
     ]));
     assert_eq!(
         out,
-        ["fire Steve 100", "fire Steve 200", "fire Steve 40", "fire Steve 0", "fire Steve 0"]
+        [
+            "fire Steve 100",
+            "fire Steve 200",
+            "fire Steve 40",
+            "fire Steve 0",
+            "fire Steve 0"
+        ]
     );
 }
 
@@ -276,7 +282,12 @@ fn say_and_book() {
     ]));
     assert_eq!(
         out,
-        ["say Steve hello there", "book Steve false", "book Steve false", "book Steve true"]
+        [
+            "say Steve hello there",
+            "book Steve false",
+            "book Steve false",
+            "book Steve true"
+        ]
     );
 }
 
@@ -314,7 +325,10 @@ fn say_default_runs_say_as_player() {
         }
     }
     let mut e = Engine::default();
-    let src = body(&["make player say \"hi\"", "make player look at location(0, 65.62, 4)"]);
+    let src = body(&[
+        "make player say \"hi\"",
+        "make player look at location(0, 65.62, 4)",
+    ]);
     let (_, errs) = e.load(&[("t.carve".into(), src)]);
     assert!(errs.is_empty(), "{errs:?}");
     let mut h = D(Vec::new());
@@ -329,7 +343,10 @@ fn log_goes_to_file() {
         "log \"two\" to file \"my-log\"",
         "log \"three\" to \"a.txt\"",
     ]));
-    assert_eq!(out, ["log server.log one", "log my-log.log two", "log a.txt three"]);
+    assert_eq!(
+        out,
+        ["log server.log one", "log my-log.log two", "log a.txt three"]
+    );
 }
 
 #[test]

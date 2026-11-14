@@ -187,40 +187,58 @@ fn component_bytes() {
     let b = ItemComp::MaxStackSize.encode(&Value::Num(16.0)).unwrap().unwrap();
     assert_eq!(b, vec![16]);
     assert_eq!(ItemComp::MaxStackSize.decode(&b), Value::Num(16.0));
-    let b = ItemComp::MaxStackSize.encode(&Value::Num(500.0)).unwrap().unwrap();
+    let b = ItemComp::MaxStackSize
+        .encode(&Value::Num(500.0))
+        .unwrap()
+        .unwrap();
     assert_eq!(ItemComp::MaxStackSize.decode(&b), Value::Num(99.0));
-    let b = ItemComp::Rarity.encode(&Value::Text("Epic".into())).unwrap().unwrap();
+    let b = ItemComp::Rarity
+        .encode(&Value::Text("Epic".into()))
+        .unwrap()
+        .unwrap();
     assert_eq!(b, vec![3]);
     assert_eq!(ItemComp::Rarity.decode(&b), Value::Text("epic".into()));
     assert!(ItemComp::Rarity.encode(&Value::Text("shiny".into())).is_err());
-    let b = ItemComp::ItemModel.encode(&Value::Text("stick".into())).unwrap().unwrap();
-    assert_eq!(ItemComp::ItemModel.decode(&b), Value::Text("minecraft:stick".into()));
-    let b = ItemComp::CustomModelData.encode(&Value::Num(7.0)).unwrap().unwrap();
+    let b = ItemComp::ItemModel
+        .encode(&Value::Text("stick".into()))
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        ItemComp::ItemModel.decode(&b),
+        Value::Text("minecraft:stick".into())
+    );
+    let b = ItemComp::CustomModelData
+        .encode(&Value::Num(7.0))
+        .unwrap()
+        .unwrap();
     assert_eq!(ItemComp::CustomModelData.decode(&b), Value::Num(7.0));
-    assert_eq!(ItemComp::GlintOverride.encode(&Value::Bool(true)).unwrap(), Some(vec![1]));
+    assert_eq!(
+        ItemComp::GlintOverride.encode(&Value::Bool(true)).unwrap(),
+        Some(vec![1])
+    );
     assert_eq!(ItemComp::Unbreakable.encode(&Value::Bool(false)).unwrap(), None);
-    assert_eq!(ItemComp::Unbreakable.encode(&Value::Bool(true)).unwrap(), Some(vec![]));
+    assert_eq!(
+        ItemComp::Unbreakable.encode(&Value::Bool(true)).unwrap(),
+        Some(vec![])
+    );
 }
 
 // ---- scripts ----
 
 #[test]
 fn nbt_from_text_and_tags() {
-    let h = run(
-        "set {_n} to nbt from \"{a:1,b:\"\"hi\"\",c:{d:2.5}}\"\n\
+    let h = run("set {_n} to nbt from \"{a:1,b:\"\"hi\"\",c:{d:2.5}}\"\n\
          send \"%int tag \"\"a\"\" of {_n}%\"\n\
          send \"%string tag \"\"b\"\" of {_n}%\"\n\
          send \"%double tag \"\"c;d\"\" of {_n}%\"\n\
          send \"%tag \"\"a\"\" of {_n}%\"\n\
-         send \"%string tag \"\"a\"\" of {_n}%\"",
-    );
+         send \"%string tag \"\"a\"\" of {_n}%\"");
     assert_eq!(h.calls, ["1", "hi", "2.5", "1", "<none>"]);
 }
 
 #[test]
 fn set_and_delete_tags_in_a_variable() {
-    let h = run(
-        "set {_n} to nbt from \"{}\"\n\
+    let h = run("set {_n} to nbt from \"{}\"\n\
          set int tag \"a\" of {_n} to 5\n\
          set string tag \"deep;name\" of {_n} to \"x\"\n\
          set tag \"flag\" of {_n} to true\n\
@@ -230,8 +248,7 @@ fn set_and_delete_tags_in_a_variable() {
          remove tag \"deep;name\" from {_n}\n\
          send \"%snbt of {_n}%\"\n\
          delete nbt of {_n}\n\
-         send \"%{_n}%\"",
-    );
+         send \"%{_n}%\"");
     assert_eq!(
         h.calls,
         [
@@ -244,49 +261,42 @@ fn set_and_delete_tags_in_a_variable() {
 
 #[test]
 fn typed_set_clamps_and_converts() {
-    let h = run(
-        "set {_n} to nbt from \"{}\"\n\
+    let h = run("set {_n} to nbt from \"{}\"\n\
          set byte tag \"a\" of {_n} to 300\n\
          set float tag \"f\" of {_n} to 1.5\n\
          set long tag \"l\" of {_n} to 4\n\
          set short tag \"s\" of {_n} to 2\n\
          set double tag \"d\" of {_n} to 2\n\
-         send \"%{_n}%\"",
-    );
+         send \"%{_n}%\"");
     assert_eq!(h.calls, ["{a:127b,f:1.5f,l:4L,s:2s,d:2d}"]);
 }
 
 #[test]
 fn compounds_and_lists_as_values() {
-    let h = run(
-        "set {_n} to nbt from \"{}\"\n\
+    let h = run("set {_n} to nbt from \"{}\"\n\
          set compound tag \"c\" of {_n} to nbt from \"{x:1}\"\n\
          set list tag \"l\" of {_n} to \"[1,2,3]\"\n\
          set int array tag \"ia\" of {_n} to \"[I;4,5]\"\n\
          send \"%{_n}%\"\n\
          send \"%int tag \"\"c;x\"\" of {_n}%\"\n\
-         send \"%int tag \"\"l[2]\"\" of {_n}%\"",
-    );
+         send \"%int tag \"\"l[2]\"\" of {_n}%\"");
     assert_eq!(h.calls, ["{c:{x:1},l:[1,2,3],ia:[I;4,5]}", "1", "3"]);
 }
 
 #[test]
 fn tag_names_and_merge() {
-    let h = run(
-        "set {_n} to nbt from \"{a:1,b:2}\"\n\
+    let h = run("set {_n} to nbt from \"{a:1,b:2}\"\n\
          set {_k::*} to tag names of {_n}\n\
          send \"%tag names of {_n}%\"\n\
          add \"{b:9,c:3}\" to nbt of {_n}\n\
          merge nbt from \"{d:{e:1}}\" into {_n}\n\
-         send \"%{_n}%\"",
-    );
+         send \"%{_n}%\"");
     assert_eq!(h.calls, ["a and b", "{a:1,b:9,c:3,d:{e:1}}"]);
 }
 
 #[test]
 fn has_tag_conditions() {
-    let h = run(
-        "set {_n} to nbt from \"{a:1,s:\"\"x\"\"}\"\n\
+    let h = run("set {_n} to nbt from \"{a:1,s:\"\"x\"\"}\"\n\
          if {_n} has tag \"a\":\n\
          \x20   send \"yes a\"\n\
          if {_n} has int tag \"s\":\n\
@@ -296,15 +306,13 @@ fn has_tag_conditions() {
          if {_n} does not have tag \"zzz\":\n\
          \x20   send \"no zzz\"\n\
          if {_n} doesn't have tag \"a\":\n\
-         \x20   send \"bad2\"",
-    );
+         \x20   send \"bad2\"");
     assert_eq!(h.calls, ["yes a", "yes s", "no zzz"]);
 }
 
 #[test]
 fn item_custom_data() {
-    let h = run(
-        "set int tag \"power\" of nbt of player's tool to 7\n\
+    let h = run("set int tag \"power\" of nbt of player's tool to 7\n\
          set string tag \"id;name\" of nbt of player's tool to \"blade\"\n\
          send \"%int tag \"\"power\"\" of nbt of player's tool%\"\n\
          send \"%string tag \"\"id;name\"\" of player's tool%\"\n\
@@ -312,8 +320,7 @@ fn item_custom_data() {
          if player's tool has tag \"power\":\n\
          \x20   send \"has\"\n\
          delete tag \"power\" of nbt of player's tool\n\
-         send \"%nbt of player's tool%\"",
-    );
+         send \"%nbt of player's tool%\"");
     assert_eq!(h.calls[0], "7");
     assert_eq!(h.calls[1], "blade");
     assert_eq!(h.calls[2], "{power:7,id:{name:\"blade\"}}");
@@ -326,13 +333,11 @@ fn item_custom_data() {
 
 #[test]
 fn item_set_and_clear_all() {
-    let h = run(
-        "set nbt of player's tool to nbt from \"{a:1}\"\n\
+    let h = run("set nbt of player's tool to nbt from \"{a:1}\"\n\
          add \"{b:2}\" to nbt of player's tool\n\
          send \"%nbt of player's tool%\"\n\
          delete nbt of player's tool\n\
-         send \"%nbt of player's tool%\"",
-    );
+         send \"%nbt of player's tool%\"");
     assert_eq!(h.calls, ["{a:1,b:2}", "{}"]);
     assert!(!h.comps.contains_key(&ItemComp::CustomData));
 }
@@ -352,8 +357,7 @@ fn no_item_means_none_and_no_change() {
 
 #[test]
 fn components() {
-    let h = run(
-        "set custom model data of player's tool to 42\n\
+    let h = run("set custom model data of player's tool to 42\n\
          set max stack size of player's tool to 16\n\
          set rarity of player's tool to epic\n\
          set item model of player's tool to \"my:model\"\n\
@@ -368,8 +372,7 @@ fn components() {
          reset custom model data of player's tool\n\
          set unbreakable of player's tool to false\n\
          send \"%custom model data of player's tool%\"\n\
-         send \"%unbreakable of player's tool%\"",
-    );
+         send \"%unbreakable of player's tool%\"");
     assert_eq!(
         h.calls,
         ["42", "16", "epic", "my:model", "true", "true", "<none>", "false"]
@@ -378,10 +381,8 @@ fn components() {
 
 #[test]
 fn tool_word_variants() {
-    let h = run(
-        "set custom model data of tool of player to 3\n\
-         send \"%custom model data of held item of player%\"",
-    );
+    let h = run("set custom model data of tool of player to 3\n\
+         send \"%custom model data of held item of player%\"");
     assert_eq!(h.calls, ["3"]);
 }
 

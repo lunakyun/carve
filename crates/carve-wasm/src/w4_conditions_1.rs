@@ -1,8 +1,8 @@
 //! Game-side answers for the `w4_conditions_1` checks: mob data, chat
 //! settings, player weather, bell blocks.
 
-use carve_core::w4_conditions_1::Check;
 use carve_core::Value;
+use carve_core::w4_conditions_1::Check;
 use pumpkin_plugin_api::block_entity::BlockEntityType;
 use pumpkin_plugin_api::common::BlockPos as WitPos;
 use pumpkin_plugin_api::player::ChatMode;
@@ -35,12 +35,18 @@ impl WasmHost<'_> {
                 Some(self.get(p)?.get_player_weather().is_some())
             }
             Check::BellRinging => {
-                let Value::Location { x, y, z, world } = v else { return None };
+                let Value::Location { x, y, z, world } = v else {
+                    return None;
+                };
                 let w = match world {
                     Some(n) => self.server.get_world_by_name(n)?,
                     None => self.server.get_all_worlds().into_iter().next()?,
                 };
-                let pos = WitPos { x: x.floor() as i32, y: y.floor() as i32, z: z.floor() as i32 };
+                let pos = WitPos {
+                    x: x.floor() as i32,
+                    y: y.floor() as i32,
+                    z: z.floor() as i32,
+                };
                 match w.get_block_entity(pos)? {
                     BlockEntityType::BellBlockEntity(b) => Some(b.is_ringing()),
                     _ => Some(false),
@@ -49,7 +55,11 @@ impl WasmHost<'_> {
             Check::InLiquid | Check::Wet => {
                 let e = self.w4_entity(v)?;
                 let water = e.is_in_water();
-                Some(if c == Check::Wet { water } else { water || e.is_in_lava() })
+                Some(if c == Check::Wet {
+                    water
+                } else {
+                    water || e.is_in_lava()
+                })
             }
             Check::HasAi => {
                 let mob = self.w4_entity(v)?.as_mob()?;

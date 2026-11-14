@@ -74,7 +74,12 @@ impl Host for Mock {
         self.cooldown
     }
     fn block_type(&mut self, at: &BlockPos) -> Option<String> {
-        Some(self.blocks.get(&(at.x, at.y, at.z)).cloned().unwrap_or_else(|| "air".into()))
+        Some(
+            self.blocks
+                .get(&(at.x, at.y, at.z))
+                .cloned()
+                .unwrap_or_else(|| "air".into()),
+        )
     }
     fn block_trait(&mut self, id: &str, t: carve_core::w2_conditions_3::BlockTrait) -> Option<bool> {
         match t {
@@ -109,9 +114,17 @@ fn steve() -> PlayerRef {
 fn run_with(mut h: Mock, src: &str) -> Vec<String> {
     let mut e = Engine::default();
     let (_, errs) = e.load(&[("t.carve".to_string(), src.to_string())]);
-    assert!(errs.is_empty(), "errors: {:?}", errs.iter().map(|e| e.to_string()).collect::<Vec<_>>());
+    assert!(
+        errs.is_empty(),
+        "errors: {:?}",
+        errs.iter().map(|e| e.to_string()).collect::<Vec<_>>()
+    );
     e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
-    assert!(h.logs.iter().all(|(l, _)| *l != LogLevel::Error), "runtime errors: {:?}", h.logs);
+    assert!(
+        h.logs.iter().all(|(l, _)| *l != LogLevel::Error),
+        "runtime errors: {:?}",
+        h.logs
+    );
     h.calls
 }
 
@@ -160,20 +173,59 @@ fn can_hold() {
     let mut h = Mock::default();
     // Everything empty: room for a lot.
     assert!(check_with(Mock::default(), "player can hold 64 of stone"));
-    assert!(check_with(Mock::default(), "player's inventory can hold 3 of diamond_sword"));
+    assert!(check_with(
+        Mock::default(),
+        "player's inventory can hold 3 of diamond_sword"
+    ));
     // Full inventory of dirt: no room for stone, room only for dirt up to a stack.
     for s in 0..36 {
         h.inv.insert(s, ("dirt".into(), 64));
     }
-    assert!(!check_with(Mock { inv: h.inv.clone(), ..Mock::default() }, "player can hold 1 of stone"));
-    assert!(check_with(Mock { inv: h.inv.clone(), ..Mock::default() }, "player can't hold 1 of stone"));
+    assert!(!check_with(
+        Mock {
+            inv: h.inv.clone(),
+            ..Mock::default()
+        },
+        "player can hold 1 of stone"
+    ));
+    assert!(check_with(
+        Mock {
+            inv: h.inv.clone(),
+            ..Mock::default()
+        },
+        "player can't hold 1 of stone"
+    ));
     h.inv.insert(5, ("dirt".into(), 60));
-    assert!(check_with(Mock { inv: h.inv.clone(), ..Mock::default() }, "player can hold 4 of dirt"));
-    assert!(!check_with(Mock { inv: h.inv.clone(), ..Mock::default() }, "player can hold 5 of dirt"));
+    assert!(check_with(
+        Mock {
+            inv: h.inv.clone(),
+            ..Mock::default()
+        },
+        "player can hold 4 of dirt"
+    ));
+    assert!(!check_with(
+        Mock {
+            inv: h.inv.clone(),
+            ..Mock::default()
+        },
+        "player can hold 5 of dirt"
+    ));
     // Swords stack to one, so two swords need two empty slots.
     h.inv.insert(6, ("air".into(), 0));
-    assert!(check_with(Mock { inv: h.inv.clone(), ..Mock::default() }, "player can hold diamond_sword"));
-    assert!(!check_with(Mock { inv: h.inv.clone(), ..Mock::default() }, "player can hold 2 of diamond_sword"));
+    assert!(check_with(
+        Mock {
+            inv: h.inv.clone(),
+            ..Mock::default()
+        },
+        "player can hold diamond_sword"
+    ));
+    assert!(!check_with(
+        Mock {
+            inv: h.inv.clone(),
+            ..Mock::default()
+        },
+        "player can hold 2 of diamond_sword"
+    ));
 }
 
 #[test]
@@ -188,10 +240,22 @@ fn stack_sizes() {
 
 #[test]
 fn build_and_pick_up_follow_game_mode() {
-    let mode = |m: &str| Mock { mode: Some(m.into()), ..Mock::default() };
-    assert!(check_with(mode("survival"), "player can build at location(1, 2, 3)"));
-    assert!(!check_with(mode("adventure"), "player can build at location(1, 2, 3)"));
-    assert!(check_with(mode("adventure"), "player can't build location(1, 2, 3)"));
+    let mode = |m: &str| Mock {
+        mode: Some(m.into()),
+        ..Mock::default()
+    };
+    assert!(check_with(
+        mode("survival"),
+        "player can build at location(1, 2, 3)"
+    ));
+    assert!(!check_with(
+        mode("adventure"),
+        "player can build at location(1, 2, 3)"
+    ));
+    assert!(check_with(
+        mode("adventure"),
+        "player can't build location(1, 2, 3)"
+    ));
     assert!(check_with(mode("creative"), "player can pick up items"));
     assert!(!check_with(mode("spectator"), "player can pick up items"));
     assert!(check_with(mode("spectator"), "player can't pick up items"));
@@ -203,8 +267,20 @@ fn build_and_pick_up_follow_game_mode() {
 #[test]
 fn can_see_players() {
     assert!(check("player can see player"));
-    assert!(!check_with(Mock { hidden: true, ..Mock::default() }, "player can see player"));
-    assert!(check_with(Mock { hidden: true, ..Mock::default() }, "player can't see player"));
+    assert!(!check_with(
+        Mock {
+            hidden: true,
+            ..Mock::default()
+        },
+        "player can see player"
+    ));
+    assert!(check_with(
+        Mock {
+            hidden: true,
+            ..Mock::default()
+        },
+        "player can't see player"
+    ));
 }
 
 #[test]
@@ -216,20 +292,30 @@ fn line_of_sight() {
     let open = "location(0.5, 65, 0.5, \"world\") has line of sight to location(10.5, 65, 0.5, \"world\")";
     assert!(check(open));
     assert!(!check_with(wall, open));
-    assert!(check("location(0.5, 65, 0.5, \"world\") doesn't have line of sight to location(0.5, 65, 300.5, \"world\")"));
+    assert!(check(
+        "location(0.5, 65, 0.5, \"world\") doesn't have line of sight to location(0.5, 65, 300.5, \"world\")"
+    ));
     let mut glass = Mock::default();
     glass.blocks.insert((5, 65, 0), "glass".into());
     assert!(check_with(glass, open));
-    assert!(check("player has a direct line of sight to location(3.5, 65, 0.5, \"world\")"));
+    assert!(check(
+        "player has a direct line of sight to location(3.5, 65, 0.5, \"world\")"
+    ));
 }
 
 #[test]
 fn item_cooldown() {
-    let cd = |t| Mock { cooldown: Some(t), ..Mock::default() };
+    let cd = |t| Mock {
+        cooldown: Some(t),
+        ..Mock::default()
+    };
     assert!(check_with(cd(20), "player has item cooldown for ender_pearl"));
     assert!(check_with(cd(20), "player has a cooldown on ender_pearl"));
     assert!(!check_with(cd(0), "player has item cooldown for ender_pearl"));
-    assert!(check_with(cd(0), "player doesn't have item cooldown for ender_pearl"));
+    assert!(check_with(
+        cd(0),
+        "player doesn't have item cooldown for ender_pearl"
+    ));
     assert!(!check("player has item cooldown for ender_pearl"));
 }
 
@@ -251,39 +337,84 @@ fn sedated_hive() {
 
 #[test]
 fn respawn_anchors() {
-    let dim = |d: &str| Mock { dimension: Some(d.into()), ..Mock::default() };
-    assert!(check_with(dim("minecraft:the_nether"), "respawn anchors work in world \"nether\""));
-    assert!(!check_with(dim("minecraft:overworld"), "respawn anchors work in world \"world\""));
-    assert!(check_with(dim("minecraft:overworld"), "respawn anchors don't work in world \"world\""));
+    let dim = |d: &str| Mock {
+        dimension: Some(d.into()),
+        ..Mock::default()
+    };
+    assert!(check_with(
+        dim("minecraft:the_nether"),
+        "respawn anchors work in world \"nether\""
+    ));
+    assert!(!check_with(
+        dim("minecraft:overworld"),
+        "respawn anchors work in world \"world\""
+    ));
+    assert!(check_with(
+        dim("minecraft:overworld"),
+        "respawn anchors don't work in world \"world\""
+    ));
     assert!(!check("respawn anchors work in world \"world\""));
 }
 
 #[test]
 fn glowing_text() {
     let nbt = |on: i8| {
-        let c = Compound::parse(&format!("{{front_text:{{has_glowing_text:{on}b}},back_text:{{has_glowing_text:0b}}}}")).unwrap();
+        let c = Compound::parse(&format!(
+            "{{front_text:{{has_glowing_text:{on}b}},back_text:{{has_glowing_text:0b}}}}"
+        ))
+        .unwrap();
         c.to_bytes().unwrap()
     };
     let at = "location(1, 70, 1, \"world\")";
-    assert!(check_with(Mock { sign_nbt: Some(nbt(1)), ..Mock::default() }, &format!("{at} has glowing text")));
-    assert!(!check_with(Mock { sign_nbt: Some(nbt(0)), ..Mock::default() }, &format!("{at} has glowing text")));
-    assert!(check_with(Mock { sign_nbt: Some(nbt(0)), ..Mock::default() }, &format!("{at} doesn't have glowing text")));
+    assert!(check_with(
+        Mock {
+            sign_nbt: Some(nbt(1)),
+            ..Mock::default()
+        },
+        &format!("{at} has glowing text")
+    ));
+    assert!(!check_with(
+        Mock {
+            sign_nbt: Some(nbt(0)),
+            ..Mock::default()
+        },
+        &format!("{at} has glowing text")
+    ));
+    assert!(check_with(
+        Mock {
+            sign_nbt: Some(nbt(0)),
+            ..Mock::default()
+        },
+        &format!("{at} doesn't have glowing text")
+    ));
 }
 
 #[test]
 fn custom_model_data() {
-    assert!(check_with(Mock { cmd: true, ..Mock::default() }, "player has custom model data"));
+    assert!(check_with(
+        Mock {
+            cmd: true,
+            ..Mock::default()
+        },
+        "player has custom model data"
+    ));
     assert!(!check("player has a custom model data"));
     assert!(check("player doesn't have custom model data"));
 }
 
 #[test]
 fn game_answered_checks() {
-    let yes = |c| Mock { checks: vec![c], ..Mock::default() };
+    let yes = |c| Mock {
+        checks: vec![c],
+        ..Mock::default()
+    };
     assert!(check_with(yes(Check::ChatColors), "player can see chat colors"));
     assert!(!check("player can see chat colours"));
     assert!(check_with(yes(Check::ChatMessages), "player can see messages"));
-    assert!(check_with(yes(Check::ChatMessages), "player can see chat messages"));
+    assert!(check_with(
+        yes(Check::ChatMessages),
+        "player can see chat messages"
+    ));
     assert!(check_with(yes(Check::ChatFiltering), "player has chat filtering"));
     assert!(check("player doesn't have chat filtering"));
     assert!(check_with(yes(Check::ClientWeather), "player has custom weather"));
@@ -295,7 +426,10 @@ fn game_answered_checks() {
     assert!(check_with(yes(Check::HasAi), "player has ai"));
     assert!(check_with(yes(Check::CanBreed), "player can breed"));
     assert!(check_with(yes(Check::Stared), "player has been stared at"));
-    assert!(check_with(yes(Check::BellRinging), "location(1, 2, 3) is ringing"));
+    assert!(check_with(
+        yes(Check::BellRinging),
+        "location(1, 2, 3) is ringing"
+    ));
 }
 
 /// A host that cannot answer: positive and negated forms are both false.
@@ -331,7 +465,12 @@ impl Host for Silent {
 
 #[test]
 fn unknown_is_false_both_ways() {
-    for cond in ["player is sheared", "player isn't sheared", "player has ai", "player doesn't have ai"] {
+    for cond in [
+        "player is sheared",
+        "player isn't sheared",
+        "player has ai",
+        "player doesn't have ai",
+    ] {
         let src = format!("on join:\n    if {cond}:\n        send \"yes\"\n    else:\n        send \"no\"\n");
         let mut e = Engine::default();
         let (_, errs) = e.load(&[("t.carve".to_string(), src)]);
@@ -348,7 +487,11 @@ fn damage_cause_condition_works() {
     let src = "on damage:\n    if damage cause is \"fall\":\n        send \"ouch\"\n";
     let mut e = Engine::default();
     let (_, errs) = e.load(&[("t.carve".to_string(), src.to_string())]);
-    assert!(errs.is_empty(), "{:?}", errs.iter().map(|e| e.to_string()).collect::<Vec<_>>());
+    assert!(
+        errs.is_empty(),
+        "{:?}",
+        errs.iter().map(|e| e.to_string()).collect::<Vec<_>>()
+    );
 }
 
 #[test]

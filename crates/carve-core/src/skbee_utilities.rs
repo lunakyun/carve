@@ -219,7 +219,14 @@ fn uuid_from(r: &[Value]) -> Value {
     b[6] = (b[6] & 0x0f) | 0x40;
     b[8] = (b[8] & 0x3f) | 0x80;
     let h: String = b.iter().map(|x| format!("{x:02x}")).collect();
-    Value::Text(format!("{}-{}-{}-{}-{}", &h[..8], &h[8..12], &h[12..16], &h[16..20], &h[20..]))
+    Value::Text(format!(
+        "{}-{}-{}-{}-{}",
+        &h[..8],
+        &h[8..12],
+        &h[12..16],
+        &h[16..20],
+        &h[20..]
+    ))
 }
 
 /// Run `f`. A `<none>` input, or one that makes no sense, gives `<none>`.
@@ -259,7 +266,11 @@ pub fn apply(f: UtilFn, args: &[Value], host: &mut dyn Host) -> Value {
         UtilFn::Hex => match num {
             Some(n) if n.fract() == 0.0 && n.abs() < 9e15 => {
                 let i = n as i64;
-                Value::Text(if i < 0 { format!("-{:x}", -i) } else { format!("{i:x}") })
+                Value::Text(if i < 0 {
+                    format!("-{:x}", -i)
+                } else {
+                    format!("{i:x}")
+                })
             }
             _ => Value::None,
         },

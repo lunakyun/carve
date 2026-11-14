@@ -21,13 +21,22 @@ impl Engine {
                 w2::from_codepoint(n).map_or(Value::None, Value::Text)
             }
             W2Op::CharsBetween { alnum } => {
-                let (Some(a), Some(b)) = (arg(0), arg(1)) else { return Ok(Value::None) };
+                let (Some(a), Some(b)) = (arg(0), arg(1)) else {
+                    return Ok(Value::None);
+                };
                 let a = self.text(a, ex, host)?;
                 let b = self.text(b, ex, host)?;
-                Value::List(w2::chars_between(&a, &b, alnum).into_iter().map(Value::Text).collect())
+                Value::List(
+                    w2::chars_between(&a, &b, alnum)
+                        .into_iter()
+                        .map(Value::Text)
+                        .collect(),
+                )
             }
             W2Op::Difference => {
-                let (Some(a), Some(b)) = (arg(0), arg(1)) else { return Ok(Value::None) };
+                let (Some(a), Some(b)) = (arg(0), arg(1)) else {
+                    return Ok(Value::None);
+                };
                 let x = self.eval(a, ex, host)?;
                 let y = self.eval(b, ex, host)?;
                 match (&x, &y) {
@@ -44,7 +53,9 @@ impl Engine {
                 }
             }
             W2Op::Offset(dx, dy, dz) => {
-                let (Some(n), Some(l)) = (arg(0), arg(1)) else { return Ok(Value::None) };
+                let (Some(n), Some(l)) = (arg(0), arg(1)) else {
+                    return Ok(Value::None);
+                };
                 let n = self.num(n, ex, host)?;
                 let l = self.eval(l, ex, host)?;
                 match self.as_location(&l, ex, host) {

@@ -191,8 +191,9 @@ pub fn parse_transform(toks: &[Tok], env: &Env) -> Option<Result<Effect, String>
 /// replaces it instead of stacking.
 pub fn pack_uuid(url: &str) -> String {
     let fnv = |seed: u64| {
-        url.bytes()
-            .fold(seed, |h, b| (h ^ u64::from(b)).wrapping_mul(0x0000_0100_0000_01b3))
+        url.bytes().fold(seed, |h, b| {
+            (h ^ u64::from(b)).wrapping_mul(0x0000_0100_0000_01b3)
+        })
     };
     let a = fnv(0xcbf2_9ce4_8422_2325);
     let b = fnv(0x8422_2325_cbf2_9ce4);

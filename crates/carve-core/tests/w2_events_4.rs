@@ -82,12 +82,7 @@ fn sent(h: &Mock) -> Vec<String> {
 }
 
 fn loc(x: f64, y: f64, z: f64) -> Value {
-    Value::Location {
-        x,
-        y,
-        z,
-        world: None,
-    }
+    Value::Location { x, y, z, world: None }
 }
 
 #[test]
@@ -201,7 +196,13 @@ fn sign_change_lines_and_cancel() {
     let o = fire(&mut e, &mut h, ExtEvent::SignChange, Some(steve()), vals("fine"));
     assert!(!o.cancelled);
     assert_eq!(o.set, vec![(3, Value::Text("[ok]".into()))]);
-    let o = fire(&mut e, &mut h, ExtEvent::SignChange, Some(steve()), vals("bad word"));
+    let o = fire(
+        &mut e,
+        &mut h,
+        ExtEvent::SignChange,
+        Some(steve()),
+        vals("bad word"),
+    );
     assert!(o.cancelled);
     assert_eq!(sent(&h)[0], "Steve wrote hello");
 }
@@ -232,7 +233,11 @@ fn smelt_items_and_block() {
         ],
     );
     assert_eq!(sent(&h).len(), 1);
-    assert!(sent(&h)[0].contains("iron ore") && sent(&h)[0].contains("iron ingot"), "{:?}", sent(&h));
+    assert!(
+        sent(&h)[0].contains("iron ore") && sent(&h)[0].contains("iron ingot"),
+        "{:?}",
+        sent(&h)
+    );
     let o = fire(
         &mut e,
         &mut h,
@@ -301,15 +306,28 @@ fn world_events_value() {
         "on world load:\n    send \"loaded %event-world%\" to console\non world unload:\n    cancel event\n",
     );
     let mut h = Mock::default();
-    fire(&mut e, &mut h, ExtEvent::WorldLoad, None, vec![Value::World("nether".into())]);
+    fire(
+        &mut e,
+        &mut h,
+        ExtEvent::WorldLoad,
+        None,
+        vec![Value::World("nether".into())],
+    );
     assert_eq!(sent(&h), vec!["loaded nether"]);
-    let o = fire(&mut e, &mut h, ExtEvent::WorldUnload, None, vec![Value::World("x".into())]);
+    let o = fire(
+        &mut e,
+        &mut h,
+        ExtEvent::WorldUnload,
+        None,
+        vec![Value::World("x".into())],
+    );
     assert!(o.cancelled);
 }
 
 #[test]
 fn tool_change_slots() {
-    let mut e = engine("on tool change:\n    send \"%event-previous-slot% to %event-new-slot%\" to console\n");
+    let mut e =
+        engine("on tool change:\n    send \"%event-previous-slot% to %event-new-slot%\" to console\n");
     let mut h = Mock::default();
     fire(
         &mut e,
@@ -329,7 +347,10 @@ fn event_values_do_not_leak_to_other_events() {
 
 #[test]
 fn at_real_time_headers() {
-    assert_eq!(ev::parse_at_real_time("at 14:30 in real time"), Some(14 * 60 + 30));
+    assert_eq!(
+        ev::parse_at_real_time("at 14:30 in real time"),
+        Some(14 * 60 + 30)
+    );
     assert_eq!(ev::parse_at_real_time("at 6pm in real time"), Some(18 * 60));
     assert_eq!(ev::parse_at_real_time("at 12am in real time"), Some(0));
     assert_eq!(ev::parse_at_real_time("at 12pm in real time"), Some(12 * 60));

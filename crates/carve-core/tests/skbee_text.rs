@@ -75,7 +75,9 @@ fn hover_show_text() {
     assert_eq!(p.len(), 2);
     assert_eq!(text_of(&p[0]), "Hi");
     let Some(h) = &p[0].hover else { panic!("no hover") };
-    let Hover::Text(inner) = &**h else { panic!("not text") };
+    let Hover::Text(inner) = &**h else {
+        panic!("not text")
+    };
     assert_eq!(inner[0].style.color, Some((0xFF, 0x55, 0x55)));
     assert_eq!(text_of(&inner[0]), "tip");
     assert!(p[1].hover.is_none());
@@ -132,7 +134,9 @@ fn hover_item_and_entity() {
         Some(&Hover::Item("{id:\"minecraft:diamond\",count:3}".into()))
     );
     let Some(h) = &p[1].hover else { panic!() };
-    let Hover::Entity { kind, id, name } = &**h else { panic!() };
+    let Hover::Entity { kind, id, name } = &**h else {
+        panic!()
+    };
     assert_eq!((kind.as_str(), id.as_str()), ("pig", "0000-1"));
     assert!(name.is_some());
 }
@@ -166,7 +170,10 @@ fn rainbow_starts_red() {
 #[test]
 fn escapes_and_plain() {
     assert_eq!(plain(&escape("a <red>b</red> \\ c")), "a <red>b</red> \\ c");
-    assert_eq!(plain("<hover:show_text:'x'>shown</hover> <red>red</red>"), "shown red");
+    assert_eq!(
+        plain("<hover:show_text:'x'>shown</hover> <red>red</red>"),
+        "shown red"
+    );
     assert!(is_rich(&escape("<b>")));
     assert!(!is_rich("<red>plain colors &a"));
     assert!(is_rich("<click:run_command:'/x'>y"));
@@ -250,7 +257,9 @@ fn script_merge_list_variable() {
 
 #[test]
 fn script_mini_message_and_plain_text() {
-    let out = run("send mini message from \"<click:run_command:'/x'>go</click>\"\nsend plain text of \"<red>hi</red>\"");
+    let out = run(
+        "send mini message from \"<click:run_command:'/x'>go</click>\"\nsend plain text of \"<red>hi</red>\"",
+    );
     assert_eq!(out[0], "<click:run_command:'/x'>go</click>");
     assert_eq!(out[1], "hi");
 }
@@ -268,7 +277,9 @@ fn script_hover_item() {
 
 #[test]
 fn script_send_component_forms() {
-    let out = run("send component \"a\" to player\nbroadcast component \"b\"\nsend action bar component \"c\" to player");
+    let out = run(
+        "send component \"a\" to player\nbroadcast component \"b\"\nsend action bar component \"c\" to player",
+    );
     assert_eq!(out, vec!["a", "b", "c"]);
 }
 

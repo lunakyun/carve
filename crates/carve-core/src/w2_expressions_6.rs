@@ -97,14 +97,25 @@ pub fn uuid_from(bytes: [u8; 16]) -> String {
     b[6] = (b[6] & 0x0f) | 0x40;
     b[8] = (b[8] & 0x3f) | 0x80;
     let h: String = b.iter().map(|x| format!("{x:02x}")).collect();
-    format!("{}-{}-{}-{}-{}", &h[0..8], &h[8..12], &h[12..16], &h[16..20], &h[20..32])
+    format!(
+        "{}-{}-{}-{}-{}",
+        &h[0..8],
+        &h[8..12],
+        &h[12..16],
+        &h[16..20],
+        &h[20..32]
+    )
 }
 
 /// Pick a character. `r` is a random number in [0, 1).
 pub fn pick_char(alnum: bool, range: Option<(char, char)>, r: f64) -> char {
     const ALNUM: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     if let Some((a, b)) = range {
-        let (lo, hi) = if a <= b { (a as u32, b as u32) } else { (b as u32, a as u32) };
+        let (lo, hi) = if a <= b {
+            (a as u32, b as u32)
+        } else {
+            (b as u32, a as u32)
+        };
         let n = hi - lo + 1;
         let mut code = lo + ((r * f64::from(n)) as u32).min(n - 1);
         // Skip the surrogate gap so any range gives a real character.
@@ -194,7 +205,10 @@ impl P<'_> {
             }
             "random" => return self.w6_random(),
             // `raw iron`, `raw gold block` are items, not `raw <text>`.
-            "raw" if self.pos < self.toks.len() && !n0.is_some_and(|w| crate::items::is_known(&format!("raw_{w}"))) => {
+            "raw"
+                if self.pos < self.toks.len()
+                    && !n0.is_some_and(|w| crate::items::is_known(&format!("raw_{w}"))) =>
+            {
                 if matches!(n0, Some("string" | "text")) {
                     self.pos += 1;
                 }
@@ -214,7 +228,8 @@ impl P<'_> {
                 Expr::Items(Box::new(ListSrc::Recursive(var)))
             }
             "reduce" if self.pos < self.toks.len() => {
-                let (src, end) = parse_src_at(self.toks, self.pos, self.env, false).inspect_err(|_| self.hit_end.set(true))?;
+                let (src, end) = parse_src_at(self.toks, self.pos, self.env, false)
+                    .inspect_err(|_| self.hit_end.set(true))?;
                 self.pos = end;
                 self.w6_reduce_tail(src)?
             }
@@ -359,7 +374,9 @@ impl P<'_> {
         let body: Vec<Tok> = body
             .iter()
             .map(|t| match t {
-                Tok::Word(w) if w.eq_ignore_ascii_case("input") => Tok::Var(crate::list_ops::INPUT_KEY.into()),
+                Tok::Word(w) if w.eq_ignore_ascii_case("input") => {
+                    Tok::Var(crate::list_ops::INPUT_KEY.into())
+                }
                 t => t.clone(),
             })
             .collect();
@@ -379,7 +396,11 @@ impl P<'_> {
                     if !Ty::Number.accepts(n.ty(self.env)) {
                         return Err("'repeated' needs a number, like '\"ab\" repeated 3 times'".into());
                     }
-                    if self.w6_next(0).as_deref().is_some_and(|w| w == "times" || w == "time") {
+                    if self
+                        .w6_next(0)
+                        .as_deref()
+                        .is_some_and(|w| w == "times" || w == "time")
+                    {
                         self.pos += 1;
                     } else {
                         return Err("expected 'times' after 'repeated N'".into());

@@ -55,7 +55,9 @@ impl Bound {
 
     /// Number of blocks inside.
     pub fn volume(&self) -> f64 {
-        (0..3).map(|i| f64::from(self.max[i]) - f64::from(self.min[i]) + 1.0).product()
+        (0..3)
+            .map(|i| f64::from(self.max[i]) - f64::from(self.min[i]) + 1.0)
+            .product()
     }
 }
 
@@ -95,7 +97,9 @@ impl Bounds {
     }
 
     pub fn get(&self, id: &str) -> Option<&Bound> {
-        self.by_id.get(&id.to_ascii_lowercase()).and_then(|i| self.list.get(*i))
+        self.by_id
+            .get(&id.to_ascii_lowercase())
+            .and_then(|i| self.list.get(*i))
     }
 
     fn get_mut(&mut self, id: &str) -> Option<&mut Bound> {
@@ -223,9 +227,15 @@ impl Bounds {
             .ok_or("bounds file: missing 'bounds' list")?;
         let mut out = Bounds::default();
         for it in items {
-            let id = it.get("id").and_then(|x| x.as_str()).ok_or("bounds file: bound without id")?;
+            let id = it
+                .get("id")
+                .and_then(|x| x.as_str())
+                .ok_or("bounds file: bound without id")?;
             let corner = |k: &str| -> Result<[i32; 3], String> {
-                let a = it.get(k).and_then(|x| x.as_array()).ok_or(format!("bound '{id}': missing {k}"))?;
+                let a = it
+                    .get(k)
+                    .and_then(|x| x.as_array())
+                    .ok_or(format!("bound '{id}': missing {k}"))?;
                 let n = |i: usize| a.get(i).and_then(serde_json::Value::as_i64).map(|n| n as i32);
                 match (n(0), n(1), n(2)) {
                     (Some(x), Some(y), Some(z)) => Ok([x, y, z]),
@@ -251,11 +261,19 @@ impl Bounds {
             let flags = it
                 .get("flags")
                 .and_then(|x| x.as_object())
-                .map(|o| o.iter().filter_map(|(k, v)| Some((k.clone(), v.as_bool()?))).collect())
+                .map(|o| {
+                    o.iter()
+                        .filter_map(|(k, v)| Some((k.clone(), v.as_bool()?)))
+                        .collect()
+                })
                 .unwrap_or_default();
             out.list.push(Bound {
                 id: id.to_string(),
-                world: it.get("world").and_then(|x| x.as_str()).unwrap_or(DEFAULT_WORLD).to_string(),
+                world: it
+                    .get("world")
+                    .and_then(|x| x.as_str())
+                    .unwrap_or(DEFAULT_WORLD)
+                    .to_string(),
                 min: corner("min")?,
                 max: corner("max")?,
                 owners: people("owners"),
@@ -311,11 +329,20 @@ impl BoundExpr {
 #[derive(Debug, Clone, PartialEq)]
 pub enum BoundCond {
     /// `<location or player> is [not] within bound X`
-    Within { subject: Expr, bound: Expr, negate: bool },
+    Within {
+        subject: Expr,
+        bound: Expr,
+        negate: bool,
+    },
     /// `bound X exists`, `bound at <loc> does not exist`
     Exists { value: Expr, negate: bool },
     /// `<player> is [not] an owner / a member of bound X`
-    Role { player: Expr, bound: Expr, owner: bool, negate: bool },
+    Role {
+        player: Expr,
+        bound: Expr,
+        owner: bool,
+        negate: bool,
+    },
     /// `bound X has flag "pvp"`
     HasFlag { bound: Expr, flag: Expr, negate: bool },
 }
@@ -323,18 +350,43 @@ pub enum BoundCond {
 #[derive(Debug, Clone, PartialEq)]
 pub enum BoundEff {
     /// `create bound with id X within A and B`
-    Create { id: Expr, a: Expr, b: Expr, temporary: bool },
+    Create {
+        id: Expr,
+        a: Expr,
+        b: Expr,
+        temporary: bool,
+    },
     Delete(Expr),
     /// `set owner of bound X to <player>` (true) / `set member ...`
-    SetPerson { owner: bool, bound: Expr, player: Expr },
+    SetPerson {
+        owner: bool,
+        bound: Expr,
+        player: Expr,
+    },
     /// `add <player> to owners of bound X`
-    AddPerson { owner: bool, bound: Expr, player: Expr },
+    AddPerson {
+        owner: bool,
+        bound: Expr,
+        player: Expr,
+    },
     /// `remove <player> from owners of bound X`
-    RemovePerson { owner: bool, bound: Expr, player: Expr },
+    RemovePerson {
+        owner: bool,
+        bound: Expr,
+        player: Expr,
+    },
     /// `set flag "pvp" of bound X to true`; `value: None` removes the flag.
-    SetFlag { bound: Expr, flag: Expr, value: Option<Expr> },
+    SetFlag {
+        bound: Expr,
+        flag: Expr,
+        value: Option<Expr>,
+    },
     /// `set lesser corner of bound X to <location>`
-    SetCorner { greater: bool, bound: Expr, loc: Expr },
+    SetCorner {
+        greater: bool,
+        bound: Expr,
+        loc: Expr,
+    },
 }
 
 // ---------- parsing ----------
@@ -403,7 +455,10 @@ pub fn skip_id_words(toks: &[Tok], pos: usize) -> usize {
     if toks.get(p).is_some_and(|t| is(t, "with")) {
         p += 1;
     }
-    if toks.get(p).is_some_and(|t| is(t, "id") || is(t, "named") || is(t, "called") || is(t, "name")) {
+    if toks
+        .get(p)
+        .is_some_and(|t| is(t, "id") || is(t, "named") || is(t, "called") || is(t, "name"))
+    {
         p += 1;
     }
     p
@@ -437,7 +492,10 @@ fn create(toks: &[Tok], env: &Env) -> Result<Option<BoundEff>, String> {
         return Ok(None);
     };
     let skipped: Vec<&Tok> = toks.get(1..b).unwrap_or_default().iter().collect();
-    if !skipped.iter().all(|t| is(t, "a") || is(t, "an") || is(t, "new") || is(t, "temporary") || is(t, "temp")) {
+    if !skipped
+        .iter()
+        .all(|t| is(t, "a") || is(t, "an") || is(t, "new") || is(t, "temporary") || is(t, "temp"))
+    {
         return Ok(None);
     }
     let temporary = skipped.iter().any(|t| is(t, "temporary") || is(t, "temp"));
@@ -455,7 +513,12 @@ fn create(toks: &[Tok], env: &Env) -> Result<Option<BoundEff>, String> {
     let (Some(a), Some(c)) = (location(&rest[..and], env), location(&rest[and + 1..], env)) else {
         return Err("a bound needs two locations: 'within <location> and <location>'".into());
     };
-    Ok(Some(BoundEff::Create { id, a, b: c, temporary }))
+    Ok(Some(BoundEff::Create {
+        id,
+        a,
+        b: c,
+        temporary,
+    }))
 }
 
 /// `delete bound X`, `delete flag "pvp" of bound X`, `remove bound X`.
@@ -464,7 +527,11 @@ fn remove_like(toks: &[Tok], env: &Env) -> Option<BoundEff> {
         let of = find(toks, 2, &["of"])?;
         let flag = text(toks.get(2..of)?, env)?;
         let bound = bound_expr_ref(toks.get(of + 1..)?, env)?;
-        return Some(BoundEff::SetFlag { bound, flag, value: None });
+        return Some(BoundEff::SetFlag {
+            bound,
+            flag,
+            value: None,
+        });
     }
     // `remove <player> from owners of bound X`
     if find(toks, 1, &["from"]).is_some()
@@ -491,9 +558,17 @@ fn add_remove(toks: &[Tok], env: &Env, add: bool) -> Option<BoundEff> {
     let (owner, rest) = people_head(tgt)?;
     let bound = bound_expr_ref(rest, env)?;
     Some(if add {
-        BoundEff::AddPerson { owner, bound, player: who }
+        BoundEff::AddPerson {
+            owner,
+            bound,
+            player: who,
+        }
     } else {
-        BoundEff::RemovePerson { owner, bound, player: who }
+        BoundEff::RemovePerson {
+            owner,
+            bound,
+            player: who,
+        }
     })
 }
 
@@ -583,7 +658,8 @@ fn cond(toks: &[Tok], env: &Env) -> Option<BoundCond> {
         return Some(BoundCond::Exists { value, negate });
     }
     // `bound X has flag "pvp"`, `bound X does not have flag "pvp"`
-    if is(toks.first()?, "bound") || (is(toks.first()?, "the") && toks.get(1).is_some_and(|t| is(t, "bound"))) {
+    if is(toks.first()?, "bound") || (is(toks.first()?, "the") && toks.get(1).is_some_and(|t| is(t, "bound")))
+    {
         let h = find(toks, 1, &["has", "have", "doesn't", "does", "don't", "do"])?;
         let mut negate = false;
         let mut p = h;
@@ -661,7 +737,10 @@ fn cond(toks: &[Tok], env: &Env) -> Option<BoundCond> {
 
 /// `bound enter`, `player exit bound`, ... Returns the event kind.
 pub fn parse_event(s: &str) -> Option<EventKind> {
-    let words: Vec<&str> = s.split_whitespace().filter(|w| !matches!(*w, "player" | "of" | "a" | "the")).collect();
+    let words: Vec<&str> = s
+        .split_whitespace()
+        .filter(|w| !matches!(*w, "player" | "of" | "a" | "the"))
+        .collect();
     match words.as_slice() {
         ["bound", "enter"] | ["enter", "bound"] | ["bound", "entry"] => Some(EventKind::BoundEnter),
         ["bound", "exit" | "leave"] | ["exit" | "leave", "bound"] | ["bound", "exit" | "leave", ..] => {
@@ -743,7 +822,11 @@ impl Engine {
             .filter(|id| !now_in.contains(id) && self.bounds.get(id).is_some())
             .cloned()
             .collect::<Vec<_>>();
-        let enters = now_in.iter().filter(|id| !old.contains(id)).cloned().collect::<Vec<_>>();
+        let enters = now_in
+            .iter()
+            .filter(|id| !old.contains(id))
+            .cloned()
+            .collect::<Vec<_>>();
         for (kind, ids) in [(EventKind::BoundExit, exits), (EventKind::BoundEnter, enters)] {
             if !self.table().has_event(kind) {
                 continue;
@@ -789,17 +872,34 @@ impl Engine {
                 Ok(host.player_location(&p))
             }
             Value::None => Ok(None),
-            other => Err(format!("expected a location or player, got {} ({other})", other.type_name())),
+            other => Err(format!(
+                "expected a location or player, got {} ({other})",
+                other.type_name()
+            )),
         }
     }
 
     #[inline(never)]
-    pub(crate) fn bound_eval(&mut self, b: &BoundExpr, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
+    pub(crate) fn bound_eval(
+        &mut self,
+        b: &BoundExpr,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<Value, String> {
         Ok(match b {
             BoundExpr::Event => ex.ctx.args.first().cloned().unwrap_or(Value::None),
-            BoundExpr::All => Value::List(self.bounds.all().iter().map(|b| Value::Text(b.id.clone())).collect()),
+            BoundExpr::All => Value::List(
+                self.bounds
+                    .all()
+                    .iter()
+                    .map(|b| Value::Text(b.id.clone()))
+                    .collect(),
+            ),
             BoundExpr::Named(e) => match self.bound_id(e, ex, host)? {
-                Some(id) => self.bounds.get(&id).map_or(Value::None, |b| Value::Text(b.id.clone())),
+                Some(id) => self
+                    .bounds
+                    .get(&id)
+                    .map_or(Value::None, |b| Value::Text(b.id.clone())),
                 None => Value::None,
             },
             BoundExpr::At(e) => match self.bound_point(e, ex, host)? {
@@ -812,9 +912,13 @@ impl Engine {
                 None => Value::None,
             },
             BoundExpr::BoundsAt(e) => match self.bound_point(e, ex, host)? {
-                Some((x, y, z, w)) => {
-                    Value::List(self.bounds.ids_at(&w, x, y, z).into_iter().map(Value::Text).collect())
-                }
+                Some((x, y, z, w)) => Value::List(
+                    self.bounds
+                        .ids_at(&w, x, y, z)
+                        .into_iter()
+                        .map(Value::Text)
+                        .collect(),
+                ),
                 None => Value::List(Vec::new()),
             },
             BoundExpr::People(owner, e) => {
@@ -824,7 +928,10 @@ impl Engine {
                         .get(&id)
                         .map(|b| if *owner { &b.owners } else { &b.members })
                 });
-                Value::List(list.map(|l| l.iter().cloned().map(Value::Player).collect()).unwrap_or_default())
+                Value::List(
+                    list.map(|l| l.iter().cloned().map(Value::Player).collect())
+                        .unwrap_or_default(),
+                )
             }
             BoundExpr::Corner(greater, e) => {
                 let id = self.bound_id(e, ex, host)?;
@@ -863,9 +970,18 @@ impl Engine {
     }
 
     #[inline(never)]
-    pub(crate) fn bound_cond(&mut self, c: &BoundCond, ex: &mut Exec, host: &mut dyn Host) -> Result<bool, String> {
+    pub(crate) fn bound_cond(
+        &mut self,
+        c: &BoundCond,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<bool, String> {
         Ok(match c {
-            BoundCond::Within { subject, bound, negate } => {
+            BoundCond::Within {
+                subject,
+                bound,
+                negate,
+            } => {
                 let id = self.bound_id(bound, ex, host)?;
                 let pt = self.bound_point(subject, ex, host)?;
                 let inside = match (id, pt) {
@@ -881,13 +997,19 @@ impl Engine {
                 let v = self.eval(value, ex, host)?;
                 !matches!(v, Value::None) != *negate
             }
-            BoundCond::Role { player, bound, owner, negate } => {
+            BoundCond::Role {
+                player,
+                bound,
+                owner,
+                negate,
+            } => {
                 let id = self.bound_id(bound, ex, host)?;
                 let p = self.player(player, ex, host)?;
                 let yes = match (id, p) {
-                    (Some(id), Some(p)) => self.bounds.get(&id).is_some_and(|b| {
-                        same_person(if *owner { &b.owners } else { &b.members }, &p)
-                    }),
+                    (Some(id), Some(p)) => self
+                        .bounds
+                        .get(&id)
+                        .is_some_and(|b| same_person(if *owner { &b.owners } else { &b.members }, &p)),
                     _ => false,
                 };
                 yes != *negate
@@ -904,7 +1026,12 @@ impl Engine {
     }
 
     #[inline(never)]
-    pub(crate) fn bound_effect(&mut self, e: &BoundEff, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
+    pub(crate) fn bound_effect(
+        &mut self,
+        e: &BoundEff,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<(), String> {
         match e {
             BoundEff::Create { id, a, b, temporary } => {
                 let Some(id) = self.bound_id(id, ex, host)? else {
@@ -915,13 +1042,17 @@ impl Engine {
                     host.log(LogLevel::Warn, "a bound needs an id");
                     return Ok(());
                 }
-                let (Some(pa), Some(pb)) = (self.bound_point(a, ex, host)?, self.bound_point(b, ex, host)?) else {
+                let (Some(pa), Some(pb)) = (self.bound_point(a, ex, host)?, self.bound_point(b, ex, host)?)
+                else {
                     return Ok(());
                 };
                 if pa.3 != pb.3 {
                     return Err(format!("both corners of bound '{id}' must be in the same world"));
                 }
-                let (ca, cb) = ([block(pa.0), block(pa.1), block(pa.2)], [block(pb.0), block(pb.1), block(pb.2)]);
+                let (ca, cb) = (
+                    [block(pa.0), block(pa.1), block(pa.2)],
+                    [block(pb.0), block(pb.1), block(pb.2)],
+                );
                 self.bounds.create(Bound {
                     id,
                     world: pa.3,

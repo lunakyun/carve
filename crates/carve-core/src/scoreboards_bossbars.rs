@@ -66,10 +66,7 @@ pub enum BarStyle {
 impl BarStyle {
     /// `solid`, `notched 10`, `segmented_6`, `12` and so on.
     pub fn parse(s: &str) -> Option<BarStyle> {
-        let k = s
-            .trim()
-            .to_ascii_lowercase()
-            .replace([' ', '-'], "_");
+        let k = s.trim().to_ascii_lowercase().replace([' ', '-'], "_");
         let num = k.rsplit('_').next().unwrap_or("");
         let prefixed = k.contains('_') || k.chars().all(|c| c.is_ascii_digit());
         Some(match k.as_str() {
@@ -470,7 +467,10 @@ fn clear_title_line(toks: &[Tok], env: &Env) -> Option<SbFx> {
 /// `send actionbar "x" to <who>`. The two-word `send action bar` to one player
 /// is the registry's job; the same line to `all players` is handled here too.
 fn action_line(toks: &[Tok], env: &Env) -> Result<Option<SbFx>, String> {
-    if toks.get(2).is_some_and(|t| is(t, "component") || is(t, "components")) {
+    if toks
+        .get(2)
+        .is_some_and(|t| is(t, "component") || is(t, "components"))
+    {
         return Ok(None);
     }
     let body = &toks[2..];
@@ -486,7 +486,8 @@ fn action_line(toks: &[Tok], env: &Env) -> Result<Option<SbFx>, String> {
 // ----- tab list -----
 
 fn tab_line(toks: &[Tok], verb: &str, env: &Env) -> Result<Option<SbFx>, String> {
-    const USAGE: &str = "expected 'set tab list header of <player> to \"text\"' (also footer, or 'all players')";
+    const USAGE: &str =
+        "expected 'set tab list header of <player> to \"text\"' (also footer, or 'all players')";
     let t = toks.iter().position(|t| is(t, "tablist")).unwrap_or(0);
     // Left of `tablist`: the verb, `the`, and for `<player>'s tab list` the player.
     let left = &toks[1..t];
@@ -574,7 +575,8 @@ fn side_line(toks: &[Tok], verb: &str, env: &Env) -> Result<Option<SbFx>, String
         _ => left,
     };
     // `prefix` holds the property when it comes before the scoreboard.
-    let (prefix, player_toks, suffix): (&[Tok], &[Tok], &[Tok]) = if let Some((last, rest)) = left.split_last()
+    let (prefix, player_toks, suffix): (&[Tok], &[Tok], &[Tok]) = if let Some((last, rest)) =
+        left.split_last()
         && is(last, "'s")
     {
         match rest.iter().position(|t| is(t, "of")) {
@@ -717,13 +719,22 @@ fn bar_line(toks: &[Tok], verb: &str, env: &Env) -> Result<Option<SbFx>, String>
     let who_of = |t: &[Tok]| who(t, env).ok_or_else(|| "expected a player or 'all players'".to_string());
     let after = &toks[b + 1..];
     let fx = match verb {
-        "create" | "make" | "add" if b > 0 && toks[1..b].iter().all(|t| matches!(lc(t).as_deref(), Some("a" | "new" | "the"))) => {
+        "create" | "make" | "add"
+            if b > 0
+                && toks[1..b]
+                    .iter()
+                    .all(|t| matches!(lc(t).as_deref(), Some("a" | "new" | "the"))) =>
+        {
             let (head, clauses) = split_clauses(after, bar_mark);
             let mut head = head;
             loop {
                 match head.first().and_then(lc).as_deref() {
                     Some("named" | "called" | "id" | "key" | "name") => head = &head[1..],
-                    Some("with") if head.get(1).is_some_and(|t| is(t, "id") || is(t, "key") || is(t, "name")) => {
+                    Some("with")
+                        if head
+                            .get(1)
+                            .is_some_and(|t| is(t, "id") || is(t, "key") || is(t, "name")) =>
+                    {
                         head = &head[2..];
                     }
                     _ => break,
@@ -739,7 +750,9 @@ fn bar_line(toks: &[Tok], verb: &str, env: &Env) -> Result<Option<SbFx>, String>
             for (k, c) in clauses {
                 match k {
                     BarCl::Title => spec.title = Some(text(c, env).ok_or("expected a title text")?),
-                    BarCl::Progress => spec.progress = Some(number(c, env).ok_or("expected a progress number")?),
+                    BarCl::Progress => {
+                        spec.progress = Some(number(c, env).ok_or("expected a progress number")?)
+                    }
                     BarCl::Color => spec.color = Some(pick(c, env, BarColor::parse, "color")?),
                     BarCl::Style => spec.style = Some(pick(c, env, BarStyle::parse, "style")?),
                 }
@@ -758,7 +771,10 @@ fn bar_line(toks: &[Tok], verb: &str, env: &Env) -> Result<Option<SbFx>, String>
         "remove" | "delete" | "clear" if b == 1 => SbFx::BarRemove(id_of(after)?),
         "add" | "remove" if b > 1 => {
             // `add <who> to bossbar <id>`, `add <flag> flag to bossbar <id>`.
-            let sep = toks[..b].iter().rposition(|t| is(t, "to") || is(t, "from")).ok_or(USAGE)?;
+            let sep = toks[..b]
+                .iter()
+                .rposition(|t| is(t, "to") || is(t, "from"))
+                .ok_or(USAGE)?;
             let add = verb == "add";
             if (add && !is(&toks[sep], "to")) || (!add && !is(&toks[sep], "from")) {
                 return Err(USAGE.into());
@@ -813,12 +829,17 @@ fn bar_set(toks: &[Tok], b: usize, env: &Env) -> Result<SbFx, String> {
     let id = text(id_toks, env).ok_or("expected a bossbar id like \"boss\"")?;
     Ok(match prop.as_str() {
         "title" | "name" => SbFx::BarTitle(id, text(value, env).ok_or("expected a title text")?),
-        "progress" | "health" | "value" | "percentage" => {
-            SbFx::BarProgress(id, number(value, env).ok_or("expected a progress number from 0 to 100")?)
-        }
+        "progress" | "health" | "value" | "percentage" => SbFx::BarProgress(
+            id,
+            number(value, env).ok_or("expected a progress number from 0 to 100")?,
+        ),
         "color" | "colour" => SbFx::BarColor(id, pick(value, env, BarColor::parse, "color")?),
         "style" | "division" | "divisions" => SbFx::BarStyle(id, pick(value, env, BarStyle::parse, "style")?),
-        other => return Err(format!("a bossbar has no '{other}' to set; use progress, title, color or style")),
+        other => {
+            return Err(format!(
+                "a bossbar has no '{other}' to set; use progress, title, color or style"
+            ));
+        }
     })
 }
 
@@ -846,7 +867,10 @@ impl Engine {
         let Some(e) = e else { return Ok(default) };
         match self.eval(e, ex, host)? {
             Value::Timespan { millis } => Ok(clamp_ticks(millis)),
-            other => Err(format!("expected a time like 3 seconds, got {} ({other})", other.type_name())),
+            other => Err(format!(
+                "expected a time like 3 seconds, got {} ({other})",
+                other.type_name()
+            )),
         }
     }
 

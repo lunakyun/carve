@@ -139,7 +139,10 @@ mod tests {
         assert_eq!(format_date(0, DEFAULT_FORMAT), "1970-01-01 00:00:00");
         // 2024-02-29 13:05:09.042 UTC
         let ms = 1_709_211_909_042;
-        assert_eq!(format_date(ms, "yyyy-MM-dd HH:mm:ss.SSS"), "2024-02-29 13:05:09.042");
+        assert_eq!(
+            format_date(ms, "yyyy-MM-dd HH:mm:ss.SSS"),
+            "2024-02-29 13:05:09.042"
+        );
         assert_eq!(
             format_date(ms, "EEEE, d MMMM yy h:mm a"),
             "Thursday, 29 February 24 1:05 PM"

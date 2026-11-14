@@ -86,43 +86,76 @@ pub enum W2Cond {
 pub const W2_CONDITION_PATTERNS: &[(&str, CondKind)] = &[
     ("%object% is valid", CondKind::W3(W2Kind::Valid(false))),
     ("%object% (is not|isn't) valid", CondKind::W3(W2Kind::Valid(true))),
-    ("script %text% is loaded", CondKind::W3(W2Kind::ScriptLoaded(false))),
+    (
+        "script %text% is loaded",
+        CondKind::W3(W2Kind::ScriptLoaded(false)),
+    ),
     (
         "script %text% (is not|isn't) loaded",
         CondKind::W3(W2Kind::ScriptLoaded(true)),
     ),
-    ("pvp is enabled in %world%", CondKind::W3(W2Kind::Pvp(false, true))),
-    ("pvp is (disabled|not enabled) in %world%", CondKind::W3(W2Kind::Pvp(true, true))),
+    (
+        "pvp is enabled in %world%",
+        CondKind::W3(W2Kind::Pvp(false, true)),
+    ),
+    (
+        "pvp is (disabled|not enabled) in %world%",
+        CondKind::W3(W2Kind::Pvp(true, true)),
+    ),
     ("pvp is enabled", CondKind::W3(W2Kind::Pvp(false, false))),
-    ("pvp is (disabled|not enabled)", CondKind::W3(W2Kind::Pvp(true, false))),
-    ("%player% (is|are) poisoned", CondKind::W3(W2Kind::State(PlayerState::Poisoned, false))),
+    (
+        "pvp is (disabled|not enabled)",
+        CondKind::W3(W2Kind::Pvp(true, false)),
+    ),
+    (
+        "%player% (is|are) poisoned",
+        CondKind::W3(W2Kind::State(PlayerState::Poisoned, false)),
+    ),
     (
         "%player% (is not|isn't|are not|aren't) poisoned",
         CondKind::W3(W2Kind::State(PlayerState::Poisoned, true)),
     ),
-    ("%player% (is|are) silent", CondKind::W3(W2Kind::State(PlayerState::Silent, false))),
+    (
+        "%player% (is|are) silent",
+        CondKind::W3(W2Kind::State(PlayerState::Silent, false)),
+    ),
     (
         "%player% (is not|isn't|are not|aren't) silent",
         CondKind::W3(W2Kind::State(PlayerState::Silent, true)),
     ),
-    ("%player% (is|are) riding", CondKind::W3(W2Kind::State(PlayerState::Riding, false))),
+    (
+        "%player% (is|are) riding",
+        CondKind::W3(W2Kind::State(PlayerState::Riding, false)),
+    ),
     (
         "%player% (is not|isn't|are not|aren't) riding",
         CondKind::W3(W2Kind::State(PlayerState::Riding, true)),
     ),
     ("%text% (is|are) instant", CondKind::W3(W2Kind::Instant(false))),
-    ("%text% (is not|isn't|are not|aren't) instant", CondKind::W3(W2Kind::Instant(true))),
-    ("%item% is solid", CondKind::W3(W2Kind::Block(BlockTrait::Solid, false))),
+    (
+        "%text% (is not|isn't|are not|aren't) instant",
+        CondKind::W3(W2Kind::Instant(true)),
+    ),
+    (
+        "%item% is solid",
+        CondKind::W3(W2Kind::Block(BlockTrait::Solid, false)),
+    ),
     (
         "%item% (is not|isn't) solid",
         CondKind::W3(W2Kind::Block(BlockTrait::Solid, true)),
     ),
-    ("%item% is transparent", CondKind::W3(W2Kind::Block(BlockTrait::Transparent, false))),
+    (
+        "%item% is transparent",
+        CondKind::W3(W2Kind::Block(BlockTrait::Transparent, false)),
+    ),
     (
         "%item% (is not|isn't) transparent",
         CondKind::W3(W2Kind::Block(BlockTrait::Transparent, true)),
     ),
-    ("%item% is passable", CondKind::W3(W2Kind::Block(BlockTrait::Passable, false))),
+    (
+        "%item% is passable",
+        CondKind::W3(W2Kind::Block(BlockTrait::Passable, false)),
+    ),
     (
         "%item% (is not|isn't) passable",
         CondKind::W3(W2Kind::Block(BlockTrait::Passable, true)),
@@ -143,14 +176,26 @@ pub const W2_CONDITION_PATTERNS: &[(&str, CondKind)] = &[
         "%object% (is not|isn't) within %object% (and|to) %object%",
         CondKind::W3(W2Kind::WithinBox(true)),
     ),
-    ("%object% is within %world%", CondKind::W3(W2Kind::WithinWorld(false))),
-    ("%object% (is not|isn't) within %world%", CondKind::W3(W2Kind::WithinWorld(true))),
-    ("%text% (matches|match) %text%", CondKind::W3(W2Kind::Matches(false))),
+    (
+        "%object% is within %world%",
+        CondKind::W3(W2Kind::WithinWorld(false)),
+    ),
+    (
+        "%object% (is not|isn't) within %world%",
+        CondKind::W3(W2Kind::WithinWorld(true)),
+    ),
+    (
+        "%text% (matches|match) %text%",
+        CondKind::W3(W2Kind::Matches(false)),
+    ),
     (
         "%text% (doesn't|does not|don't|do not) match %text%",
         CondKind::W3(W2Kind::Matches(true)),
     ),
-    ("%text% (contains|contain) regex %text%", CondKind::W3(W2Kind::FindsRegex(false))),
+    (
+        "%text% (contains|contain) regex %text%",
+        CondKind::W3(W2Kind::FindsRegex(false)),
+    ),
     (
         "%text% (doesn't|does not|don't|do not) contain regex %text%",
         CondKind::W3(W2Kind::FindsRegex(true)),
@@ -216,13 +261,7 @@ pub fn norm_id(s: &str) -> String {
 pub fn is_instant_effect(name: &str) -> bool {
     matches!(
         norm_id(name).as_str(),
-        "instant_health"
-            | "instant_damage"
-            | "healing"
-            | "heal"
-            | "harming"
-            | "harm"
-            | "saturation"
+        "instant_health" | "instant_damage" | "healing" | "heal" | "harming" | "harm" | "saturation"
     )
 }
 
@@ -254,7 +293,11 @@ fn worlds_differ(a: Option<&str>, b: Option<&str>) -> bool {
     matches!((a, b), (Some(x), Some(y)) if !x.eq_ignore_ascii_case(y))
 }
 
-pub fn in_box(p: (f64, f64, f64, Option<&str>), a: (f64, f64, f64, Option<&str>), b: (f64, f64, f64, Option<&str>)) -> bool {
+pub fn in_box(
+    p: (f64, f64, f64, Option<&str>),
+    a: (f64, f64, f64, Option<&str>),
+    b: (f64, f64, f64, Option<&str>),
+) -> bool {
     if worlds_differ(p.3, a.3) || worlds_differ(p.3, b.3) || worlds_differ(a.3, b.3) {
         return false;
     }
@@ -335,7 +378,11 @@ pub mod regex {
                 self.i += 1;
                 alts.push(self.seq(depth)?);
             }
-            Ok(if alts.len() == 1 { alts.remove(0) } else { Node::Alt(alts) })
+            Ok(if alts.len() == 1 {
+                alts.remove(0)
+            } else {
+                Node::Alt(alts)
+            })
         }
 
         fn seq(&mut self, depth: usize) -> Result<Node, String> {
@@ -566,7 +613,9 @@ pub mod regex {
         fn single(&self, node: &Node, t: &[char], i: usize) -> Option<bool> {
             let c = t.get(i).copied();
             Some(match node {
-                Node::Char(x) => c.is_some_and(|c| c == *x || (self.icase && c.to_lowercase().eq(x.to_lowercase()))),
+                Node::Char(x) => {
+                    c.is_some_and(|c| c == *x || (self.icase && c.to_lowercase().eq(x.to_lowercase())))
+                }
                 Node::Any => c.is_some_and(|c| c != '\n'),
                 Node::Class(items, neg) => {
                     c.is_some_and(|c| items.iter().any(|it| item_hits(it, c, self.icase)) != *neg)

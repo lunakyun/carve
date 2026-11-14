@@ -118,7 +118,10 @@ fn join_err(body: &str) -> Option<String> {
     let mut h = Mock::with_steve();
     let mut e = engine(&src);
     e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
-    h.logs.iter().find(|(l, _)| *l == LogLevel::Error).map(|(_, m)| m.clone())
+    h.logs
+        .iter()
+        .find(|(l, _)| *l == LogLevel::Error)
+        .map(|(_, m)| m.clone())
 }
 
 fn compiles(line: &str) -> bool {
@@ -150,7 +153,10 @@ fn register_objective_with_criteria_and_display_name() {
 #[test]
 fn register_objective_display_name_marker_order_and_wording() {
     let out = join("create new objective named \"pts\" with display name \"Points\" with criteria \"dummy\"");
-    assert_eq!(out, ["cmd scoreboard objectives add pts dummy {\"text\":\"Points\"}"]);
+    assert_eq!(
+        out,
+        ["cmd scoreboard objectives add pts dummy {\"text\":\"Points\"}"]
+    );
 }
 
 #[test]
@@ -186,7 +192,14 @@ fn objective_exists_condition() {
     let out = join(
         "if objective \"a\" doesn't exist:\n    send \"no\"\nregister objective \"a\"\nif objective \"a\" exists:\n    send \"yes\"\nif objective \"a\" does not exist:\n    send \"never\"",
     );
-    assert_eq!(out, ["send Steve no", "cmd scoreboard objectives add a dummy", "send Steve yes"]);
+    assert_eq!(
+        out,
+        [
+            "send Steve no",
+            "cmd scoreboard objectives add a dummy",
+            "send Steve yes"
+        ]
+    );
 }
 
 #[test]
@@ -249,8 +262,14 @@ fn score_can_be_used_in_math_and_conditions() {
 #[test]
 fn score_rounds_and_clamps() {
     let out = join("set score of player in \"k\" to 2.6\nset score of player in \"k\" to 99999999999");
-    assert!(out.contains(&"cmd scoreboard players set Steve k 3".to_string()), "{out:?}");
-    assert!(out.contains(&"cmd scoreboard players set Steve k 2147483647".to_string()), "{out:?}");
+    assert!(
+        out.contains(&"cmd scoreboard players set Steve k 3".to_string()),
+        "{out:?}"
+    );
+    assert!(
+        out.contains(&"cmd scoreboard players set Steve k 2147483647".to_string()),
+        "{out:?}"
+    );
 }
 
 #[test]
@@ -258,7 +277,11 @@ fn unregistered_objective_warns_but_still_runs() {
     let mut h = Mock::with_steve();
     let out = run_with("on join:\n    set score of player in \"ext\" to 1\n", &mut h);
     assert_eq!(out, ["cmd scoreboard players set Steve ext 1"]);
-    assert!(h.logs.iter().any(|(l, m)| *l == LogLevel::Warn && m.contains("ext")));
+    assert!(
+        h.logs
+            .iter()
+            .any(|(l, m)| *l == LogLevel::Warn && m.contains("ext"))
+    );
 }
 
 #[test]
@@ -310,7 +333,12 @@ fn register_and_unregister_team() {
     );
     assert_eq!(
         out,
-        ["cmd team add red", "send Steve yes", "cmd team remove red", "send Steve gone"]
+        [
+            "cmd team add red",
+            "send Steve yes",
+            "cmd team remove red",
+            "send Steve gone"
+        ]
     );
 }
 
@@ -429,7 +457,10 @@ fn bad_setting_values_are_errors() {
 fn display_name_of_non_team_still_means_the_old_effect() {
     // `set display name of player to ...` must keep working.
     let out = join("set display name of player to \"Boss\"");
-    assert!(out.is_empty() || !out.iter().any(|l| l.starts_with("cmd team")), "{out:?}");
+    assert!(
+        out.is_empty() || !out.iter().any(|l| l.starts_with("cmd team")),
+        "{out:?}"
+    );
     assert!(compiles("set display name of player to \"Boss\""));
 }
 
@@ -457,13 +488,19 @@ fn board_all_lines_at_once_and_possessive() {
     );
     assert_eq!(
         out,
-        ["board Steve [T] ", "board Steve [T] a|b|c", "board Steve [T] a||c"]
+        [
+            "board Steve [T] ",
+            "board Steve [T] a|b|c",
+            "board Steve [T] a||c"
+        ]
     );
 }
 
 #[test]
 fn board_without_a_title_gets_a_blank_one_and_clear_removes_it() {
-    let out = join("set line 1 of the board of player to \"x\"\ndelete board of player\nset line 1 of board of player to \"y\"");
+    let out = join(
+        "set line 1 of the board of player to \"x\"\ndelete board of player\nset line 1 of board of player to \"y\"",
+    );
     assert_eq!(
         out,
         ["board Steve [ ] x", "board-clear Steve", "board Steve [ ] y"]
@@ -480,7 +517,10 @@ fn board_line_range_is_checked() {
 
 #[test]
 fn board_too_many_lines_is_an_error() {
-    let lines = (1..=16).map(|i| format!("\"l{i}\"")).collect::<Vec<_>>().join(", ");
+    let lines = (1..=16)
+        .map(|i| format!("\"l{i}\""))
+        .collect::<Vec<_>>()
+        .join(", ");
     let e = join_err(&format!("set lines of board of player to {lines}")).unwrap();
     assert!(e.contains("at most 15"), "{e}");
 }
@@ -519,9 +559,11 @@ fn score_needs_in() {
 
 #[test]
 fn reset_team_of_player_leaves_the_team() {
-    let out = join("register team \"a\"
+    let out = join(
+        "register team \"a\"
 add player to team \"a\"
 reset team of player
-send \"%team of player%\"");
+send \"%team of player%\"",
+    );
     assert_eq!(&out[2..], ["cmd team leave Steve", "send Steve <none>"]);
 }

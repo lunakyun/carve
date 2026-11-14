@@ -323,7 +323,9 @@ impl Prop {
         match self {
             Prop::Location => Ty::Location,
             Prop::World => Ty::World,
-            Prop::Uuid | Prop::Name | Prop::Gamemode | Prop::DisplayName | Prop::TabName | Prop::Ip => Ty::Text,
+            Prop::Uuid | Prop::Name | Prop::Gamemode | Prop::DisplayName | Prop::TabName | Prop::Ip => {
+                Ty::Text
+            }
             Prop::Tool => Ty::Item,
             Prop::Health
             | Prop::MaxHealth
@@ -726,7 +728,8 @@ impl P<'_> {
         {
             self.hit_end.set(true);
         }
-        if crate::w2_expressions_5::percent_follows(self.toks, self.pos) && Ty::Number.accepts(e.ty(self.env)) {
+        if crate::w2_expressions_5::percent_follows(self.toks, self.pos) && Ty::Number.accepts(e.ty(self.env))
+        {
             self.pos += 2;
             let of = self.primary_base()?;
             e = crate::w2_expressions_5::percent(e, of);
@@ -750,10 +753,17 @@ impl P<'_> {
                         e = crate::types_1::parse_as(e, id);
                     }
                     _ => {
-                        if self.toks.get(self.pos + 2..).is_some_and(|r| r.iter().all(|t| matches!(t, Tok::Word(_)))) {
+                        if self
+                            .toks
+                            .get(self.pos + 2..)
+                            .is_some_and(|r| r.iter().all(|t| matches!(t, Tok::Word(_))))
+                        {
                             self.hit_end.set(true);
                         }
-                        return Err("only 'parsed as number' or a type like 'parsed as click type' is supported".into());
+                        return Err(
+                            "only 'parsed as number' or a type like 'parsed as click type' is supported"
+                                .into(),
+                        );
                     }
                 },
                 None => {
@@ -839,10 +849,15 @@ impl P<'_> {
                         return Err("use 'player's inventory contains <item>' as a condition".into());
                     }
                     _ => match self.toks.get(self.pos + 2) {
-                        Some(Tok::Word(w2)) if crate::xp_level::two_word(&lw, &w2.to_ascii_lowercase()).is_some() => (
-                            crate::xp_level::two_word(&lw, &w2.to_ascii_lowercase()).unwrap_or(Prop::Level),
-                            1,
-                        ),
+                        Some(Tok::Word(w2))
+                            if crate::xp_level::two_word(&lw, &w2.to_ascii_lowercase()).is_some() =>
+                        {
+                            (
+                                crate::xp_level::two_word(&lw, &w2.to_ascii_lowercase())
+                                    .unwrap_or(Prop::Level),
+                                1,
+                            )
+                        }
                         _ => (
                             Prop::from_word(&lw).ok_or_else(|| format!("unknown property '{w}'"))?,
                             0,
@@ -893,21 +908,20 @@ impl P<'_> {
             if self.pos + 1 >= self.toks.len() {
                 self.hit_end.set(true);
             }
-            let next_is = |p: &Self, n: usize, lit: &str| matches!(p.toks.get(p.pos + n), Some(t) if t.is_lit(lit));
+            let next_is =
+                |p: &Self, n: usize, lit: &str| matches!(p.toks.get(p.pos + n), Some(t) if t.is_lit(lit));
             if w == "named" || (w == "with" && next_is(self, 1, "name")) {
                 self.pos += if w == "named" { 1 } else { 2 };
                 meta.name = Some(self.primary()?);
             } else if w == "with" && next_is(self, 1, "lore") {
                 self.pos += 2;
                 meta.lore.push(self.primary()?);
-                while matches!(self.toks.get(self.pos), Some(t) if t.is_lit("and") || t.is_lit(","))
-                    && {
-                        if self.pos + 1 >= self.toks.len() {
-                            self.hit_end.set(true);
-                        }
-                        matches!(self.toks.get(self.pos + 1), Some(Tok::Str(_)))
+                while matches!(self.toks.get(self.pos), Some(t) if t.is_lit("and") || t.is_lit(",")) && {
+                    if self.pos + 1 >= self.toks.len() {
+                        self.hit_end.set(true);
                     }
-                {
+                    matches!(self.toks.get(self.pos + 1), Some(Tok::Str(_)))
+                } {
                     self.pos += 1;
                     meta.lore.push(self.primary()?);
                 }
@@ -920,13 +934,16 @@ impl P<'_> {
                             self.hit_end.set(true);
                         }
                         if first {
-                            return Err("expected an enchantment after 'enchanted with', like sharpness 5".into());
+                            return Err(
+                                "expected an enchantment after 'enchanted with', like sharpness 5".into()
+                            );
                         }
                         break;
                     };
                     first = false;
                     self.pos += used;
-                    meta.enchants.push(Expr::Enchant(Box::new((id.to_string(), level))));
+                    meta.enchants
+                        .push(Expr::Enchant(Box::new((id.to_string(), level))));
                     if matches!(self.toks.get(self.pos), Some(t) if t.is_lit("and") || t.is_lit(","))
                         && crate::item_meta::enchant_at(self.toks, self.pos + 1).is_some()
                     {
@@ -964,7 +981,10 @@ impl P<'_> {
             self.pos = start + n + 1;
             let inner = self.primary()?;
             if !matches!(inner.ty(self.env), Ty::Player | Ty::Object) {
-                return Err(format!("'{lw}' needs a player, got {}", inner.ty(self.env).name()));
+                return Err(format!(
+                    "'{lw}' needs a player, got {}",
+                    inner.ty(self.env).name()
+                ));
             }
             return ext(f, vec![inner]);
         }
@@ -1130,7 +1150,9 @@ impl P<'_> {
                 }
             };
         }
-        if matches!(self.toks.get(self.pos), Some(t) if t.is_lit("formatted")) && e.ty(self.env) == Ty::Timespan {
+        if matches!(self.toks.get(self.pos), Some(t) if t.is_lit("formatted"))
+            && e.ty(self.env) == Ty::Timespan
+        {
             self.pos += 1;
             return Ok(Expr::Ext(ExtFn::Clock, vec![e]));
         }
@@ -1232,7 +1254,10 @@ impl P<'_> {
 
     /// `slot 3 of ...inventory`: a number or variable, then an inventory somewhere after.
     fn slot_head(&self) -> bool {
-        matches!(self.toks.get(self.pos), Some(Tok::Num(_) | Tok::Var(_) | Tok::Sym("(")))
+        matches!(
+            self.toks.get(self.pos),
+            Some(Tok::Num(_) | Tok::Var(_) | Tok::Sym("("))
+        )
     }
 
     /// `clicked slot`, `clicked item`, `click type` in `on inventory click`, and
@@ -1532,7 +1557,11 @@ impl P<'_> {
                 if !matches!(loc.ty(self.env), Ty::Location | Ty::Player | Ty::Object) {
                     return Err("'bound at' needs a location or a player".into());
                 }
-                if lw == "bound" { B::At(loc) } else { B::BoundsAt(loc) }
+                if lw == "bound" {
+                    B::At(loc)
+                } else {
+                    B::BoundsAt(loc)
+                }
             }
             "bound" => {
                 self.pos = crate::skbee_bound::skip_id_words(self.toks, self.pos);
@@ -1630,7 +1659,9 @@ impl P<'_> {
                 if let Some(e) = self.t1_head(&lw)? {
                     return Ok(e);
                 }
-                if let Some((e, end)) = crate::entities::parse_expr_at(self.toks, self.pos - 1, self.env, &self.hit_end)? {
+                if let Some((e, end)) =
+                    crate::entities::parse_expr_at(self.toks, self.pos - 1, self.env, &self.hit_end)?
+                {
                     self.pos = end;
                     return Ok(e);
                 }
@@ -1651,7 +1682,9 @@ impl P<'_> {
                     // The sub-parsers can't tell us whether they ran off the end,
                     // so say "maybe" and let the pattern matcher try longer spans.
                     let before = self.hit_end.replace(true);
-                    if let Some((w2, np)) = crate::w2_expressions_1::parse(self.toks, self.pos, &lw, self.env)? {
+                    if let Some((w2, np)) =
+                        crate::w2_expressions_1::parse(self.toks, self.pos, &lw, self.env)?
+                    {
                         self.pos = np;
                         self.hit_end.set(before);
                         return Ok(Expr::W2(Box::new(w2)));
@@ -1683,8 +1716,11 @@ impl P<'_> {
                 }
                 if self.env.event_vals != 0
                     && !self.env.in_function
-                    && let Some((v, n)) =
-                        crate::events_items::parse_val(self.env.event_vals, &lw, self.toks.get(self.pos..).unwrap_or(&[]))
+                    && let Some((v, n)) = crate::events_items::parse_val(
+                        self.env.event_vals,
+                        &lw,
+                        self.toks.get(self.pos..).unwrap_or(&[]),
+                    )
                 {
                     self.pos += n;
                     return Ok(Expr::EventVal(v));
@@ -1811,14 +1847,18 @@ impl P<'_> {
                     "me" | "myself" => Ok(Expr::Player),
                     "player" => Ok(Expr::Player),
                     "victim" if self.env.has_damage || self.env.has_attacker => Ok(Expr::Player),
-                    "damage" | "event-number" if self.env.has_damage && !self.env.in_function => Ok(Expr::Damage),
+                    "damage" | "event-number" if self.env.has_damage && !self.env.in_function => {
+                        Ok(Expr::Damage)
+                    }
                     "event-text" if self.env.has_message && !self.env.in_function => Ok(Expr::Message),
                     "attacker" | "damager" if self.env.has_attacker && !self.env.in_function => {
                         Ok(Expr::Attacker)
                     }
                     "slot" if self.slot_head() => self.slot_expr(),
                     "clicked" | "click" | "event-slot" | "event-item"
-                        if self.env.has_inv && !self.env.in_function && self.inv_event_head(&lw).is_some() =>
+                        if self.env.has_inv
+                            && !self.env.in_function
+                            && self.inv_event_head(&lw).is_some() =>
                     {
                         let (e, n) = self.inv_event_head(&lw).ok_or("unknown inventory value")?;
                         self.pos += n;
@@ -1841,7 +1881,11 @@ impl P<'_> {
                                 if ev.slots().is_empty() {
                                     "none".to_string()
                                 } else {
-                                    ev.slots().iter().map(|(n, _)| format!("event-{n}")).collect::<Vec<_>>().join(", ")
+                                    ev.slots()
+                                        .iter()
+                                        .map(|(n, _)| format!("event-{n}"))
+                                        .collect::<Vec<_>>()
+                                        .join(", ")
                                 }
                             )),
                         }
@@ -1868,8 +1912,11 @@ impl P<'_> {
                         }
                     }
                     "last" | "caught" | "runtime"
-                        if crate::structures::error_phrase(&lw, self.toks.get(self.pos..).unwrap_or_default())
-                            .is_some()
+                        if crate::structures::error_phrase(
+                            &lw,
+                            self.toks.get(self.pos..).unwrap_or_default(),
+                        )
+                        .is_some()
                             || crate::structures::error_phrase_start(
                                 &lw,
                                 self.toks.get(self.pos..).unwrap_or_default(),
@@ -1894,7 +1941,9 @@ impl P<'_> {
                         }
                         self.pos += 1;
                         let who = self.primary()?;
-                        Ok(Expr::Skb(Box::new(crate::skbee_recipes_advancements::SkbExpr::Stat(name, who))))
+                        Ok(Expr::Skb(Box::new(
+                            crate::skbee_recipes_advancements::SkbExpr::Stat(name, who),
+                        )))
                     }
                     "advancement"
                         if self.env.trigger_name.contains("advancement done") && !self.env.in_function =>
@@ -1902,7 +1951,9 @@ impl P<'_> {
                         if matches!(self.peek(), Some(t) if t.is_lit("id")) {
                             self.pos += 1;
                         }
-                        Ok(Expr::Skb(Box::new(crate::skbee_recipes_advancements::SkbExpr::EventId)))
+                        Ok(Expr::Skb(Box::new(
+                            crate::skbee_recipes_advancements::SkbExpr::EventId,
+                        )))
                     }
                     "recipe"
                         if self.env.trigger_name.contains("recipe discover") && !self.env.in_function =>
@@ -1910,7 +1961,9 @@ impl P<'_> {
                         if matches!(self.peek(), Some(t) if t.is_lit("id")) {
                             self.pos += 1;
                         }
-                        Ok(Expr::Skb(Box::new(crate::skbee_recipes_advancements::SkbExpr::EventId)))
+                        Ok(Expr::Skb(Box::new(
+                            crate::skbee_recipes_advancements::SkbExpr::EventId,
+                        )))
                     }
                     "now" => Ok(Expr::Date(DateOp::Now, Vec::new())),
                     "unix"
@@ -1920,7 +1973,9 @@ impl P<'_> {
                         self.pos += 2;
                         let d = self.primary()?;
                         if !matches!(d.ty(self.env), Ty::Date | Ty::Object) {
-                            return Err("'unix timestamp of' needs a date, like 'unix timestamp of now'".into());
+                            return Err(
+                                "'unix timestamp of' needs a date, like 'unix timestamp of now'".into()
+                            );
                         }
                         Ok(Expr::Date(DateOp::ToUnix, vec![d]))
                     }
@@ -1999,7 +2054,11 @@ impl P<'_> {
                     }
                     "first" | "last" if matches!(self.peek(), Some(t) if t.is_lit("element")) => {
                         self.pos += 1;
-                        let sel = if lw == "first" { ElemSel::First } else { ElemSel::Last };
+                        let sel = if lw == "first" {
+                            ElemSel::First
+                        } else {
+                            ElemSel::Last
+                        };
                         Ok(Expr::Elem(sel, self.list_after_of(&format!("{lw} element"))?))
                     }
                     "element" if !matches!(self.peek(), Some(t) if t.is_lit("of")) => {
@@ -2007,7 +2066,10 @@ impl P<'_> {
                         if !Ty::Number.accepts(n.ty(self.env)) {
                             return Err("'element N of' needs a number".into());
                         }
-                        Ok(Expr::Elem(ElemSel::Nth(Box::new(n)), self.list_after_of("element N")?))
+                        Ok(Expr::Elem(
+                            ElemSel::Nth(Box::new(n)),
+                            self.list_after_of("element N")?,
+                        ))
                     }
                     "size" | "amount" | "count" => {
                         if lw == "amount" && matches!(self.peek(), Some(t) if t.is_lit("of")) {
@@ -2016,7 +2078,10 @@ impl P<'_> {
                             if let Ok(inner) = self.primary()
                                 && inner.ty(self.env) == Ty::Item
                             {
-                                return Ok(Expr::ItemInfo(crate::item_meta::ItemInfo::Amount, Box::new(inner)));
+                                return Ok(Expr::ItemInfo(
+                                    crate::item_meta::ItemInfo::Amount,
+                                    Box::new(inner),
+                                ));
                             }
                             // `amount of player` may still become `amount of player's tool`.
                             if self.pos >= self.toks.len() {
@@ -2032,8 +2097,7 @@ impl P<'_> {
                     "random" if matches!(self.peek(), Some(Tok::Num(_) | Tok::Var(_))) => {
                         self.list_expr(self.pos - 1)
                     }
-                    "sum" | "average" | "avg" | "min" | "max" | "minimum" | "maximum"
-                        if matches!(self.peek(), Some(t) if t.is_lit("of")) =>
+                    "sum" | "average" | "avg" | "min" | "max" | "minimum" | "maximum" if matches!(self.peek(), Some(t) if t.is_lit("of")) =>
                     {
                         self.pos += 1;
                         let agg = match lw.as_str() {
@@ -2145,8 +2209,7 @@ impl P<'_> {
                         }
                         Ok(Expr::Distance(Box::new(a), Box::new(b)))
                     }
-                    "level" | "total"
-                        if matches!(self.peek(), Some(Tok::Word(w2)) if crate::xp_level::two_word(&lw, &w2.to_ascii_lowercase()).is_some()) =>
+                    "level" | "total" if matches!(self.peek(), Some(Tok::Word(w2)) if crate::xp_level::two_word(&lw, &w2.to_ascii_lowercase()).is_some()) =>
                     {
                         let prop = match self.peek() {
                             Some(Tok::Word(w2)) => crate::xp_level::two_word(&lw, &w2.to_ascii_lowercase()),
@@ -2156,8 +2219,8 @@ impl P<'_> {
                         self.pos += 1;
                         self.prop_of(prop)
                     }
-                    "location" | "position" | "world" | "uuid" | "tool" | "health" | "gamemode" | "x" | "y" | "z"
-                    | "held" | "level" | "xp" | "exp" | "experience"
+                    "location" | "position" | "world" | "uuid" | "tool" | "health" | "gamemode" | "x"
+                    | "y" | "z" | "held" | "level" | "xp" | "exp" | "experience"
                         if matches!(self.peek(), Some(t) if t.is_lit("of") || t.is_lit("item")) =>
                     {
                         let prop = Prop::from_word(&lw).ok_or("unknown property")?;
@@ -2239,7 +2302,8 @@ impl P<'_> {
                             let i: usize = d.parse().map_err(|_| format!("bad argument '{w}'"))?;
                             return self.arg(i);
                         }
-                        if let Some((id, level, used)) = crate::item_meta::enchant_at(self.toks, self.pos - 1) {
+                        if let Some((id, level, used)) = crate::item_meta::enchant_at(self.toks, self.pos - 1)
+                        {
                             self.pos += used - 1;
                             if self.pos >= self.toks.len() {
                                 self.hit_end.set(true);
@@ -2296,7 +2360,11 @@ impl P<'_> {
         }
         for (i, a) in args.iter().enumerate() {
             if f.number_arg(i) && !Ty::Number.accepts(a.ty(self.env)) {
-                return Err(format!("argument {} of {lw}() must be a number, got a {}", i + 1, a.ty(self.env).name()));
+                return Err(format!(
+                    "argument {} of {lw}() must be a number, got a {}",
+                    i + 1,
+                    a.ty(self.env).name()
+                ));
             }
         }
         Ok(Expr::W4F(Box::new(crate::w4_functions::Node { f, args })))
@@ -2323,7 +2391,10 @@ impl P<'_> {
                 self.pos = after + 1;
                 let w = self.primary()?;
                 if !crate::server_misc::world_ty_ok(w.ty(self.env)) {
-                    return Err(format!("expected a world after 'of', got {}", w.ty(self.env).name()));
+                    return Err(format!(
+                        "expected a world after 'of', got {}",
+                        w.ty(self.env).name()
+                    ));
                 }
                 Some(Box::new(w))
             }
@@ -2586,7 +2657,10 @@ impl P<'_> {
                     && v.is_list()
                 {
                     let v = v.clone();
-                    return Ok(Some(Expr::Join(v, Box::new(Expr::Text(vec![Part::Lit(String::new())])))));
+                    return Ok(Some(Expr::Join(
+                        v,
+                        Box::new(Expr::Text(vec![Part::Lit(String::new())])),
+                    )));
                 }
                 Ok(Some(Expr::Comp(CompFn::Merge, args)))
             }
@@ -2613,7 +2687,10 @@ impl P<'_> {
         if self.pos + 1 >= self.toks.len() {
             self.hit_end.set(true);
         }
-        if !matches!(word(0).as_deref(), Some("block" | "blocks" | "meter" | "meters" | "metre" | "metres")) {
+        if !matches!(
+            word(0).as_deref(),
+            Some("block" | "blocks" | "meter" | "meters" | "metre" | "metres")
+        ) {
             return Ok(None);
         }
         let Some((dx, dy, dz)) = word(1).as_deref().and_then(crate::w2_expressions_2::direction) else {
@@ -2713,7 +2790,11 @@ impl P<'_> {
                 Ok(Some(Self::x2(W2Op::Difference, vec![a, b])))
             }
             "chunk" if (self.is_word(0, "x") || self.is_word(0, "z")) && self.is_word(1, "of") => {
-                let op = if self.is_word(0, "x") { W2Op::ChunkX } else { W2Op::ChunkZ };
+                let op = if self.is_word(0, "x") {
+                    W2Op::ChunkX
+                } else {
+                    W2Op::ChunkZ
+                };
                 self.pos += 2;
                 let l = self.primary()?;
                 if !matches!(l.ty(self.env), Ty::Location | Ty::Player | Ty::Object) {
@@ -2787,21 +2868,42 @@ impl P<'_> {
             "uppercase" | "lowercase" if self.is_word(0, "of") => {
                 self.pos += 1;
                 let a = self.text_arg(&format!("{lw} of"))?;
-                f(if lw == "uppercase" { TextFn::Upper } else { TextFn::Lower }, vec![a])
+                f(
+                    if lw == "uppercase" {
+                        TextFn::Upper
+                    } else {
+                        TextFn::Lower
+                    },
+                    vec![a],
+                )
             }
             "upper" | "lower" if self.is_word(0, "case") && self.is_word(1, "of") => {
                 self.pos += 2;
                 let a = self.text_arg(&format!("{lw} case of"))?;
-                f(if lw == "upper" { TextFn::Upper } else { TextFn::Lower }, vec![a])
+                f(
+                    if lw == "upper" {
+                        TextFn::Upper
+                    } else {
+                        TextFn::Lower
+                    },
+                    vec![a],
+                )
             }
             "capitalized" | "capitalised" | "trimmed" | "trim"
-                if matches!(self.toks.get(self.pos), Some(Tok::Str(_) | Tok::Var(_) | Tok::Word(_))) =>
+                if matches!(
+                    self.toks.get(self.pos),
+                    Some(Tok::Str(_) | Tok::Var(_) | Tok::Word(_))
+                ) =>
             {
                 if self.is_word(0, "of") {
                     self.pos += 1;
                 }
                 let a = self.text_arg(lw)?;
-                let k = if lw.starts_with("cap") { TextFn::Capitalized } else { TextFn::Trim };
+                let k = if lw.starts_with("cap") {
+                    TextFn::Capitalized
+                } else {
+                    TextFn::Trim
+                };
                 f(k, vec![a])
             }
             "reversed" => {
@@ -2862,11 +2964,19 @@ impl P<'_> {
                 }
                 self.pos += 1;
                 let t = self.text_arg(lw)?;
-                f(if lw == "first" { TextFn::First } else { TextFn::Last }, vec![n, t])
+                f(
+                    if lw == "first" {
+                        TextFn::First
+                    } else {
+                        TextFn::Last
+                    },
+                    vec![n, t],
+                )
             }
             "character" | "char"
                 if self.is_word(0, "at")
-                    && (self.is_word(1, "index") || matches!(self.toks.get(self.pos + 1), Some(Tok::Num(_)))) =>
+                    && (self.is_word(1, "index")
+                        || matches!(self.toks.get(self.pos + 1), Some(Tok::Num(_)))) =>
             {
                 self.pos += 1;
                 if self.is_word(0, "index") {
@@ -3043,7 +3153,11 @@ impl P<'_> {
         }
         self.pos += 1;
         let b = self.text_arg("index of")?;
-        let k = if last { TextFn::IndexLast } else { TextFn::IndexFirst };
+        let k = if last {
+            TextFn::IndexLast
+        } else {
+            TextFn::IndexFirst
+        };
         Ok(Some(Expr::TextFn(k, vec![a, b])))
     }
 
@@ -3216,7 +3330,12 @@ impl P<'_> {
         let mut args = Vec::new();
         if !self.eat_sym(")") {
             loop {
-                let want_list = env.functions.get(id).and_then(|s| s.params.get(args.len())).map(|p| p.1) == Some(Ty::List);
+                let want_list = env
+                    .functions
+                    .get(id)
+                    .and_then(|s| s.params.get(args.len()))
+                    .map(|p| p.1)
+                    == Some(Ty::List);
                 if want_list {
                     let (src, end) = parse_src_at(self.toks, self.pos, env, false)?;
                     self.pos = end;

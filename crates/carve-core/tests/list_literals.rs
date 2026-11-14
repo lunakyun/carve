@@ -64,7 +64,9 @@ fn run(body: &str) -> Vec<String> {
 }
 
 fn compile_errors(body: &str) -> usize {
-    compile_file("bad.carve", &wrap(body)).err().map_or(0, |e| e.len())
+    compile_file("bad.carve", &wrap(body))
+        .err()
+        .map_or(0, |e| e.len())
 }
 
 #[test]
@@ -167,9 +169,8 @@ fn first_element_of_empty_is_none() {
 
 #[test]
 fn loop_literals() {
-    let out = run(
-        "loop 1, 2 and 3:\n    send \"n=%loop-value%\"\nloop \"a\" or \"b\":\n    send \"%loop-value%\"",
-    );
+    let out =
+        run("loop 1, 2 and 3:\n    send \"n=%loop-value%\"\nloop \"a\" or \"b\":\n    send \"%loop-value%\"");
     assert_eq!(out, ["n=1", "n=2", "n=3", "a", "b"]);
 }
 
@@ -181,9 +182,8 @@ fn loop_literal_with_between_and() {
 
 #[test]
 fn loop_two_lists() {
-    let out = run(
-        "set {_a::*} to 1, 2\nset {_b::*} to 3\nloop {_a::*} and {_b::*}:\n    send \"%loop-value%\"",
-    );
+    let out =
+        run("set {_a::*} to 1, 2\nset {_b::*} to 3\nloop {_a::*} and {_b::*}:\n    send \"%loop-value%\"");
     assert_eq!(out, ["1", "2", "3"]);
 }
 

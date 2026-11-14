@@ -7,7 +7,10 @@ use crate::compile::{CondKind, EffKind};
 /// Extra effect patterns. Tried before the main table.
 pub const SENDER_EFFECT_PATTERNS: &[(&str, EffKind)] = &[
     ("make %object% execute [the] [command] %text%", EffKind::ExecAs),
-    ("force %object% to execute [the] [command] %text%", EffKind::ExecAs),
+    (
+        "force %object% to execute [the] [command] %text%",
+        EffKind::ExecAs,
+    ),
     ("execute [the] command %text% by %object%", EffKind::ExecAsBy),
     ("execute [the] command %text%", EffKind::ConsoleCommand),
 ];

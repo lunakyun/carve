@@ -25,7 +25,8 @@ impl Host for Mock {
     fn send_message(&mut self, _to: &Recipient, _text: &str) {}
     fn broadcast(&mut self, _text: &str) {}
     fn send_title(&mut self, p: &PlayerRef, t: &str, s: Option<&str>) {
-        self.calls.push(format!("title {} {t} {}", p.name, s.unwrap_or("-")));
+        self.calls
+            .push(format!("title {} {t} {}", p.name, s.unwrap_or("-")));
     }
     fn send_action_bar(&mut self, p: &PlayerRef, t: &str) {
         self.calls.push(format!("actionbar {} {t}", p.name));
@@ -79,8 +80,7 @@ impl Host for Mock {
         self.calls.push(format!("cleartitle {} {reset}", p.name));
     }
     fn set_tab_list(&mut self, p: &PlayerRef, h: Option<&str>, f: Option<&str>) {
-        self.calls
-            .push(format!("tab {} {:?} {:?}", p.name, h, f));
+        self.calls.push(format!("tab {} {:?} {:?}", p.name, h, f));
     }
     fn sidebar_set_title(&mut self, p: &PlayerRef, t: &str) {
         self.calls.push(format!("side-title {} {t}", p.name));
@@ -297,7 +297,9 @@ fn bossbar_create_defaults() {
 #[test]
 fn bossbar_create_full() {
     assert_eq!(
-        run("create a new bossbar named \"b1\" with title \"&cDragon\" with color red with style notched 10 with progress 50"),
+        run(
+            "create a new bossbar named \"b1\" with title \"&cDragon\" with color red with style notched 10 with progress 50"
+        ),
         ["bar-create b1 &cDragon red notched 10 0.5"]
     );
     assert_eq!(
@@ -318,15 +320,25 @@ fn bossbar_create_color_from_text() {
     );
     let h = run_logs("set {_c} to \"mauve\"\ncreate bossbar \"b\" with color {_c}");
     assert!(h.calls.is_empty());
-    assert!(h.logs.iter().any(|(_, m)| m.contains("unknown bossbar color 'mauve'")));
+    assert!(
+        h.logs
+            .iter()
+            .any(|(_, m)| m.contains("unknown bossbar color 'mauve'"))
+    );
 }
 
 #[test]
 fn bossbar_unknown_color_or_style_fails_to_compile() {
     let e = errors_of("create bossbar \"b\" with color mauve");
-    assert!(e.iter().any(|e| e.to_string().contains("unknown bossbar color")), "{e:?}");
+    assert!(
+        e.iter().any(|e| e.to_string().contains("unknown bossbar color")),
+        "{e:?}"
+    );
     let e = errors_of("create bossbar \"b\" with style wavy");
-    assert!(e.iter().any(|e| e.to_string().contains("unknown bossbar style")), "{e:?}");
+    assert!(
+        e.iter().any(|e| e.to_string().contains("unknown bossbar style")),
+        "{e:?}"
+    );
 }
 
 #[test]
@@ -340,19 +352,16 @@ fn bossbar_set_props() {
         ["bar-progress b 1"]
     );
     assert_eq!(run("set progress of bossbar \"b\" to -5"), ["bar-progress b 0"]);
+    assert_eq!(run("set title of bossbar \"b\" to \"New\""), ["bar-title b New"]);
     assert_eq!(
-        run("set title of bossbar \"b\" to \"New\""),
-        ["bar-title b New"]
+        run("set color of bossbar \"b\" to purple"),
+        ["bar-color b purple"]
     );
-    assert_eq!(run("set color of bossbar \"b\" to purple"), ["bar-color b purple"]);
     assert_eq!(
         run("set style of bossbar \"b\" to notched 20"),
         ["bar-style b notched 20"]
     );
-    assert_eq!(
-        run("set bossbar \"b\"'s progress to 10"),
-        ["bar-progress b 0.1"]
-    );
+    assert_eq!(run("set bossbar \"b\"'s progress to 10"), ["bar-progress b 0.1"]);
 }
 
 #[test]
@@ -429,7 +438,9 @@ fn title_with_time() {
         ["timed Steve a b 10/60/20"]
     );
     assert_eq!(
-        run("send title \"a\" with subtitle \"b\" to player for 1 second with fade in 5 ticks and fade out 2 seconds"),
+        run(
+            "send title \"a\" with subtitle \"b\" to player for 1 second with fade in 5 ticks and fade out 2 seconds"
+        ),
         ["timed Steve a b 5/20/40"]
     );
 }
@@ -504,7 +515,10 @@ fn tab_list_header_and_footer() {
 fn tab_list_all_players_and_reset() {
     assert_eq!(
         run("set tab list header for all players to \"Welcome\""),
-        ["tab Alex Some(\"Welcome\") None", "tab Steve Some(\"Welcome\") None"]
+        [
+            "tab Alex Some(\"Welcome\") None",
+            "tab Steve Some(\"Welcome\") None"
+        ]
     );
     assert_eq!(
         run("reset tab list of player"),

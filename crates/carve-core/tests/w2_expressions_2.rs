@@ -140,7 +140,10 @@ fn difference() {
     assert_eq!(one("difference between 3 and 10"), "7");
     assert_eq!(one("difference between 10 and 3"), "7");
     assert_eq!(one("difference between 2 + 1 and 1"), "2");
-    assert_eq!(one("difference between (1 minute) and (90 seconds)"), "30 seconds");
+    assert_eq!(
+        one("difference between (1 minute) and (90 seconds)"),
+        "30 seconds"
+    );
     assert_eq!(one("difference between \"a\" and 3"), "<none>");
 }
 
@@ -211,7 +214,13 @@ fn damage_cause() {
 #[test]
 fn chat_recipients() {
     let mut ctx = EventCtx::chat(steve(), "hi");
-    ctx.recipients = Some(vec![steve(), PlayerRef { uuid: "u2".into(), name: "Alex".into() }]);
+    ctx.recipients = Some(vec![
+        steve(),
+        PlayerRef {
+            uuid: "u2".into(),
+            name: "Alex".into(),
+        },
+    ]);
     let (out, _) = run_on("chat", EventKind::Chat, ctx, "send \"%size of chat recipients%\"");
     assert_eq!(out, ["2"]);
     assert!(compile_file("bad.carve", "on join:\n    send chat recipients\n").is_err());

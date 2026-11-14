@@ -89,10 +89,18 @@ fn registry_still_compiles() {
 #[test]
 fn drop_event_item_and_cancel() {
     let src = "on drop:\n    if event-item is diamond:\n        cancel event\n    send \"dropped\"\n";
-    let (calls, c) = fire(src, EventKind::Drop, EventCtx::with_extra(steve(), item("diamond", 3)));
+    let (calls, c) = fire(
+        src,
+        EventKind::Drop,
+        EventCtx::with_extra(steve(), item("diamond", 3)),
+    );
     assert!(c);
     assert_eq!(calls, ["send Steve dropped"]);
-    let (_, c) = fire(src, EventKind::Drop, EventCtx::with_extra(steve(), item("dirt", 1)));
+    let (_, c) = fire(
+        src,
+        EventKind::Drop,
+        EventCtx::with_extra(steve(), item("dirt", 1)),
+    );
     assert!(!c);
 }
 
@@ -117,7 +125,11 @@ fn event_name_aliases() {
 #[test]
 fn item_as_text() {
     let src = "on pick up:\n    set {_i} to event-item\n    send \"got %{_i}%\"\n";
-    let (calls, _) = fire(src, EventKind::PickUp, EventCtx::with_extra(steve(), item("stone", 5)));
+    let (calls, _) = fire(
+        src,
+        EventKind::PickUp,
+        EventCtx::with_extra(steve(), item("stone", 5)),
+    );
     assert_eq!(calls.len(), 1);
     assert!(calls[0].contains("stone"), "{calls:?}");
 }
@@ -125,7 +137,11 @@ fn item_as_text() {
 #[test]
 fn consume_event() {
     let src = "on eat:\n    if event-item is golden_apple:\n        send \"yum\"\n";
-    let (calls, _) = fire(src, EventKind::Consume, EventCtx::with_extra(steve(), item("golden_apple", 1)));
+    let (calls, _) = fire(
+        src,
+        EventKind::Consume,
+        EventCtx::with_extra(steve(), item("golden_apple", 1)),
+    );
     assert_eq!(calls, ["send Steve yum"]);
 }
 
@@ -146,9 +162,17 @@ fn spawn_extra(t: &str) -> EventExtra {
 #[test]
 fn mob_spawn_filter_and_values() {
     let src = "on spawn of zombie:\n    send \"%event-entity% %spawn reason%\"\n";
-    let (calls, _) = fire(src, EventKind::MobSpawn, EventCtx::console_with_extra(spawn_extra("zombie")));
+    let (calls, _) = fire(
+        src,
+        EventKind::MobSpawn,
+        EventCtx::console_with_extra(spawn_extra("zombie")),
+    );
     assert_eq!(calls, ["send console zombie natural"]);
-    let (calls, _) = fire(src, EventKind::MobSpawn, EventCtx::console_with_extra(spawn_extra("cow")));
+    let (calls, _) = fire(
+        src,
+        EventKind::MobSpawn,
+        EventCtx::console_with_extra(spawn_extra("cow")),
+    );
     assert!(calls.is_empty());
     let src = "on spawn of a zombie villager:\n    broadcast \"zv\"\n";
     let (calls, _) = fire(
@@ -162,9 +186,17 @@ fn mob_spawn_filter_and_values() {
 #[test]
 fn mob_spawn_plain_and_cancel() {
     let src = "on mob spawn:\n    if event-entity is creeper:\n        cancel event\n";
-    let (_, c) = fire(src, EventKind::MobSpawn, EventCtx::console_with_extra(spawn_extra("creeper")));
+    let (_, c) = fire(
+        src,
+        EventKind::MobSpawn,
+        EventCtx::console_with_extra(spawn_extra("creeper")),
+    );
     assert!(c);
-    let (_, c) = fire(src, EventKind::MobSpawn, EventCtx::console_with_extra(spawn_extra("cow")));
+    let (_, c) = fire(
+        src,
+        EventKind::MobSpawn,
+        EventCtx::console_with_extra(spawn_extra("cow")),
+    );
     assert!(!c);
 }
 
@@ -176,7 +208,8 @@ fn mob_spawn_has_no_player() {
 
 #[test]
 fn projectile_hit() {
-    let src = "on projectile hit:\n    if hit player is set:\n        send \"hit %hit player%\" to hit player\n";
+    let src =
+        "on projectile hit:\n    if hit player is set:\n        send \"hit %hit player%\" to hit player\n";
     let e = EventExtra {
         hit_player: Some(steve()),
         ..Default::default()

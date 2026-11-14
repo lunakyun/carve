@@ -65,7 +65,10 @@ fn sub(s: &str, from: f64, to: f64) -> String {
     if !a.is_finite() || !b.is_finite() || a > b {
         return String::new();
     }
-    s.chars().skip(a as usize - 1).take((b - a) as usize + 1).collect()
+    s.chars()
+        .skip(a as usize - 1)
+        .take((b - a) as usize + 1)
+        .collect()
 }
 
 fn index_of(needle: &str, hay: &str, last: bool) -> f64 {

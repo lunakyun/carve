@@ -31,7 +31,11 @@ pub struct XpOp {
 }
 
 const fn op(field: XpField, mode: XpMode, num_first: bool) -> XpOp {
-    XpOp { field, mode, num_first }
+    XpOp {
+        field,
+        mode,
+        num_first,
+    }
 }
 
 use XpField::{Level, Points, Progress};
@@ -39,9 +43,18 @@ use XpMode::{Add, Remove, Set};
 
 /// Effect patterns for experience. Tried before the core ones.
 pub const XP_EFFECT_PATTERNS: &[(&str, XpOp)] = &[
-    ("set level progress of %player% to %number%", op(Progress, Set, false)),
-    ("set %player%'s level progress to %number%", op(Progress, Set, false)),
-    ("set (level|levels) of %player% to %number%", op(Level, Set, false)),
+    (
+        "set level progress of %player% to %number%",
+        op(Progress, Set, false),
+    ),
+    (
+        "set %player%'s level progress to %number%",
+        op(Progress, Set, false),
+    ),
+    (
+        "set (level|levels) of %player% to %number%",
+        op(Level, Set, false),
+    ),
     ("set %player%'s (level|levels) to %number%", op(Level, Set, false)),
     (
         "set (xp|exp|experience|total experience) of %player% to %number%",
@@ -51,16 +64,37 @@ pub const XP_EFFECT_PATTERNS: &[(&str, XpOp)] = &[
         "set %player%'s (xp|exp|experience|total experience) to %number%",
         op(Points, Set, false),
     ),
-    ("add %number% to level progress of %player%", op(Progress, Add, true)),
-    ("add %number% to %player%'s level progress", op(Progress, Add, true)),
-    ("remove %number% from level progress of %player%", op(Progress, Remove, true)),
-    ("remove %number% from %player%'s level progress", op(Progress, Remove, true)),
+    (
+        "add %number% to level progress of %player%",
+        op(Progress, Add, true),
+    ),
+    (
+        "add %number% to %player%'s level progress",
+        op(Progress, Add, true),
+    ),
+    (
+        "remove %number% from level progress of %player%",
+        op(Progress, Remove, true),
+    ),
+    (
+        "remove %number% from %player%'s level progress",
+        op(Progress, Remove, true),
+    ),
     ("add %number% to (level|levels) of %player%", op(Level, Add, true)),
     ("add %number% to %player%'s (level|levels)", op(Level, Add, true)),
     ("add %number% (level|levels) to %player%", op(Level, Add, true)),
-    ("remove %number% from (level|levels) of %player%", op(Level, Remove, true)),
-    ("remove %number% from %player%'s (level|levels)", op(Level, Remove, true)),
-    ("remove %number% (level|levels) from %player%", op(Level, Remove, true)),
+    (
+        "remove %number% from (level|levels) of %player%",
+        op(Level, Remove, true),
+    ),
+    (
+        "remove %number% from %player%'s (level|levels)",
+        op(Level, Remove, true),
+    ),
+    (
+        "remove %number% (level|levels) from %player%",
+        op(Level, Remove, true),
+    ),
     ("give %number% (level|levels) to %player%", op(Level, Add, true)),
     ("give %player% %number% (level|levels)", op(Level, Add, false)),
     (
@@ -108,7 +142,11 @@ pub fn apply(host: &mut dyn Host, p: &PlayerRef, field: XpField, mode: XpMode, n
         Add => Some(n),
         Remove => Some(-n),
     };
-    let max = if field == Progress { 1.0 } else { f64::from(i32::MAX) };
+    let max = if field == Progress {
+        1.0
+    } else {
+        f64::from(i32::MAX)
+    };
     let clamp = |v: f64| {
         let v = v.clamp(0.0, max);
         if field == Progress { v } else { v.floor() }

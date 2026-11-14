@@ -125,7 +125,10 @@ fn registry_ok() {
 
 #[test]
 fn poison_default_one_second() {
-    assert_eq!(run("poison player"), ["cmd effect give Steve minecraft:poison 1 0 true"]);
+    assert_eq!(
+        run("poison player"),
+        ["cmd effect give Steve minecraft:poison 1 0 true"]
+    );
 }
 
 #[test]
@@ -162,7 +165,12 @@ fn save_and_stop() {
     for l in ["save the world", "save world", "save all worlds", "save worlds"] {
         assert_eq!(run(l), ["cmd save-all"], "{l}");
     }
-    for l in ["stop the server", "stop server", "shutdown server", "shut down the server"] {
+    for l in [
+        "stop the server",
+        "stop server",
+        "shutdown server",
+        "shut down the server",
+    ] {
         assert_eq!(run(l), ["cmd stop"], "{l}");
     }
 }
@@ -183,7 +191,10 @@ fn sprinting() {
 fn swing() {
     assert_eq!(run("make player swing"), ["cmd swing Steve mainhand"]);
     assert_eq!(run("make player swing main hand"), ["cmd swing Steve mainhand"]);
-    assert_eq!(run("make player swing their off hand"), ["cmd swing Steve offhand"]);
+    assert_eq!(
+        run("make player swing their off hand"),
+        ["cmd swing Steve offhand"]
+    );
 }
 
 #[test]
@@ -200,7 +211,10 @@ fn riding() {
     assert_eq!(run("make player dismount"), ["cmd ride Steve dismount"]);
     assert_eq!(run("eject player"), ["eject Steve"]);
     assert_eq!(run("eject all passengers of player"), ["eject Steve"]);
-    assert_eq!(run_alex("make player ride loop-player"), ["cmd ride Steve mount Alex"]);
+    assert_eq!(
+        run_alex("make player ride loop-player"),
+        ["cmd ride Steve mount Alex"]
+    );
     assert!(run("make player ride player").is_empty());
 }
 
@@ -237,7 +251,12 @@ fn toggle_variable() {
     );
     assert_eq!(
         out,
-        ["send Steve true", "send Steve false", "send Steve false", "send Steve true"]
+        [
+            "send Steve true",
+            "send Steve false",
+            "send Steve false",
+            "send Steve true"
+        ]
     );
 }
 
@@ -248,7 +267,11 @@ fn toggle_non_boolean_is_a_runtime_error() {
     assert!(e.load(&[("t.carve".into(), src.into())]).1.is_empty());
     let mut h = Mock::default();
     e.fire(EventKind::Join, EventCtx::player(p("Steve")), &mut h);
-    assert!(h.logs.iter().any(|(l, m)| *l == LogLevel::Error && m.contains("toggle")));
+    assert!(
+        h.logs
+            .iter()
+            .any(|(l, m)| *l == LogLevel::Error && m.contains("toggle"))
+    );
 }
 
 #[test]
@@ -280,6 +303,9 @@ fn bad_syntax_is_still_an_error() {
 #[test]
 fn offline_target_is_skipped() {
     // Only names of online players resolve; an unknown name is skipped.
-    assert!(run("set {n} to \"nobody\"
-make {n} start sprinting").is_empty());
+    assert!(
+        run("set {n} to \"nobody\"
+make {n} start sprinting")
+        .is_empty()
+    );
 }

@@ -1,8 +1,8 @@
 use crate::block_ops::BlockPos;
 use crate::player_flags::PlayerFlag;
 use crate::value::{EntityRef, PlayerRef, Recipient};
-use crate::xp_level::XpField;
 use crate::world_effects::{FxPos, ParticleFx};
+use crate::xp_level::XpField;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LogLevel {
@@ -89,7 +89,13 @@ pub trait Host {
 
     /// Give an item that has a name, lore or enchantments. The default runs the vanilla
     /// `give` command with item components as the console.
-    fn give_item_meta(&mut self, player: &PlayerRef, id: &str, count: u32, meta: &crate::item_meta::ItemMeta) {
+    fn give_item_meta(
+        &mut self,
+        player: &PlayerRef,
+        id: &str,
+        count: u32,
+        meta: &crate::item_meta::ItemMeta,
+    ) {
         self.execute_command(&crate::item_meta::give_command(&player.name, id, count, meta));
     }
 
@@ -182,7 +188,10 @@ pub trait Host {
             XpField::Points => "points",
             XpField::Progress => return,
         };
-        self.execute_command(&format!("experience add {} {} {unit}", player.name, amount as i64));
+        self.execute_command(&format!(
+            "experience add {} {} {unit}",
+            player.name, amount as i64
+        ));
     }
 
     /// Read health, max health, food level or saturation.
@@ -206,7 +215,11 @@ pub trait Host {
     }
 
     /// Item id and amount worn in an armor slot of a player.
-    fn armor_item(&mut self, _player: &PlayerRef, _slot: crate::w2_expressions_1::ArmorSlot) -> Option<(String, u32)> {
+    fn armor_item(
+        &mut self,
+        _player: &PlayerRef,
+        _slot: crate::w2_expressions_1::ArmorSlot,
+    ) -> Option<(String, u32)> {
         None
     }
 
@@ -234,7 +247,8 @@ pub trait Host {
 
     /// Eye position and world name. The default is the feet position plus 1.62.
     fn eye_location(&mut self, player: &PlayerRef) -> Option<(f64, f64, f64, String)> {
-        self.player_location(player).map(|(x, y, z, w)| (x, y + 1.62, z, w))
+        self.player_location(player)
+            .map(|(x, y, z, w)| (x, y + 1.62, z, w))
     }
 
     /// Slot number of the first empty slot in the player's inventory.
@@ -445,7 +459,10 @@ pub trait Host {
         stay: u32,
         fade_out: u32,
     ) {
-        self.execute_command(&format!("title {} times {fade_in} {stay} {fade_out}", player.name));
+        self.execute_command(&format!(
+            "title {} times {fade_in} {stay} {fade_out}",
+            player.name
+        ));
         self.send_title(player, title, subtitle);
     }
 
@@ -514,7 +531,10 @@ pub trait Host {
     }
 
     /// Register a custom recipe.
-    fn register_recipe(&mut self, _recipe: &crate::skbee_recipes_advancements::RecipeDef) -> Result<(), String> {
+    fn register_recipe(
+        &mut self,
+        _recipe: &crate::skbee_recipes_advancements::RecipeDef,
+    ) -> Result<(), String> {
         Err("custom recipes are not supported on this server".into())
     }
 
@@ -555,7 +575,10 @@ pub trait Host {
 
     /// Break the block like a player would. The default runs `/setblock ... destroy`.
     fn break_block(&mut self, at: &BlockPos) {
-        self.execute_command(&format!("setblock {} {} {} minecraft:air destroy", at.x, at.y, at.z));
+        self.execute_command(&format!(
+            "setblock {} {} {} minecraft:air destroy",
+            at.x, at.y, at.z
+        ));
     }
 
     /// The block a player looks at, within `max` blocks.
@@ -576,12 +599,18 @@ pub trait Host {
 
     /// Put an item in a slot; `None` empties it.
     fn inv_set(&mut self, _player: &PlayerRef, _current: bool, _slot: i64, _item: Option<(&str, u32)>) {
-        self.log(LogLevel::Warn, "setting inventory slots is not supported on this server");
+        self.log(
+            LogLevel::Warn,
+            "setting inventory slots is not supported on this server",
+        );
     }
 
     /// Empty the player's own inventory, or the open menu when `current`.
     fn inv_clear(&mut self, _player: &PlayerRef, _current: bool) {
-        self.log(LogLevel::Warn, "clearing inventories is not supported on this server");
+        self.log(
+            LogLevel::Warn,
+            "clearing inventories is not supported on this server",
+        );
     }
 
     /// Take up to `count` of an item from the player's inventory. Returns how many were taken.
@@ -592,7 +621,10 @@ pub trait Host {
 
     /// Close the inventory the player has open.
     fn close_inventory(&mut self, _player: &PlayerRef) {
-        self.log(LogLevel::Warn, "closing inventories is not supported on this server");
+        self.log(
+            LogLevel::Warn,
+            "closing inventories is not supported on this server",
+        );
     }
 
     // ---- world: time, weather, game rules, difficulty ----
@@ -763,7 +795,10 @@ pub trait Host {
     /// Set the border diameter, over `seconds` (0: at once). The default runs
     /// `worldborder set` as the console, which only reaches the main world.
     fn set_border_size(&mut self, world: &str, size: f64, seconds: f64) {
-        if self.default_world().is_some_and(|d| !d.eq_ignore_ascii_case(world)) {
+        if self
+            .default_world()
+            .is_some_and(|d| !d.eq_ignore_ascii_case(world))
+        {
             self.log(
                 LogLevel::Warn,
                 "setting the world border of another world is not supported on this server",
@@ -795,7 +830,10 @@ pub trait Host {
     /// Put an item in a vanilla slot such as `armor.head`. The default runs
     /// the `item replace` command as the console.
     fn equip(&mut self, player: &PlayerRef, slot: &str, id: &str) {
-        self.execute_command(&format!("item replace entity {} {slot} with minecraft:{id}", player.name));
+        self.execute_command(&format!(
+            "item replace entity {} {slot} with minecraft:{id}",
+            player.name
+        ));
     }
 
     /// `make player fly` / `stop flying`: allow flight and set flying.
@@ -806,7 +844,10 @@ pub trait Host {
     /// Invisible flag. The default gives or clears the invisibility effect.
     fn set_invisible(&mut self, player: &PlayerRef, on: bool) {
         let cmd = if on {
-            format!("effect give {} minecraft:invisibility infinite 0 true", player.name)
+            format!(
+                "effect give {} minecraft:invisibility infinite 0 true",
+                player.name
+            )
         } else {
             format!("effect clear {} minecraft:invisibility", player.name)
         };
@@ -860,10 +901,13 @@ pub trait Host {
     }
     // ---- w2_expressions_4 ----
 
-
     /// Answer a yes/no question about a player, entity or block (see
     /// `w4_conditions_1::Check`). `None` means the game cannot tell.
-    fn w4c1_check(&mut self, _c: crate::w4_conditions_1::Check, _subject: &crate::value::Value) -> Option<bool> {
+    fn w4c1_check(
+        &mut self,
+        _c: crate::w4_conditions_1::Check,
+        _subject: &crate::value::Value,
+    ) -> Option<bool> {
         None
     }
 
@@ -957,7 +1001,10 @@ pub trait Host {
     /// Cast a ray and report the first block and the first entity on it.
     /// The default walks the blocks with `block_type` (every solid block counts
     /// as a full cube) and finds no entities.
-    fn ray_trace(&mut self, req: &crate::w4_skbee_raytrace_world::RayReq) -> crate::w4_skbee_raytrace_world::RayRaw {
+    fn ray_trace(
+        &mut self,
+        req: &crate::w4_skbee_raytrace_world::RayReq,
+    ) -> crate::w4_skbee_raytrace_world::RayRaw {
         crate::w4_skbee_raytrace_world::walk_blocks(req, self)
     }
 

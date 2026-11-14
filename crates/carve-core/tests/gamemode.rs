@@ -121,7 +121,10 @@ fn compares_gamemode() {
     if player's gamemode = Creative:
         send "d"
 "#;
-    assert_eq!(run(src, "creative"), ["send Steve a", "send Steve c", "send Steve d"]);
+    assert_eq!(
+        run(src, "creative"),
+        ["send Steve a", "send Steve c", "send Steve d"]
+    );
     assert_eq!(run(src, "survival"), ["send Steve b", "send Steve c"]);
     assert_eq!(run(src, "spectator"), Vec::<String>::new());
 }
@@ -140,9 +143,20 @@ fn is_in_conditions() {
 "#;
     assert_eq!(
         run(src, "creative"),
-        ["send Steve creative", "send Steve not survival", "send Steve isnt"]
+        [
+            "send Steve creative",
+            "send Steve not survival",
+            "send Steve isnt"
+        ]
     );
-    assert_eq!(run(src, "adventure"), ["send Steve adventure", "send Steve not survival", "send Steve isnt"]);
+    assert_eq!(
+        run(src, "adventure"),
+        [
+            "send Steve adventure",
+            "send Steve not survival",
+            "send Steve isnt"
+        ]
+    );
     assert!(run(src, "survival").is_empty());
 }
 

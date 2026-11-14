@@ -71,7 +71,9 @@ pub fn parse_list_effect(toks: &[Tok], env: &Env) -> Option<Result<Effect, Strin
         }
         return Some(match split_items(toks.get(3..)?, env) {
             Some(mut items) if items.len() == 1 && matches!(items[0], Expr::Split(..)) => {
-                let Some(Expr::Split(a, b)) = items.pop() else { unreachable!() };
+                let Some(Expr::Split(a, b)) = items.pop() else {
+                    unreachable!()
+                };
                 Ok(Effect::SetSplit(v, *a, *b))
             }
             Some(items) => Ok(Effect::ListSet(v, items)),

@@ -258,7 +258,11 @@ impl P<'_> {
                 if !matches!(inner.ty(self.env), Ty::Vector | Ty::Player | Ty::Object) {
                     return Err(format!("'{lw} of' needs a player or vector"));
                 }
-                node(if lw == "yaw" { Op::Yaw } else { Op::Pitch }, vec![inner], Ty::Number)
+                node(
+                    if lw == "yaw" { Op::Yaw } else { Op::Pitch },
+                    vec![inner],
+                    Ty::Number,
+                )
             }
             "x" | "y" | "z" if self.w_lit(0, "component") && self.w_lit(1, "of") => {
                 self.pos += 2;
@@ -328,7 +332,11 @@ impl P<'_> {
                 if !matches!(p.ty(self.env), Ty::Player | Ty::Object) {
                     return Err("'time played of' needs a player".into());
                 }
-                node(if played { Op::TimePlayed } else { Op::TimeLived }, vec![p], Ty::Timespan)
+                node(
+                    if played { Op::TimePlayed } else { Op::TimeLived },
+                    vec![p],
+                    Ty::Timespan,
+                )
             }
             "environment" | "world" if self.w_env_ahead(lw) => {
                 self.pos += if lw == "world" { 2 } else { 1 };
@@ -447,7 +455,11 @@ impl P<'_> {
             }
             let word = match self.toks.get(self.pos) {
                 Some(Tok::Word(w)) => w.to_ascii_lowercase(),
-                _ => return Err("expected 'vector from direction of <player>' or a direction like north".into()),
+                _ => {
+                    return Err(
+                        "expected 'vector from direction of <player>' or a direction like north".into(),
+                    );
+                }
             };
             let n = match word.as_str() {
                 "north" => 0,
@@ -456,7 +468,11 @@ impl P<'_> {
                 "west" => 3,
                 "up" | "upwards" | "above" => 4,
                 "down" | "downwards" | "below" => 5,
-                _ => return Err(format!("unknown direction '{word}' (north, south, east, west, up, down)")),
+                _ => {
+                    return Err(format!(
+                        "unknown direction '{word}' (north, south, east, west, up, down)"
+                    ));
+                }
             };
             self.pos += 1;
             return Ok(node(Op::Compass(n), vec![], Ty::Vector));
@@ -468,7 +484,10 @@ impl P<'_> {
             return self.w_xyz(first);
         }
         if !matches!(t, Ty::Location | Ty::Player | Ty::Object) {
-            return Err(format!("'vector from' needs numbers or a location, got {}", t.name()));
+            return Err(format!(
+                "'vector from' needs numbers or a location, got {}",
+                t.name()
+            ));
         }
         if self.w_lit(0, "to") || self.w_lit(0, "and") {
             self.pos += 1;
@@ -492,7 +511,11 @@ impl P<'_> {
                 "dot" | "cross" if vecish => {
                     self.pos += 1;
                     let r = self.w_vec(&format!("'{lw}'"))?;
-                    let (op, ty) = if lw == "dot" { (Op::Dot, Ty::Number) } else { (Op::Cross, Ty::Vector) };
+                    let (op, ty) = if lw == "dot" {
+                        (Op::Dot, Ty::Number)
+                    } else {
+                        (Op::Cross, Ty::Vector)
+                    };
                     e = node(op, vec![e, r], ty);
                 }
                 "projected" if vecish && self.w_lit(1, "onto") => {
@@ -586,7 +609,11 @@ fn vec3(v: &Value) -> Option<V3> {
 }
 
 fn mk(v: V3) -> Value {
-    Value::Vector { x: v.0, y: v.1, z: v.2 }
+    Value::Vector {
+        x: v.0,
+        y: v.1,
+        z: v.2,
+    }
 }
 
 fn dot(a: V3, b: V3) -> f64 {
@@ -614,7 +641,11 @@ fn yaw_of(v: V3) -> f64 {
 
 fn pitch_of(v: V3) -> f64 {
     let l = length(v);
-    if l == 0.0 { 0.0 } else { (-v.1 / l).clamp(-1.0, 1.0).asin().to_degrees() }
+    if l == 0.0 {
+        0.0
+    } else {
+        (-v.1 / l).clamp(-1.0, 1.0).asin().to_degrees()
+    }
 }
 
 fn scale(v: V3, k: f64) -> V3 {
@@ -623,7 +654,11 @@ fn scale(v: V3, k: f64) -> V3 {
 
 fn norm(v: V3) -> V3 {
     let l = length(v);
-    if l == 0.0 { (0.0, 0.0, 0.0) } else { scale(v, 1.0 / l) }
+    if l == 0.0 {
+        (0.0, 0.0, 0.0)
+    } else {
+        scale(v, 1.0 / l)
+    }
 }
 
 fn num_of(v: &Value) -> Option<f64> {
@@ -710,15 +745,51 @@ pub fn arith(x: &Value, op: BinOp, y: &Value) -> Result<Value, String> {
                     Ok(mk(scale(v, 1.0 / n)))
                 }
                 _ => match (x, y, op) {
-                    (Value::Location { x: lx, y: ly, z: lz, world }, Value::Vector { x: a, y: b, z: c }, BinOp::Add) => {
-                        Ok(Value::Location { x: lx + a, y: ly + b, z: lz + c, world: world.clone() })
-                    }
-                    (Value::Location { x: lx, y: ly, z: lz, world }, Value::Vector { x: a, y: b, z: c }, BinOp::Sub) => {
-                        Ok(Value::Location { x: lx - a, y: ly - b, z: lz - c, world: world.clone() })
-                    }
-                    (Value::Vector { x: a, y: b, z: c }, Value::Location { x: lx, y: ly, z: lz, world }, BinOp::Add) => {
-                        Ok(Value::Location { x: lx + a, y: ly + b, z: lz + c, world: world.clone() })
-                    }
+                    (
+                        Value::Location {
+                            x: lx,
+                            y: ly,
+                            z: lz,
+                            world,
+                        },
+                        Value::Vector { x: a, y: b, z: c },
+                        BinOp::Add,
+                    ) => Ok(Value::Location {
+                        x: lx + a,
+                        y: ly + b,
+                        z: lz + c,
+                        world: world.clone(),
+                    }),
+                    (
+                        Value::Location {
+                            x: lx,
+                            y: ly,
+                            z: lz,
+                            world,
+                        },
+                        Value::Vector { x: a, y: b, z: c },
+                        BinOp::Sub,
+                    ) => Ok(Value::Location {
+                        x: lx - a,
+                        y: ly - b,
+                        z: lz - c,
+                        world: world.clone(),
+                    }),
+                    (
+                        Value::Vector { x: a, y: b, z: c },
+                        Value::Location {
+                            x: lx,
+                            y: ly,
+                            z: lz,
+                            world,
+                        },
+                        BinOp::Add,
+                    ) => Ok(Value::Location {
+                        x: lx + a,
+                        y: ly + b,
+                        z: lz + c,
+                        world: world.clone(),
+                    }),
                     _ => bad(),
                 },
             }
@@ -790,14 +861,22 @@ pub fn apply(op: Op, a: &[Value], host: &mut dyn Host) -> Result<Value, String> 
         Op::Angle => match (v1, v2) {
             (Some(x), Some(y)) => {
                 let d = length(x) * length(y);
-                Value::Num(if d == 0.0 { 0.0 } else { (dot(x, y) / d).clamp(-1.0, 1.0).acos().to_degrees() })
+                Value::Num(if d == 0.0 {
+                    0.0
+                } else {
+                    (dot(x, y) / d).clamp(-1.0, 1.0).acos().to_degrees()
+                })
             }
             _ => Value::None,
         },
         Op::Project => match (v1, v2) {
             (Some(x), Some(y)) => {
                 let d = dot(y, y);
-                mk(if d == 0.0 { (0.0, 0.0, 0.0) } else { scale(y, dot(x, y) / d) })
+                mk(if d == 0.0 {
+                    (0.0, 0.0, 0.0)
+                } else {
+                    scale(y, dot(x, y) / d)
+                })
             }
             _ => Value::None,
         },
@@ -841,10 +920,20 @@ pub fn apply(op: Op, a: &[Value], host: &mut dyn Host) -> Result<Value, String> 
                 Value::World(w) | Value::Text(w) => Some(w.clone()),
                 _ => None,
             };
-            v1.map_or(Value::None, |v| Value::Location { x: v.0, y: v.1, z: v.2, world })
+            v1.map_or(Value::None, |v| Value::Location {
+                x: v.0,
+                y: v.1,
+                z: v.2,
+                world,
+            })
         }
         Op::Offset => match (loc_of(first, host), v2) {
-            (Some(l), Some(v)) => Value::Location { x: l.0 + v.0, y: l.1 + v.1, z: l.2 + v.2, world: l.3 },
+            (Some(l), Some(v)) => Value::Location {
+                x: l.0 + v.0,
+                y: l.1 + v.1,
+                z: l.2 + v.2,
+                world: l.3,
+            },
             _ => Value::None,
         },
         Op::Between => match (loc_of(first, host), loc_of(second, host)) {

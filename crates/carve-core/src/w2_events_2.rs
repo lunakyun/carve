@@ -249,11 +249,19 @@ pub const SPECS: &[Spec] = &[
         cancel: false,
         who: Player,
         counts: (1, 0, 0),
-        vals: &[("experience amount", N(0)), ("xp amount", N(0)), ("exp amount", N(0))],
+        vals: &[
+            ("experience amount", N(0)),
+            ("xp amount", N(0)),
+            ("exp amount", N(0)),
+        ],
     },
     Spec {
         ev: Ev::XpCooldown,
-        names: &["experience cooldown change", "xp cooldown change", "exp cooldown change"],
+        names: &[
+            "experience cooldown change",
+            "xp cooldown change",
+            "exp cooldown change",
+        ],
         cancel: true,
         who: Player,
         counts: (1, 0, 0),
@@ -372,11 +380,20 @@ pub const SPECS: &[Spec] = &[
     },
     Spec {
         ev: Ev::Glide,
-        names: &["gliding state change", "glide toggle", "toggle glide", "gliding change"],
+        names: &[
+            "gliding state change",
+            "glide toggle",
+            "toggle glide",
+            "gliding change",
+        ],
         cancel: true,
         who: Maybe,
         counts: (1, 0, 1),
-        vals: &[("gliding state", F(0)), ("event-entity", N(0)), ("entity id", N(0))],
+        vals: &[
+            ("gliding state", F(0)),
+            ("event-entity", N(0)),
+            ("entity id", N(0)),
+        ],
     },
     Spec {
         ev: Ev::Grow,
@@ -423,7 +440,12 @@ pub const SPECS: &[Spec] = &[
     },
     Spec {
         ev: Ev::Hunger,
-        names: &["hunger meter change", "hunger change", "food level change", "food change"],
+        names: &[
+            "hunger meter change",
+            "hunger change",
+            "food level change",
+            "food change",
+        ],
         cancel: true,
         who: Maybe,
         counts: (2, 0, 0),
@@ -589,13 +611,25 @@ pub fn parse_value(ev: Ev, word: &str, rest: &[Tok], need_more: &mut bool) -> Op
     match word {
         "event-player" if sp.who != Who::Nobody => return Some((Expr::Player, 0)),
         "event-number" => {
-            return sp.vals.iter().find(|(_, s)| matches!(s, Slot::Num(_))).map(|(_, s)| (Expr::Ev2Val(*s), 0));
+            return sp
+                .vals
+                .iter()
+                .find(|(_, s)| matches!(s, Slot::Num(_)))
+                .map(|(_, s)| (Expr::Ev2Val(*s), 0));
         }
         "event-text" => {
-            return sp.vals.iter().find(|(_, s)| matches!(s, Slot::Text(_))).map(|(_, s)| (Expr::Ev2Val(*s), 0));
+            return sp
+                .vals
+                .iter()
+                .find(|(_, s)| matches!(s, Slot::Text(_)))
+                .map(|(_, s)| (Expr::Ev2Val(*s), 0));
         }
         "event-boolean" => {
-            return sp.vals.iter().find(|(_, s)| matches!(s, Slot::Flag(_))).map(|(_, s)| (Expr::Ev2Val(*s), 0));
+            return sp
+                .vals
+                .iter()
+                .find(|(_, s)| matches!(s, Slot::Flag(_)))
+                .map(|(_, s)| (Expr::Ev2Val(*s), 0));
         }
         _ => {}
     }

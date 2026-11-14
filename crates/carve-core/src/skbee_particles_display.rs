@@ -42,11 +42,7 @@ pub enum ParticleData {
     /// `dust`: color and size.
     Dust { color: [u8; 3], size: f32 },
     /// `dust_color_transition`: from, to and size.
-    DustTransition {
-        from: [u8; 3],
-        to: [u8; 3],
-        size: f32,
-    },
+    DustTransition { from: [u8; 3], to: [u8; 3], size: f32 },
     /// `block`, `block_marker`, `falling_dust`: a block id like `stone`.
     Block(String),
     /// `item`: an item id like `diamond`.
@@ -172,7 +168,8 @@ pub fn particle_opt(seg: &[Tok], env: &Env, o: &mut ParticleOpts) -> Result<bool
             None => return Ok(false),
         },
         "color" | "colour" => {
-            o.color = Some(color_src(val, env).ok_or("particle color must be a color name, #hex or rgb r, g, b")?);
+            o.color =
+                Some(color_src(val, env).ok_or("particle color must be a color name, #hex or rgb r, g, b")?);
         }
         "to" => {
             let Some((c, rest)) = val.split_first() else {
@@ -181,7 +178,10 @@ pub fn particle_opt(seg: &[Tok], env: &Env, o: &mut ParticleOpts) -> Result<bool
             if !(is(c, "color") || is(c, "colour")) {
                 return Ok(false);
             }
-            o.to_color = Some(color_src(rest, env).ok_or("particle 'to color' must be a color name, #hex or rgb r, g, b")?);
+            o.to_color = Some(
+                color_src(rest, env)
+                    .ok_or("particle 'to color' must be a color name, #hex or rgb r, g, b")?,
+            );
         }
         "size" | "scale" => match number(val, env) {
             Some(n) => o.size = Some(n),
@@ -211,7 +211,11 @@ fn rgb_of_text(s: &str) -> Result<[u8; 3], String> {
 }
 
 fn clamp_byte(n: f64) -> u8 {
-    if n.is_finite() { n.clamp(0.0, 255.0) as u8 } else { 0 }
+    if n.is_finite() {
+        n.clamp(0.0, 255.0) as u8
+    } else {
+        0
+    }
 }
 
 impl Engine {
@@ -234,7 +238,11 @@ impl Engine {
         let s = self.text(e, ex, host)?;
         let id = s.trim().to_ascii_lowercase().replace(' ', "_");
         let id = id.strip_prefix("minecraft:").unwrap_or(&id).to_string();
-        if id.is_empty() || !id.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_') {
+        if id.is_empty()
+            || !id
+                .chars()
+                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_')
+        {
             return Err(format!("'{s}' is not a valid id"));
         }
         Ok(id)
@@ -384,7 +392,10 @@ fn pick(list: &'static [&'static str], toks: &[Tok]) -> Option<&'static str> {
 /// `Ok(None)`: not a display line. `Err`: it is one, but wrong.
 pub fn parse_display(toks: &[Tok], env: &Env) -> Result<Option<DisplayFx>, String> {
     let mut i = 1;
-    while toks.get(i).is_some_and(|t| is(t, "a") || is(t, "an") || is(t, "the") || is(t, "new")) {
+    while toks
+        .get(i)
+        .is_some_and(|t| is(t, "a") || is(t, "an") || is(t, "the") || is(t, "new"))
+    {
         i += 1;
     }
     let kind = match toks.get(i).and_then(word).as_deref() {
@@ -400,7 +411,12 @@ pub fn parse_display(toks: &[Tok], env: &Env) -> Result<Option<DisplayFx>, Strin
     if toks.get(i).is_some_and(|t| is(t, "entity")) {
         i += 1;
     }
-    let Some(at_i) = toks.iter().skip(i).position(|t| is(t, "at") || is(t, "on")).map(|p| p + i) else {
+    let Some(at_i) = toks
+        .iter()
+        .skip(i)
+        .position(|t| is(t, "at") || is(t, "on"))
+        .map(|p| p + i)
+    else {
         return Err("display needs a place: spawn text display at <place>".into());
     };
     let mut subject_toks = toks.get(i..at_i).unwrap_or_default();
@@ -413,7 +429,9 @@ pub fn parse_display(toks: &[Tok], env: &Env) -> Result<Option<DisplayFx>, Strin
         None
     } else {
         Some(match kind {
-            DisplayKind::Text => expr_of(subject_toks, env, &[Ty::Text]).ok_or("display text must be text")?,
+            DisplayKind::Text => {
+                expr_of(subject_toks, env, &[Ty::Text]).ok_or("display text must be text")?
+            }
             DisplayKind::Block => id_src(subject_toks, env).ok_or("display block must be a block id")?,
             DisplayKind::Item => {
                 let e = id_src(subject_toks, env).ok_or("display item must be an item id")?;
@@ -452,7 +470,10 @@ pub fn parse_display(toks: &[Tok], env: &Env) -> Result<Option<DisplayFx>, Strin
     if kind != DisplayKind::Item && fx.opts.iter().any(|o| matches!(o, DisplayOpt::Mode(_))) {
         return Err("only item displays have a display mode".into());
     }
-    if fx.subject.is_none() && !fx.opts.iter().any(|o| matches!(o, DisplayOpt::Text(_))) && kind != DisplayKind::Text {
+    if fx.subject.is_none()
+        && !fx.opts.iter().any(|o| matches!(o, DisplayOpt::Text(_)))
+        && kind != DisplayKind::Text
+    {
         return Err("block and item displays need an id: spawn block display of stone at <place>".into());
     }
     Ok(Some(fx))
@@ -465,11 +486,15 @@ fn display_opt(seg: &[Tok], env: &Env, kind: DisplayKind) -> Result<DisplayOpt, 
     let num = |t: &[Tok], what: &str| number(t, env).ok_or_else(|| format!("{what} must be a number"));
     Ok(match (w(0), w(1)) {
         (Some("text"), Some("opacity")) => DisplayOpt::Opacity(num(rest(2), "opacity")?),
-        (Some("text"), _) => DisplayOpt::Text(expr_of(rest(1), env, &[Ty::Text]).ok_or("display text must be text")?),
-        (Some("billboard"), _) => {
-            DisplayOpt::Billboard(pick(&BILLBOARDS, rest(1)).ok_or("billboard must be fixed, vertical, horizontal or center")?)
+        (Some("text"), _) => {
+            DisplayOpt::Text(expr_of(rest(1), env, &[Ty::Text]).ok_or("display text must be text")?)
         }
-        (Some("scale" | "size"), _) => DisplayOpt::Scale(one_or_three(rest(1), env).ok_or("scale must be N or x, y, z")?),
+        (Some("billboard"), _) => DisplayOpt::Billboard(
+            pick(&BILLBOARDS, rest(1)).ok_or("billboard must be fixed, vertical, horizontal or center")?,
+        ),
+        (Some("scale" | "size"), _) => {
+            DisplayOpt::Scale(one_or_three(rest(1), env).ok_or("scale must be N or x, y, z")?)
+        }
         (Some("translation" | "offset"), _) => {
             DisplayOpt::Translation(triple(rest(1), env).ok_or("translation must be x, y, z")?)
         }
@@ -477,9 +502,9 @@ fn display_opt(seg: &[Tok], env: &Env, kind: DisplayKind) -> Result<DisplayOpt, 
         (Some("viewrange"), _) => DisplayOpt::ViewRange(num(rest(1), "view range")?),
         (Some("opacity"), _) => DisplayOpt::Opacity(num(rest(1), "opacity")?),
         (Some("line"), Some("width")) => DisplayOpt::LineWidth(num(rest(2), "line width")?),
-        (Some("alignment" | "align"), _) => {
-            DisplayOpt::Alignment(pick(&ALIGNMENTS, rest(1)).ok_or("alignment must be center, left or right")?)
-        }
+        (Some("alignment" | "align"), _) => DisplayOpt::Alignment(
+            pick(&ALIGNMENTS, rest(1)).ok_or("alignment must be center, left or right")?,
+        ),
         (Some("shadow"), Some("radius")) => DisplayOpt::ShadowRadius(num(rest(2), "shadow radius")?),
         (Some("shadow"), Some("strength")) => DisplayOpt::ShadowStrength(num(rest(2), "shadow strength")?),
         (Some("shadow"), None) => DisplayOpt::Shadow,
@@ -487,7 +512,11 @@ fn display_opt(seg: &[Tok], env: &Env, kind: DisplayKind) -> Result<DisplayOpt, 
         (Some("seethrough"), None) => DisplayOpt::SeeThrough,
         (Some("default"), Some("background")) if seg.len() == 2 => DisplayOpt::DefaultBackground,
         (Some("background"), _) => {
-            let val = if w(1) == Some("color") || w(1) == Some("colour") { rest(2) } else { rest(1) };
+            let val = if w(1) == Some("color") || w(1) == Some("colour") {
+                rest(2)
+            } else {
+                rest(1)
+            };
             if joined(val).as_deref() == Some("transparent") || joined(val).as_deref() == Some("none") {
                 DisplayOpt::Background(None)
             } else {
@@ -495,18 +524,21 @@ fn display_opt(seg: &[Tok], env: &Env, kind: DisplayKind) -> Result<DisplayOpt, 
             }
         }
         (Some("glow"), _) => {
-            let val = if w(1) == Some("color") || w(1) == Some("colour") { rest(2) } else { rest(1) };
+            let val = if w(1) == Some("color") || w(1) == Some("colour") {
+                rest(2)
+            } else {
+                rest(1)
+            };
             DisplayOpt::Glow(color_src(val, env).ok_or("glow must be a color")?)
         }
         (Some("brightness" | "light"), _) => DisplayOpt::Brightness(num(rest(1), "brightness")?),
         (Some("mode"), _) => DisplayOpt::Mode(pick(&ITEM_MODES, rest(1)).ok_or("unknown item display mode")?),
-        (Some("item"), Some("mode")) => DisplayOpt::Mode(pick(&ITEM_MODES, rest(2)).ok_or("unknown item display mode")?),
+        (Some("item"), Some("mode")) => {
+            DisplayOpt::Mode(pick(&ITEM_MODES, rest(2)).ok_or("unknown item display mode")?)
+        }
         _ => {
             let _ = kind;
-            return Err(format!(
-                "unknown display option '{}'",
-                words.join(" ")
-            ));
+            return Err(format!("unknown display option '{}'", words.join(" ")));
         }
     })
 }
@@ -553,7 +585,14 @@ fn rgb_int(c: [u8; 3]) -> i32 {
 }
 
 impl Engine {
-    fn clamped(&mut self, e: &Expr, lo: f64, hi: f64, ex: &mut Exec, host: &mut dyn Host) -> Result<f64, String> {
+    fn clamped(
+        &mut self,
+        e: &Expr,
+        lo: f64,
+        hi: f64,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<f64, String> {
         let n = self.num(e, ex, host)?;
         Ok(if n.is_finite() { n.clamp(lo, hi) } else { lo })
     }
@@ -574,7 +613,12 @@ impl Engine {
     }
 
     #[inline(never)]
-    pub(crate) fn display_effect(&mut self, d: &DisplayFx, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
+    pub(crate) fn display_effect(
+        &mut self,
+        d: &DisplayFx,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<(), String> {
         let Some(at) = self.fx_pos(&d.at, ex, host)? else {
             return Ok(());
         };
@@ -611,12 +655,18 @@ impl Engine {
                 DisplayOpt::Text(e) => s.text = Some(self.text(e, ex, host)?),
                 DisplayOpt::Billboard(b) => s.billboard = Some(b),
                 DisplayOpt::Scale(p) => s.scale = Some(self.triple_f32(p, 0.0, 100.0, ex, host)?),
-                DisplayOpt::Translation(p) => s.translation = Some(self.triple_f32(p, -1000.0, 1000.0, ex, host)?),
-                DisplayOpt::ViewRange(e) => s.view_range = Some(self.clamped(e, 0.0, 100.0, ex, host)? as f32),
+                DisplayOpt::Translation(p) => {
+                    s.translation = Some(self.triple_f32(p, -1000.0, 1000.0, ex, host)?)
+                }
+                DisplayOpt::ViewRange(e) => {
+                    s.view_range = Some(self.clamped(e, 0.0, 100.0, ex, host)? as f32)
+                }
                 DisplayOpt::Background(None) => s.background = Some(0),
                 DisplayOpt::Background(Some(c)) => s.background = Some(argb(self.rgb(c, ex, host)?)),
                 DisplayOpt::Opacity(e) => s.opacity = Some(self.clamped(e, 0.0, 255.0, ex, host)? as u8),
-                DisplayOpt::LineWidth(e) => s.line_width = Some(self.clamped(e, 1.0, 10_000.0, ex, host)? as i32),
+                DisplayOpt::LineWidth(e) => {
+                    s.line_width = Some(self.clamped(e, 1.0, 10_000.0, ex, host)? as i32)
+                }
                 DisplayOpt::Alignment(a) => s.alignment = Some(a),
                 DisplayOpt::Shadow => s.shadow = true,
                 DisplayOpt::SeeThrough => s.see_through = true,
@@ -624,8 +674,12 @@ impl Engine {
                 DisplayOpt::Glow(c) => s.glow = Some(rgb_int(self.rgb(c, ex, host)?)),
                 DisplayOpt::Brightness(e) => s.brightness = Some(self.clamped(e, 0.0, 15.0, ex, host)? as u8),
                 DisplayOpt::Mode(m) => s.item_mode = Some(m),
-                DisplayOpt::ShadowRadius(e) => s.shadow_radius = Some(self.clamped(e, 0.0, 64.0, ex, host)? as f32),
-                DisplayOpt::ShadowStrength(e) => s.shadow_strength = Some(self.clamped(e, 0.0, 100.0, ex, host)? as f32),
+                DisplayOpt::ShadowRadius(e) => {
+                    s.shadow_radius = Some(self.clamped(e, 0.0, 64.0, ex, host)? as f32)
+                }
+                DisplayOpt::ShadowStrength(e) => {
+                    s.shadow_strength = Some(self.clamped(e, 0.0, 100.0, ex, host)? as f32)
+                }
             }
         }
         if let Some(t) = &mut s.text
@@ -681,7 +735,10 @@ pub fn summon_command(d: &DisplaySpec) -> Option<String> {
         return None;
     }
     let mut f: Vec<String> = Vec::new();
-    f.push(format!("text:{}", snbt_str(&text_json(d.text.as_deref().unwrap_or("")))));
+    f.push(format!(
+        "text:{}",
+        snbt_str(&text_json(d.text.as_deref().unwrap_or("")))
+    ));
     if let Some(b) = d.billboard {
         f.push(format!("billboard:\"{b}\""));
     }
@@ -721,7 +778,11 @@ pub fn summon_command(d: &DisplaySpec) -> Option<String> {
     if let Some(b) = d.brightness {
         f.push(format!("brightness:{{block:{b},sky:{b}}}"));
     }
-    for (on, key) in [(d.shadow, "shadow"), (d.see_through, "see_through"), (d.default_background, "default_background")] {
+    for (on, key) in [
+        (d.shadow, "shadow"),
+        (d.see_through, "see_through"),
+        (d.default_background, "default_background"),
+    ] {
         if on {
             f.push(format!("{key}:1b"));
         }

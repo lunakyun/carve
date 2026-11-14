@@ -5,8 +5,8 @@
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap};
 
-use carve_core::scoreboards_bossbars::{BarColor, BarFlag, BarStyle, MAX_LINES};
 use carve_core::PlayerRef;
+use carve_core::scoreboards_bossbars::{BarColor, BarFlag, BarStyle, MAX_LINES};
 use pumpkin_plugin_api::boss_bar::{BossBar, BossBarColor, BossBarDivision};
 use pumpkin_plugin_api::logging::LogLevel as ApiLevel;
 use pumpkin_plugin_api::scoreboard::{DisplaySlot, NumberFormat, RenderType};
@@ -133,7 +133,12 @@ impl WasmHost<'_> {
             }
         });
         if fresh {
-            sb.add_objective(OBJECTIVE, text(""), RenderType::Integer, Some(NumberFormat::Blank));
+            sb.add_objective(
+                OBJECTIVE,
+                text(""),
+                RenderType::Integer,
+                Some(NumberFormat::Blank),
+            );
             sb.set_display_slot(DisplaySlot::Sidebar, OBJECTIVE);
         }
         Some(sb)
@@ -146,7 +151,12 @@ impl WasmHost<'_> {
                 side.title = title.to_string();
             }
         });
-        sb.update_objective(OBJECTIVE, text(title), RenderType::Integer, Some(NumberFormat::Blank));
+        sb.update_objective(
+            OBJECTIVE,
+            text(title),
+            RenderType::Integer,
+            Some(NumberFormat::Blank),
+        );
     }
 
     pub fn sb_sidebar_set_line(&mut self, p: &PlayerRef, line: u32, line_text: &str) {
@@ -173,7 +183,12 @@ impl WasmHost<'_> {
     }
 
     pub fn sb_sidebar_clear_line(&mut self, p: &PlayerRef, line: u32) {
-        let old = SB.with(|s| s.borrow_mut().sidebars.get_mut(&p.uuid).and_then(|side| side.lines.remove(&line)));
+        let old = SB.with(|s| {
+            s.borrow_mut()
+                .sidebars
+                .get_mut(&p.uuid)
+                .and_then(|side| side.lines.remove(&line))
+        });
         let Some(old) = old else { return };
         if let Some(java) = self.get(p).and_then(Player::as_java) {
             java.get_scoreboard().remove_score(&old, OBJECTIVE);
@@ -293,7 +308,8 @@ macro_rules! sb_host_methods {
             stay: u32,
             fade_out: u32,
         ) {
-            self.inner.sb_send_title_timed(p, title, subtitle, fade_in, stay, fade_out)
+            self.inner
+                .sb_send_title_timed(p, title, subtitle, fade_in, stay, fade_out)
         }
         fn set_tab_list(&mut self, p: &PlayerRef, header: Option<&str>, footer: Option<&str>) {
             self.inner.sb_set_tab_list(p, header, footer)
@@ -310,7 +326,14 @@ macro_rules! sb_host_methods {
         fn sidebar_remove(&mut self, p: &PlayerRef) {
             self.inner.sb_sidebar_remove(p)
         }
-        fn bossbar_create(&mut self, id: &str, title: &str, c: carve_core::scoreboards_bossbars::BarColor, s: carve_core::scoreboards_bossbars::BarStyle, progress: f64) {
+        fn bossbar_create(
+            &mut self,
+            id: &str,
+            title: &str,
+            c: carve_core::scoreboards_bossbars::BarColor,
+            s: carve_core::scoreboards_bossbars::BarStyle,
+            progress: f64,
+        ) {
             self.inner.sb_bossbar_create(id, title, c, s, progress)
         }
         fn bossbar_set_title(&mut self, id: &str, title: &str) {

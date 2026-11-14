@@ -57,7 +57,11 @@ fn steve() -> PlayerRef {
 fn run(kind: EventKind, src: &str, flags: &[PlayerFlag]) -> Vec<String> {
     let mut e = Engine::default();
     let (_, errs) = e.load(&[("t.carve".into(), src.into())]);
-    assert!(errs.is_empty(), "errors: {:?}", errs.iter().map(|e| e.to_string()).collect::<Vec<_>>());
+    assert!(
+        errs.is_empty(),
+        "errors: {:?}",
+        errs.iter().map(|e| e.to_string()).collect::<Vec<_>>()
+    );
     let mut h = Mock {
         flags: flags.iter().copied().collect(),
         ..Mock::default()
@@ -153,7 +157,8 @@ fn toggle_events_parse_and_fire() {
 
 #[test]
 fn offline_player_is_false() {
-    let src = "on join:\n    if \"nobody\" is sneaking:\n        send \"yes\"\n    else:\n        send \"no\"\n";
+    let src =
+        "on join:\n    if \"nobody\" is sneaking:\n        send \"yes\"\n    else:\n        send \"no\"\n";
     let _ = src;
     assert!(!check("player is sneaking", &[]));
 }

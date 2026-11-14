@@ -60,32 +60,68 @@ pub struct Head {
 }
 
 const PHRASES: &[(&[&str], ServerQ, WorldArg)] = &[
-    (&["online", "players", "count"], ServerQ::OnlineCount, WorldArg::No),
+    (
+        &["online", "players", "count"],
+        ServerQ::OnlineCount,
+        WorldArg::No,
+    ),
     (&["online", "player", "count"], ServerQ::OnlineCount, WorldArg::No),
-    (&["online", "players", "amount"], ServerQ::OnlineCount, WorldArg::No),
+    (
+        &["online", "players", "amount"],
+        ServerQ::OnlineCount,
+        WorldArg::No,
+    ),
     (&["player", "count"], ServerQ::OnlineCount, WorldArg::No),
     (&["number", "of", "players"], ServerQ::OnlineCount, WorldArg::No),
-    (&["number", "of", "online", "players"], ServerQ::OnlineCount, WorldArg::No),
+    (
+        &["number", "of", "online", "players"],
+        ServerQ::OnlineCount,
+        WorldArg::No,
+    ),
     (&["amount", "of", "players"], ServerQ::OnlineCount, WorldArg::No),
-    (&["amount", "of", "online", "players"], ServerQ::OnlineCount, WorldArg::No),
+    (
+        &["amount", "of", "online", "players"],
+        ServerQ::OnlineCount,
+        WorldArg::No,
+    ),
     (&["max", "players"], ServerQ::MaxPlayers, WorldArg::No),
     (&["maximum", "players"], ServerQ::MaxPlayers, WorldArg::No),
     (&["max", "player", "count"], ServerQ::MaxPlayers, WorldArg::No),
     (&["maximum", "player", "count"], ServerQ::MaxPlayers, WorldArg::No),
-    (&["max", "amount", "of", "players"], ServerQ::MaxPlayers, WorldArg::No),
+    (
+        &["max", "amount", "of", "players"],
+        ServerQ::MaxPlayers,
+        WorldArg::No,
+    ),
     (&["player", "limit"], ServerQ::MaxPlayers, WorldArg::No),
     (&["motd"], ServerQ::Motd, WorldArg::No),
     (&["server", "motd"], ServerQ::Motd, WorldArg::No),
     (&["message", "of", "the", "day"], ServerQ::Motd, WorldArg::No),
     (&["server", "version"], ServerQ::Version, WorldArg::No),
     (&["pumpkin", "version"], ServerQ::Version, WorldArg::No),
-    (&["version", "of", "the", "server"], ServerQ::Version, WorldArg::No),
+    (
+        &["version", "of", "the", "server"],
+        ServerQ::Version,
+        WorldArg::No,
+    ),
     (&["version", "of", "server"], ServerQ::Version, WorldArg::No),
     (&["server", "version", "string"], ServerQ::Version, WorldArg::No),
     (&["pumpkin", "version", "string"], ServerQ::Version, WorldArg::No),
-    (&["version", "string", "of", "the", "server"], ServerQ::Version, WorldArg::No),
-    (&["version", "string", "of", "server"], ServerQ::Version, WorldArg::No),
-    (&["version", "of", "the", "pumpkin"], ServerQ::Version, WorldArg::No),
+    (
+        &["version", "string", "of", "the", "server"],
+        ServerQ::Version,
+        WorldArg::No,
+    ),
+    (
+        &["version", "string", "of", "server"],
+        ServerQ::Version,
+        WorldArg::No,
+    ),
+    (
+        &["version", "of", "the", "pumpkin"],
+        ServerQ::Version,
+        WorldArg::No,
+    ),
     (&["version", "of", "pumpkin"], ServerQ::Version, WorldArg::No),
     (&["all", "worlds"], ServerQ::Worlds, WorldArg::No),
     (&["worlds"], ServerQ::Worlds, WorldArg::No),
@@ -93,13 +129,33 @@ const PHRASES: &[(&[&str], ServerQ, WorldArg)] = &[
     (&["spawn", "point"], ServerQ::Spawn, WorldArg::Required),
     (&["spawn", "location"], ServerQ::Spawn, WorldArg::Required),
     (&["world", "spawn"], ServerQ::Spawn, WorldArg::Required),
-    (&["world", "border", "size"], ServerQ::BorderSize, WorldArg::Optional),
-    (&["world", "border", "diameter"], ServerQ::BorderSize, WorldArg::Optional),
-    (&["world", "border", "width"], ServerQ::BorderSize, WorldArg::Optional),
+    (
+        &["world", "border", "size"],
+        ServerQ::BorderSize,
+        WorldArg::Optional,
+    ),
+    (
+        &["world", "border", "diameter"],
+        ServerQ::BorderSize,
+        WorldArg::Optional,
+    ),
+    (
+        &["world", "border", "width"],
+        ServerQ::BorderSize,
+        WorldArg::Optional,
+    ),
     (&["border", "size"], ServerQ::BorderSize, WorldArg::Optional),
     (&["border", "diameter"], ServerQ::BorderSize, WorldArg::Optional),
-    (&["size", "of", "the", "world", "border"], ServerQ::BorderSize, WorldArg::Optional),
-    (&["size", "of", "world", "border"], ServerQ::BorderSize, WorldArg::Optional),
+    (
+        &["size", "of", "the", "world", "border"],
+        ServerQ::BorderSize,
+        WorldArg::Optional,
+    ),
+    (
+        &["size", "of", "world", "border"],
+        ServerQ::BorderSize,
+        WorldArg::Optional,
+    ),
 ];
 
 /// The phrase that starts at `toks[at]` (whose first word is `first`, lowercase).
@@ -414,12 +470,14 @@ fn border_set(toks: &[Tok], env: &Env) -> Result<Option<ServerFx>, String> {
     let (size_toks, over) = match rfind_any(rest, &["over", "in", "during"]) {
         Some(j) if j > 0 => {
             let t = rest.get(j + 1..).unwrap_or_default();
-            let over = expr_of(t, env, span_ty).ok_or_else(|| format!("expected a timespan after 'over' ({usage})"))?;
+            let over = expr_of(t, env, span_ty)
+                .ok_or_else(|| format!("expected a timespan after 'over' ({usage})"))?;
             (rest.get(..j).unwrap_or_default(), Some(over))
         }
         _ => (rest, None),
     };
-    let size = expr_of(size_toks, env, num_ty).ok_or_else(|| format!("expected a number for the size ({usage})"))?;
+    let size =
+        expr_of(size_toks, env, num_ty).ok_or_else(|| format!("expected a number for the size ({usage})"))?;
     Ok(Some(ServerFx::BorderSize { world, size, over }))
 }
 
@@ -445,7 +503,10 @@ fn teleport_spawn(toks: &[Tok], env: &Env) -> Result<Option<ServerFx>, String> {
     let Some((to, mut j)) = at else {
         return Ok(None);
     };
-    if toks.get(j).is_some_and(|t| t.is_lit("point") || t.is_lit("location")) {
+    if toks
+        .get(j)
+        .is_some_and(|t| t.is_lit("point") || t.is_lit("location"))
+    {
         j += 1;
     }
     let world = match toks.get(j) {
@@ -506,7 +567,12 @@ fn cond_of(subject: &[Tok], env: &Env, negate: bool) -> Option<Cond> {
 
 impl Engine {
     /// A player or a name from a value: the name, and the uuid when online.
-    fn server_who(&mut self, v: &Value, ex: &mut Exec, host: &mut dyn Host) -> Option<(String, Option<String>)> {
+    fn server_who(
+        &mut self,
+        v: &Value,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Option<(String, Option<String>)> {
         if let Some(p) = online(v, &mut ex.seen, host) {
             return Some((p.name, Some(p.uuid)));
         }
@@ -517,7 +583,12 @@ impl Engine {
         }
     }
 
-    pub(crate) fn server_effect(&mut self, f: &ServerFx, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
+    pub(crate) fn server_effect(
+        &mut self,
+        f: &ServerFx,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<(), String> {
         match f {
             ServerFx::Whitelist { who, on } => {
                 let v = self.eval(who, ex, host)?;
@@ -535,7 +606,12 @@ impl Engine {
             ServerFx::BorderSize { world, size, over } => {
                 let size = match self.eval(size, ex, host)? {
                     Value::Num(n) if n.is_finite() => n.clamp(MIN_BORDER, MAX_BORDER),
-                    other => return Err(format!("world border size needs a number, got {}", other.type_name())),
+                    other => {
+                        return Err(format!(
+                            "world border size needs a number, got {}",
+                            other.type_name()
+                        ));
+                    }
                 };
                 let secs = match over {
                     Some(e) => match self.eval(e, ex, host)? {
@@ -581,7 +657,12 @@ impl Engine {
         Ok(())
     }
 
-    pub(crate) fn server_cond(&mut self, c: &ServerCond, ex: &mut Exec, host: &mut dyn Host) -> Result<bool, String> {
+    pub(crate) fn server_cond(
+        &mut self,
+        c: &ServerCond,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<bool, String> {
         let v = self.eval(&c.who, ex, host)?;
         let listed = match self.server_who(&v, ex, host) {
             Some((name, _)) => host.is_whitelisted(&name),

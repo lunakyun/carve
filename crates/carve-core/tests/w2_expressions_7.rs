@@ -171,7 +171,10 @@ fn vector_arithmetic_on_variables() {
         r#"send "%{a} * 5%""#,
         r#"send "%{a} - {b} * 2%""#,
     ]);
-    assert_eq!(out, vec!["x: 1, y: 1, z: 0", "x: 5, y: 0, z: 0", "x: 1, y: -2, z: 0"]);
+    assert_eq!(
+        out,
+        vec!["x: 1, y: 1, z: 0", "x: 5, y: 0, z: 0", "x: 1, y: -2, z: 0"]
+    );
 }
 
 #[test]
@@ -183,7 +186,11 @@ fn vector_division_by_zero_is_an_error() {
     let (_, errs) = e.load(&[("t.carve".into(), src)]);
     assert!(errs.is_empty());
     e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
-    assert!(h.logs.iter().any(|(l, m)| *l == LogLevel::Error && m.contains("division by zero")));
+    assert!(
+        h.logs
+            .iter()
+            .any(|(l, m)| *l == LogLevel::Error && m.contains("division by zero"))
+    );
     assert!(!h.calls.iter().any(|c| c == "after"));
 }
 
@@ -289,7 +296,11 @@ fn locations_and_vectors() {
         one("vector(1, 2, 3) to location in world \"world\""),
         "x: 1, y: 2, z: 3 in 'world'"
     );
-    let out = run(&["set {l} to location(0, 0, 0)", "set {v} to vector(1, 2, 3)", r#"send "%{l} + {v}%""#]);
+    let out = run(&[
+        "set {l} to location(0, 0, 0)",
+        "set {v} to vector(1, 2, 3)",
+        r#"send "%{l} + {v}%""#,
+    ]);
     assert_eq!(out, vec!["x: 1, y: 2, z: 3"]);
 }
 
@@ -304,11 +315,11 @@ fn shapes() {
         "x: 0, y: 5, z: 3"
     );
     // The length of a spherical vector is its radius.
+    assert_eq!(one("length of spherical vector radius 4, yaw 33, pitch 21"), "4");
     assert_eq!(
-        one("length of spherical vector radius 4, yaw 33, pitch 21"),
-        "4"
+        one("x of cylindrical vector with radius 1 and yaw 90 and height 0"),
+        "-1"
     );
-    assert_eq!(one("x of cylindrical vector with radius 1 and yaw 90 and height 0"), "-1");
 }
 
 #[test]
@@ -321,17 +332,36 @@ fn random_vector_is_unit_length() {
         "send \"done\"",
     ]);
     assert_eq!(out, vec!["done"]);
-    let out = run(&["set {a} to random vector", "set {b} to a random vector", r#"if {a} is {b}:"#, r#"    send "same""#]);
+    let out = run(&[
+        "set {a} to random vector",
+        "set {b} to a random vector",
+        r#"if {a} is {b}:"#,
+        r#"    send "same""#,
+    ]);
     assert!(out.is_empty());
 }
 
 #[test]
 fn vector_variables_survive_save() {
     let mut vars = Variables::default();
-    vars.set_str("v", Value::Vector { x: 1.0, y: 2.5, z: -3.0 });
+    vars.set_str(
+        "v",
+        Value::Vector {
+            x: 1.0,
+            y: 2.5,
+            z: -3.0,
+        },
+    );
     let json = vars.to_json();
     let back = Variables::from_json(&json).unwrap();
-    assert_eq!(back.get("v"), Value::Vector { x: 1.0, y: 2.5, z: -3.0 });
+    assert_eq!(
+        back.get("v"),
+        Value::Vector {
+            x: 1.0,
+            y: 2.5,
+            z: -3.0
+        }
+    );
 }
 
 #[test]
@@ -384,7 +414,12 @@ fn server_facts() {
 
 #[test]
 fn tps_in_conditions() {
-    let out = run(&["if tps < 20:", r#"    send "lag""#, "if tps > 15:", r#"    send "ok""#]);
+    let out = run(&[
+        "if tps < 20:",
+        r#"    send "lag""#,
+        "if tps > 15:",
+        r#"    send "ok""#,
+    ]);
     assert_eq!(out, vec!["lag", "ok"]);
 }
 
@@ -422,7 +457,11 @@ fn type_of_and_item_count() {
     assert_eq!(one("type of \"minecraft:oak log\""), "oak log");
     assert_eq!(one("3 of diamond"), "3 diamond");
     assert_eq!(one("64 of oak log"), "64 oak log");
-    let out = run(&["set {i} to 2 diamonds", "set {j} to type of {i}", r#"send "%{j}%""#]);
+    let out = run(&[
+        "set {i} to 2 diamonds",
+        "set {j} to type of {i}",
+        r#"send "%{j}%""#,
+    ]);
     assert_eq!(out, vec!["diamond"]);
 }
 
@@ -453,7 +492,9 @@ fn whether_comparisons() {
     ]);
     assert_eq!(
         out,
-        vec!["true", "false", "true", "false", "true", "false", "true", "true", "false", "true"]
+        vec![
+            "true", "false", "true", "false", "true", "false", "true", "true", "false", "true"
+        ]
     );
 }
 
@@ -471,7 +512,14 @@ fn existing_syntax_still_parses() {
     ]);
     assert_eq!(
         out,
-        vec!["10", "x: 10, y: 64, z: -5 in 'world'", "5 minutes", "15", "0", "2 diamond"]
+        vec![
+            "10",
+            "x: 10, y: 64, z: -5 in 'world'",
+            "5 minutes",
+            "15",
+            "0",
+            "2 diamond"
+        ]
     );
 }
 

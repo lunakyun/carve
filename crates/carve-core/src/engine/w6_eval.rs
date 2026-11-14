@@ -126,7 +126,8 @@ impl Engine {
                 Some(t) => Value::Timespan { millis: t * TICK_MS },
                 None => Value::None,
             },
-            Read::RespawnLocation => match player(&operand, ex, host).and_then(|p| host.respawn_location(&p)) {
+            Read::RespawnLocation => match player(&operand, ex, host).and_then(|p| host.respawn_location(&p))
+            {
                 Some((x, y, z)) => Value::Location { x, y, z, world: None },
                 None => Value::None,
             },
@@ -144,7 +145,9 @@ impl Engine {
                     None => Value::None,
                 }
             }
-            Read::SimulationDistance => host.simulation_distance().map_or(Value::None, |n| Value::Num(n as f64)),
+            Read::SimulationDistance => host
+                .simulation_distance()
+                .map_or(Value::None, |n| Value::Num(n as f64)),
             Read::Tablist => Value::List(host.online_players().into_iter().map(Value::Player).collect()),
         })
     }
@@ -157,14 +160,22 @@ impl Engine {
         match e.op {
             W6Op::SetAir | W6Op::AddAir | W6Op::RemoveAir => {
                 let Value::Timespan { millis } = value else {
-                    return Err(format!("expected a timespan, got {} ({})", value.type_name(), value));
+                    return Err(format!(
+                        "expected a timespan, got {} ({})",
+                        value.type_name(),
+                        value
+                    ));
                 };
                 let ticks = millis / TICK_MS;
                 let new = match e.op {
                     W6Op::SetAir => ticks,
                     _ => {
                         let cur = host.remaining_air(&p).unwrap_or(0);
-                        if e.op == W6Op::AddAir { cur + ticks } else { cur - ticks }
+                        if e.op == W6Op::AddAir {
+                            cur + ticks
+                        } else {
+                            cur - ticks
+                        }
                     }
                 };
                 host.set_remaining_air(&p, new);

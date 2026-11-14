@@ -24,7 +24,11 @@ impl Engine {
                     return Err("numbers from <a> to <b> needs finite numbers".into());
                 }
                 let (start, end) = if *ints {
-                    if a <= b { (a.ceil(), b.floor()) } else { (a.floor(), b.ceil()) }
+                    if a <= b {
+                        (a.ceil(), b.floor())
+                    } else {
+                        (a.floor(), b.ceil())
+                    }
                 } else {
                     (a, b)
                 };
@@ -84,8 +88,11 @@ impl Engine {
             },
             W5::MoonPhase(w) => {
                 let v = self.eval(w, ex, host)?;
-                match self.w5_world_name(&v, ex, host).and_then(|n| host.world_time(Some(&n)))
-                    .and_then(|t| u64::try_from(t).ok()) {
+                match self
+                    .w5_world_name(&v, ex, host)
+                    .and_then(|n| host.world_time(Some(&n)))
+                    .and_then(|t| u64::try_from(t).ok())
+                {
                     Some(t) => Value::Text(w5::moon_phase(t).to_string()),
                     None => Value::None,
                 }
@@ -120,7 +127,12 @@ impl Engine {
         })
     }
 
-    pub(super) fn run_w5_effect(&mut self, e: &W5Effect, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
+    pub(super) fn run_w5_effect(
+        &mut self,
+        e: &W5Effect,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<(), String> {
         match e.op {
             W5Op::SetListName | W5Op::ResetListName | W5Op::SetListPriority => {
                 let Some(p) = self.player(&e.target, ex, host)? else {
@@ -176,7 +188,12 @@ impl Engine {
         Ok(())
     }
 
-    fn w5_arg_text(&mut self, e: &Option<Expr>, ex: &mut Exec, host: &mut dyn Host) -> Result<String, String> {
+    fn w5_arg_text(
+        &mut self,
+        e: &Option<Expr>,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<String, String> {
         match e {
             Some(e) => self.text(e, ex, host),
             None => Ok(String::new()),

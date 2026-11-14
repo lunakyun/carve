@@ -10,9 +10,9 @@ use pumpkin_plugin_api::Context;
 use pumpkin_plugin_api::Server;
 use pumpkin_plugin_api::events::{
     BlockPistonExtendEvent, BlockPistonRetractEvent, BlockRedstoneEvent, EntityEnterLoveModeEvent,
-    EntityPortalEnterEvent, EntityPortalEvent, EntityResurrectEvent, EntityUnleashEvent, EventData, EventHandler,
-    EventPriority, FromIntoEvent, LeavesDecayEvent, LightningStrikeEvent,
-    LootGenerateEvent, PiglinBarterEvent, PlayerCommandSendEvent, PlayerInputEvent, PlayerKickEvent, PlayerLeashEntityEvent,
+    EntityPortalEnterEvent, EntityPortalEvent, EntityResurrectEvent, EntityUnleashEvent, EventData,
+    EventHandler, EventPriority, FromIntoEvent, LeavesDecayEvent, LightningStrikeEvent, LootGenerateEvent,
+    PiglinBarterEvent, PlayerCommandSendEvent, PlayerInputEvent, PlayerKickEvent, PlayerLeashEntityEvent,
     PlayerLocaleChangeEvent, PlayerResourcePackStatusEvent, PortalCreateEvent,
 };
 use pumpkin_plugin_api::logging::{LogLevel as ApiLevel, log};

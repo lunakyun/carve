@@ -173,9 +173,16 @@ fn random_uuid_shape() {
     let h = run("set {_a} to random uuid\nset {_b} to a random uuid\nsend {_a}\nsend {_b}");
     for s in &h.sent {
         let p: Vec<&str> = s.split('-').collect();
-        assert_eq!(p.iter().map(|x| x.len()).collect::<Vec<_>>(), vec![8, 4, 4, 4, 12], "{s}");
+        assert_eq!(
+            p.iter().map(|x| x.len()).collect::<Vec<_>>(),
+            vec![8, 4, 4, 4, 12],
+            "{s}"
+        );
         assert!(p[2].starts_with('4'), "version nibble: {s}");
-        assert!("89ab".contains(p[3].chars().next().unwrap()), "variant nibble: {s}");
+        assert!(
+            "89ab".contains(p[3].chars().next().unwrap()),
+            "variant nibble: {s}"
+        );
         assert!(s.chars().all(|c| c == '-' || c.is_ascii_hexdigit()));
     }
     assert_ne!(h.sent[0], h.sent[1]);
@@ -195,8 +202,13 @@ fn raw_string_blocks_colors() {
 
 #[test]
 fn repeat_string() {
-    let h = run("send \"ab\" repeated 3 times\nset {_n} to 2\nsend \"-\" repeated {_n} + 1 times\nsend \"x\" repeated 0 times");
-    assert_eq!(h.sent, vec!["ababab".to_string(), "---".to_string(), "".to_string()]);
+    let h = run(
+        "send \"ab\" repeated 3 times\nset {_n} to 2\nsend \"-\" repeated {_n} + 1 times\nsend \"x\" repeated 0 times",
+    );
+    assert_eq!(
+        h.sent,
+        vec!["ababab".to_string(), "---".to_string(), "".to_string()]
+    );
 }
 
 #[test]
@@ -262,7 +274,10 @@ fn reduce_text_and_single_and_empty() {
     let h = run(
         "set {_l::*} to \"a\", \"b\" and \"c\"\nset {_s} to reduce {_l::*} with [\"%reduced value%-%input%\"]\nsend {_s}\nset {_one::1} to 7\nsend reduce {_one::*} with [reduced value + input]\nif (reduce {_none::*} with [reduced value + input]) is not set:\n    send \"empty\"",
     );
-    assert_eq!(h.sent, vec!["a-b-c".to_string(), "7".to_string(), "empty".to_string()]);
+    assert_eq!(
+        h.sent,
+        vec!["a-b-c".to_string(), "7".to_string(), "empty".to_string()]
+    );
 }
 
 #[test]

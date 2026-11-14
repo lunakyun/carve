@@ -137,7 +137,13 @@ fn date_comparisons() {
     let src = "on join:\n\tset {a} to date from unix timestamp 100\n\tset {b} to date from unix timestamp 200\n\tif {a} < {b}:\n\t\tbroadcast \"lt\"\n\tif {b} > {a}:\n\t\tbroadcast \"gt\"\n\tif {a} = date from unix timestamp 100:\n\t\tbroadcast \"eq\"\n\tif {a} is not {b}:\n\t\tbroadcast \"ne\"\n\tif now > {a}:\n\t\tbroadcast \"after\"\n\tif {a} >= {b}:\n\t\tbroadcast \"bad\"\n";
     assert_eq!(
         join(src),
-        vec!["broadcast lt", "broadcast gt", "broadcast eq", "broadcast ne", "broadcast after"]
+        vec![
+            "broadcast lt",
+            "broadcast gt",
+            "broadcast eq",
+            "broadcast ne",
+            "broadcast after"
+        ]
     );
 }
 

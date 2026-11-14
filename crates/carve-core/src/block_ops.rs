@@ -114,7 +114,8 @@ pub fn parse_effect(toks: &[Tok], env: &Env) -> Result<Option<Effect>, String> {
             let Some(rest) = toks.get(1..) else {
                 return Ok(None);
             };
-            if !matches!(rest.first(), Some(t) if t.is_lit("block") || t.is_lit("targeted") || t.is_lit("target")) {
+            if !matches!(rest.first(), Some(t) if t.is_lit("block") || t.is_lit("targeted") || t.is_lit("target"))
+            {
                 return Ok(None);
             }
             let at = parse_expr(rest, env)?;
@@ -175,7 +176,9 @@ pub fn block_id(v: &Value) -> Option<String> {
     let id = raw.strip_prefix("minecraft:").unwrap_or(&raw);
     let ok = !id.is_empty()
         && id.len() <= 64
-        && id.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_');
+        && id
+            .bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_');
     ok.then(|| id.to_string())
 }
 
@@ -221,7 +224,9 @@ impl Engine {
         match b {
             BlockExpr::At(e) => {
                 let v = self.eval(e, ex, host)?;
-                Ok(self.block_pos(&v, ex, host).map_or(Value::None, |p| block_value(&p)))
+                Ok(self
+                    .block_pos(&v, ex, host)
+                    .map_or(Value::None, |p| block_value(&p)))
             }
             BlockExpr::Rel(e, dx, dy, dz) => {
                 let v = self.eval(e, ex, host)?;
@@ -238,27 +243,39 @@ impl Engine {
                 let Some(p) = online(&v, &mut ex.seen, host) else {
                     return Ok(Value::None);
                 };
-                Ok(host.targeted_block(&p, TARGET_RANGE).map_or(Value::None, |b| block_value(&b)))
+                Ok(host
+                    .targeted_block(&p, TARGET_RANGE)
+                    .map_or(Value::None, |b| block_value(&b)))
             }
             BlockExpr::TypeOf(e) => {
                 let v = self.eval(e, ex, host)?;
                 if let Value::Item { id, .. } = v {
-                    return Ok(Value::Item { id, count: 1, meta: None });
+                    return Ok(Value::Item {
+                        id,
+                        count: 1,
+                        meta: None,
+                    });
                 }
                 // `type of "minecraft:oak log"`: an item id written as text.
                 if let Value::Text(t) = &v {
                     let t = t.trim().to_ascii_lowercase();
                     let t = t.strip_prefix("minecraft:").unwrap_or(&t).replace(' ', "_");
                     if crate::items::is_known(&t) {
-                        return Ok(Value::Item { id: t, count: 1, meta: None });
+                        return Ok(Value::Item {
+                            id: t,
+                            count: 1,
+                            meta: None,
+                        });
                     }
                 }
                 let Some(p) = self.block_pos(&v, ex, host) else {
                     return Ok(Value::None);
                 };
-                Ok(host
-                    .block_type(&p)
-                    .map_or(Value::None, |id| Value::Item { id, count: 1, meta: None }))
+                Ok(host.block_type(&p).map_or(Value::None, |id| Value::Item {
+                    id,
+                    count: 1,
+                    meta: None,
+                }))
             }
         }
     }

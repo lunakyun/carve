@@ -4,8 +4,8 @@
 use super::*;
 use carve_core::{EvPos, EventExtra};
 use pumpkin_plugin_api::events::{
-    CraftItemEvent, CreatureSpawnEvent, EntityPickupItemEvent, PlayerDropItemEvent, PlayerGamemodeChangeEvent,
-    PlayerItemConsumeEvent, PlayerLevelChangeEvent, ProjectileHitEvent,
+    CraftItemEvent, CreatureSpawnEvent, EntityPickupItemEvent, PlayerDropItemEvent,
+    PlayerGamemodeChangeEvent, PlayerItemConsumeEvent, PlayerLevelChangeEvent, ProjectileHitEvent,
 };
 
 /// `minecraft:stone` -> `stone`.
@@ -117,7 +117,11 @@ impl EventAccess for CreatureSpawnEvent {
 struct OnPickUp;
 
 impl EventHandler<EntityPickupItemEvent> for OnPickUp {
-    fn handle(&self, server: Server, mut data: EventData<EntityPickupItemEvent>) -> EventData<EntityPickupItemEvent> {
+    fn handle(
+        &self,
+        server: Server,
+        mut data: EventData<EntityPickupItemEvent>,
+    ) -> EventData<EntityPickupItemEvent> {
         let cancelled = with_state(&server, None, |st, host| {
             if !st.engine.table().has_event(EventKind::PickUp) {
                 return false;
@@ -148,7 +152,11 @@ impl EventHandler<EntityPickupItemEvent> for OnPickUp {
 struct OnProjectileHit;
 
 impl EventHandler<ProjectileHitEvent> for OnProjectileHit {
-    fn handle(&self, server: Server, mut data: EventData<ProjectileHitEvent>) -> EventData<ProjectileHitEvent> {
+    fn handle(
+        &self,
+        server: Server,
+        mut data: EventData<ProjectileHitEvent>,
+    ) -> EventData<ProjectileHitEvent> {
         let cancelled = with_state(&server, None, |st, host| {
             if !st.engine.table().has_event(EventKind::ProjectileHit) {
                 return false;
@@ -168,7 +176,11 @@ impl EventHandler<ProjectileHitEvent> for OnProjectileHit {
                 hs: &mut st.hs,
             };
             st.engine
-                .fire(EventKind::ProjectileHit, EventCtx::console_with_extra(extra), &mut th)
+                .fire(
+                    EventKind::ProjectileHit,
+                    EventCtx::console_with_extra(extra),
+                    &mut th,
+                )
                 .cancelled
         });
         if cancelled == Some(true) {
@@ -185,8 +197,13 @@ pub fn register(context: &Context) {
     register_event::<PlayerGamemodeChangeEvent>(context, EventKind::GamemodeChange);
     register_event::<PlayerLevelChangeEvent>(context, EventKind::LevelChange);
     register_event::<CreatureSpawnEvent>(context, EventKind::MobSpawn);
-    if let Err(e) = context.register_event_handler::<EntityPickupItemEvent, _>(OnPickUp, EventPriority::Normal, true) {
-        plog(ApiLevel::Error, &format!("could not listen to pick up events: {e}"));
+    if let Err(e) =
+        context.register_event_handler::<EntityPickupItemEvent, _>(OnPickUp, EventPriority::Normal, true)
+    {
+        plog(
+            ApiLevel::Error,
+            &format!("could not listen to pick up events: {e}"),
+        );
     }
     if let Err(e) =
         context.register_event_handler::<ProjectileHitEvent, _>(OnProjectileHit, EventPriority::Normal, true)

@@ -295,7 +295,10 @@ fn poll_runs_only_on_even_ticks() {
 
 #[test]
 fn moved_api_fires_without_poll() {
-    let src = format!("{}on bound enter:\n    broadcast \"enter %event-bound%\"\n", script(MAKE));
+    let src = format!(
+        "{}on bound enter:\n    broadcast \"enter %event-bound%\"\n",
+        script(MAKE)
+    );
     let mut e = load_src(&src);
     let mut h = Mock::steve_at(0.0, 0.0, 0.0);
     run(&mut e, &mut h);
@@ -341,8 +344,9 @@ fn deleted_bound_fires_no_exit() {
 
 #[test]
 fn big_bound_uses_fallback_list() {
-    let mut e =
-        load("create bound with id \"huge\" within location(-100000, 0, -100000) and location(100000, 255, 100000)");
+    let mut e = load(
+        "create bound with id \"huge\" within location(-100000, 0, -100000) and location(100000, 255, 100000)",
+    );
     run(&mut e, &mut Mock::steve_at(0.0, 0.0, 0.0));
     assert_eq!(e.bounds.ids_at("world", 99999.0, 5.0, -5000.0), ["huge"]);
     assert!(e.bounds.ids_at("world", 100001.0, 5.0, 0.0).is_empty());
@@ -372,8 +376,10 @@ fn compile_errors() {
     assert!(!errors_of(&script("broadcast \"%event-bound%\"")).is_empty());
     assert!(errors_of("on bound enter:\n    broadcast \"%event-bound%\"\n").is_empty());
     assert!(
-        errors_of("on player enter bound:\n    broadcast \"x\"\non player exit of bound:\n    broadcast \"x\"\n")
-            .is_empty()
+        errors_of(
+            "on player enter bound:\n    broadcast \"x\"\non player exit of bound:\n    broadcast \"x\"\n"
+        )
+        .is_empty()
     );
 }
 

@@ -36,7 +36,10 @@ impl ScriptError {
             out.push(format!("    &7Line: {}", self.code));
         }
         if !self.suggestions.is_empty() {
-            out.push(format!("    &7Did you mean: &f{}", self.suggestions.join(" &7|&f ")));
+            out.push(format!(
+                "    &7Did you mean: &f{}",
+                self.suggestions.join(" &7|&f ")
+            ));
         }
         out
     }
@@ -73,7 +76,11 @@ pub fn strip_codes(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
     let mut it = s.chars().peekable();
     while let Some(c) = it.next() {
-        if c == '&' && it.peek().is_some_and(|n| n.is_ascii_hexdigit() || "klmnorKLMNOR".contains(*n)) {
+        if c == '&'
+            && it
+                .peek()
+                .is_some_and(|n| n.is_ascii_hexdigit() || "klmnorKLMNOR".contains(*n))
+        {
             it.next();
             continue;
         }

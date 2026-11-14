@@ -62,9 +62,11 @@ impl EventVal {
     pub fn ty(self) -> Ty {
         match self {
             EventVal::Item => Ty::Item,
-            EventVal::Entity | EventVal::Reason | EventVal::OldMode | EventVal::NewMode | EventVal::Recipe => {
-                Ty::Text
-            }
+            EventVal::Entity
+            | EventVal::Reason
+            | EventVal::OldMode
+            | EventVal::NewMode
+            | EventVal::Recipe => Ty::Text,
             EventVal::Location => Ty::Location,
             EventVal::OldLevel | EventVal::NewLevel => Ty::Number,
             EventVal::HitPlayer => Ty::Player,
@@ -106,7 +108,8 @@ pub fn parse_kind(s: &str) -> Option<EventKind> {
 }
 
 /// The `on <name>` names, for the "unknown event" error text.
-pub const NAMES: &str = "drop, pick up, consume, projectile hit, mob spawn, gamemode change, craft, level change";
+pub const NAMES: &str =
+    "drop, pick up, consume, projectile hit, mob spawn, gamemode change, craft, level change";
 
 /// Splits `spawn of zombie` and `gamemode change to creative` into the event
 /// name and a filter `(what, text)`. Other names come back unchanged.
@@ -143,7 +146,10 @@ pub fn filter_rhs(what: &str, text: &str) -> Option<Expr> {
     let t = text.trim();
     let norm = match what {
         "entity" => {
-            let t = t.strip_prefix("a ").or_else(|| t.strip_prefix("an ")).unwrap_or(t);
+            let t = t
+                .strip_prefix("a ")
+                .or_else(|| t.strip_prefix("an "))
+                .unwrap_or(t);
             let t = t.strip_prefix("minecraft:").unwrap_or(t);
             t.replace(' ', "_")
         }
@@ -183,7 +189,14 @@ pub fn parse_val(allowed: u16, first: &str, rest: &[Tok]) -> Option<(EventVal, u
             } else if w(0, "game") && w(1, "mode") {
                 (if old { EventVal::OldMode } else { EventVal::NewMode }, 2)
             } else if w(0, "level") {
-                (if old { EventVal::OldLevel } else { EventVal::NewLevel }, 1)
+                (
+                    if old {
+                        EventVal::OldLevel
+                    } else {
+                        EventVal::NewLevel
+                    },
+                    1,
+                )
             } else {
                 return None;
             }
@@ -227,7 +240,11 @@ pub fn parse_entity_cond(toks: &[Tok], env: &crate::expr::Env) -> Option<Cond> {
         return None;
     }
     let op = if eq { CmpOp::Eq } else { CmpOp::Ne };
-    Some(Cond::Cmp(Expr::EventVal(EventVal::Entity), op, Expr::Text(vec![Part::Lit(name)])))
+    Some(Cond::Cmp(
+        Expr::EventVal(EventVal::Entity),
+        op,
+        Expr::Text(vec![Part::Lit(name)]),
+    ))
 }
 
 /// Value of an event value in this event; `<none>` when the host gave none.

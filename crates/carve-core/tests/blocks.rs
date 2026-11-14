@@ -56,7 +56,12 @@ impl Host for Mock {
         Some((1.5, 64.0, -3.0, "world".to_string()))
     }
     fn block_type(&mut self, at: &BlockPos) -> Option<String> {
-        Some(self.blocks.get(&(at.x, at.y, at.z)).cloned().unwrap_or_else(|| "air".into()))
+        Some(
+            self.blocks
+                .get(&(at.x, at.y, at.z))
+                .cloned()
+                .unwrap_or_else(|| "air".into()),
+        )
     }
     fn set_block(&mut self, at: &BlockPos, id: &str) {
         self.blocks.insert((at.x, at.y, at.z), id.to_string());
@@ -165,11 +170,9 @@ fn block_at_floors_coordinates() {
 
 #[test]
 fn location_at_xyz_in_world() {
-    let h = run(
-        "set {_l} to location at 10, 5, 10 in world \"world\"\n\
+    let h = run("set {_l} to location at 10, 5, 10 in world \"world\"\n\
          send \"%type of block at {_l}%\" to player\n\
-         send \"%world of {_l}%\" to player",
-    );
+         send \"%world of {_l}%\" to player");
     assert_eq!(h.msgs, vec!["stone", "world"]);
 }
 
@@ -181,11 +184,9 @@ fn location_at_xyz_without_world() {
 
 #[test]
 fn block_below_and_above_player() {
-    let h = run(
-        "send \"%type of block below player%\" to player\n\
+    let h = run("send \"%type of block below player%\" to player\n\
          send \"%type of block above player%\" to player\n\
-         send \"%type of block at player%\" to player",
-    );
+         send \"%type of block at player%\" to player");
     assert_eq!(h.msgs, vec!["grass block", "air", "air"]);
 }
 
@@ -204,23 +205,19 @@ fn block_compass_directions() {
 
 #[test]
 fn targeted_block_of_player() {
-    let h = run(
-        "send \"%type of targeted block of player%\" to player\n\
+    let h = run("send \"%type of targeted block of player%\" to player\n\
          send \"%type of player's targeted block%\" to player\n\
-         send \"%type of targeted block%\" to player",
-    );
+         send \"%type of targeted block%\" to player");
     assert_eq!(h.msgs, vec!["obsidian", "obsidian", "obsidian"]);
 }
 
 #[test]
 fn block_in_variable() {
-    let h = run(
-        "set {_b} to block below player\n\
+    let h = run("set {_b} to block below player\n\
          send \"%type of {_b}%\" to player\n\
          set block {_b} to stone\n\
          send \"%type of {_b}%\" to player\n\
-         send \"%y of {_b}%\" to player",
-    );
+         send \"%y of {_b}%\" to player");
     assert_eq!(h.msgs, vec!["grass block", "stone", "63"]);
 }
 
@@ -233,7 +230,10 @@ fn set_block_and_read_back() {
 #[test]
 fn set_block_relative_to_player() {
     let h = run("set block below player to diamond block");
-    assert_eq!(h.blocks.get(&(1, 63, -3)).map(String::as_str), Some("diamond_block"));
+    assert_eq!(
+        h.blocks.get(&(1, 63, -3)).map(String::as_str),
+        Some("diamond_block")
+    );
 }
 
 #[test]
@@ -264,9 +264,7 @@ fn block_is_condition() {
 
 #[test]
 fn block_is_else() {
-    let h = run(
-        "if block above player is stone:\n    send \"a\" to player\nelse:\n    send \"b\" to player",
-    );
+    let h = run("if block above player is stone:\n    send \"a\" to player\nelse:\n    send \"b\" to player");
     assert_eq!(h.msgs, vec!["b"]);
 }
 
@@ -321,7 +319,10 @@ fn defaults_use_setblock_commands() {
     );
     assert_eq!(
         h.cmds,
-        vec!["setblock 1 2 3 minecraft:stone", "setblock 4 5 6 minecraft:air destroy"]
+        vec![
+            "setblock 1 2 3 minecraft:stone",
+            "setblock 4 5 6 minecraft:air destroy"
+        ]
     );
 }
 

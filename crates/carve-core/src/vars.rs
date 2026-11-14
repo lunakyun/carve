@@ -162,7 +162,9 @@ fn object_value(o: &Map<String, Json>) -> Option<Value> {
         return Some(Value::Console);
     }
     if let Some(s) = o.get("nbt").and_then(Json::as_str) {
-        return crate::skbee_nbt::Compound::parse(s).ok().map(|c| Value::Nbt(Box::new(c)));
+        return crate::skbee_nbt::Compound::parse(s)
+            .ok()
+            .map(|c| Value::Nbt(Box::new(c)));
     }
     if let Some(ms) = o.get("timespan").and_then(Json::as_i64) {
         return Some(Value::Timespan { millis: ms });

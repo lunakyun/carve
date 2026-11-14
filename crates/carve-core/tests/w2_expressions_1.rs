@@ -240,7 +240,11 @@ fn armor() {
         ],
         &mut h,
     );
-    assert!(h.sent[0].contains("iron helmet") || h.sent[0].contains("iron_helmet"), "{:?}", h.sent);
+    assert!(
+        h.sent[0].contains("iron helmet") || h.sent[0].contains("iron_helmet"),
+        "{:?}",
+        h.sent
+    );
     assert_eq!(&h.sent[1..], ["boots on", "no chest"]);
 }
 

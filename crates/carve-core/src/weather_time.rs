@@ -265,12 +265,30 @@ pub struct WtExpr {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum WtEffect {
-    SetTime { world: Option<Expr>, to: Expr },
+    SetTime {
+        world: Option<Expr>,
+        to: Expr,
+    },
     /// Add `amount` (ticks or a timespan) times `sign`.
-    AddTime { world: Option<Expr>, amount: Expr, sign: i64 },
-    SetWeather { world: Option<Expr>, to: Weather, dur: Option<Expr> },
-    SetRule { world: Option<Expr>, rule: String, value: Expr },
-    SetDifficulty { world: Option<Expr>, to: Expr },
+    AddTime {
+        world: Option<Expr>,
+        amount: Expr,
+        sign: i64,
+    },
+    SetWeather {
+        world: Option<Expr>,
+        to: Weather,
+        dur: Option<Expr>,
+    },
+    SetRule {
+        world: Option<Expr>,
+        rule: String,
+        value: Expr,
+    },
+    SetDifficulty {
+        world: Option<Expr>,
+        to: Expr,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -298,7 +316,11 @@ fn is(t: &Tok, lit: &str) -> bool {
 }
 
 fn pos_of(toks: &[Tok], from: usize, lit: &str) -> Option<usize> {
-    toks.iter().enumerate().skip(from).find(|(_, t)| is(t, lit)).map(|(i, _)| i)
+    toks.iter()
+        .enumerate()
+        .skip(from)
+        .find(|(_, t)| is(t, lit))
+        .map(|(i, _)| i)
 }
 
 fn typed(toks: &[Tok], env: &Env, want: &[Ty]) -> Result<Expr, String> {
@@ -392,7 +414,11 @@ fn parse_set(rest: &[Tok], env: &Env) -> Result<Option<Effect>, String> {
         "weather" => {
             let (w_toks, dur) = match value.iter().rposition(|t| is(t, "for")) {
                 Some(i) => {
-                    let d = typed(value.get(i + 1..).unwrap_or_default(), env, &[Ty::Timespan, Ty::Number])?;
+                    let d = typed(
+                        value.get(i + 1..).unwrap_or_default(),
+                        env,
+                        &[Ty::Timespan, Ty::Number],
+                    )?;
                     (value.get(..i).unwrap_or_default(), Some(d))
                 }
                 None => (value, None),
@@ -438,7 +464,11 @@ fn parse_add(toks: &[Tok], env: &Env, sign: i64) -> Result<Option<Effect>, Strin
         return Ok(None);
     }
     let world = world_part(tail, env)?;
-    let amount = typed(toks.get(1..sep_i).unwrap_or_default(), env, &[Ty::Number, Ty::Timespan])?;
+    let amount = typed(
+        toks.get(1..sep_i).unwrap_or_default(),
+        env,
+        &[Ty::Number, Ty::Timespan],
+    )?;
     Ok(wt_effect(WtEffect::AddTime { world, amount, sign }))
 }
 
@@ -533,7 +563,12 @@ impl Engine {
     }
 
     #[inline(never)]
-    pub(crate) fn wt_eval(&mut self, w: &WtExpr, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
+    pub(crate) fn wt_eval(
+        &mut self,
+        w: &WtExpr,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<Value, String> {
         let world = self.wt_world(&w.world, ex, host)?;
         let world = world.as_deref();
         Ok(match &w.kind {
@@ -556,7 +591,12 @@ impl Engine {
     }
 
     #[inline(never)]
-    pub(crate) fn wt_effect(&mut self, e: &WtEffect, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
+    pub(crate) fn wt_effect(
+        &mut self,
+        e: &WtEffect,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<(), String> {
         match e {
             WtEffect::SetTime { world, to } => {
                 let world = self.wt_world(world, ex, host)?;
@@ -566,7 +606,9 @@ impl Engine {
                 }
                 let target = (n.round() as i64).rem_euclid(DAY);
                 // Keep the day count when the host can read it.
-                let base = host.world_time(world.as_deref()).map_or(0, |t| t - t.rem_euclid(DAY));
+                let base = host
+                    .world_time(world.as_deref())
+                    .map_or(0, |t| t - t.rem_euclid(DAY));
                 host.set_world_time(world.as_deref(), base + target);
             }
             WtEffect::AddTime { world, amount, sign } => {
@@ -595,7 +637,11 @@ impl Engine {
                             Value::Timespan { millis } => millis as f64 / 50.0,
                             other => return Err(format!("weather length can't be {}", other.type_name())),
                         };
-                        Some(if t.is_finite() { t.clamp(1.0, MAX_WEATHER_TICKS) as u32 } else { 1 })
+                        Some(if t.is_finite() {
+                            t.clamp(1.0, MAX_WEATHER_TICKS) as u32
+                        } else {
+                            1
+                        })
                     }
                 };
                 host.set_weather(world.as_deref(), *to, ticks);

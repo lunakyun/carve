@@ -129,7 +129,11 @@ fn limits_and_constants() {
     assert!(out[4].starts_with("-17976931348623"), "{}", out[4]);
     assert!(out[5].starts_with("3.14"), "{}", out[5]);
     assert!(out[6].to_lowercase().contains("inf"), "{}", out[6]);
-    assert!(out[7].to_lowercase().contains("inf") && out[7].contains('-'), "{}", out[7]);
+    assert!(
+        out[7].to_lowercase().contains("inf") && out[7].contains('-'),
+        "{}",
+        out[7]
+    );
     assert!(out[8].to_lowercase().contains("inf"), "{}", out[8]);
     assert!(out[9].to_lowercase().contains("nan"), "{}", out[9]);
 }
@@ -167,7 +171,9 @@ fn numbers_too_big() {
     let mut h = Mock::default();
     e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
     assert!(
-        h.logs.iter().any(|(l, m)| *l == LogLevel::Error && m.contains("million")),
+        h.logs
+            .iter()
+            .any(|(l, m)| *l == LogLevel::Error && m.contains("million")),
         "{:?}",
         h.logs
     );

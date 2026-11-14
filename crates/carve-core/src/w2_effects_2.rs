@@ -47,9 +47,15 @@ use W2Op::*;
 /// Registered after the main effect patterns. Each starts with a literal.
 pub const EFFECT_PATTERNS: &[(&str, EffKind)] = &[
     ("make %player% (fly|start flying|be able to fly)", W2(Fly(true))),
-    ("make %player% (stop flying|not fly|stop fly|unable to fly)", W2(Fly(false))),
+    (
+        "make %player% (stop flying|not fly|stop fly|unable to fly)",
+        W2(Fly(false)),
+    ),
     ("make %player% invulnerable", W2(Invulnerable(true))),
-    ("make %player% (vulnerable|not invulnerable)", W2(Invulnerable(false))),
+    (
+        "make %player% (vulnerable|not invulnerable)",
+        W2(Invulnerable(false)),
+    ),
     ("make %player% invisible", W2(Invisible(true))),
     ("make %player% (visible|not invisible)", W2(Invisible(false))),
     ("ignite %player% [for %timespan%]", W2(Ignite)),
@@ -65,8 +71,14 @@ pub const EFFECT_PATTERNS: &[(&str, EffKind)] = &[
     ),
     ("make %player% (look|face) at %location%", W2(LookAt)),
     ("make %player% say %text%", W2(Say)),
-    ("open [the] book [in [the] main hand] to %player%", W2(OpenBook(false))),
-    ("open [the] book in [the] off hand to %player%", W2(OpenBook(true))),
+    (
+        "open [the] book [in [the] main hand] to %player%",
+        W2(OpenBook(false)),
+    ),
+    (
+        "open [the] book in [the] off hand to %player%",
+        W2(OpenBook(true)),
+    ),
     ("log %text% to [file] %text%", W2(Log)),
     ("log %text%", W2(Log)),
     (
@@ -123,7 +135,11 @@ pub fn clean_log_name(raw: &str) -> Result<String, String> {
             "'{raw}' is not a valid log file name (use letters, digits, - _ . and spaces, no folders)"
         ));
     }
-    Ok(if name.contains('.') { name.to_string() } else { format!("{name}.log") })
+    Ok(if name.contains('.') {
+        name.to_string()
+    } else {
+        format!("{name}.log")
+    })
 }
 
 /// `log "x"` with no file goes to this file.

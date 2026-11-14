@@ -127,8 +127,12 @@ impl EventKind {
             "inventory close" | "inventory closing" | "inventory close event" | "close inventory" => {
                 EventKind::InventoryClose
             }
-            "advancement done" | "advancement" | "player advancement" | "advancement complete"
-            | "advancement completed" | "advancement get" => EventKind::AdvancementDone,
+            "advancement done"
+            | "advancement"
+            | "player advancement"
+            | "advancement complete"
+            | "advancement completed"
+            | "advancement get" => EventKind::AdvancementDone,
             "recipe discover" | "recipe discovered" | "player recipe discover" | "recipe unlock" => {
                 EventKind::RecipeDiscover
             }
@@ -574,7 +578,10 @@ pub enum CondKind {
     HasItem,
     NotHasItem,
     /// `item is enchanted [with x]`.
-    ItemEnchanted { any: bool, negate: bool },
+    ItemEnchanted {
+        any: bool,
+        negate: bool,
+    },
     InvContains,
     IsPlayer,
     IsNotPlayer,
@@ -689,9 +696,11 @@ fn registry() -> &'static Registry {
             .iter()
             .chain(crate::op_kick_ban::EFFECT_PATTERNS)
             .filter_map(|(s, k)| Pattern::new(s, *k).ok())
-            .chain(crate::xp_level::XP_EFFECT_PATTERNS
-            .iter()
-            .filter_map(|(s, o)| Pattern::new(s, EffKind::Xp(*o)).ok()))
+            .chain(
+                crate::xp_level::XP_EFFECT_PATTERNS
+                    .iter()
+                    .filter_map(|(s, o)| Pattern::new(s, EffKind::Xp(*o)).ok()),
+            )
             .chain(
                 crate::senders::SENDER_EFFECT_PATTERNS
                     .iter()
@@ -819,9 +828,9 @@ pub fn check_registry() -> Result<(), String> {
         .chain(PLAYER_FLAG_PATTERNS)
         .chain(crate::w2_conditions_2::CONDITION_PATTERNS)
         .chain(crate::w2_conditions_2::FLAG_PATTERNS)
-            .chain(crate::w2_conditions_3::W2_CONDITION_PATTERNS)
-            .chain(crate::w4_conditions_1::CONDITION_PATTERNS)
-            .chain(crate::w4_skbee_raytrace_world::CONDITION_PATTERNS)
+        .chain(crate::w2_conditions_3::W2_CONDITION_PATTERNS)
+        .chain(crate::w4_conditions_1::CONDITION_PATTERNS)
+        .chain(crate::w4_skbee_raytrace_world::CONDITION_PATTERNS)
         .chain(CONDITION_PATTERNS)
     {
         Pattern::new(s, *k)?;
@@ -1050,7 +1059,8 @@ impl Cx<'_> {
                 self.return_stmt(num, text);
             }
             ["continue"] | ["continue", "loop"] => {
-                let Some((next, open)) = self.loops.last().map(|l| (l.next, self.catch_depth - l.catch)) else {
+                let Some((next, open)) = self.loops.last().map(|l| (l.next, self.catch_depth - l.catch))
+                else {
                     self.err(num, "'continue' only works inside a loop");
                     return true;
                 };
@@ -1538,7 +1548,9 @@ impl Cx<'_> {
         }
         let ops_first = toks.first().is_some_and(|t| t.is_lit("sort"))
             || (toks.first().is_some_and(|t| t.is_lit("set"))
-                && toks.get(3..).is_some_and(|r| crate::list_ops::looks_like_list_op(r, &self.env)));
+                && toks
+                    .get(3..)
+                    .is_some_and(|r| crate::list_ops::looks_like_list_op(r, &self.env)));
         let parsed = if let Some(t) = crate::w2_effects_3::parse_transform(&toks, &self.env) {
             Some(t)
         } else if ops_first {
@@ -1848,7 +1860,9 @@ fn build_cond(kind: CondKind, mut c: Vec<Option<Capture>>) -> Cond {
     if let CondKind::Rtw(k, negate) = kind {
         let a = take_expr(&mut c, 0).unwrap_or(Expr::Num(0.0));
         let b = take_expr(&mut c, 1);
-        return Cond::Rtw(Box::new(crate::w4_skbee_raytrace_world::build_cond(k, negate, a, b)));
+        return Cond::Rtw(Box::new(crate::w4_skbee_raytrace_world::build_cond(
+            k, negate, a, b,
+        )));
     }
     if let CondKind::W3(k) = kind {
         return match crate::w2_conditions_3::build(k, c) {
@@ -1879,7 +1893,11 @@ fn build_cond(kind: CondKind, mut c: Vec<Option<Capture>>) -> Cond {
             return Cond::Rare(Box::new(crate::w2_conditions_2::build(kind, negate, a, b)));
         }
         CondKind::W4(kind, negate) => {
-            let a = if crate::w4_conditions_1::has_a(kind) { a } else { Expr::Num(0.0) };
+            let a = if crate::w4_conditions_1::has_a(kind) {
+                a
+            } else {
+                Expr::Num(0.0)
+            };
             let b = crate::w4_conditions_1::has_b(kind).then_some(b);
             return Cond::Rare4(Box::new(crate::w4_conditions_1::build(kind, negate, a, b)));
         }
@@ -1893,7 +1911,11 @@ fn build_cond(kind: CondKind, mut c: Vec<Option<Capture>>) -> Cond {
         CondKind::Gt => CmpOp::Gt,
         CondKind::Lt => CmpOp::Lt,
         CondKind::InGamemode | CondKind::NotInGamemode => {
-            let op = if kind == CondKind::InGamemode { CmpOp::Eq } else { CmpOp::Ne };
+            let op = if kind == CondKind::InGamemode {
+                CmpOp::Eq
+            } else {
+                CmpOp::Ne
+            };
             let mode = Expr::Prop(crate::expr::Prop::Gamemode, Box::new(a));
             return Cond::Cmp(mode, op, b);
         }
@@ -2183,7 +2205,13 @@ pub fn compile_all(files: &[(String, String)]) -> Compiled {
             if let Some((head, local)) = crate::structures::function_head(top.head()) {
                 match parse_function_header(name, top.num, head) {
                     Ok((sig, defs)) => {
-                        if crate::structures::function_clash(&sigs, &sig_scope, &sig.name, local, parsed.len()) {
+                        if crate::structures::function_clash(
+                            &sigs,
+                            &sig_scope,
+                            &sig.name,
+                            local,
+                            parsed.len(),
+                        ) {
                             out.errors.push(ScriptError::new(
                                 name,
                                 top.num,
@@ -2574,8 +2602,10 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                 has_message: k == EventKind::Chat || matches!(k, EventKind::Ext3(e) if e.has_text()),
                 arg_types: vec![],
                 trigger_name: format!("'on {}'", k.name()),
-                no_player: matches!(k, EventKind::Load | EventKind::MobSpawn | EventKind::ProjectileHit)
-                    || matches!(k, EventKind::Ext(e) if !e.has_player() && !e.maybe_player())
+                no_player: matches!(
+                    k,
+                    EventKind::Load | EventKind::MobSpawn | EventKind::ProjectileHit
+                ) || matches!(k, EventKind::Ext(e) if !e.has_player() && !e.maybe_player())
                     || matches!(k, EventKind::Ext3(e) if !e.has_player()),
                 event_vals: crate::events_items::mask(k),
                 ext4: if let EventKind::Ext4(e) = k { Some(e) } else { None },
@@ -2767,7 +2797,10 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
         for (what, text) in std::mem::take(&mut click_filters) {
             if what == "command" {
                 let (left, right) = crate::w4_events_movement::command_guard(&text);
-                let at = cx.emit(Instr::JumpIfNot(Cond::Cmp(left, CmpOp::Eq, right), usize::MAX), top.num);
+                let at = cx.emit(
+                    Instr::JumpIfNot(Cond::Cmp(left, CmpOp::Eq, right), usize::MAX),
+                    top.num,
+                );
                 guards.push(at);
                 continue;
             }

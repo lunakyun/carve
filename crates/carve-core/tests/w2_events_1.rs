@@ -268,7 +268,11 @@ fn book_edit_and_sign_are_separate() {
     let mut e = engine(src);
     let mut h = Mock::default();
     let mut ctx = EventCtx::player(steve());
-    ctx.ev = vec![Value::Text("Title".into()), Value::Num(3.0), Value::Text("p1".into())];
+    ctx.ev = vec![
+        Value::Text("Title".into()),
+        Value::Num(3.0),
+        Value::Text("p1".into()),
+    ];
     e.fire(EventKind::Ext(ExtEvent::BookEdit), ctx.clone(), &mut h);
     e.fire(EventKind::Ext(ExtEvent::BookSign), ctx, &mut h);
     assert_eq!(h.calls, ["broadcast edit Title 3", "broadcast sign"]);
@@ -376,13 +380,23 @@ fn combust_connect_dispense_egg_elytra_swing_bell_damage_fertilize() {
     );
     assert_eq!(c, ["broadcast 44"]);
     assert!(cancelled);
-    let (c, _) = fire("on arm swing:\n    send \"swing\" to player\n", ExtEvent::ArmSwing, true, vec![]);
+    let (c, _) = fire(
+        "on arm swing:\n    send \"swing\" to player\n",
+        ExtEvent::ArmSwing,
+        true,
+        vec![],
+    );
     assert_eq!(c, ["send Steve swing"]);
     let (c, _) = fire(
         "on bell ring:\n    broadcast \"%event-text%\"\n",
         ExtEvent::BellRing,
         false,
-        vec![loc(0.0, 0.0, 0.0), world(), Value::None, Value::Text("north".into())],
+        vec![
+            loc(0.0, 0.0, 0.0),
+            world(),
+            Value::None,
+            Value::Text("north".into()),
+        ],
     );
     assert_eq!(c, ["broadcast north"]);
     let (c, _) = fire(

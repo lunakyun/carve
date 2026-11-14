@@ -81,7 +81,10 @@ pub const CONDITION_PATTERNS: &[(&str, CondKind)] = &[
         k(Kind::Alphanumeric, true),
     ),
     ("[the] event is cancelled", k(Kind::EventCancelled, false)),
-    ("[the] event (is not|isn't) cancelled", k(Kind::EventCancelled, true)),
+    (
+        "[the] event (is not|isn't) cancelled",
+        k(Kind::EventCancelled, true),
+    ),
     ("%player% can hold %item%", k(Kind::CanHold, false)),
     (
         "%player% (can't|cannot|can not) hold %item%",
@@ -92,7 +95,10 @@ pub const CONDITION_PATTERNS: &[(&str, CondKind)] = &[
         "%player%'s inventory (can't|cannot|can not) hold %item%",
         k(Kind::CanHold, true),
     ),
-    ("%player% can build [(at|in|on)] %location%", k(Kind::CanBuild, false)),
+    (
+        "%player% can build [(at|in|on)] %location%",
+        k(Kind::CanBuild, false),
+    ),
     (
         "%player% (can't|cannot|can not) build [(at|in|on)] %location%",
         k(Kind::CanBuild, true),
@@ -102,7 +108,10 @@ pub const CONDITION_PATTERNS: &[(&str, CondKind)] = &[
         "%player% (can't|cannot|can not) pick up items",
         k(Kind::CanPickUp, true),
     ),
-    ("%player% can see chat (colors|colours)", h(Check::ChatColors, false)),
+    (
+        "%player% can see chat (colors|colours)",
+        h(Check::ChatColors, false),
+    ),
     (
         "%player% (can't|cannot|can not) see chat (colors|colours)",
         h(Check::ChatColors, true),
@@ -113,8 +122,14 @@ pub const CONDITION_PATTERNS: &[(&str, CondKind)] = &[
         h(Check::ChatMessages, true),
     ),
     ("%player% can see %player%", k(Kind::CanSee, false)),
-    ("%player% (can't|cannot|can not) see %player%", k(Kind::CanSee, true)),
-    ("%player% (has|have) chat filtering", h(Check::ChatFiltering, false)),
+    (
+        "%player% (can't|cannot|can not) see %player%",
+        k(Kind::CanSee, true),
+    ),
+    (
+        "%player% (has|have) chat filtering",
+        h(Check::ChatFiltering, false),
+    ),
     (
         "%player% (doesn't|does not|don't|do not) have chat filtering",
         h(Check::ChatFiltering, true),
@@ -140,7 +155,10 @@ pub const CONDITION_PATTERNS: &[(&str, CondKind)] = &[
         "%location% (is not|isn't|are not|aren't) sedated",
         k(Kind::Sedated, true),
     ),
-    ("respawn anchors (work|are active) in %world%", k(Kind::AnchorsWork, false)),
+    (
+        "respawn anchors (work|are active) in %world%",
+        k(Kind::AnchorsWork, false),
+    ),
     (
         "respawn anchors (don't|do not|doesn't|does not) work in %world%",
         k(Kind::AnchorsWork, true),
@@ -150,13 +168,19 @@ pub const CONDITION_PATTERNS: &[(&str, CondKind)] = &[
         "%location% (doesn't|does not|don't|do not) have glowing text",
         k(Kind::GlowingText, true),
     ),
-    ("%player% (has|have) [a] custom model data", k(Kind::CustomModelData, false)),
+    (
+        "%player% (has|have) [a] custom model data",
+        k(Kind::CustomModelData, false),
+    ),
     (
         "%player% (doesn't|does not|don't|do not) have [a] custom model data",
         k(Kind::CustomModelData, true),
     ),
     ("%location% (is|are) ringing", h(Check::BellRinging, false)),
-    ("%location% (is not|isn't|are not|aren't) ringing", h(Check::BellRinging, true)),
+    (
+        "%location% (is not|isn't|are not|aren't) ringing",
+        h(Check::BellRinging, true),
+    ),
     ("%object% can breed", h(Check::CanBreed, false)),
     ("%object% (can't|cannot|can not) breed", h(Check::CanBreed, true)),
     ("%object% (has|have) been stared at", h(Check::Stared, false)),
@@ -164,7 +188,10 @@ pub const CONDITION_PATTERNS: &[(&str, CondKind)] = &[
         "%object% (has not|hasn't|have not|haven't) been stared at",
         h(Check::Stared, true),
     ),
-    ("%object% (is|are) in (liquid|a liquid)", h(Check::InLiquid, false)),
+    (
+        "%object% (is|are) in (liquid|a liquid)",
+        h(Check::InLiquid, false),
+    ),
     (
         "%object% (is not|isn't|are not|aren't) in (liquid|a liquid)",
         h(Check::InLiquid, true),
@@ -172,13 +199,22 @@ pub const CONDITION_PATTERNS: &[(&str, CondKind)] = &[
     ("%object% (is|are) wet", h(Check::Wet, false)),
     ("%object% (is not|isn't|are not|aren't) wet", h(Check::Wet, true)),
     ("%object% (is|are) sheared", h(Check::Sheared, false)),
-    ("%object% (is not|isn't|are not|aren't) sheared", h(Check::Sheared, true)),
-    ("%object% (has|have) (ai|artificial intelligence)", h(Check::HasAi, false)),
+    (
+        "%object% (is not|isn't|are not|aren't) sheared",
+        h(Check::Sheared, true),
+    ),
+    (
+        "%object% (has|have) (ai|artificial intelligence)",
+        h(Check::HasAi, false),
+    ),
     (
         "%object% (doesn't|does not|don't|do not) have (ai|artificial intelligence)",
         h(Check::HasAi, true),
     ),
-    ("%player% (has|have) (custom|client) weather", h(Check::ClientWeather, false)),
+    (
+        "%player% (has|have) (custom|client) weather",
+        h(Check::ClientWeather, false),
+    ),
     (
         "%player% (doesn't|does not|don't|do not) have (custom|client) weather",
         h(Check::ClientWeather, true),
@@ -234,25 +270,82 @@ fn item_of(v: &Value) -> Option<(String, u32)> {
 /// items fall back to 64.
 pub fn max_stack(id: &str) -> u32 {
     const ONE: &[&str] = &[
-        "_sword", "_pickaxe", "_axe", "_shovel", "_hoe", "_helmet", "_chestplate", "_leggings", "_boots",
-        "_boat", "_raft", "_minecart", "_bed", "_shulker_box", "_banner", "_horse_armor", "_potion",
-        
+        "_sword",
+        "_pickaxe",
+        "_axe",
+        "_shovel",
+        "_hoe",
+        "_helmet",
+        "_chestplate",
+        "_leggings",
+        "_boots",
+        "_boat",
+        "_raft",
+        "_minecart",
+        "_bed",
+        "_shulker_box",
+        "_banner",
+        "_horse_armor",
+        "_potion",
     ];
     const ONE_EXACT: &[&str] = &[
-        "bow", "crossbow", "trident", "shield", "elytra", "fishing_rod", "carrot_on_a_stick",
-        "warped_fungus_on_a_stick", "shears", "flint_and_steel", "brush", "mace", "saddle",
-        "totem_of_undying", "potion", "splash_potion", "lingering_potion", "water_bucket",
-        "lava_bucket", "milk_bucket", "powder_snow_bucket", "cod_bucket", "salmon_bucket",
-        "pufferfish_bucket", "tropical_fish_bucket", "axolotl_bucket", "tadpole_bucket",
-        "enchanted_book", "written_book", "cake", "mushroom_stew",
-        "rabbit_stew", "beetroot_soup", "suspicious_stew", "bundle", "compass", "recovery_compass",
-        "spyglass", "goat_horn", "minecart", "chest_minecart",
-        "furnace_minecart", "hopper_minecart", "tnt_minecart", "command_block_minecart",
-        "knowledge_book", "filled_map",
+        "bow",
+        "crossbow",
+        "trident",
+        "shield",
+        "elytra",
+        "fishing_rod",
+        "carrot_on_a_stick",
+        "warped_fungus_on_a_stick",
+        "shears",
+        "flint_and_steel",
+        "brush",
+        "mace",
+        "saddle",
+        "totem_of_undying",
+        "potion",
+        "splash_potion",
+        "lingering_potion",
+        "water_bucket",
+        "lava_bucket",
+        "milk_bucket",
+        "powder_snow_bucket",
+        "cod_bucket",
+        "salmon_bucket",
+        "pufferfish_bucket",
+        "tropical_fish_bucket",
+        "axolotl_bucket",
+        "tadpole_bucket",
+        "enchanted_book",
+        "written_book",
+        "cake",
+        "mushroom_stew",
+        "rabbit_stew",
+        "beetroot_soup",
+        "suspicious_stew",
+        "bundle",
+        "compass",
+        "recovery_compass",
+        "spyglass",
+        "goat_horn",
+        "minecart",
+        "chest_minecart",
+        "furnace_minecart",
+        "hopper_minecart",
+        "tnt_minecart",
+        "command_block_minecart",
+        "knowledge_book",
+        "filled_map",
     ];
     const SIXTEEN_EXACT: &[&str] = &[
-        "ender_pearl", "snowball", "egg", "bucket", "honey_bottle", "armor_stand", 
-        "name_tag", "writable_book",
+        "ender_pearl",
+        "snowball",
+        "egg",
+        "bucket",
+        "honey_bottle",
+        "armor_stand",
+        "name_tag",
+        "writable_book",
     ];
     if id.starts_with("music_disc_") || id.ends_with("_sign") || id.ends_with("_hanging_sign") {
         return if id.starts_with("music_disc_") { 1 } else { 16 };
@@ -293,7 +386,8 @@ fn sight_point(v: &Value, host: &mut dyn Host) -> Option<(f64, f64, f64, String)
     match v {
         Value::Player(p) => {
             let p = live_player(v, host).unwrap_or_else(|| p.clone());
-            host.eye_location(&p).or_else(|| host.player_location(&p).map(|(x, y, z, w)| (x, y + 1.62, z, w)))
+            host.eye_location(&p)
+                .or_else(|| host.player_location(&p).map(|(x, y, z, w)| (x, y + 1.62, z, w)))
         }
         Value::Entity(e) => host.entity_location(e).map(|(x, y, z, w)| (x, y + 1.0, z, w)),
         Value::Location { x, y, z, world } => {
@@ -324,7 +418,11 @@ fn line_clear(host: &mut dyn Host, a: (f64, f64, f64, String), b: (f64, f64, f64
     let mut solid: Vec<(String, bool)> = Vec::new();
     let mut last = (i32::MIN, i32::MIN, i32::MIN);
     for i in 0..=steps {
-        let t = if steps == 0 { 0.0 } else { f64::from(i) / f64::from(steps) };
+        let t = if steps == 0 {
+            0.0
+        } else {
+            f64::from(i) / f64::from(steps)
+        };
         let (x, y, z) = (a.0 + dx * t, a.1 + dy * t, a.2 + dz * t);
         let cell = (x.floor() as i32, y.floor() as i32, z.floor() as i32);
         if cell == last {
@@ -344,7 +442,9 @@ fn line_clear(host: &mut dyn Host, a: (f64, f64, f64, String), b: (f64, f64, f64
         let s = match solid.iter().find(|(n, _)| *n == id) {
             Some((_, s)) => *s,
             None => {
-                let s = host.block_trait(&id, crate::w2_conditions_3::BlockTrait::Solid).unwrap_or(false);
+                let s = host
+                    .block_trait(&id, crate::w2_conditions_3::BlockTrait::Solid)
+                    .unwrap_or(false);
                 solid.push((id, s));
                 s
             }
@@ -411,10 +511,12 @@ pub fn check(kind: Kind, a: &Value, b: Option<&Value>, cancelled: bool, host: &m
     match kind {
         Kind::EventCancelled => Some(cancelled),
         Kind::Alphanumeric => {
-            let ok = |v: &Value| match v {
+            let ok = |v: &Value| {
+                match v {
                 Value::Text(t) => !t.is_empty() && t.chars().all(char::is_alphanumeric),
                 Value::List(l) => !l.is_empty() && l.iter().all(|x| matches!(x, Value::Text(t) if !t.is_empty() && t.chars().all(char::is_alphanumeric))),
                 _ => false,
+            }
             };
             Some(ok(a))
         }
@@ -426,7 +528,10 @@ pub fn check(kind: Kind, a: &Value, b: Option<&Value>, cancelled: bool, host: &m
         Kind::CanBuild => {
             let p = live_player(a, host)?;
             let mode = host.gamemode(&p)?;
-            Some(!matches!(mode.to_ascii_lowercase().as_str(), "adventure" | "spectator"))
+            Some(!matches!(
+                mode.to_ascii_lowercase().as_str(),
+                "adventure" | "spectator"
+            ))
         }
         Kind::CanPickUp => {
             let p = live_player(a, host)?;
@@ -455,14 +560,19 @@ pub fn check(kind: Kind, a: &Value, b: Option<&Value>, cancelled: bool, host: &m
                 _ => return None,
             };
             match host.w2e7_query(crate::w2_expressions_7::Query::Environment(name))? {
-                Value::Text(d) => Some(norm_id(&d).ends_with("nether") || norm_id(&d).ends_with("the_nether")),
+                Value::Text(d) => {
+                    Some(norm_id(&d).ends_with("nether") || norm_id(&d).ends_with("the_nether"))
+                }
                 _ => None,
             }
         }
         Kind::GlowingText => glowing_text(a, host),
         Kind::CustomModelData => {
             let p = live_player(a, host)?;
-            Some(host.held_component(&p, crate::skbee_nbt::ItemComp::CustomModelData).is_some())
+            Some(
+                host.held_component(&p, crate::skbee_nbt::ItemComp::CustomModelData)
+                    .is_some(),
+            )
         }
         Kind::Host(c) => host.w4c1_check(c, a),
     }

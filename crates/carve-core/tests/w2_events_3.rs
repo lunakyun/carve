@@ -103,7 +103,8 @@ fn message_alias_works_with_text_events() {
 
 #[test]
 fn redstone_number_without_player() {
-    let mut e = engine("on redstone:\n    if event-number > 7:\n        broadcast \"strong %event-number%\"\n");
+    let mut e =
+        engine("on redstone:\n    if event-number > 7:\n        broadcast \"strong %event-number%\"\n");
     let mut h = Mock::default();
     let mut ctx = EventCtx::console();
     ctx.damage = Some(12.0);

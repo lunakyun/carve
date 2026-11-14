@@ -148,7 +148,9 @@ pub fn of_head(toks: &[Tok], i: usize) -> Option<(ExtFn, usize)> {
 
 /// Hash algorithm words at `toks[i..]`: `MD5`, `SHA-256`, `SHA 512`.
 pub fn alg_at(toks: &[Tok], i: usize) -> Option<(HashAlg, usize)> {
-    let Some(Tok::Word(w)) = toks.get(i) else { return None };
+    let Some(Tok::Word(w)) = toks.get(i) else {
+        return None;
+    };
     if let Some(a) = crate::hashing::alg_by_name(w) {
         return Some((a, 1));
     }
@@ -374,22 +376,34 @@ pub struct StatEffect {
 
 macro_rules! set_of {
     ($n:literal, $t:literal, $s:expr) => {
-        (concat!("set ", $n, " of %player% to %", $t, "%"), EffKind::W2c($s, Mode::Set))
+        (
+            concat!("set ", $n, " of %player% to %", $t, "%"),
+            EffKind::W2c($s, Mode::Set),
+        )
     };
 }
 macro_rules! set_poss {
     ($n:literal, $t:literal, $s:expr) => {
-        (concat!("set %player%'s ", $n, " to %", $t, "%"), EffKind::W2c($s, Mode::Set))
+        (
+            concat!("set %player%'s ", $n, " to %", $t, "%"),
+            EffKind::W2c($s, Mode::Set),
+        )
     };
 }
 macro_rules! add_of {
     ($n:literal, $t:literal, $s:expr) => {
-        (concat!("add %", $t, "% to ", $n, " of %player%"), EffKind::W2c($s, Mode::Add))
+        (
+            concat!("add %", $t, "% to ", $n, " of %player%"),
+            EffKind::W2c($s, Mode::Add),
+        )
     };
 }
 macro_rules! add_poss {
     ($n:literal, $t:literal, $s:expr) => {
-        (concat!("add %", $t, "% to %player%'s ", $n), EffKind::W2c($s, Mode::Add))
+        (
+            concat!("add %", $t, "% to %player%'s ", $n),
+            EffKind::W2c($s, Mode::Add),
+        )
     };
 }
 macro_rules! rem_of {

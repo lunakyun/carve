@@ -75,7 +75,10 @@ pub fn parse_src_all(toks: &[Tok], env: &Env, commas: bool) -> Result<ListSrc, S
 pub fn looks_like_list_op(toks: &[Tok], env: &Env) -> bool {
     if let Some(Tok::Word(w)) = toks.first() {
         let lw = w.to_ascii_lowercase();
-        if matches!(lw.as_str(), "sorted" | "reversed" | "shuffled" | "alphabetically" | "alphabetical") {
+        if matches!(
+            lw.as_str(),
+            "sorted" | "reversed" | "shuffled" | "alphabetically" | "alphabetical"
+        ) {
             return true;
         }
         if lw == "all" && toks.get(1).is_some_and(|t| t.is_lit("scripts")) && toks.len() == 2 {
@@ -118,7 +121,11 @@ impl Cur<'_> {
             return Ok((first, pos));
         }
         let mut parts = vec![first];
-        while self.toks.get(pos).is_some_and(|t| t.is_lit(",") || t.is_lit("and")) {
+        while self
+            .toks
+            .get(pos)
+            .is_some_and(|t| t.is_lit(",") || t.is_lit("and"))
+        {
             let (s, np) = self.item(pos + 1)?;
             parts.push(s);
             pos = np;
@@ -142,7 +149,10 @@ impl Cur<'_> {
         while self.toks.get(pos).is_some_and(|t| t.is_lit("except")) {
             let (rhs, np) = self.base(pos + 1)?;
             let f = crate::w2_expressions_3::ExtFn::Except;
-            s = ListSrc::One(Expr::Ext(f, vec![Expr::Items(Box::new(s)), Expr::Items(Box::new(rhs))]));
+            s = ListSrc::One(Expr::Ext(
+                f,
+                vec![Expr::Items(Box::new(s)), Expr::Items(Box::new(rhs))],
+            ));
             pos = np;
         }
         Ok((s, pos))
@@ -305,7 +315,11 @@ pub(crate) fn parse_filter(toks: &[Tok], env: &Env) -> Result<Cond, String> {
             Cond::All(ands)
         });
     }
-    Ok(if ors.len() == 1 { ors.remove(0) } else { Cond::Any(ors) })
+    Ok(if ors.len() == 1 {
+        ors.remove(0)
+    } else {
+        Cond::Any(ors)
+    })
 }
 
 fn filter_atom(toks: &[Tok], env: &Env) -> Result<Cond, String> {

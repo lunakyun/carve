@@ -97,7 +97,8 @@ impl Host for Mock {
     fn spawn_entity(&mut self, kind: &str, at: &FxPos) -> Option<EntityRef> {
         self.next += 1;
         let uuid = format!("e{}", self.next);
-        self.calls.push(format!("spawn {kind} {} {} {}", at.x, at.y, at.z));
+        self.calls
+            .push(format!("spawn {kind} {} {} {}", at.x, at.y, at.z));
         self.ents.push(Ent {
             uuid: uuid.clone(),
             kind: kind.into(),
@@ -263,13 +264,20 @@ fn spawn_count_from_variable_is_clamped() {
 #[test]
 fn spawn_plurals() {
     let h = run("spawn 1 wolves\nspawn 1 zombies\nspawn a creeper");
-    assert_eq!(h.calls, ["spawn wolf 0 64 0", "spawn zombie 0 64 0", "spawn creeper 0 64 0"]);
+    assert_eq!(
+        h.calls,
+        ["spawn wolf 0 64 0", "spawn zombie 0 64 0", "spawn creeper 0 64 0"]
+    );
 }
 
 #[test]
 fn spawn_unknown_type_is_an_error() {
     let errs = errors_of("spawn a flurb at player");
-    assert!(errs.iter().any(|e| e.to_string().contains("unknown entity 'flurb'")), "{errs:?}");
+    assert!(
+        errs.iter()
+            .any(|e| e.to_string().contains("unknown entity 'flurb'")),
+        "{errs:?}"
+    );
 }
 
 #[test]
@@ -288,7 +296,11 @@ fn spawn_without_place_needs_a_player() {
 #[test]
 fn spawn_still_leaves_lightning_and_particles_alone() {
     let h = run("spawn lightning at player\nspawn 3 flame particles at player");
-    assert!(h.calls.iter().any(|c| c.contains("lightning_bolt")), "{:?}", h.calls);
+    assert!(
+        h.calls.iter().any(|c| c.contains("lightning_bolt")),
+        "{:?}",
+        h.calls
+    );
     assert!(h.calls.iter().any(|c| c.contains("particle")), "{:?}", h.calls);
 }
 
@@ -322,7 +334,9 @@ fn last_spawned_condition_and_name() {
 
 #[test]
 fn entity_location_of_last_spawned() {
-    let h = run("spawn a pig at location(4, 70, 5)\nsend \"%y of last spawned entity%\"\nsend \"%location of last spawned entity%\"");
+    let h = run(
+        "spawn a pig at location(4, 70, 5)\nsend \"%y of last spawned entity%\"\nsend \"%location of last spawned entity%\"",
+    );
     assert_eq!(h.msgs, ["70", "x: 4, y: 70, z: 5 in 'world'"]);
 }
 
@@ -359,7 +373,11 @@ fn kill_all_zombies_in_radius() {
 #[test]
 fn remove_entity_does_not_kill() {
     let h = run("spawn a pig at player\ndelete last spawned entity\ndespawn last spawned entity");
-    assert!(h.calls.iter().filter(|c| c.starts_with("remove")).count() == 2, "{:?}", h.calls);
+    assert!(
+        h.calls.iter().filter(|c| c.starts_with("remove")).count() == 2,
+        "{:?}",
+        h.calls
+    );
 }
 
 #[test]
@@ -395,8 +413,13 @@ fn nearest_of_a_type_and_in_radius() {
 
 #[test]
 fn nearest_skips_the_subject_itself() {
-    let mut h = Mock::steve().with("pig", (3.0, 64.0, 0.0)).with("pig", (8.0, 64.0, 0.0));
-    run_on(&mut h, "spawn a pig at location(0, 64, 1)\nset {_n} to nearest pig to last spawned entity\nsend \"%x of {_n}%\"");
+    let mut h = Mock::steve()
+        .with("pig", (3.0, 64.0, 0.0))
+        .with("pig", (8.0, 64.0, 0.0));
+    run_on(
+        &mut h,
+        "spawn a pig at location(0, 64, 1)\nset {_n} to nearest pig to last spawned entity\nsend \"%x of {_n}%\"",
+    );
     assert_eq!(h.msgs, ["3"]);
 }
 
@@ -445,7 +468,9 @@ fn loop_all_players_plain_still_works() {
 
 #[test]
 fn size_of_entities() {
-    let mut h = Mock::steve().with("pig", (1.0, 64.0, 0.0)).with("pig", (2.0, 64.0, 0.0));
+    let mut h = Mock::steve()
+        .with("pig", (1.0, 64.0, 0.0))
+        .with("pig", (2.0, 64.0, 0.0));
     run_on(&mut h, "send \"%size of all pigs in radius 5 of player%\"");
     assert_eq!(h.msgs, ["2"]);
 }

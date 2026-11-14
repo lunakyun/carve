@@ -67,7 +67,8 @@ impl W4 {
         use W4Op::*;
         match self.op {
             Not => Ty::Boolean,
-            MaxDouble | MaxFloat | ItemAmount | MaxDurability | LastDamage | Light | BlockLight | SkyLight => Ty::Number,
+            MaxDouble | MaxFloat | ItemAmount | MaxDurability | LastDamage | Light | BlockLight
+            | SkyLight => Ty::Number,
             LastColor | Key | Language | LastDamageCause | JoinMessage | PackResponse => Ty::Text,
             MaxUseTime | Cooldown | MaxFreeze => Ty::Timespan,
             LastDeathLoc | Highest | Lowest => Ty::Location,
@@ -111,7 +112,10 @@ pub const EFFECT_PATTERNS: &[(&str, EffKind)] = &[
         "reset [the] [item] cooldown of %item% for %player%",
         EffKind::W4(W4Eff::ResetCooldown),
     ),
-    ("set [the] join message to %text%", EffKind::W4(W4Eff::SetJoinMessage)),
+    (
+        "set [the] join message to %text%",
+        EffKind::W4(W4Eff::SetJoinMessage),
+    ),
 ];
 
 /// Build the effect from the pattern captures, in pattern order.
@@ -204,14 +208,16 @@ pub fn apply(op: W4Op, args: &[Value], host: &mut dyn Host) -> Value {
             (Some(id), Some(Value::Player(p))) => span_ticks(host.item_cooldown(p, &id).unwrap_or(0).max(0)),
             _ => Value::None,
         },
-        LastDeathLoc => player
-            .and_then(|p| host.last_death_location(p))
-            .map_or(Value::None, |(x, y, z, w)| Value::Location {
-                x,
-                y,
-                z,
-                world: Some(w),
-            }),
+        LastDeathLoc => {
+            player
+                .and_then(|p| host.last_death_location(p))
+                .map_or(Value::None, |(x, y, z, w)| Value::Location {
+                    x,
+                    y,
+                    z,
+                    world: Some(w),
+                })
+        }
         LastAttacker => player
             .and_then(|p| host.last_damage(p))
             .and_then(|d| d.attacker)
@@ -245,10 +251,7 @@ pub fn apply(op: W4Op, args: &[Value], host: &mut dyn Host) -> Value {
         },
         Highest | Lowest => match a0 {
             Value::Location {
-                x,
-                z,
-                world: Some(w),
-                ..
+                x, z, world: Some(w), ..
             } => {
                 let (bx, bz) = (x.floor() as i32, z.floor() as i32);
                 host.solid_block_y(w, bx, bz, op == Highest)
@@ -318,7 +321,12 @@ pub fn max_durability(id: &str) -> Option<u32> {
             return TOOLS.iter().find(|(n, _)| *n == tier).map(|(_, d)| *d);
         }
     }
-    for (part, base) in [("helmet", 11u32), ("chestplate", 16), ("leggings", 15), ("boots", 13)] {
+    for (part, base) in [
+        ("helmet", 11u32),
+        ("chestplate", 16),
+        ("leggings", 15),
+        ("boots", 13),
+    ] {
         if let Some(tier) = id.strip_suffix(part).and_then(|t| t.strip_suffix('_')) {
             if tier == "turtle" && part == "helmet" {
                 return Some(275);

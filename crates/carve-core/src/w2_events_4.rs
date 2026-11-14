@@ -167,11 +167,7 @@ impl ExtEvent {
             SlimeSplit => &[r!("entity"), w!("count")],
             Smelt => &[r!("block"), r!("source"), r!("result")],
             StartSmelt => &[r!("block"), r!("source"), w!("time")],
-            SpawnChange => &[
-                r!("world"),
-                r!("previous-location"),
-                r!("new-location"),
-            ],
+            SpawnChange => &[r!("world"), r!("previous-location"), r!("new-location")],
             SpongeAbsorb => &[r!("block")],
             Spread => &[r!("block"), r!("source-block"), r!("world")],
             SwimToggle => &[r!("entity"), r!("swimming")],
@@ -205,7 +201,10 @@ impl ExtEvent {
     /// Whether `cancel event` means anything here.
     pub fn cancellable(self) -> bool {
         use ExtEvent::*;
-        !matches!(self, ServerListPing | SystemTime(_) | SpawnChange | WorldInit | WorldLoad | PlaceholderRequest)
+        !matches!(
+            self,
+            ServerListPing | SystemTime(_) | SpawnChange | WorldInit | WorldLoad | PlaceholderRequest
+        )
     }
 
     /// Events that can name a player as `player`.
@@ -283,7 +282,11 @@ pub fn parse_effect(toks: &[Tok], env: &Env) -> Option<Result<Effect, String>> {
     if !toks.first()?.is_lit("set") {
         return None;
     }
-    let at = if ev == ExtEvent::PlaceholderRequest && toks.get(1)?.is_lit("the") { 2 } else { 1 };
+    let at = if ev == ExtEvent::PlaceholderRequest && toks.get(1)?.is_lit("the") {
+        2
+    } else {
+        1
+    };
     let name = match toks.get(at)? {
         Tok::Word(w) => w.to_ascii_lowercase(),
         _ => return None,
@@ -300,12 +303,19 @@ pub fn parse_effect(toks: &[Tok], env: &Env) -> Option<Result<Effect, String>> {
             return Some(Err(format!(
                 "'on {}' has no value 'event-{name}' (it has: {})",
                 ev.name(),
-                if names.is_empty() { "none".into() } else { names.join(", ") }
+                if names.is_empty() {
+                    "none".into()
+                } else {
+                    names.join(", ")
+                }
             )));
         }
     };
     if !ev.slots()[idx].1 {
-        return Some(Err(format!("'event-{name}' can't be changed in 'on {}'", ev.name())));
+        return Some(Err(format!(
+            "'event-{name}' can't be changed in 'on {}'",
+            ev.name()
+        )));
     }
     if !toks.get(at + 1)?.is_lit("to") {
         return None;

@@ -14,7 +14,10 @@ pub const EFFECT_PATTERNS: &[(&str, EffKind)] = &[
 /// Condition patterns for game modes, tried before the main list.
 pub const CONDITION_PATTERNS: &[(&str, CondKind)] = &[
     ("%player% is in %text% [mode]", CondKind::InGamemode),
-    ("%player% (isn't|is not) in %text% [mode]", CondKind::NotInGamemode),
+    (
+        "%player% (isn't|is not) in %text% [mode]",
+        CondKind::NotInGamemode,
+    ),
 ];
 
 /// The four modes, in vanilla order.

@@ -73,10 +73,16 @@ fn main() {
     }
 
     // Events and types the compiler knows but the table does not describe.
-    let mut events: BTreeSet<String> = scan_names(&src.join("compile.rs"), "EventKind::").into_iter().collect();
+    let mut events: BTreeSet<String> = scan_names(&src.join("compile.rs"), "EventKind::")
+        .into_iter()
+        .collect();
     // The extra event tables (`EventKind::Ext*`) and the item events.
     events.extend(scan_names(&src.join("w2_events_1.rs"), "ExtEvent::"));
-    events.extend(carve_core::w2_events_2::SPECS.iter().map(|s| s.names[0].to_string()));
+    events.extend(
+        carve_core::w2_events_2::SPECS
+            .iter()
+            .map(|s| s.names[0].to_string()),
+    );
     events.extend(carve_core::w2_events_3::Ev3::all().map(|e| e.name().to_string()));
     events.extend(carve_core::w4_events_movement::MvEvent::all().map(|e| e.name().to_string()));
     events.extend(scan_table_names(&src.join("w2_events_4.rs"), "ExtEvent::"));

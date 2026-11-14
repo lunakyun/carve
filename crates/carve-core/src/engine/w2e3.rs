@@ -78,7 +78,12 @@ impl Engine {
 
     /// `transform {list::*} with (input * 2)`.
     #[inline(never)]
-    pub(super) fn exec_transform(&mut self, t: &Transform, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
+    pub(super) fn exec_transform(
+        &mut self,
+        t: &Transform,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<(), String> {
         let items: Vec<Value> = self
             .list_items(&t.list, ex, host)?
             .into_iter()

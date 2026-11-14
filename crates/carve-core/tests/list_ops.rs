@@ -103,7 +103,14 @@ fn where_filters() {
     );
     assert_eq!(
         out,
-        ["3, 4 and 5", "2, 3 and 4", "2 and 4", "1, 2, 4 and 5", "4 and 5", "2"]
+        [
+            "3, 4 and 5",
+            "2, 3 and 4",
+            "2 and 4",
+            "1, 2, 4 and 5",
+            "4 and 5",
+            "2"
+        ]
     );
 }
 
@@ -117,7 +124,9 @@ fn where_on_text() {
 
 #[test]
 fn nested_filter_and_sort() {
-    let out = join("set {_n::*} to 9, 3, 7, 1, 5\nset {_s::*} to sorted {_n::*} where [input > 2]\nsend \"%{_s::*}%\"\nset {_r::*} to reversed sorted {_n::*}\nsend \"%{_r::*}%\"");
+    let out = join(
+        "set {_n::*} to 9, 3, 7, 1, 5\nset {_s::*} to sorted {_n::*} where [input > 2]\nsend \"%{_s::*}%\"\nset {_r::*} to reversed sorted {_n::*}\nsend \"%{_r::*}%\"",
+    );
     assert_eq!(out, ["3, 5, 7 and 9", "9, 7, 5, 3 and 1"]);
 }
 
@@ -173,10 +182,7 @@ fn set_list_replaces_and_handles_empty() {
 fn list_functions() {
     let src = "function top(nums: numbers, n: number) :: numbers:\n    set {_s::*} to reversed sorted {_nums::*}\n    return random 0 elements of {_s::*}, {_s::1}, {_s::2}\n\nfunction total(nums: numbers) :: number:\n    return sum of {_nums::*}\n\nfunction evens(nums: numbers) :: numbers:\n    return {_nums::*} where [mod(input, 2) = 0]\n\non join:\n    set {_x::*} to 5, 8, 2, 9\n    set {_t::*} to top({_x::*}, 2)\n    send \"%{_t::*}%\"\n    send \"%total({_x::*})%\"\n    send \"%total(sorted {_x::*} where [input > 4])%\"\n    set {_e::*} to evens({_x::*})\n    send \"%{_e::*}% %size of {_e::*}%\"\n    loop evens({_x::*}):\n        send \"e%loop-value%\"\n    send \"%sum of evens({_x::*})%\"\n";
     let out = run(src);
-    assert_eq!(
-        out,
-        ["9 and 8", "24", "22", "8 and 2 2", "e8", "e2", "10"]
-    );
+    assert_eq!(out, ["9 and 8", "24", "22", "8 and 2 2", "e8", "e2", "10"]);
 }
 
 #[test]
@@ -204,6 +210,8 @@ fn bad_syntax_has_errors() {
 
 #[test]
 fn old_syntax_still_works() {
-    let out = join("add 3 to {_l::*}\nadd 4 to {_l::*}\nsend \"%size of {_l::*}% %{_l::*}%\"\nsend \"%max(2, 5)%\"\nloop {_l::*}:\n    send \"%loop-value%\"");
+    let out = join(
+        "add 3 to {_l::*}\nadd 4 to {_l::*}\nsend \"%size of {_l::*}% %{_l::*}%\"\nsend \"%max(2, 5)%\"\nloop {_l::*}:\n    send \"%loop-value%\"",
+    );
     assert_eq!(out, ["2 3 and 4", "5", "3", "4"]);
 }

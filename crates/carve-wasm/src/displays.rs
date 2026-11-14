@@ -1,12 +1,10 @@
 //! Display entities through the Pumpkin plugin API.
 
 use carve_core::skbee_particles_display::{DisplayKind, DisplaySpec};
-use pumpkin_plugin_api::display::{BillboardMode, ItemDisplayMode, TextAlignment};
 use pumpkin_plugin_api::EntityType;
-use pumpkin_plugin_api::{
-    BlockTypeExt, DisplayEntityExt, EntityDisplayExt, ItemStack, World,
-};
+use pumpkin_plugin_api::display::{BillboardMode, ItemDisplayMode, TextAlignment};
 use pumpkin_plugin_api::world::Block;
+use pumpkin_plugin_api::{BlockTypeExt, DisplayEntityExt, EntityDisplayExt, ItemStack, World};
 
 fn billboard(name: &str) -> BillboardMode {
     match name {
@@ -32,7 +30,11 @@ fn item_mode(name: &str) -> ItemDisplayMode {
 }
 
 /// Spawn the display and fill it in. `Err` is a message for the log.
-pub fn spawn(world: &World, d: &DisplaySpec, text: impl Fn(&str) -> pumpkin_plugin_api::text::TextComponent) -> Result<(), String> {
+pub fn spawn(
+    world: &World,
+    d: &DisplaySpec,
+    text: impl Fn(&str) -> pumpkin_plugin_api::text::TextComponent,
+) -> Result<(), String> {
     // Look up the block first, so a bad id spawns nothing.
     let block_state = match (d.kind, d.id.as_deref()) {
         (DisplayKind::Block, Some(id)) => {
@@ -75,7 +77,9 @@ pub fn spawn(world: &World, d: &DisplaySpec, text: impl Fn(&str) -> pumpkin_plug
     }
     match d.kind {
         DisplayKind::Text => {
-            let t = entity.as_text_display().ok_or("spawned entity is not a text display")?;
+            let t = entity
+                .as_text_display()
+                .ok_or("spawned entity is not a text display")?;
             t.set_text(text(d.text.as_deref().unwrap_or("")));
             if let Some(w) = d.line_width {
                 t.set_line_width(w);
@@ -98,13 +102,17 @@ pub fn spawn(world: &World, d: &DisplaySpec, text: impl Fn(&str) -> pumpkin_plug
             }
         }
         DisplayKind::Block => {
-            let b = entity.as_block_display().ok_or("spawned entity is not a block display")?;
+            let b = entity
+                .as_block_display()
+                .ok_or("spawned entity is not a block display")?;
             if let Some(s) = block_state {
                 b.set_block_state_id(s);
             }
         }
         DisplayKind::Item => {
-            let i = entity.as_item_display().ok_or("spawned entity is not an item display")?;
+            let i = entity
+                .as_item_display()
+                .ok_or("spawned entity is not an item display")?;
             if let Some(id) = d.id.as_deref() {
                 i.set_item(Some(ItemStack::new(&format!("minecraft:{id}"), 1)));
             }

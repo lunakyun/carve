@@ -185,11 +185,19 @@ fn word_at(toks: &[Tok], i: usize) -> Option<String> {
 }
 
 fn find(toks: &[Tok], from: usize, lit: &str) -> Option<usize> {
-    toks.iter().enumerate().skip(from).find(|(_, t)| is(t, lit)).map(|(i, _)| i)
+    toks.iter()
+        .enumerate()
+        .skip(from)
+        .find(|(_, t)| is(t, lit))
+        .map(|(i, _)| i)
 }
 
 fn find_seq(toks: &[Tok], from: usize, seq: &[&str]) -> Option<usize> {
-    (from..toks.len()).find(|&i| seq.iter().enumerate().all(|(k, l)| toks.get(i + k).is_some_and(|t| is(t, l))))
+    (from..toks.len()).find(|&i| {
+        seq.iter()
+            .enumerate()
+            .all(|(k, l)| toks.get(i + k).is_some_and(|t| is(t, l)))
+    })
 }
 
 fn expr_of(toks: &[Tok], env: &Env, want: &[Ty]) -> Option<Expr> {
@@ -222,7 +230,10 @@ fn lit_text(s: &str) -> Expr {
 
 /// Skip a leading `the` / `a` / `an` and an optional `new`.
 fn skip_articles(toks: &[Tok], mut i: usize, allow_new: bool) -> usize {
-    if toks.get(i).is_some_and(|t| is(t, "the") || is(t, "a") || is(t, "an")) {
+    if toks
+        .get(i)
+        .is_some_and(|t| is(t, "the") || is(t, "a") || is(t, "an"))
+    {
         i += 1;
     }
     if allow_new && toks.get(i).is_some_and(|t| is(t, "new")) {
@@ -272,7 +283,11 @@ fn register(toks: &[Tok], env: &Env) -> Result<Option<SbFx>, String> {
     let rest = toks.get(i + 1..).unwrap_or_default();
     let rest = strip_named(rest);
     // Cut at the optional parts, which can come in either order.
-    let markers: [(&[&str], usize); 3] = [(&["with", "criteria"], 2), (&["named"], 1), (&["with", "display", "name"], 3)];
+    let markers: [(&[&str], usize); 3] = [
+        (&["with", "criteria"], 2),
+        (&["named"], 1),
+        (&["with", "display", "name"], 3),
+    ];
     let mut cuts: Vec<(usize, usize, usize)> = Vec::new();
     for (k, (seq, len)) in markers.iter().enumerate() {
         if let Some(p) = find_seq(rest, 0, seq) {
@@ -296,7 +311,11 @@ fn register(toks: &[Tok], env: &Env) -> Result<Option<SbFx>, String> {
             display = Some(e);
         }
     }
-    Ok(Some(SbFx::RegisterObjective { name, criteria, display }))
+    Ok(Some(SbFx::RegisterObjective {
+        name,
+        criteria,
+        display,
+    }))
 }
 
 /// `named "x"` after the noun: drop the `named`.
@@ -320,13 +339,20 @@ fn unset(toks: &[Tok], env: &Env) -> Result<Option<SbFx>, String> {
         Some("team") if matches!(verb.as_str(), "unregister" | "delete") => {
             Ok(text(rest, env).map(SbFx::UnregisterTeam))
         }
-        Some("team") if matches!(verb.as_str(), "clear" | "empty") => Ok(text(rest, env).map(SbFx::ClearTeam)),
-        Some("team") if matches!(verb.as_str(), "reset" | "remove") && rest.first().is_some_and(|t| is(t, "of")) => {
+        Some("team") if matches!(verb.as_str(), "clear" | "empty") => {
+            Ok(text(rest, env).map(SbFx::ClearTeam))
+        }
+        Some("team")
+            if matches!(verb.as_str(), "reset" | "remove") && rest.first().is_some_and(|t| is(t, "of")) =>
+        {
             // `reset team of <who>`
             Ok(holder(rest.get(1..).unwrap_or_default(), env).map(|who| SbFx::Leave { who, team: None }))
         }
         Some("score" | "scores") if verb == "reset" || verb == "clear" => reset_score(rest, env),
-        Some("all") if (verb == "reset" || verb == "clear") && word_at(toks, i + 1).is_some_and(|w| w == "scores") => {
+        Some("all")
+            if (verb == "reset" || verb == "clear")
+                && word_at(toks, i + 1).is_some_and(|w| w == "scores") =>
+        {
             reset_score(toks.get(i + 2..).unwrap_or_default(), env)
         }
         Some("board") if matches!(verb.as_str(), "delete" | "remove" | "clear" | "reset" | "hide") => {
@@ -342,7 +368,11 @@ fn unset(toks: &[Tok], env: &Env) -> Result<Option<SbFx>, String> {
             ) else {
                 return Ok(None);
             };
-            Ok(Some(SbFx::BoardLine { player: p, line, text: None }))
+            Ok(Some(SbFx::BoardLine {
+                player: p,
+                line,
+                text: None,
+            }))
         }
         _ => {
             // `remove <who> from team <team>`
@@ -356,7 +386,10 @@ fn unset(toks: &[Tok], env: &Env) -> Result<Option<SbFx>, String> {
                 ) else {
                     return Ok(None);
                 };
-                return Ok(Some(SbFx::Leave { who, team: Some(team) }));
+                return Ok(Some(SbFx::Leave {
+                    who,
+                    team: Some(team),
+                }));
             }
             Ok(None)
         }
@@ -373,9 +406,15 @@ fn reset_score(rest: &[Tok], env: &Env) -> Result<Option<SbFx>, String> {
         Some(p) => {
             let obj = objective_tail(rest.get(p + 1..).unwrap_or_default(), env);
             let who = holder(rest.get(..p).unwrap_or_default(), env);
-            Ok(who.zip(obj).map(|(holder, o)| SbFx::ResetScore { holder, objective: Some(o) }))
+            Ok(who.zip(obj).map(|(holder, o)| SbFx::ResetScore {
+                holder,
+                objective: Some(o),
+            }))
         }
-        None => Ok(holder(rest, env).map(|holder| SbFx::ResetScore { holder, objective: None })),
+        None => Ok(holder(rest, env).map(|holder| SbFx::ResetScore {
+            holder,
+            objective: None,
+        })),
     }
 }
 
@@ -404,7 +443,11 @@ fn score_ref(toks: &[Tok], env: &Env) -> Option<(Expr, Expr)> {
 /// `[the] board of <p>` or `<p>'s board`: returns the player expression.
 fn board_ref(toks: &[Tok], env: &Env) -> Option<Expr> {
     let i = skip_articles(toks, 0, false);
-    let i = if toks.get(i).is_some_and(|t| is(t, "board")) { i } else { return poss_board(toks, env) };
+    let i = if toks.get(i).is_some_and(|t| is(t, "board")) {
+        i
+    } else {
+        return poss_board(toks, env);
+    };
     board_owner(toks.get(i + 1..)?, env)
 }
 
@@ -439,7 +482,12 @@ fn set(toks: &[Tok], env: &Env) -> Result<Option<SbFx>, String> {
         let Some(value) = number(toks.get(to + 1..).unwrap_or_default(), env) else {
             return Ok(None);
         };
-        return Ok(Some(SbFx::Score { op: ScoreOp::Set, holder, objective, value }));
+        return Ok(Some(SbFx::Score {
+            op: ScoreOp::Set,
+            holder,
+            objective,
+            value,
+        }));
     }
     // `set [the] [team] <prop> of [team] <team> to <value>`
     if let Some(fx) = set_team(toks, i, env)? {
@@ -550,10 +598,17 @@ fn set_board(toks: &[Tok], i: usize, env: &Env) -> Result<Option<SbFx>, String> 
                 return Ok(None);
             };
             // what = `line <n>`
-            let (Some(line), Some(t)) = (number(what.get(1..).unwrap_or_default(), env), text(value_toks, env)) else {
+            let (Some(line), Some(t)) = (
+                number(what.get(1..).unwrap_or_default(), env),
+                text(value_toks, env),
+            ) else {
                 return Ok(None);
             };
-            Ok(Some(SbFx::BoardLine { player: p, line, text: Some(t) }))
+            Ok(Some(SbFx::BoardLine {
+                player: p,
+                line,
+                text: Some(t),
+            }))
         }
         _ => Ok(None),
     }
@@ -576,7 +631,12 @@ fn add_remove(toks: &[Tok], env: &Env, add: bool) -> Result<Option<SbFx>, String
                 return Ok(None);
             };
             let op = if add { ScoreOp::Add } else { ScoreOp::Remove };
-            Ok(Some(SbFx::Score { op, holder, objective, value }))
+            Ok(Some(SbFx::Score {
+                op,
+                holder,
+                objective,
+                value,
+            }))
         }
         Some("team") if add => {
             let (Some(who), Some(team)) = (
@@ -610,7 +670,11 @@ pub fn parse_cond(toks: &[Tok], env: &Env) -> Option<Cond> {
             return None;
         };
         let e = text(toks.get(1..end)?, env)?;
-        let c = if first == "objective" { SbCond::ObjectiveExists(e) } else { SbCond::TeamExists(e) };
+        let c = if first == "objective" {
+            SbCond::ObjectiveExists(e)
+        } else {
+            SbCond::TeamExists(e)
+        };
         return Some(Cond::Sb(Box::new(c), neg));
     }
     // `<who> is [not] in team <t>` / `<who> isn't in team <t>`
@@ -634,7 +698,16 @@ pub fn parse_cond(toks: &[Tok], env: &Env) -> Option<Cond> {
 pub fn is_head(lw: &str) -> bool {
     matches!(
         lw,
-        "score" | "team" | "prefix" | "suffix" | "color" | "colour" | "members" | "entries" | "objective" | "criteria"
+        "score"
+            | "team"
+            | "prefix"
+            | "suffix"
+            | "color"
+            | "colour"
+            | "members"
+            | "entries"
+            | "objective"
+            | "criteria"
     )
 }
 
@@ -697,7 +770,11 @@ pub fn parse_expr_at<P: Operands>(p: &mut P, lw: &str) -> Option<Result<Expr, St
                     p.advance(1);
                 }
                 let r = p.operand().map(|o| {
-                    wrap(if display { SbExpr::ObjectiveDisplay(o) } else { SbExpr::ObjectiveCriteria(o) })
+                    wrap(if display {
+                        SbExpr::ObjectiveDisplay(o)
+                    } else {
+                        SbExpr::ObjectiveCriteria(o)
+                    })
                 });
                 return Some(r);
             }
@@ -708,7 +785,11 @@ pub fn parse_expr_at<P: Operands>(p: &mut P, lw: &str) -> Option<Result<Expr, St
     }
 }
 
-fn team_expr<P: Operands>(p: &mut P, lw: &str, wrap: impl Fn(SbExpr) -> Expr) -> Option<Result<Expr, String>> {
+fn team_expr<P: Operands>(
+    p: &mut P,
+    lw: &str,
+    wrap: impl Fn(SbExpr) -> Expr,
+) -> Option<Result<Expr, String>> {
     // `team of <who>`
     if lw == "team" && p.peek_tok(0).is_some_and(|t| is(t, "of")) {
         p.advance(1);
@@ -782,7 +863,8 @@ fn k_member_of(who: &str) -> String {
 fn valid_name(kind: &str, s: &str) -> Result<(), String> {
     let ok = !s.is_empty()
         && s.len() <= 64
-        && s.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '.' | '+'));
+        && s.chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '.' | '+'));
     if ok {
         Ok(())
     } else {
@@ -794,8 +876,14 @@ fn valid_name(kind: &str, s: &str) -> Result<(), String> {
 
 /// A score holder or team member name (one word, no spaces).
 fn valid_holder(s: &str) -> Result<(), String> {
-    if s.is_empty() || s.len() > 64 || s.chars().any(|c| c.is_whitespace() || c == '"' || c == '*' || c == '@') {
-        Err(format!("'{s}' can't be used as a score holder or team member (no spaces)"))
+    if s.is_empty()
+        || s.len() > 64
+        || s.chars()
+            .any(|c| c.is_whitespace() || c == '"' || c == '*' || c == '@')
+    {
+        Err(format!(
+            "'{s}' can't be used as a score holder or team member (no spaces)"
+        ))
     } else {
         Ok(())
     }
@@ -843,7 +931,9 @@ fn team_color(s: &str) -> Result<String, String> {
     if COLORS.contains(&n.as_str()) {
         Ok(n)
     } else {
-        Err(format!("'{s}' is not a team color (try red, dark blue, light purple, ... or reset)"))
+        Err(format!(
+            "'{s}' is not a team color (try red, dark blue, light purple, ... or reset)"
+        ))
     }
 }
 
@@ -853,7 +943,11 @@ fn visibility(s: &str) -> Result<&'static str, String> {
         "never" | "false" | "hidden" => "never",
         "hide_for_other_teams" => "hideForOtherTeams",
         "hide_for_own_team" => "hideForOwnTeam",
-        _ => return Err(format!("'{s}' is not a name tag visibility (always, never, hide for other teams, hide for own team)")),
+        _ => {
+            return Err(format!(
+                "'{s}' is not a name tag visibility (always, never, hide for other teams, hide for own team)"
+            ));
+        }
     })
 }
 
@@ -863,12 +957,20 @@ fn collision(s: &str) -> Result<&'static str, String> {
         "never" => "never",
         "push_other_teams" => "pushOtherTeams",
         "push_own_team" => "pushOwnTeam",
-        _ => return Err(format!("'{s}' is not a collision rule (always, never, push other teams, push own team)")),
+        _ => {
+            return Err(format!(
+                "'{s}' is not a collision rule (always, never, push other teams, push own team)"
+            ));
+        }
     })
 }
 
 fn clamp_score(n: f64) -> i32 {
-    if n.is_nan() { 0 } else { n.round().clamp(f64::from(i32::MIN), f64::from(i32::MAX)) as i32 }
+    if n.is_nan() {
+        0
+    } else {
+        n.round().clamp(f64::from(i32::MIN), f64::from(i32::MAX)) as i32
+    }
 }
 
 fn get_text(vars: &Variables, key: &str) -> Option<String> {
@@ -903,7 +1005,9 @@ pub struct Board {
 impl Board {
     fn rendered(&self) -> Vec<String> {
         let last = self.lines.keys().next_back().copied().unwrap_or(0);
-        (1..=last).map(|i| self.lines.get(&i).cloned().unwrap_or_default()).collect()
+        (1..=last)
+            .map(|i| self.lines.get(&i).cloned().unwrap_or_default())
+            .collect()
     }
 }
 
@@ -933,14 +1037,23 @@ impl Engine {
         Ok(name)
     }
 
-    fn sb_online(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<Option<PlayerRef>, String> {
+    fn sb_online(
+        &mut self,
+        e: &Expr,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<Option<PlayerRef>, String> {
         let v = self.eval(e, ex, host)?;
         Ok(online(&v, &mut ex.seen, host))
     }
 
     pub(crate) fn sbt_effect(&mut self, fx: &SbFx, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
         match fx {
-            SbFx::RegisterObjective { name, criteria, display } => {
+            SbFx::RegisterObjective {
+                name,
+                criteria,
+                display,
+            } => {
                 let name = self.sb_text(name, ex, host)?;
                 valid_name("objective", &name)?;
                 let criteria = match criteria {
@@ -952,7 +1065,11 @@ impl Engine {
                     None => None,
                 };
                 let crit = norm_word(&criteria).replace('_', "");
-                let criteria = if crit.is_empty() || crit == "dummy" { "dummy".to_string() } else { criteria };
+                let criteria = if crit.is_empty() || crit == "dummy" {
+                    "dummy".to_string()
+                } else {
+                    criteria
+                };
                 if self.vars.get_ref(&k_obj(&name)).is_some() {
                     return Err(format!("objective '{name}' is already registered"));
                 }
@@ -962,7 +1079,8 @@ impl Engine {
                     cmd.push_str(&json_text(s));
                 }
                 host.execute_command(&cmd);
-                self.vars.set(k_obj(&name), Value::Text(shown.unwrap_or_else(|| name.clone())));
+                self.vars
+                    .set(k_obj(&name), Value::Text(shown.unwrap_or_else(|| name.clone())));
                 self.vars.set(k_obj_criteria(&name), Value::Text(criteria));
                 self.mark_dirty(host);
             }
@@ -977,7 +1095,12 @@ impl Engine {
                 }
                 self.mark_dirty(host);
             }
-            SbFx::Score { op, holder, objective, value } => {
+            SbFx::Score {
+                op,
+                holder,
+                objective,
+                value,
+            } => {
                 let who = self.sb_holder(holder, ex, host)?;
                 let obj = self.sb_text(objective, ex, host)?;
                 valid_name("objective", &obj)?;
@@ -996,7 +1119,9 @@ impl Engine {
                 if self.vars.get_ref(&k_obj(&obj)).is_none() {
                     host.log(
                         crate::host::LogLevel::Warn,
-                        &format!("objective '{obj}' was not registered by Carve; the server may refuse the score"),
+                        &format!(
+                            "objective '{obj}' was not registered by Carve; the server may refuse the score"
+                        ),
                     );
                 }
                 host.execute_command(&format!("scoreboard players set {who} {obj} {}", new as i32));
@@ -1057,7 +1182,9 @@ impl Engine {
                 let team = self.sb_text(team, ex, host)?;
                 valid_name("team", &team)?;
                 if self.vars.get_ref(&k_team(&team)).is_none() {
-                    return Err(format!("team '{team}' is not registered (use 'register team \"{team}\"' first)"));
+                    return Err(format!(
+                        "team '{team}' is not registered (use 'register team \"{team}\"' first)"
+                    ));
                 }
                 if let Some(old) = get_text(&self.vars, &k_member_of(&who)) {
                     self.vars.delete(&k_member(&old, &who));
@@ -1101,28 +1228,47 @@ impl Engine {
                             TeamProp::Suffix => "suffix",
                             _ => "displayName",
                         };
-                        (format!("team modify {team} {word} {}", json_text(&t)), Value::Text(t))
+                        (
+                            format!("team modify {team} {word} {}", json_text(&t)),
+                            Value::Text(t),
+                        )
                     }
                     TeamProp::Color => {
                         let c = team_color(&v.to_string())?;
-                        let arg = if c == "reset" { "color reset".to_string() } else { format!("color {c}") };
+                        let arg = if c == "reset" {
+                            "color reset".to_string()
+                        } else {
+                            format!("color {c}")
+                        };
                         (format!("team modify {team} {arg}"), Value::Text(c))
                     }
                     TeamProp::FriendlyFire | TeamProp::SeeInvisibles => {
                         let b = match v {
                             Value::Bool(b) => b,
-                            other => return Err(format!("expected true or false, got {}", other.type_name())),
+                            other => {
+                                return Err(format!("expected true or false, got {}", other.type_name()));
+                            }
                         };
-                        let word = if *prop == TeamProp::FriendlyFire { "friendlyFire" } else { "seeFriendlyInvisibles" };
+                        let word = if *prop == TeamProp::FriendlyFire {
+                            "friendlyFire"
+                        } else {
+                            "seeFriendlyInvisibles"
+                        };
                         (format!("team modify {team} {word} {b}"), Value::Bool(b))
                     }
                     TeamProp::NametagVisibility => {
                         let s = visibility(&v.to_string())?;
-                        (format!("team modify {team} nametagVisibility {s}"), Value::Text(norm_word(&v.to_string())))
+                        (
+                            format!("team modify {team} nametagVisibility {s}"),
+                            Value::Text(norm_word(&v.to_string())),
+                        )
                     }
                     TeamProp::CollisionRule => {
                         let s = collision(&v.to_string())?;
-                        (format!("team modify {team} collisionRule {s}"), Value::Text(norm_word(&v.to_string())))
+                        (
+                            format!("team modify {team} collisionRule {s}"),
+                            Value::Text(norm_word(&v.to_string())),
+                        )
                     }
                 };
                 host.execute_command(&cmd);
@@ -1140,7 +1286,9 @@ impl Engine {
             SbFx::BoardLine { player, line, text } => {
                 let n = self.num(line, ex, host)?;
                 if n.fract() != 0.0 || n < 1.0 || n > MAX_BOARD_LINES as f64 {
-                    return Err(format!("board line must be a whole number from 1 to {MAX_BOARD_LINES}"));
+                    return Err(format!(
+                        "board line must be a whole number from 1 to {MAX_BOARD_LINES}"
+                    ));
                 }
                 let n = n as usize;
                 let t = match text {
@@ -1162,7 +1310,10 @@ impl Engine {
             }
             SbFx::BoardLines { player, lines } => {
                 if lines.len() > MAX_BOARD_LINES {
-                    return Err(format!("a board has at most {MAX_BOARD_LINES} lines, got {}", lines.len()));
+                    return Err(format!(
+                        "a board has at most {MAX_BOARD_LINES} lines, got {}",
+                        lines.len()
+                    ));
                 }
                 let mut out = BTreeMap::new();
                 for (i, l) in lines.iter().enumerate() {
@@ -1201,7 +1352,10 @@ impl Engine {
 
     fn team_forget(&mut self, team: &str) {
         self.team_clear_members(team);
-        for k in self.vars.keys_with_prefix(&format!("{SEP}sb{SEP}p{SEP}{team}{SEP}")) {
+        for k in self
+            .vars
+            .keys_with_prefix(&format!("{SEP}sb{SEP}p{SEP}{team}{SEP}"))
+        {
             self.vars.delete(&k);
         }
     }
@@ -1224,12 +1378,20 @@ impl Engine {
         })
     }
 
-    pub(crate) fn sb_eval(&mut self, e: &SbExpr, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
+    pub(crate) fn sb_eval(
+        &mut self,
+        e: &SbExpr,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<Value, String> {
         Ok(match e {
             SbExpr::Score { holder, objective } => {
                 let who = self.sb_holder(holder, ex, host)?;
                 let obj = self.sb_text(objective, ex, host)?;
-                self.vars.get_ref(&k_score(&obj, &who)).cloned().unwrap_or(Value::None)
+                self.vars
+                    .get_ref(&k_score(&obj, &who))
+                    .cloned()
+                    .unwrap_or(Value::None)
             }
             SbExpr::TeamOf(who) => {
                 let who = self.sb_holder(who, ex, host)?;
@@ -1262,9 +1424,10 @@ impl Engine {
                         Some(v) if !p.is_bool() => {
                             // The stored visibility and collision words read back with spaces.
                             match (p, v) {
-                                (TeamProp::NametagVisibility | TeamProp::CollisionRule | TeamProp::Color, Value::Text(t)) => {
-                                    Value::Text(t.replace('_', " "))
-                                }
+                                (
+                                    TeamProp::NametagVisibility | TeamProp::CollisionRule | TeamProp::Color,
+                                    Value::Text(t),
+                                ) => Value::Text(t.replace('_', " ")),
                                 _ => v.clone(),
                             }
                         }

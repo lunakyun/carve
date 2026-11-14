@@ -72,7 +72,11 @@ pub enum SkbFx {
     },
     Recipe(RecipeDef),
     /// Unlock (`give`) or lock a recipe in the recipe book.
-    Discover { recipe: Expr, who: Expr, give: bool },
+    Discover {
+        recipe: Expr,
+        who: Expr,
+        give: bool,
+    },
     Stat {
         name: Expr,
         who: Expr,
@@ -143,7 +147,11 @@ fn player_expr(toks: &[Tok], env: &Env) -> Option<Expr> {
 /// Add `minecraft:` when there is no namespace, lowercase, no spaces.
 pub fn namespaced(s: &str, default_ns: &str) -> String {
     let s: String = s.trim().to_ascii_lowercase().replace(' ', "_");
-    if s.contains(':') { s } else { format!("{default_ns}:{s}") }
+    if s.contains(':') {
+        s
+    } else {
+        format!("{default_ns}:{s}")
+    }
 }
 
 /// Entry point for effect lines. `Ok(None)` means "not mine".
@@ -201,7 +209,10 @@ fn advancement(toks: &[Tok], env: &Env, grant: bool) -> Result<Option<SkbFx>, St
             if grant { "grant" } else { "revoke" }
         ));
     };
-    let (Some(id), Some(who)) = (text_expr(&toks[i + 1..at], env), player_expr(&toks[at + 1..], env)) else {
+    let (Some(id), Some(who)) = (
+        text_expr(&toks[i + 1..at], env),
+        player_expr(&toks[at + 1..], env),
+    ) else {
         return Err("could not read the advancement id or the player".into());
     };
     Ok(Some(SkbFx::Advancement {
@@ -299,7 +310,10 @@ fn recipe(toks: &[Tok], env: &Env) -> Result<Option<SkbFx>, String> {
         "smoking" | "smoker" => Some(CookKind::Smoking),
         "campfire" => Some(CookKind::Campfire),
         "smithing" | "smithing table" => {
-            return Err("smithing recipes can't be registered: Pumpkin's plugin API has no smithing recipe type".into());
+            return Err(
+                "smithing recipes can't be registered: Pumpkin's plugin API has no smithing recipe type"
+                    .into(),
+            );
         }
         "" => return Ok(None),
         _ => return Ok(None),
@@ -359,7 +373,10 @@ fn shaped(rest: &[Tok], env: &Env) -> Result<RecipeKind, String> {
     }
     let width = rows[0].chars().count();
     if width == 0 || width > 3 || rows.iter().any(|r| r.chars().count() != width) {
-        return Err("every shape row must have the same length, 1 to 3 characters (use a space for an empty slot)".into());
+        return Err(
+            "every shape row must have the same length, 1 to 3 characters (use a space for an empty slot)"
+                .into(),
+        );
     }
     let mut key: Vec<(char, Ingredient)> = Vec::new();
     for part in split_top(&rest[wh + 1..], &["and", ","]) {
@@ -385,7 +402,9 @@ fn shaped(rest: &[Tok], env: &Env) -> Result<RecipeKind, String> {
     }
     for c in rows.iter().flat_map(|r| r.chars()) {
         if c != ' ' && !key.iter().any(|(k, _)| *k == c) {
-            return Err(format!("the shape uses '{c}' but 'where' does not say what it is"));
+            return Err(format!(
+                "the shape uses '{c}' but 'where' does not say what it is"
+            ));
         }
     }
     Ok(RecipeKind::Shaped { rows, key })
@@ -423,7 +442,11 @@ fn cooking(rest: &[Tok], env: &Env, kind: CookKind) -> Result<RecipeKind, String
     let mut i = end;
     while i < rest.len() {
         let t = &rest[i];
-        if is(t, "with") && rest.get(i + 1).is_some_and(|t| is(t, "xp") || is(t, "exp") || is(t, "experience")) {
+        if is(t, "with")
+            && rest
+                .get(i + 1)
+                .is_some_and(|t| is(t, "xp") || is(t, "exp") || is(t, "experience"))
+        {
             let Some(Tok::Num(n)) = rest.get(i + 2) else {
                 return Err(usage.into());
             };
@@ -473,16 +496,20 @@ pub fn parse_cond(toks: &[Tok], env: &Env) -> Option<Cond> {
             Some((d, s)) if is(d, "does") || is(d, "do") => (s, true),
             _ => (s, true),
         },
-        Some((n, s)) if is(n, "doesn't") || is(n, "don't") || is(n, "hasn't") || is(n, "haven't") => (s, true),
+        Some((n, s)) if is(n, "doesn't") || is(n, "don't") || is(n, "hasn't") || is(n, "haven't") => {
+            (s, true)
+        }
         _ => (before, false),
     };
-    let negate = negate
-        || toks
-            .get(h + 1)
-            .is_some_and(|t| is(t, "not"));
+    let negate = negate || toks.get(h + 1).is_some_and(|t| is(t, "not"));
     let start = h + 1 + usize::from(toks.get(h + 1).is_some_and(|t| is(t, "not")));
     if !toks[start..adv].iter().all(|t| {
-        is(t, "completed") || is(t, "done") || is(t, "achieved") || is(t, "earned") || is(t, "got") || is(t, "the")
+        is(t, "completed")
+            || is(t, "done")
+            || is(t, "achieved")
+            || is(t, "earned")
+            || is(t, "got")
+            || is(t, "the")
     }) {
         return None;
     }
@@ -513,7 +540,12 @@ pub fn split_stat(s: &str) -> Result<(String, String), String> {
 
 impl Engine {
     #[inline(never)]
-    pub(crate) fn skb_effect(&mut self, fx: &SkbFx, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
+    pub(crate) fn skb_effect(
+        &mut self,
+        fx: &SkbFx,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<(), String> {
         match fx {
             SkbFx::Advancement {
                 id,
@@ -544,7 +576,11 @@ impl Engine {
             SkbFx::Stat { name, who, value, op } => {
                 let (cat, name) = split_stat(&self.text(name, ex, host)?)?;
                 let n = self.num(value, ex, host)?;
-                let n = if n.is_finite() { n.clamp(-2_147_483_648.0, 2_147_483_647.0) as i64 } else { 0 };
+                let n = if n.is_finite() {
+                    n.clamp(-2_147_483_648.0, 2_147_483_647.0) as i64
+                } else {
+                    0
+                };
                 if let Some(p) = self.player(who, ex, host)? {
                     let new = match op {
                         StatOp::Set => n,
@@ -562,7 +598,12 @@ impl Engine {
     }
 
     #[inline(never)]
-    pub(crate) fn skb_cond(&mut self, c: &SkbCond, ex: &mut Exec, host: &mut dyn Host) -> Result<bool, String> {
+    pub(crate) fn skb_cond(
+        &mut self,
+        c: &SkbCond,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<bool, String> {
         let id = namespaced(&self.text(&c.id, ex, host)?, "minecraft");
         let Some(p) = self.player(&c.who, ex, host)? else {
             return Ok(false);
@@ -571,7 +612,12 @@ impl Engine {
     }
 
     #[inline(never)]
-    pub(crate) fn skb_eval(&mut self, e: &SkbExpr, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
+    pub(crate) fn skb_eval(
+        &mut self,
+        e: &SkbExpr,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<Value, String> {
         match e {
             SkbExpr::EventId => Ok(match &ex.ctx.message {
                 Some(m) => Value::Text(m.clone()),

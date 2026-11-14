@@ -1,8 +1,8 @@
 //! Entity calls of the host: spawn, find, kill, move and name entities
 //! through the Pumpkin WIT entity API.
 
-use carve_core::world_effects::FxPos;
 use carve_core::EntityRef;
+use carve_core::world_effects::FxPos;
 use pumpkin_plugin_api::world::{Entity, World};
 use pumpkin_plugin_api::{DamageType, uuid};
 

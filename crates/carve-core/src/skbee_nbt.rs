@@ -124,7 +124,9 @@ fn split_path(path: &str) -> Option<Segs> {
             return None;
         }
         match part.strip_suffix(']').and_then(|p| p.split_once('[')) {
-            Some((name, idx)) if !name.is_empty() => out.push((name.to_string(), Some(idx.trim().parse().ok()?))),
+            Some((name, idx)) if !name.is_empty() => {
+                out.push((name.to_string(), Some(idx.trim().parse().ok()?)))
+            }
             _ => out.push((part.to_string(), None)),
         }
     }
@@ -456,7 +458,8 @@ fn classify(w: &str) -> Tag {
     let plain_float = |s: &str| {
         let d = s.strip_prefix(['-', '+']).unwrap_or(s);
         d.chars().next().is_some_and(|c| c.is_ascii_digit() || c == '.')
-            && d.chars().all(|c| c.is_ascii_digit() || matches!(c, '.' | 'e' | 'E' | '-' | '+'))
+            && d.chars()
+                .all(|c| c.is_ascii_digit() || matches!(c, '.' | 'e' | 'E' | '-' | '+'))
             && d.parse::<f64>().is_ok()
     };
     let suffixed = match last.to_ascii_lowercase() {
@@ -475,7 +478,8 @@ fn classify(w: &str) -> Tag {
     {
         return Tag::Int(n);
     }
-    if plain_float(w) && w.contains(['.', 'e', 'E'])
+    if plain_float(w)
+        && w.contains(['.', 'e', 'E'])
         && let Ok(n) = w.parse::<f64>()
     {
         return Tag::Double(n);
@@ -566,7 +570,9 @@ impl Compound {
             if i > 0 {
                 out.push(',');
             }
-            let plain = !k.is_empty() && k.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '.' | '+'));
+            let plain = !k.is_empty()
+                && k.chars()
+                    .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '.' | '+'));
             if plain {
                 out.push_str(k);
             } else {
@@ -815,7 +821,15 @@ pub fn tag_to_value(ty: Option<NbtTy>, t: &Tag) -> Value {
     };
     let fits = match ty {
         None => true,
-        Some(NbtTy::Byte | NbtTy::Short | NbtTy::Int | NbtTy::Long | NbtTy::Float | NbtTy::Double | NbtTy::Bool) => num.is_some(),
+        Some(
+            NbtTy::Byte
+            | NbtTy::Short
+            | NbtTy::Int
+            | NbtTy::Long
+            | NbtTy::Float
+            | NbtTy::Double
+            | NbtTy::Bool,
+        ) => num.is_some(),
         Some(NbtTy::Str) => matches!(t, Tag::Str(_)),
         Some(NbtTy::Compound) => matches!(t, Tag::Compound(_)),
         Some(NbtTy::List) => matches!(t, Tag::List(_)),
@@ -918,7 +932,12 @@ pub fn value_to_tag(ty: Option<NbtTy>, v: &Value) -> Option<Tag> {
                     let body = body.split_once(';').map_or(body, |(_, b)| b);
                     body.split(',')
                         .filter(|s| !s.trim().is_empty())
-                        .map(|s| s.trim().trim_end_matches(['b', 'B', 'l', 'L']).parse::<f64>().ok())
+                        .map(|s| {
+                            s.trim()
+                                .trim_end_matches(['b', 'B', 'l', 'L'])
+                                .parse::<f64>()
+                                .ok()
+                        })
                         .collect::<Option<_>>()?
                 }
                 _ => return None,
@@ -992,7 +1011,9 @@ impl ItemComp {
         match self {
             ItemComp::CustomData => Compound::from_bytes(b).map_or(Value::None, |c| Value::Nbt(Box::new(c))),
             ItemComp::Unbreakable => Value::Bool(true),
-            ItemComp::MaxStackSize => get_varint(b, &mut at).map_or(Value::None, |n| Value::Num(f64::from(n))),
+            ItemComp::MaxStackSize => {
+                get_varint(b, &mut at).map_or(Value::None, |n| Value::Num(f64::from(n)))
+            }
             ItemComp::Rarity => get_varint(b, &mut at)
                 .and_then(|n| RARITIES.get(n as usize))
                 .map_or(Value::None, |r| Value::Text((*r).into())),
@@ -1001,8 +1022,9 @@ impl ItemComp {
                 let Some(n) = get_varint(b, &mut at) else {
                     return Value::None;
                 };
-                b.get(at..at + n as usize)
-                    .map_or(Value::None, |s| Value::Text(String::from_utf8_lossy(s).into_owned()))
+                b.get(at..at + n as usize).map_or(Value::None, |s| {
+                    Value::Text(String::from_utf8_lossy(s).into_owned())
+                })
             }
             ItemComp::CustomModelData => {
                 let Some(n) = get_varint(b, &mut at) else {
@@ -1039,9 +1061,10 @@ impl ItemComp {
             }
             ItemComp::Rarity => {
                 let t = v.to_string().to_ascii_lowercase();
-                let i = RARITIES.iter().position(|r| *r == t.trim()).ok_or_else(|| {
-                    format!("rarity must be common, uncommon, rare or epic, not '{t}'")
-                })?;
+                let i = RARITIES
+                    .iter()
+                    .position(|r| *r == t.trim())
+                    .ok_or_else(|| format!("rarity must be common, uncommon, rare or epic, not '{t}'"))?;
                 put_varint(i as u32, &mut out);
             }
             ItemComp::GlintOverride => match v {
@@ -1050,7 +1073,11 @@ impl ItemComp {
             },
             ItemComp::ItemModel => {
                 let t = v.to_string();
-                let t = if t.contains(':') { t } else { format!("minecraft:{t}") };
+                let t = if t.contains(':') {
+                    t
+                } else {
+                    format!("minecraft:{t}")
+                };
                 put_varint(t.len() as u32, &mut out);
                 out.extend_from_slice(t.as_bytes());
             }
@@ -1072,7 +1099,9 @@ impl ItemComp {
             ["max", "stack", "size"] => ItemComp::MaxStackSize,
             ["rarity"] => ItemComp::Rarity,
             ["item", "model"] => ItemComp::ItemModel,
-            ["glint", "override"] | ["enchantment", "glint", "override"] | ["glint"] => ItemComp::GlintOverride,
+            ["glint", "override"] | ["enchantment", "glint", "override"] | ["glint"] => {
+                ItemComp::GlintOverride
+            }
             ["unbreakable"] => ItemComp::Unbreakable,
             _ => return None,
         })
@@ -1260,7 +1289,9 @@ pub fn head(toks: &[Tok], i: usize) -> Option<Head> {
     };
     j += n;
     if lw(toks, j).as_deref() == Some("tag") || (f == "nbt" && lw(toks, j).as_deref() == Some("keys")) {
-        if matches!(lw(toks, j + 1).as_deref(), Some("names" | "keys")) && lw(toks, j + 2).as_deref() == Some("of") {
+        if matches!(lw(toks, j + 1).as_deref(), Some("names" | "keys"))
+            && lw(toks, j + 2).as_deref() == Some("of")
+        {
             return Some(Head {
                 kind: HeadKind::Keys,
                 after: j + 3,
@@ -1340,7 +1371,9 @@ pub fn build(h: &Head, operand: Expr, env: &Env) -> Result<Expr, String> {
             Some(p) => NbtExpr::Comp(*c, p.clone()),
             // `max stack size of diamond`: the item type's own limit.
             None if *c == ItemComp::MaxStackSize => {
-                return Ok(crate::w2_expressions_5::boxed(crate::w2_expressions_5::W5::MaxStack(Box::new(operand))));
+                return Ok(crate::w2_expressions_5::boxed(
+                    crate::w2_expressions_5::W5::MaxStack(Box::new(operand)),
+                ));
             }
             None => return Err(format!("use '{} of player's tool'", c.name())),
         },
@@ -1437,7 +1470,8 @@ fn set_effect(toks: &[Tok], env: &Env) -> Result<Option<NbtEffect>, String> {
     let value = value_expr(toks.get(to + 1..).unwrap_or_default(), env)?;
     Ok(Some(match h.kind {
         HeadKind::Comp(c) => {
-            let p = tool_player(&target_expr).ok_or_else(|| format!("use 'set {} of player's tool to ...'", c.name()))?;
+            let p = tool_player(&target_expr)
+                .ok_or_else(|| format!("use 'set {} of player's tool to ...'", c.name()))?;
             if c == ItemComp::CustomData {
                 return Ok(None);
             }
@@ -1470,8 +1504,12 @@ fn del_effect(toks: &[Tok], verb: &str, env: &Env) -> Result<Option<NbtEffect>, 
     let swapped;
     let body = match body.iter().position(|t| is_word(t, "from")) {
         Some(f) if verb == "remove" => {
-            swapped = [body.get(..f).unwrap_or_default(), &[Tok::Word("of".into())], body.get(f + 1..).unwrap_or_default()]
-                .concat();
+            swapped = [
+                body.get(..f).unwrap_or_default(),
+                &[Tok::Word("of".into())],
+                body.get(f + 1..).unwrap_or_default(),
+            ]
+            .concat();
             &swapped[..]
         }
         _ => body,
@@ -1527,7 +1565,9 @@ pub fn parse_cond(toks: &[Tok], env: &Env) -> Option<Cond> {
     if !toks.iter().any(|t| is_word(t, "tag")) {
         return None;
     }
-    let h = toks.iter().position(|t| is_word(t, "has") || is_word(t, "have"))?;
+    let h = toks
+        .iter()
+        .position(|t| is_word(t, "has") || is_word(t, "have"))?;
     let before = toks.get(..h)?;
     let (subject, negate) = match before.split_last() {
         Some((n, s)) if is_word(n, "not") => match s.split_last() {
@@ -1592,7 +1632,12 @@ impl Engine {
         )
     }
 
-    fn load_target(&mut self, t: &NbtTarget, ex: &mut Exec, host: &mut dyn Host) -> Result<Option<Compound>, String> {
+    fn load_target(
+        &mut self,
+        t: &NbtTarget,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<Option<Compound>, String> {
         match t {
             NbtTarget::Var(v) => {
                 let val = self.eval(&Expr::Var(v.clone()), ex, host)?;
@@ -1605,7 +1650,13 @@ impl Engine {
         }
     }
 
-    fn save_target(&mut self, t: &NbtTarget, c: Compound, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
+    fn save_target(
+        &mut self,
+        t: &NbtTarget,
+        c: Compound,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<(), String> {
         match t {
             NbtTarget::Var(v) => {
                 let k = self.key(v, ex, host)?.into_owned();
@@ -1630,7 +1681,12 @@ impl Engine {
     }
 
     #[inline(never)]
-    pub(crate) fn nbt_expr(&mut self, n: &NbtExpr, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
+    pub(crate) fn nbt_expr(
+        &mut self,
+        n: &NbtExpr,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<Value, String> {
         Ok(match n {
             NbtExpr::FromText(e) => {
                 let t = self.text(e, ex, host)?;
@@ -1672,15 +1728,28 @@ impl Engine {
     }
 
     #[inline(never)]
-    pub(crate) fn nbt_effect(&mut self, e: &NbtEffect, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
+    pub(crate) fn nbt_effect(
+        &mut self,
+        e: &NbtEffect,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<(), String> {
         match e {
-            NbtEffect::SetTag { ty, path, target, value } => {
+            NbtEffect::SetTag {
+                ty,
+                path,
+                target,
+                value,
+            } => {
                 let path = self.path_text(path, ex, host)?;
                 let v = self.eval(value, ex, host)?;
-                let tag = value_to_tag(*ty, &v).ok_or_else(|| format!("can't store {v} as that kind of NBT tag"))?;
+                let tag = value_to_tag(*ty, &v)
+                    .ok_or_else(|| format!("can't store {v} as that kind of NBT tag"))?;
                 if let Some(mut c) = self.load_target(target, ex, host)? {
                     if !c.set_path(&path, tag) {
-                        return Err(format!("can't set the NBT tag '{path}' (a part of the path is not a compound or the list type does not match)"));
+                        return Err(format!(
+                            "can't set the NBT tag '{path}' (a part of the path is not a compound or the list type does not match)"
+                        ));
                     }
                     self.save_target(target, c, ex, host)?;
                 }
@@ -1703,7 +1772,9 @@ impl Engine {
             }
             NbtEffect::SetAll { value, target } => {
                 let v = self.eval(value, ex, host)?;
-                let new = self.as_compound(v)?.ok_or("can only set NBT to NBT or NBT text")?;
+                let new = self
+                    .as_compound(v)?
+                    .ok_or("can only set NBT to NBT or NBT text")?;
                 self.save_target(target, new, ex, host)?;
             }
             NbtEffect::Clear(target) => {
@@ -1737,7 +1808,12 @@ impl Engine {
     }
 
     #[inline(never)]
-    pub(crate) fn nbt_cond(&mut self, c: &NbtCond, ex: &mut Exec, host: &mut dyn Host) -> Result<bool, String> {
+    pub(crate) fn nbt_cond(
+        &mut self,
+        c: &NbtCond,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<bool, String> {
         let path = self.path_text(&c.path, ex, host)?;
         let found = match self.nbt_src(&c.src, ex, host)? {
             Some(n) => n

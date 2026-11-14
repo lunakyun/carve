@@ -131,7 +131,10 @@ mod tests {
     #[test]
     fn host_split() {
         assert_eq!(split_host("play.x.net", None), Some(("play.x.net".into(), 25565)));
-        assert_eq!(split_host("play.x.net:25570", None), Some(("play.x.net".into(), 25570)));
+        assert_eq!(
+            split_host("play.x.net:25570", None),
+            Some(("play.x.net".into(), 25570))
+        );
         assert_eq!(split_host("a.b", Some(1234.0)), Some(("a.b".into(), 1234)));
         assert_eq!(split_host("a.b", Some(0.0)), None);
         assert_eq!(split_host("", None), None);

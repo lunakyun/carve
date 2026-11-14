@@ -151,11 +151,15 @@ fn help_shows_only_allowed_subcommands() {
 fn reload_all_and_one_file() {
     let mut t = T::new(&[("a.carve", A), ("b.carve", B)]);
     let out = t.run("reload");
-    assert!(out.contains("Reloading all scripts...") && out.contains("Successfully reloaded &fall scripts"), "{out}");
+    assert!(
+        out.contains("Reloading all scripts...") && out.contains("Successfully reloaded &fall scripts"),
+        "{out}"
+    );
     // one broken line: reported, the rest of the new version loads (Skript)
-    t.store
-        .files
-        .insert("a.carve".into(), "on join:\n    blorp\n    broadcast \"a1\"\n".into());
+    t.store.files.insert(
+        "a.carve".into(),
+        "on join:\n    blorp\n    broadcast \"a1\"\n".into(),
+    );
     let out = t.run("reload a");
     assert!(
         out.contains("Encountered &f1 &cerror while reloading &fa.carve&c!"),
@@ -202,7 +206,10 @@ fn enable_disable_list() {
             && out.contains("old.carve"),
         "{out}"
     );
-    assert!(t.run("enable old").contains("Successfully enabled and loaded &fold.carve"));
+    assert!(
+        t.run("enable old")
+            .contains("Successfully enabled and loaded &fold.carve")
+    );
     assert!(t.store.files.contains_key("old.carve"));
     t.engine.fire(EventKind::Join, EventCtx::console(), &mut t.host);
     assert_eq!(t.host.calls, ["broadcast a", "broadcast old"]);
@@ -215,7 +222,10 @@ fn enable_disable_list() {
     assert!(t.run("list disabled").contains("a.carve") && !t.run("list disabled").contains("old.carve"));
     let out = t.run("disable all");
     assert!(out.contains("Successfully disabled &fall scripts"), "{out}");
-    assert!(t.run("enable all").contains("Successfully enabled and loaded &fall scripts"));
+    assert!(
+        t.run("enable all")
+            .contains("Successfully enabled and loaded &fall scripts")
+    );
 }
 
 #[test]
@@ -224,7 +234,8 @@ fn disable_reports_errors_it_causes_elsewhere() {
     let out = t.run("disable b");
     // Like Skript: the script is disabled; the broken call in c is reported.
     assert!(
-        out.contains("Line 2: &c(c.carve)") && out.contains("Encountered &f1 &cerror while disabling &fb.carve"),
+        out.contains("Line 2: &c(c.carve)")
+            && out.contains("Encountered &f1 &cerror while disabling &fb.carve"),
         "{out}"
     );
     assert!(t.store.files.contains_key("-b.carve"));

@@ -105,13 +105,25 @@ fn every_value_has_a_slot_inside_the_counts() {
         }
         // Every slot below the counts is reachable by some name.
         for i in 0..sp.counts.0 {
-            assert!(sp.vals.iter().any(|(_, s)| *s == Slot::Num(i)), "{:?} num {i} unnamed", sp.ev);
+            assert!(
+                sp.vals.iter().any(|(_, s)| *s == Slot::Num(i)),
+                "{:?} num {i} unnamed",
+                sp.ev
+            );
         }
         for i in 0..sp.counts.1 {
-            assert!(sp.vals.iter().any(|(_, s)| *s == Slot::Text(i)), "{:?} text {i} unnamed", sp.ev);
+            assert!(
+                sp.vals.iter().any(|(_, s)| *s == Slot::Text(i)),
+                "{:?} text {i} unnamed",
+                sp.ev
+            );
         }
         for i in 0..sp.counts.2 {
-            assert!(sp.vals.iter().any(|(_, s)| *s == Slot::Flag(i)), "{:?} flag {i} unnamed", sp.ev);
+            assert!(
+                sp.vals.iter().any(|(_, s)| *s == Slot::Flag(i)),
+                "{:?} flag {i} unnamed",
+                sp.ev
+            );
         }
     }
 }
@@ -250,6 +262,9 @@ fn spec_lookup_covers_all() {
 #[test]
 fn names_do_not_clash_with_events_1() {
     for n in carve_core::w2_events_2::known_names().split(", ") {
-        assert!(carve_core::w2_events_1::ExtEvent::parse(n).is_none(), "clash: {n}");
+        assert!(
+            carve_core::w2_events_1::ExtEvent::parse(n).is_none(),
+            "clash: {n}"
+        );
     }
 }

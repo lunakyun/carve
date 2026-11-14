@@ -153,7 +153,10 @@ fn open_chest() {
         run(r#"open chest with 3 rows named "Shop" to player"#),
         ["open 3 Shop"]
     );
-    assert_eq!(run("open a chest inventory with 1 row to player"), ["open 1 Chest"]);
+    assert_eq!(
+        run("open a chest inventory with 1 row to player"),
+        ["open 1 Chest"]
+    );
     assert_eq!(
         run(r#"open chest with 6 rows titled "&aMenu" for player"#),
         ["open 6 &aMenu"]
@@ -175,7 +178,10 @@ fn open_chest_rows_from_variable() {
 #[test]
 fn open_chest_bad_rows() {
     let errs = errors_of(&script("on join", "open chest with 7 rows to player"));
-    assert!(errs.iter().any(|e| e.to_string().contains("1 to 6 rows")), "{errs:?}");
+    assert!(
+        errs.iter().any(|e| e.to_string().contains("1 to 6 rows")),
+        "{errs:?}"
+    );
     let mut h = Mock::steve();
     let mut e = load("on join", "set {_r} to 9\nopen chest with {_r} rows to player");
     e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
@@ -201,7 +207,10 @@ fn set_slot() {
 
 #[test]
 fn set_slot_air_empties() {
-    assert_eq!(run("set slot 1 of player's inventory to air"), ["set false 1 None"]);
+    assert_eq!(
+        run("set slot 1 of player's inventory to air"),
+        ["set false 1 None"]
+    );
 }
 
 #[test]
@@ -210,7 +219,11 @@ fn set_slot_negative_is_an_error() {
     let mut e = load("on join", "set slot -1 of player's inventory to stone");
     e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
     assert!(h.calls.is_empty());
-    assert!(h.logs.iter().any(|(l, m)| *l == LogLevel::Error && m.contains("out of range")));
+    assert!(
+        h.logs
+            .iter()
+            .any(|(l, m)| *l == LogLevel::Error && m.contains("out of range"))
+    );
 }
 
 #[test]
@@ -226,7 +239,11 @@ if slot 3 of player's inventory is not set:
     );
     assert_eq!(h.msgs.len(), 2, "{:?}", h.msgs);
     assert!(h.msgs[0].starts_with("got "), "{:?}", h.msgs);
-    assert!(h.msgs[0].contains("gold ingot") || h.msgs[0].contains("gold_ingot"), "{:?}", h.msgs);
+    assert!(
+        h.msgs[0].contains("gold ingot") || h.msgs[0].contains("gold_ingot"),
+        "{:?}",
+        h.msgs
+    );
     assert_eq!(h.msgs[1], "own empty");
 }
 
@@ -298,7 +315,11 @@ if clicked slot is 4:
     cancel event"#,
     );
     let mut h = Mock::steve();
-    let out = e.fire(EventKind::InventoryClick, click_ctx(4, Some(("diamond", 2))), &mut h);
+    let out = e.fire(
+        EventKind::InventoryClick,
+        click_ctx(4, Some(("diamond", 2))),
+        &mut h,
+    );
     assert!(out.cancelled);
     assert_eq!(h.msgs.len(), 3, "{:?}", h.msgs);
     assert_eq!(h.msgs[0], "slot 4");

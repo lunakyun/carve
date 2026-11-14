@@ -11,7 +11,7 @@ use pumpkin_plugin_api::events::*;
 use pumpkin_plugin_api::logging::LogLevel as ApiLevel;
 use pumpkin_plugin_api::{Context, Server};
 
-use super::{State, TickHost, WasmHost, plog, player_ref, text, with_state};
+use super::{State, TickHost, WasmHost, player_ref, plog, text, with_state};
 
 /// What an event hands to scripts: the player (if any) and the values.
 type Built = (Option<PlayerRef>, Vec<Value>);
@@ -120,17 +120,23 @@ fn out_text(out: &[(u8, Value)], i: u8) -> Option<String> {
 }
 
 fn out_num(out: &[(u8, Value)], i: u8) -> Option<f64> {
-    out.iter().rev().find(|(k, _)| *k == i).and_then(|(_, v)| match v {
-        Value::Num(n) => Some(*n),
-        _ => None,
-    })
+    out.iter()
+        .rev()
+        .find(|(k, _)| *k == i)
+        .and_then(|(_, v)| match v {
+            Value::Num(n) => Some(*n),
+            _ => None,
+        })
 }
 
 fn out_bool(out: &[(u8, Value)], i: u8) -> Option<bool> {
-    out.iter().rev().find(|(k, _)| *k == i).and_then(|(_, v)| match v {
-        Value::Bool(b) => Some(*b),
-        _ => None,
-    })
+    out.iter()
+        .rev()
+        .find(|(k, _)| *k == i)
+        .and_then(|(_, v)| match v {
+            Value::Bool(b) => Some(*b),
+            _ => None,
+        })
 }
 
 // ---------- the events ----------
@@ -171,7 +177,10 @@ macro_rules! can {
     };
 }
 
-ext!(ServerListPingEvent, ExtEvent::ServerListPing, cancel = can!(no),
+ext!(
+    ServerListPingEvent,
+    ExtEvent::ServerListPing,
+    cancel = can!(no),
     build = |_st, _host, d| (
         None,
         vec![
@@ -195,11 +204,17 @@ ext!(ServerListPingEvent, ExtEvent::ServerListPing, cancel = can!(no),
     }
 );
 
-ext!(SheepRegrowWoolEvent, ExtEvent::SheepRegrowWool, cancel = can!(),
+ext!(
+    SheepRegrowWoolEvent,
+    ExtEvent::SheepRegrowWool,
+    cancel = can!(),
     build = |st, host, d| (None, vec![ent(st, host, d.entity_id)])
 );
 
-ext!(EntityShootBowEvent, ExtEvent::Shoot, cancel = can!(),
+ext!(
+    EntityShootBowEvent,
+    ExtEvent::Shoot,
+    cancel = can!(),
     build = |st, host, d| {
         let e = ent(st, host, d.entity_id);
         let p = match &e {
@@ -210,13 +225,21 @@ ext!(EntityShootBowEvent, ExtEvent::Shoot, cancel = can!(),
     }
 );
 
-ext!(SignChangeEvent, ExtEvent::SignChange, cancel = can!(),
+ext!(
+    SignChangeEvent,
+    ExtEvent::SignChange,
+    cancel = can!(),
     build = |_st, _host, d| {
         let line = |i: usize| Value::Text(d.lines.get(i).cloned().unwrap_or_default());
         (
             Some(player_ref(&d.player)),
             vec![
-                block(d.block_pos.x, d.block_pos.y, d.block_pos.z, Some(d.player.get_world().get_name())),
+                block(
+                    d.block_pos.x,
+                    d.block_pos.y,
+                    d.block_pos.z,
+                    Some(d.player.get_world().get_name()),
+                ),
                 line(0),
                 line(1),
                 line(2),
@@ -236,7 +259,10 @@ ext!(SignChangeEvent, ExtEvent::SignChange, cancel = can!(),
     }
 );
 
-ext!(SlimeSplitEvent, ExtEvent::SlimeSplit, cancel = can!(),
+ext!(
+    SlimeSplitEvent,
+    ExtEvent::SlimeSplit,
+    cancel = can!(),
     build = |st, host, d| (None, vec![ent(st, host, d.entity_id), num(d.count)]),
     apply = |d, out| {
         if let Some(n) = out_num(out, 1) {
@@ -245,7 +271,10 @@ ext!(SlimeSplitEvent, ExtEvent::SlimeSplit, cancel = can!(),
     }
 );
 
-ext!(FurnaceSmeltEvent, ExtEvent::Smelt, cancel = can!(),
+ext!(
+    FurnaceSmeltEvent,
+    ExtEvent::Smelt,
+    cancel = can!(),
     build = |_st, _host, d| (
         None,
         vec![
@@ -256,7 +285,10 @@ ext!(FurnaceSmeltEvent, ExtEvent::Smelt, cancel = can!(),
     )
 );
 
-ext!(FurnaceStartSmeltEvent, ExtEvent::StartSmelt, cancel = can!(),
+ext!(
+    FurnaceStartSmeltEvent,
+    ExtEvent::StartSmelt,
+    cancel = can!(),
     build = |_st, _host, d| (
         None,
         vec![
@@ -272,25 +304,42 @@ ext!(FurnaceStartSmeltEvent, ExtEvent::StartSmelt, cancel = can!(),
     }
 );
 
-ext!(SpawnChangeEvent, ExtEvent::SpawnChange, cancel = can!(no),
+ext!(
+    SpawnChangeEvent,
+    ExtEvent::SpawnChange,
+    cancel = can!(no),
     build = |_st, _host, d| {
         let w = d.target_world.get_name();
         (
             None,
             vec![
                 Value::World(w.clone()),
-                block(d.previous_position.x, d.previous_position.y, d.previous_position.z, Some(w.clone())),
+                block(
+                    d.previous_position.x,
+                    d.previous_position.y,
+                    d.previous_position.z,
+                    Some(w.clone()),
+                ),
                 block(d.new_position.x, d.new_position.y, d.new_position.z, Some(w)),
             ],
         )
     }
 );
 
-ext!(SpongeAbsorbEvent, ExtEvent::SpongeAbsorb, cancel = can!(),
-    build = |_st, _host, d| (None, vec![block(d.block_pos.x, d.block_pos.y, d.block_pos.z, None)])
+ext!(
+    SpongeAbsorbEvent,
+    ExtEvent::SpongeAbsorb,
+    cancel = can!(),
+    build = |_st, _host, d| (
+        None,
+        vec![block(d.block_pos.x, d.block_pos.y, d.block_pos.z, None)]
+    )
 );
 
-ext!(BlockSpreadEvent, ExtEvent::Spread, cancel = can!(),
+ext!(
+    BlockSpreadEvent,
+    ExtEvent::Spread,
+    cancel = can!(),
     build = |_st, _host, d| {
         let w = d.target_world.get_name();
         (
@@ -304,7 +353,10 @@ ext!(BlockSpreadEvent, ExtEvent::Spread, cancel = can!(),
     }
 );
 
-ext!(EntityToggleSwimEvent, ExtEvent::SwimToggle, cancel = can!(),
+ext!(
+    EntityToggleSwimEvent,
+    ExtEvent::SwimToggle,
+    cancel = can!(),
     build = |st, host, d| {
         let e = ent(st, host, d.entity_id);
         let p = match &e {
@@ -315,7 +367,10 @@ ext!(EntityToggleSwimEvent, ExtEvent::SwimToggle, cancel = can!(),
     }
 );
 
-ext!(EntityTameEvent, ExtEvent::Tame, cancel = can!(),
+ext!(
+    EntityTameEvent,
+    ExtEvent::Tame,
+    cancel = can!(),
     build = |st, host, d| {
         let o = player_ref(&d.owner);
         (
@@ -325,14 +380,20 @@ ext!(EntityTameEvent, ExtEvent::Tame, cancel = can!(),
     }
 );
 
-ext!(EntityTargetEvent, ExtEvent::Target, cancel = can!(),
+ext!(
+    EntityTargetEvent,
+    ExtEvent::Target,
+    cancel = can!(),
     build = |st, host, d| (
         None,
         vec![ent(st, host, d.entity_id), ent_opt(st, host, d.target_id)]
     )
 );
 
-ext!(PlayerEggThrowEvent, ExtEvent::EggThrow, cancel = can!(),
+ext!(
+    PlayerEggThrowEvent,
+    ExtEvent::EggThrow,
+    cancel = can!(),
     build = |_st, _host, d| (
         Some(player_ref(&d.player)),
         vec![
@@ -351,14 +412,20 @@ ext!(PlayerEggThrowEvent, ExtEvent::EggThrow, cancel = can!(),
     }
 );
 
-ext!(PlayerItemHeldEvent, ExtEvent::ToolChange, cancel = can!(),
+ext!(
+    PlayerItemHeldEvent,
+    ExtEvent::ToolChange,
+    cancel = can!(),
     build = |_st, _host, d| (
         Some(player_ref(&d.player)),
         vec![num(d.previous_slot), num(d.new_slot)]
     )
 );
 
-ext!(VaultDisplayItemEvent, ExtEvent::VaultDisplayItem, cancel = can!(),
+ext!(
+    VaultDisplayItemEvent,
+    ExtEvent::VaultDisplayItem,
+    cancel = can!(),
     build = |_st, _host, d| {
         let w = d.target_world.get_name();
         (
@@ -372,7 +439,10 @@ ext!(VaultDisplayItemEvent, ExtEvent::VaultDisplayItem, cancel = can!(),
     }
 );
 
-ext!(VehicleEntityCollisionEvent, ExtEvent::VehicleCollision, cancel = can!(),
+ext!(
+    VehicleEntityCollisionEvent,
+    ExtEvent::VehicleCollision,
+    cancel = can!(),
     build = |st, host, d| (
         None,
         vec![
@@ -383,7 +453,10 @@ ext!(VehicleEntityCollisionEvent, ExtEvent::VehicleCollision, cancel = can!(),
     )
 );
 
-ext!(VehicleBlockCollisionEvent, ExtEvent::VehicleCollision, cancel = can!(),
+ext!(
+    VehicleBlockCollisionEvent,
+    ExtEvent::VehicleCollision,
+    cancel = can!(),
     build = |st, host, d| (
         None,
         vec![
@@ -394,11 +467,17 @@ ext!(VehicleBlockCollisionEvent, ExtEvent::VehicleCollision, cancel = can!(),
     )
 );
 
-ext!(VehicleCreateEvent, ExtEvent::VehicleCreate, cancel = can!(),
+ext!(
+    VehicleCreateEvent,
+    ExtEvent::VehicleCreate,
+    cancel = can!(),
     build = |st, host, d| (None, vec![ent(st, host, d.vehicle_id)])
 );
 
-ext!(VehicleDamageEvent, ExtEvent::VehicleDamage, cancel = can!(),
+ext!(
+    VehicleDamageEvent,
+    ExtEvent::VehicleDamage,
+    cancel = can!(),
     build = |st, host, d| {
         let a = ent_opt(st, host, d.attacker_id);
         let p = match &a {
@@ -409,7 +488,10 @@ ext!(VehicleDamageEvent, ExtEvent::VehicleDamage, cancel = can!(),
     }
 );
 
-ext!(VehicleDestroyEvent, ExtEvent::VehicleDestroy, cancel = can!(),
+ext!(
+    VehicleDestroyEvent,
+    ExtEvent::VehicleDestroy,
+    cancel = can!(),
     build = |st, host, d| {
         let a = ent_opt(st, host, d.attacker_id);
         let p = match &a {
@@ -420,7 +502,10 @@ ext!(VehicleDestroyEvent, ExtEvent::VehicleDestroy, cancel = can!(),
     }
 );
 
-ext!(VehicleEnterEvent, ExtEvent::VehicleEnter, cancel = can!(),
+ext!(
+    VehicleEnterEvent,
+    ExtEvent::VehicleEnter,
+    cancel = can!(),
     build = |st, host, d| {
         let e = ent(st, host, d.entered_id);
         let p = match &e {
@@ -431,7 +516,10 @@ ext!(VehicleEnterEvent, ExtEvent::VehicleEnter, cancel = can!(),
     }
 );
 
-ext!(VehicleExitEvent, ExtEvent::VehicleExit, cancel = can!(),
+ext!(
+    VehicleExitEvent,
+    ExtEvent::VehicleExit,
+    cancel = can!(),
     build = |st, host, d| {
         let e = ent(st, host, d.exited_id);
         let p = match &e {
@@ -442,7 +530,10 @@ ext!(VehicleExitEvent, ExtEvent::VehicleExit, cancel = can!(),
     }
 );
 
-ext!(VehicleMoveEvent, ExtEvent::VehicleMove, cancel = can!(),
+ext!(
+    VehicleMoveEvent,
+    ExtEvent::VehicleMove,
+    cancel = can!(),
     build = |st, host, d| (
         None,
         vec![
@@ -453,7 +544,10 @@ ext!(VehicleMoveEvent, ExtEvent::VehicleMove, cancel = can!(),
     )
 );
 
-ext!(VillagerCareerChangeEvent, ExtEvent::VillagerCareerChange, cancel = can!(),
+ext!(
+    VillagerCareerChangeEvent,
+    ExtEvent::VillagerCareerChange,
+    cancel = can!(),
     build = |st, host, d| (
         None,
         vec![
@@ -487,23 +581,38 @@ impl ExtAccess for WeatherChangeEvent {
     }
 }
 
-ext!(WorldInitEvent, ExtEvent::WorldInit, cancel = can!(no),
+ext!(
+    WorldInitEvent,
+    ExtEvent::WorldInit,
+    cancel = can!(no),
     build = |_st, _host, d| (None, vec![Value::World(d.target_world.get_name())])
 );
 
-ext!(WorldLoadEvent, ExtEvent::WorldLoad, cancel = can!(no),
+ext!(
+    WorldLoadEvent,
+    ExtEvent::WorldLoad,
+    cancel = can!(no),
     build = |_st, _host, d| (None, vec![Value::World(d.target_world.get_name())])
 );
 
-ext!(WorldUnloadEvent, ExtEvent::WorldUnload, cancel = can!(),
+ext!(
+    WorldUnloadEvent,
+    ExtEvent::WorldUnload,
+    cancel = can!(),
     build = |_st, _host, d| (None, vec![Value::World(d.target_world.get_name())])
 );
 
-ext!(WorldSaveEvent, ExtEvent::WorldSave, cancel = can!(),
+ext!(
+    WorldSaveEvent,
+    ExtEvent::WorldSave,
+    cancel = can!(),
     build = |_st, _host, d| (None, vec![Value::World(d.world_name.clone())])
 );
 
-ext!(EntityBreakDoorEvent, ExtEvent::ZombieBreakDoor, cancel = can!(),
+ext!(
+    EntityBreakDoorEvent,
+    ExtEvent::ZombieBreakDoor,
+    cancel = can!(),
     build = |st, host, d| (
         None,
         vec![

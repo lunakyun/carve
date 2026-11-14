@@ -90,7 +90,10 @@ fn commas() {
     assert_eq!(one("1000 with commas"), "1,000");
     assert_eq!(one("(-1234567) with commas"), "-1,234,567");
     assert_eq!(one("1234.5 with commas"), "1,234.5");
-    assert_eq!(one("1234567.891 with commas and 2 decimal places"), "1,234,567.89");
+    assert_eq!(
+        one("1234567.891 with commas and 2 decimal places"),
+        "1,234,567.89"
+    );
     assert_eq!(one("5 with commas and 2 decimals"), "5.00");
 }
 
@@ -158,7 +161,10 @@ fn random_uuid() {
     for u in &out {
         assert_eq!(u.len(), 36, "{u}");
         let parts: Vec<&str> = u.split('-').collect();
-        assert_eq!(parts.iter().map(|p| p.len()).collect::<Vec<_>>(), vec![8, 4, 4, 4, 12]);
+        assert_eq!(
+            parts.iter().map(|p| p.len()).collect::<Vec<_>>(),
+            vec![8, 4, 4, 4, 12]
+        );
         assert!(parts[2].starts_with('4'), "{u}");
         assert!("89ab".contains(parts[3].chars().next().unwrap()), "{u}");
         assert!(u.chars().all(|c| c == '-' || c.is_ascii_hexdigit()));

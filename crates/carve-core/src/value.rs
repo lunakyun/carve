@@ -170,16 +170,24 @@ impl Value {
                     && (aw.is_none() || bw.is_none() || aw == bw)
             }
             (Value::Entity(a), Value::Entity(b)) => a.uuid == b.uuid,
-            (Value::Chunk { world: aw, x: ax, z: az }, Value::Chunk { world: bw, x: bx, z: bz }) => {
-                ax == bx && az == bz && (aw.is_none() || bw.is_none() || aw == bw)
-            }
+            (
+                Value::Chunk {
+                    world: aw,
+                    x: ax,
+                    z: az,
+                },
+                Value::Chunk {
+                    world: bw,
+                    x: bx,
+                    z: bz,
+                },
+            ) => ax == bx && az == bz && (aw.is_none() || bw.is_none() || aw == bw),
             (Value::Vector { x: ax, y: ay, z: az }, Value::Vector { x: bx, y: by, z: bz }) => {
                 (ax - bx).abs() < 1e-9 && (ay - by).abs() < 1e-9 && (az - bz).abs() < 1e-9
             }
             (Value::Date(a), Value::Date(b)) => a == b,
             (Value::Nbt(a), Value::Nbt(b)) => a == b,
-            (Value::Timespan { millis: a }, Value::Timespan { millis: b })
-            => a == b,
+            (Value::Timespan { millis: a }, Value::Timespan { millis: b }) => a == b,
             (Value::World(a), Value::World(b)) => a.eq_ignore_ascii_case(b),
             (Value::World(w), Value::Text(t)) | (Value::Text(t), Value::World(w)) => {
                 w.eq_ignore_ascii_case(t)
@@ -246,7 +254,10 @@ impl Value {
                 }
             }
             Value::World(w) => out.push_str(w),
-            Value::Date(d) => out.push_str(&crate::time_dates::format_date(*d, crate::time_dates::DEFAULT_FORMAT)),
+            Value::Date(d) => out.push_str(&crate::time_dates::format_date(
+                *d,
+                crate::time_dates::DEFAULT_FORMAT,
+            )),
             Value::Console => out.push_str("console"),
             Value::Entity(e) => out.push_str(&e.kind.replace('_', " ")),
             Value::Ray(r) => {

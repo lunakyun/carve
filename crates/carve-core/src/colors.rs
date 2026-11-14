@@ -163,7 +163,14 @@ fn tag_at(c: &[char], i: usize) -> Option<(Change, usize)> {
     if let Some(hex) = body.strip_prefix('#') {
         let hex: Vec<char> = hex.chars().collect();
         let rgb = hex6(&hex)?;
-        return Some((if closing { Change::ClearColor } else { Change::Color(rgb) }, end));
+        return Some((
+            if closing {
+                Change::ClearColor
+            } else {
+                Change::Color(rgb)
+            },
+            end,
+        ));
     }
     if body == "reset" || body == "r" {
         return Some((Change::Reset, end));
@@ -173,7 +180,14 @@ fn tag_at(c: &[char], i: usize) -> Option<(Change, usize)> {
     }
     let (_, code) = NAMES.iter().find(|(n, _)| *n == body)?;
     let rgb = legacy_rgb(*code)?;
-    Some((if closing { Change::ClearColor } else { Change::Color(rgb) }, end))
+    Some((
+        if closing {
+            Change::ClearColor
+        } else {
+            Change::Color(rgb)
+        },
+        end,
+    ))
 }
 
 /// Try to read a `&x` / `§x` code at `i` (points at the symbol).
@@ -256,7 +270,10 @@ pub fn parse(s: &str) -> Vec<Span> {
             continue;
         };
         if !buf.is_empty() {
-            out.push(Span { text: std::mem::take(&mut buf), style });
+            out.push(Span {
+                text: std::mem::take(&mut buf),
+                style,
+            });
         }
         apply_change(&mut style, change, legacy);
         i = next;

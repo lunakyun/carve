@@ -21,8 +21,14 @@ pub const EFFECT_PATTERNS: &[(&str, EffKind)] = &[
         "send action bar [text] (component|components) %text% to %player%",
         EffKind::ActionBar,
     ),
-    ("send [text] (component|components) %text% [to %player%]", EffKind::Send),
-    ("broadcast [text] (component|components) %text%", EffKind::Broadcast),
+    (
+        "send [text] (component|components) %text% [to %player%]",
+        EffKind::Send,
+    ),
+    (
+        "broadcast [text] (component|components) %text%",
+        EffKind::Broadcast,
+    ),
 ];
 
 #[derive(Debug, Clone, PartialEq)]
@@ -73,9 +79,21 @@ pub fn is_rich(s: &str) -> bool {
         return true;
     }
     let l = s.to_ascii_lowercase();
-    ["<hover", "<click", "<insertion", "<key:", "<lang:", "<tr:", "<translate:", "<gradient", "<rainbow", "<newline", "<br>"]
-        .iter()
-        .any(|t| l.contains(t))
+    [
+        "<hover",
+        "<click",
+        "<insertion",
+        "<key:",
+        "<lang:",
+        "<tr:",
+        "<translate:",
+        "<gradient",
+        "<rainbow",
+        "<newline",
+        "<br>",
+    ]
+    .iter()
+    .any(|t| l.contains(t))
 }
 
 #[derive(Clone)]
@@ -248,7 +266,11 @@ impl State {
     }
 
     fn close_fx(&mut self, rainbow: bool) {
-        if let Some(p) = self.fx.iter().rposition(|id| self.specs[*id].is_rainbow() == rainbow) {
+        if let Some(p) = self
+            .fx
+            .iter()
+            .rposition(|id| self.specs[*id].is_rainbow() == rainbow)
+        {
             self.fx.remove(p);
         }
     }
@@ -281,7 +303,11 @@ fn item_snbt(raw: &str) -> Option<String> {
     if id.is_empty() {
         return None;
     }
-    let id = if id.contains(':') { id } else { format!("minecraft:{id}") };
+    let id = if id.contains(':') {
+        id
+    } else {
+        format!("minecraft:{id}")
+    };
     let count: u32 = args.get(1).and_then(|c| c.trim().parse().ok()).unwrap_or(1);
     Some(format!("{{id:\"{id}\",count:{count}}}"))
 }
@@ -648,13 +674,14 @@ pub fn parse_effect(toks: &[Tok], env: &Env) -> Result<Option<Effect>, String> {
     if !word(toks.first(), "set") {
         return Ok(None);
     }
-    let (f, skip) = if (word(toks.get(1), "hover") || word(toks.get(1), "click")) && word(toks.get(2), "event") {
-        (CompFn::Wrap, 3)
-    } else if word(toks.get(1), "insertion") {
-        (CompFn::Insertion, 2)
-    } else {
-        return Ok(None);
-    };
+    let (f, skip) =
+        if (word(toks.get(1), "hover") || word(toks.get(1), "click")) && word(toks.get(2), "event") {
+            (CompFn::Wrap, 3)
+        } else if word(toks.get(1), "insertion") {
+            (CompFn::Insertion, 2)
+        } else {
+            return Ok(None);
+        };
     let usage = "use 'set hover event of {comp} to hover event showing \"text\"'";
     if !word(toks.get(skip), "of") {
         return Err(usage.into());
@@ -670,5 +697,8 @@ pub fn parse_effect(toks: &[Tok], env: &Env) -> Result<Option<Effect>, String> {
         return Err(usage.into());
     }
     let value = parse_expr(toks.get(skip + 3..).unwrap_or_default(), env)?;
-    Ok(Some(Effect::Set(var.clone(), Expr::Comp(f, vec![Expr::Var(var), value]))))
+    Ok(Some(Effect::Set(
+        var.clone(),
+        Expr::Comp(f, vec![Expr::Var(var), value]),
+    )))
 }

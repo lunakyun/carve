@@ -166,7 +166,9 @@ fn give_enchanted() {
 fn give_enchanted_two_and_roman_and_default_level() {
     assert_eq!(
         ok("give player diamond sword enchanted with sharpness iii and sweeping edge and unbreaking 3"),
-        [r#"give Steve minecraft:diamond_sword[enchantments={"minecraft:sharpness":3,"minecraft:sweeping_edge":1,"minecraft:unbreaking":3}] 1"#]
+        [
+            r#"give Steve minecraft:diamond_sword[enchantments={"minecraft:sharpness":3,"minecraft:sweeping_edge":1,"minecraft:unbreaking":3}] 1"#
+        ]
     );
 }
 
@@ -174,7 +176,9 @@ fn give_enchanted_two_and_roman_and_default_level() {
 fn give_everything_in_any_order_with_count() {
     assert_eq!(
         ok(r#"give 2 diamond swords enchanted with sharpness 5 named "X" with lore "L" to player"#),
-        [r#"give Steve minecraft:diamond_sword[custom_name="X",lore=["L"],enchantments={"minecraft:sharpness":5}] 2"#]
+        [
+            r#"give Steve minecraft:diamond_sword[custom_name="X",lore=["L"],enchantments={"minecraft:sharpness":5}] 2"#
+        ]
     );
 }
 
@@ -200,7 +204,10 @@ fn give_quotes_are_escaped() {
 #[test]
 fn variable_holds_meta_and_gives_it() {
     let c = ok("set {_i} to diamond sword named \"V\" with lore \"x\"\n    give player {_i}");
-    assert_eq!(c, [r#"give Steve minecraft:diamond_sword[custom_name="V",lore=["x"]] 1"#]);
+    assert_eq!(
+        c,
+        [r#"give Steve minecraft:diamond_sword[custom_name="V",lore=["x"]] 1"#]
+    );
 }
 
 #[test]
@@ -211,7 +218,10 @@ fn name_of_tool() {
 
 #[test]
 fn name_of_item_without_name_is_none() {
-    let h = run_with("on join:\n    send name of player's tool\n", Some(("stick", 1, None)));
+    let h = run_with(
+        "on join:\n    send name of player's tool\n",
+        Some(("stick", 1, None)),
+    );
     assert_eq!(h.sent, ["<none>"]);
 }
 
@@ -230,7 +240,10 @@ fn lore_of_loops() {
 
 #[test]
 fn enchantments_of_tool() {
-    assert_eq!(sent("send enchantments of player's tool"), ["sharpness 5 and sweeping edge 2"]);
+    assert_eq!(
+        sent("send enchantments of player's tool"),
+        ["sharpness 5 and sweeping edge 2"]
+    );
 }
 
 #[test]
@@ -271,7 +284,10 @@ fn enchanted_condition() {
 
 #[test]
 fn enchanted_any_and_negated() {
-    assert_eq!(sent("if player's tool is enchanted:\n        send \"yes\""), ["yes"]);
+    assert_eq!(
+        sent("if player's tool is enchanted:\n        send \"yes\""),
+        ["yes"]
+    );
     assert_eq!(
         sent("if player's tool is not enchanted with fire aspect:\n        send \"no fire\""),
         ["no fire"]
@@ -397,11 +413,20 @@ fn plain_text_from_json_component() {
 fn enchant_parsing() {
     use carve_core::lexer::lex;
     let t = lex("sweeping edge 3 and").unwrap();
-    assert_eq!(carve_core::item_meta::enchant_at(&t, 0), Some(("sweeping_edge", 3, 3)));
+    assert_eq!(
+        carve_core::item_meta::enchant_at(&t, 0),
+        Some(("sweeping_edge", 3, 3))
+    );
     let t = lex("luck of the sea iv").unwrap();
-    assert_eq!(carve_core::item_meta::enchant_at(&t, 0), Some(("luck_of_the_sea", 4, 5)));
+    assert_eq!(
+        carve_core::item_meta::enchant_at(&t, 0),
+        Some(("luck_of_the_sea", 4, 5))
+    );
     let t = lex("curse of binding").unwrap();
-    assert_eq!(carve_core::item_meta::enchant_at(&t, 0), Some(("binding_curse", 0, 3)));
+    assert_eq!(
+        carve_core::item_meta::enchant_at(&t, 0),
+        Some(("binding_curse", 0, 3))
+    );
     let t = lex("diamond").unwrap();
     assert_eq!(carve_core::item_meta::enchant_at(&t, 0), None);
 }

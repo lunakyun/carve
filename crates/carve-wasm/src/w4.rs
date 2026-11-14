@@ -4,8 +4,8 @@
 
 use std::collections::HashMap;
 
-use carve_core::w2_expressions_4::DamageInfo;
 use carve_core::PlayerRef;
+use carve_core::w2_expressions_4::DamageInfo;
 use pumpkin_plugin_api::DamageType;
 use pumpkin_plugin_api::common::BlockPos;
 

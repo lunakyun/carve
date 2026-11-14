@@ -66,7 +66,11 @@ impl Engine {
                 {
                     // The game wants the direction from the player toward the pusher.
                     let (dx, dz) = (lx - px, lz - pz);
-                    let (dx, dz) = if e.op == W2Op::KnockAway { (dx, dz) } else { (-dx, -dz) };
+                    let (dx, dz) = if e.op == W2Op::KnockAway {
+                        (dx, dz)
+                    } else {
+                        (-dx, -dz)
+                    };
                     host.apply_knockback(&p, w2::clean_strength(strength), dx, dz);
                 }
             }
@@ -101,7 +105,10 @@ impl Engine {
     fn span_ticks(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<i64, String> {
         match self.eval(e, ex, host)? {
             Value::Timespan { millis } => Ok(millis.max(0) / 50),
-            v => Err(format!("expected a timespan like '5 seconds', got {} ({v})", v.type_name())),
+            v => Err(format!(
+                "expected a timespan like '5 seconds', got {} ({v})",
+                v.type_name()
+            )),
         }
     }
 }

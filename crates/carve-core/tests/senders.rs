@@ -105,7 +105,11 @@ fn sender_and_conditions_as_player() {
     let mut e = engine(CMD);
     assert_eq!(
         run(&mut e, Recipient::Player(steve())),
-        ["send Steve player Steve", "send Steve not console", "send Steve exec Steve"]
+        [
+            "send Steve player Steve",
+            "send Steve not console",
+            "send Steve exec Steve"
+        ]
     );
 }
 
@@ -114,7 +118,11 @@ fn sender_and_conditions_as_console() {
     let mut e = engine(CMD);
     assert_eq!(
         run(&mut e, Recipient::Console),
-        ["send console console!", "send console is console", "send console exec console"]
+        [
+            "send console console!",
+            "send console is console",
+            "send console exec console"
+        ]
     );
 }
 
@@ -122,7 +130,10 @@ fn run_line(line: &str, sender: Recipient) -> Vec<String> {
     let mut e = Engine::default();
     let mut h = Mock::default();
     if let Err(errs) = e.run_line(line, sender, &mut h) {
-        panic!("{}", errs.iter().map(|e| e.to_string()).collect::<Vec<_>>().join("\n"));
+        panic!(
+            "{}",
+            errs.iter().map(|e| e.to_string()).collect::<Vec<_>>().join("\n")
+        );
     }
     assert!(h.errors().is_empty(), "{:?}", h.errors());
     h.take()
@@ -143,21 +154,48 @@ fn send_to_console_from_player_goes_to_log() {
 #[test]
 fn make_player_execute_command() {
     let p = Recipient::Player(steve());
-    assert_eq!(run_line(r#"make player execute command "/spawn""#, p.clone()), ["cmd-as Steve spawn"]);
-    assert_eq!(run_line(r#"make me execute "home base""#, p.clone()), ["cmd-as Steve home base"]);
-    assert_eq!(run_line(r#"make sender execute command "x""#, p.clone()), ["cmd-as Steve x"]);
-    assert_eq!(run_line(r#"force player to execute command "y""#, p.clone()), ["cmd-as Steve y"]);
-    assert_eq!(run_line(r#"execute command "/z" by player"#, p.clone()), ["cmd-as Steve z"]);
-    assert_eq!(run_line(r#"make console execute command "say hi""#, p.clone()), ["cmd say hi"]);
-    assert_eq!(run_line(r#"execute console command "say a""#, p.clone()), ["cmd say a"]);
+    assert_eq!(
+        run_line(r#"make player execute command "/spawn""#, p.clone()),
+        ["cmd-as Steve spawn"]
+    );
+    assert_eq!(
+        run_line(r#"make me execute "home base""#, p.clone()),
+        ["cmd-as Steve home base"]
+    );
+    assert_eq!(
+        run_line(r#"make sender execute command "x""#, p.clone()),
+        ["cmd-as Steve x"]
+    );
+    assert_eq!(
+        run_line(r#"force player to execute command "y""#, p.clone()),
+        ["cmd-as Steve y"]
+    );
+    assert_eq!(
+        run_line(r#"execute command "/z" by player"#, p.clone()),
+        ["cmd-as Steve z"]
+    );
+    assert_eq!(
+        run_line(r#"make console execute command "say hi""#, p.clone()),
+        ["cmd say hi"]
+    );
+    assert_eq!(
+        run_line(r#"execute console command "say a""#, p.clone()),
+        ["cmd say a"]
+    );
     assert_eq!(run_line(r#"execute command "say b""#, p), ["cmd say b"]);
 }
 
 #[test]
 fn me_is_the_player_and_console_in_text() {
     let p = Recipient::Player(steve());
-    assert_eq!(run_line(r#"send "hi %me%" to me"#, p.clone()), ["send Steve hi Steve"]);
-    assert_eq!(run_line(r#"send "who: %console%""#, p), ["send Steve who: console"]);
+    assert_eq!(
+        run_line(r#"send "hi %me%" to me"#, p.clone()),
+        ["send Steve hi Steve"]
+    );
+    assert_eq!(
+        run_line(r#"send "who: %console%""#, p),
+        ["send Steve who: console"]
+    );
 }
 
 #[test]
@@ -171,7 +209,10 @@ fn variables_can_hold_console() {
             send \"yes\" to {c}
 ",
     );
-    assert_eq!(run(&mut e, Recipient::Player(steve())), ["console-log x", "console-log yes"]);
+    assert_eq!(
+        run(&mut e, Recipient::Player(steve())),
+        ["console-log x", "console-log yes"]
+    );
 }
 
 #[test]

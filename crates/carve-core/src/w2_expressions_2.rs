@@ -157,10 +157,22 @@ pub enum W2Eff {
 }
 
 pub const EFFECT_PATTERNS: &[(&str, EffKind)] = &[
-    ("set compass target of %player% to %location%", EffKind::X2(W2Eff::SetCompass)),
-    ("set %player%'s compass target to %location%", EffKind::X2(W2Eff::SetCompass)),
-    ("reset compass target of %player%", EffKind::X2(W2Eff::ResetCompass)),
-    ("reset %player%'s compass target", EffKind::X2(W2Eff::ResetCompass)),
+    (
+        "set compass target of %player% to %location%",
+        EffKind::X2(W2Eff::SetCompass),
+    ),
+    (
+        "set %player%'s compass target to %location%",
+        EffKind::X2(W2Eff::SetCompass),
+    ),
+    (
+        "reset compass target of %player%",
+        EffKind::X2(W2Eff::ResetCompass),
+    ),
+    (
+        "reset %player%'s compass target",
+        EffKind::X2(W2Eff::ResetCompass),
+    ),
 ];
 
 fn cap(caps: &mut [Option<Capture>], i: usize) -> Option<Expr> {

@@ -94,9 +94,26 @@ pub fn is_numbers_loop(toks: &[Tok]) -> bool {
 pub fn may_continue(lw: &str) -> bool {
     matches!(
         lw,
-        "moon" | "player" | "tab" | "persistent" | "number" | "amount" | "count" | "midpoint" | "middle"
-            | "center" | "centre" | "max" | "maximum" | "min" | "minimum" | "all" | "positive" | "negative"
-            | "parse" | "last"
+        "moon"
+            | "player"
+            | "tab"
+            | "persistent"
+            | "number"
+            | "amount"
+            | "count"
+            | "midpoint"
+            | "middle"
+            | "center"
+            | "centre"
+            | "max"
+            | "maximum"
+            | "min"
+            | "minimum"
+            | "all"
+            | "positive"
+            | "negative"
+            | "parse"
+            | "last"
     )
 }
 
@@ -135,7 +152,11 @@ pub fn parse_word(toks: &[Tok], pos: usize, env: &Env, lw: &str) -> Result<Optio
             if let Some(kind) = w(toks, pos)
                 && let Some(v) = limit(max, &kind)
             {
-                let end = if is(toks, pos + 1, "value") { pos + 2 } else { pos + 1 };
+                let end = if is(toks, pos + 1, "value") {
+                    pos + 2
+                } else {
+                    pos + 1
+                };
                 return Ok(Some((Expr::Num(v), end)));
             }
             if max && is(toks, pos, "stack") && is(toks, pos + 1, "size") && is(toks, pos + 2, "of") {
@@ -177,7 +198,10 @@ pub fn parse_word(toks: &[Tok], pos: usize, env: &Env, lw: &str) -> Result<Optio
                 p += 1;
             }
             if !(is(toks, p, "in") || is(toks, p, "of")) {
-                return Err(format!("expected '{lw} of {} in <text>'", w(toks, pos + 1).unwrap_or_default()));
+                return Err(format!(
+                    "expected '{lw} of {} in <text>'",
+                    w(toks, pos + 1).unwrap_or_default()
+                ));
             }
             let (t, p) = sub(p + 1)?;
             (boxed(W5::CountChars(kind, Box::new(t))), p)
@@ -282,20 +306,69 @@ pub fn count_chars(kind: CharKind, s: &str) -> usize {
 /// Vanilla stack size for an item id (without `minecraft:`).
 pub fn default_stack_size(id: &str) -> u32 {
     const ONE_SUFFIX: [&str; 19] = [
-        "_sword", "_pickaxe", "_axe", "_shovel", "_hoe", "_helmet", "_chestplate", "_leggings", "_boots",
-        "_horse_armor", "_boat", "_raft", "_minecart", "_bed", "_stew", "_shulker_box", "_disc", "_chest_boat",
+        "_sword",
+        "_pickaxe",
+        "_axe",
+        "_shovel",
+        "_hoe",
+        "_helmet",
+        "_chestplate",
+        "_leggings",
+        "_boots",
+        "_horse_armor",
+        "_boat",
+        "_raft",
+        "_minecart",
+        "_bed",
+        "_stew",
+        "_shulker_box",
+        "_disc",
+        "_chest_boat",
         "_potion",
     ];
     const ONE: [&str; 27] = [
-        "bow", "crossbow", "trident", "mace", "shield", "elytra", "fishing_rod", "carrot_on_a_stick",
-        "warped_fungus_on_a_stick", "shears", "flint_and_steel", "brush", "spyglass", "saddle",
-        "totem_of_undying", "enchanted_book", "writable_book", "potion", "cake", "minecart", "water_bucket",
-        "lava_bucket", "milk_bucket", "powder_snow_bucket", "wolf_armor", "bundle", "compass",
+        "bow",
+        "crossbow",
+        "trident",
+        "mace",
+        "shield",
+        "elytra",
+        "fishing_rod",
+        "carrot_on_a_stick",
+        "warped_fungus_on_a_stick",
+        "shears",
+        "flint_and_steel",
+        "brush",
+        "spyglass",
+        "saddle",
+        "totem_of_undying",
+        "enchanted_book",
+        "writable_book",
+        "potion",
+        "cake",
+        "minecart",
+        "water_bucket",
+        "lava_bucket",
+        "milk_bucket",
+        "powder_snow_bucket",
+        "wolf_armor",
+        "bundle",
+        "compass",
     ];
     const SIXTEEN: [&str; 7] = [
-        "ender_pearl", "snowball", "egg", "bucket", "honey_bottle", "armor_stand", "painting",
+        "ender_pearl",
+        "snowball",
+        "egg",
+        "bucket",
+        "honey_bottle",
+        "armor_stand",
+        "painting",
     ];
-    if SIXTEEN.contains(&id) || id.ends_with("_sign") || id.ends_with("_hanging_sign") || id.ends_with("_banner") {
+    if SIXTEEN.contains(&id)
+        || id.ends_with("_sign")
+        || id.ends_with("_hanging_sign")
+        || id.ends_with("_banner")
+    {
         16
     } else if ONE.contains(&id) || ONE_SUFFIX.iter().any(|s| id.ends_with(s)) {
         1
@@ -361,10 +434,22 @@ use W5Op::{DeleteData, ResetListName, SetData, SetListName, SetListPriority};
 pub const EFFECT_PATTERNS: &[(&str, EffKind)] = &[
     ("set (player|tab) list name of %player% to %text%", K(SetListName)),
     ("set %player%'s (player|tab) list name to %text%", K(SetListName)),
-    ("(reset|clear) (player|tab) list name of %player%", K(ResetListName)),
-    ("(reset|clear) %player%'s (player|tab) list name", K(ResetListName)),
-    ("set (player|tab) list priority of %player% to %number%", K(SetListPriority)),
-    ("set %player%'s (player|tab) list priority to %number%", K(SetListPriority)),
+    (
+        "(reset|clear) (player|tab) list name of %player%",
+        K(ResetListName),
+    ),
+    (
+        "(reset|clear) %player%'s (player|tab) list name",
+        K(ResetListName),
+    ),
+    (
+        "set (player|tab) list priority of %player% to %number%",
+        K(SetListPriority),
+    ),
+    (
+        "set %player%'s (player|tab) list priority to %number%",
+        K(SetListPriority),
+    ),
     (
         "set metadata value %text% of %object% to %object%",
         K(SetData(DataKind::Metadata)),

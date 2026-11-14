@@ -327,9 +327,13 @@ fn particles(toks: &[Tok], env: &Env) -> Result<Option<WorldFx>, String> {
             return Ok(None);
         };
         let one = || number(val, env);
-        if (is(kind, "spread") || is(kind, "offset")) && let Some(n) = one() {
+        if (is(kind, "spread") || is(kind, "offset"))
+            && let Some(n) = one()
+        {
             spread = Some(n);
-        } else if (is(kind, "speed") || is(kind, "extra")) && let Some(n) = one() {
+        } else if (is(kind, "speed") || is(kind, "extra"))
+            && let Some(n) = one()
+        {
             speed = Some(n);
         } else if !crate::skbee_particles_display::particle_opt(seg, env, &mut opts)? {
             return Ok(None);
@@ -483,7 +487,12 @@ fn ticks_of(
 
 impl Engine {
     /// The position a `place` expression stands for.
-    pub(crate) fn fx_pos(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<Option<FxPos>, String> {
+    pub(crate) fn fx_pos(
+        &mut self,
+        e: &Expr,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<Option<FxPos>, String> {
         let v = self.eval(e, ex, host)?;
         match v {
             Value::Location { x, y, z, world } => Ok(Some(FxPos { x, y, z, world })),
