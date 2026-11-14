@@ -195,6 +195,8 @@ pub enum Expr {
     Ent(Box<crate::entities::EntExpr>),
     /// Statistics and the event id of advancement/recipe events.
     Skb(Box<crate::skbee_recipes_advancements::SkbExpr>),
+    /// Player count, MOTD, version, worlds, spawn, world border size.
+    Server(crate::server_misc::ServerQ, Option<Box<Expr>>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -412,6 +414,7 @@ impl Expr {
             Expr::Bound(b) => b.ty(),
             Expr::Sb(s) => s.ty(),
             Expr::Nbt(n) => crate::skbee_nbt::expr_ty(n),
+            Expr::Server(q, _) => q.ty(),
             Expr::ListAgg(Agg::Size | Agg::Sum, _) => Ty::Number,
             Expr::ListAgg(..) => Ty::Object,
             Expr::Default(a, b) => {
@@ -1310,6 +1313,9 @@ impl P<'_> {
                 if let Some(e) = self.text_fn(&lw)? {
                     return Ok(e);
                 }
+                if let Some(e) = self.server_misc(&lw)? {
+                    return Ok(e);
+                }
                 if let Some(e) = self.block_expr(&lw)? {
                     return Ok(e);
                 }
@@ -1832,6 +1838,38 @@ impl P<'_> {
             }
             other => Err(format!("unexpected {}", describe(&other))),
         }
+    }
+
+    /// Server expressions: `online players count`, `motd`, `spawn of <world>`, ...
+    fn server_misc(&mut self, lw: &str) -> Result<Option<Expr>, String> {
+        use crate::server_misc::WorldArg;
+        let start = self.pos - 1;
+        let Some(h) = crate::server_misc::expr_head(self.toks, start, lw, &self.hit_end) else {
+            return Ok(None);
+        };
+        let after = start + h.len;
+        let has_of = matches!(self.toks.get(after), Some(t) if t.is_lit("of"));
+        if h.arg != WorldArg::No && after >= self.toks.len() {
+            // `of <world>` could still follow in a longer span.
+            self.hit_end.set(true);
+        }
+        let world = match h.arg {
+            WorldArg::No => None,
+            WorldArg::Required if !has_of => return Ok(None),
+            WorldArg::Optional if !has_of => None,
+            _ => {
+                self.pos = after + 1;
+                let w = self.primary()?;
+                if !crate::server_misc::world_ty_ok(w.ty(self.env)) {
+                    return Err(format!("expected a world after 'of', got {}", w.ty(self.env).name()));
+                }
+                Some(Box::new(w))
+            }
+        };
+        if world.is_none() {
+            self.pos = after;
+        }
+        Ok(Some(Expr::Server(h.q, world)))
     }
 
     fn is_word(&self, at: usize, w: &str) -> bool {

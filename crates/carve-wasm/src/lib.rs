@@ -29,7 +29,7 @@ use pumpkin_plugin_api::events::{
     BlockBreakEvent, BlockPlaceEvent, EntityDamageByEntityEvent, InventoryClickEvent, InventoryCloseEvent, EntityDamageEvent, EventData, EventHandler,
     EventPriority, FromIntoEvent, InteractAction, PlayerChatEvent, PlayerDeathEvent, PlayerInteractEvent,
     PlayerJoinEvent, PlayerLeaveEvent, PlayerRespawnEvent, PlayerToggleFlightEvent, PlayerToggleSneakEvent,
-    PlayerToggleSprintEvent,
+    PlayerToggleSprintEvent, ServerListPingEvent,
 };
 use pumpkin_plugin_api::events::{PlayerAdvancementDoneEvent, PlayerRecipeDiscoverEvent};
 use pumpkin_plugin_api::logging::{LogLevel as ApiLevel, log};
@@ -953,6 +953,83 @@ impl WasmHost<'_> {
         self.get(p).map(|pl| pl.get_ip())
     }
 
+    fn player_count(&mut self) -> f64 {
+        f64::from(self.server.get_player_count())
+    }
+
+    fn max_players(&mut self) -> Option<f64> {
+        Some(f64::from(self.server.get_max_players()))
+    }
+
+    fn motd(&mut self) -> Option<String> {
+        Some(self.server.get_motd())
+    }
+
+    fn server_version(&mut self) -> Option<String> {
+        Some(self.server.get_sys_info().pumpkin_version)
+    }
+
+    fn is_whitelisted(&mut self, name: &str) -> bool {
+        self.server
+            .get_whitelist_manager()
+            .list_entries()
+            .iter()
+            .any(|e| e.name.eq_ignore_ascii_case(name))
+    }
+
+    fn set_whitelisted(&mut self, name: &str, uuid_str: Option<&str>, on: bool) {
+        // Online players have a UUID, so the manager can be used. Offline
+        // names need the profile lookup that only the command does.
+        if let Some(id) = uuid_str.and_then(uuid::parse) {
+            let m = self.server.get_whitelist_manager();
+            if on {
+                m.add_player(name, id);
+            } else {
+                m.remove_player(id);
+            }
+            return;
+        }
+        self.deferred
+            .push((None, format!("whitelist {} {name}", if on { "add" } else { "remove" })));
+    }
+
+    fn world_names(&mut self) -> Vec<String> {
+        self.server.get_all_worlds().iter().map(|w| w.get_name()).collect()
+    }
+
+    fn broadcast_world(&mut self, world: &str, msg: &str) {
+        let Some(w) = self.server.get_world_by_name(world) else {
+            plog(ApiLevel::Warn, &format!("broadcast: no world named '{world}'"));
+            return;
+        };
+        for p in self.server.get_players_in_world(w) {
+            p.send_system_message(text(msg), false);
+        }
+    }
+
+    fn world_spawn(&mut self, world: &str) -> Option<(f64, f64, f64)> {
+        let w = self.server.get_world_by_name(world)?;
+        let s = w.get_spawn_location().pos;
+        Some((f64::from(s.x) + 0.5, f64::from(s.y), f64::from(s.z) + 0.5))
+    }
+
+    fn border_size(&mut self, world: &str) -> Option<f64> {
+        Some(self.server.get_world_by_name(world)?.get_world_border().get_diameter())
+    }
+
+    fn set_border_size(&mut self, world: &str, size: f64, seconds: f64) {
+        let Some(w) = self.server.get_world_by_name(world) else {
+            plog(ApiLevel::Warn, &format!("world border: no world named '{world}'"));
+            return;
+        };
+        let b = w.get_world_border();
+        if seconds > 0.0 {
+            b.set_size_transition(size, seconds as u64);
+        } else {
+            b.set_size(size);
+        }
+    }
+
     fn log(&mut self, level: LogLevel, msg: &str) {
         let l = match level {
             LogLevel::Info => ApiLevel::Info,
@@ -1101,6 +1178,17 @@ impl Host for TickHost<'_, '_> {
         register_recipe(r: &RecipeDef) -> Result<(), String>;
         statistic(p: &PlayerRef, category: &str, name: &str) -> Option<i64>;
         set_statistic(p: &PlayerRef, category: &str, name: &str, value: i64) -> bool;
+        player_count() -> f64;
+        max_players() -> Option<f64>;
+        motd() -> Option<String>;
+        server_version() -> Option<String>;
+        is_whitelisted(name: &str) -> bool;
+        set_whitelisted(name: &str, uuid: Option<&str>, on: bool);
+        world_names() -> Vec<String>;
+        broadcast_world(world: &str, msg: &str);
+        world_spawn(world: &str) -> Option<(f64, f64, f64)>;
+        border_size(world: &str) -> Option<f64>;
+        set_border_size(world: &str, size: f64, seconds: f64);
     }
 
     sb::sb_host_methods!();
@@ -1330,6 +1418,13 @@ impl EventAccess for PlayerRecipeDiscoverEvent {
     fn set_cancelled(d: &mut EventData<Self>) {
         d.cancelled = true;
     }
+}
+
+impl EventAccess for ServerListPingEvent {
+    fn ctx(_d: &EventData<Self>) -> EventCtx {
+        EventCtx::console()
+    }
+    fn set_cancelled(_d: &mut EventData<Self>) {}
 }
 
 impl EventAccess for PlayerRespawnEvent {
@@ -1919,6 +2014,7 @@ impl Plugin for Carve {
         register_event::<InventoryClickEvent>(&context, EventKind::InventoryClick);
         register_event::<PlayerAdvancementDoneEvent>(&context, EventKind::AdvancementDone);
         register_event::<PlayerRecipeDiscoverEvent>(&context, EventKind::RecipeDiscover);
+        register_event::<ServerListPingEvent>(&context, EventKind::ServerPing);
         for r in [
             context.register_event_handler::<PlayerInteractEvent, _>(OnInteract, EventPriority::Normal, true),
             context.register_event_handler::<InventoryCloseEvent, _>(OnInvClose, EventPriority::Normal, true),

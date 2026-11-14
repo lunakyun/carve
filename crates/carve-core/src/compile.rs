@@ -49,6 +49,8 @@ pub enum EventKind {
     AdvancementDone,
     /// `on recipe discover`: `recipe id` is the recipe.
     RecipeDiscover,
+    /// The server list is asked for (no player).
+    ServerPing,
 }
 
 impl EventKind {
@@ -83,6 +85,7 @@ impl EventKind {
             EventKind::BoundExit => "bound exit",
             EventKind::AdvancementDone => "advancement done",
             EventKind::RecipeDiscover => "recipe discover",
+            EventKind::ServerPing => "server list ping",
         }
     }
 
@@ -115,6 +118,7 @@ impl EventKind {
             "recipe discover" | "recipe discovered" | "player recipe discover" | "recipe unlock" => {
                 EventKind::RecipeDiscover
             }
+            "server list ping" | "server ping" | "list ping" => EventKind::ServerPing,
             _ => return crate::events_items::parse_kind(s).or_else(|| crate::skbee_bound::parse_event(s)),
         })
     }
@@ -129,6 +133,7 @@ impl EventKind {
             | EventKind::InventoryClose
             | EventKind::BoundEnter
             | EventKind::BoundExit
+            | EventKind::ServerPing
         )
     }
 }
@@ -271,6 +276,8 @@ pub enum Cond {
     Ent(Box<crate::entities::EntCond>),
     /// `player has advancement "x"`.
     Skb(Box<crate::skbee_recipes_advancements::SkbCond>),
+    /// `player is whitelisted`.
+    Server(Box<crate::server_misc::ServerCond>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -366,6 +373,8 @@ pub enum Effect {
     Ent(Box<crate::entities::EntFx>),
     /// Recipes, advancements, statistics.
     Skb(Box<crate::skbee_recipes_advancements::SkbFx>),
+    /// Whitelist, world broadcast, world border, teleport to spawn.
+    Server(Box<crate::server_misc::ServerFx>),
 }
 
 /// What a `loop` goes over.
@@ -1228,6 +1237,9 @@ impl Cx<'_> {
         if let Some(c) = crate::world_effects::parse_cond(toks, &self.env) {
             return Some(c);
         }
+        if let Some(c) = crate::server_misc::parse_cond(toks, &self.env) {
+            return Some(c);
+        }
         if let Some(c) = crate::block_ops::parse_cond(toks, &self.env) {
             return Some(c);
         }
@@ -1448,6 +1460,17 @@ impl Cx<'_> {
             }
         }
         match crate::world_effects::parse_effect(&toks, &self.env) {
+            Ok(Some(eff)) => {
+                self.emit(Instr::Eff(eff), num);
+                return;
+            }
+            Ok(None) => {}
+            Err(msg) => {
+                self.err(num, msg);
+                return;
+            }
+        }
+        match crate::server_misc::parse_effect(&toks, &self.env) {
             Ok(Some(eff)) => {
                 self.emit(Instr::Eff(eff), num);
                 return;
@@ -2341,7 +2364,7 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                 has_message: k == EventKind::Chat,
                 arg_types: vec![],
                 trigger_name: format!("'on {}'", k.name()),
-                no_player: matches!(k, EventKind::Load | EventKind::MobSpawn | EventKind::ProjectileHit),
+                no_player: matches!(k, EventKind::Load | EventKind::MobSpawn | EventKind::ProjectileHit | EventKind::ServerPing),
                 event_vals: crate::events_items::mask(k),
                 has_damage: k == EventKind::Damage,
                 has_attacker: matches!(k, EventKind::Damage | EventKind::Death),

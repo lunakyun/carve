@@ -1264,6 +1264,7 @@ impl Engine {
             Cond::Nbt(n) => self.nbt_cond(n, ex, host),
             Cond::Ent(c) => self.ent_cond(c, ex, host),
             Cond::Skb(c) => self.skb_cond(c, ex, host),
+            Cond::Server(c) => self.server_cond(c, ex, host),
             Cond::HasPerm { player, node, negate } => {
                 let p = self.eval(player, ex, host)?;
                 let node = self.text(node, ex, host)?;
@@ -1735,6 +1736,7 @@ impl Engine {
             Expr::WorldNamed(n) => Value::World(self.text(n, ex, host)?),
             Expr::Blk(b) => self.block_eval(b, ex, host)?,
             Expr::Bound(b) => self.bound_eval(b, ex, host)?,
+            Expr::Server(q, w) => self.server_expr(*q, w, ex, host)?,
             Expr::Loc(x, y, z, w) => {
                 let (x, y, z) = (
                     self.num(x, ex, host)?,
@@ -2200,6 +2202,7 @@ impl Engine {
             Effect::Nbt(n) => self.nbt_effect(n, ex, host)?,
             Effect::Ent(f) => self.ent_effect(f, ex, host)?,
             Effect::Skb(s) => self.skb_effect(s, ex, host)?,
+            Effect::Server(f) => self.server_effect(f, ex, host)?,
             Effect::Cancel => {
                 if ex.waited {
                     host.log(
