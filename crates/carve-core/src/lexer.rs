@@ -73,6 +73,16 @@ pub fn lex(s: &str) -> Result<Vec<Tok>, String> {
                 let digits: String = c[ds..i].iter().collect();
                 word = format!("arg-{digits}");
             }
+            // `event-bound`, `event-block`: one word.
+            if word.eq_ignore_ascii_case("event") && i + 1 < n && c[i] == '-' && c[i + 1].is_alphabetic() {
+                i += 1;
+                let ws = i;
+                while i < n && c[i].is_alphabetic() {
+                    i += 1;
+                }
+                let part: String = c[ws..i].iter().collect();
+                word = format!("event-{}", part.to_ascii_lowercase());
+            }
             // `loop-value`, `loop-player`, `loop-value-2`: one word.
             if word.eq_ignore_ascii_case("loop") && i + 1 < n && c[i] == '-' && c[i + 1].is_alphabetic() {
                 i += 1;

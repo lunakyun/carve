@@ -167,6 +167,8 @@ pub enum Expr {
     Items(Box<ListSrc>),
     /// `sum of {x::*}`, `max of ...`, `size of {x::*} where [...]`.
     ListAgg(Agg, Box<ListSrc>),
+    /// Bounds: `bound at <loc>`, `owners of bound X`, ...
+    Bound(Box<crate::skbee_bound::BoundExpr>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -320,6 +322,8 @@ pub struct Env {
     pub has_damage: bool,
     pub has_attacker: bool,
     pub has_block: bool,
+    /// `on bound enter` / `on bound exit`: `event-bound` exists.
+    pub has_bound: bool,
 }
 
 impl Expr {
@@ -352,6 +356,7 @@ impl Expr {
                 DateOp::Format => Ty::Text,
             },
             Expr::Items(_) => Ty::List,
+            Expr::Bound(b) => b.ty(),
             Expr::ListAgg(Agg::Size | Agg::Sum, _) => Ty::Number,
             Expr::ListAgg(..) => Ty::Object,
             Expr::Default(a, b) => {
@@ -835,6 +840,84 @@ impl P<'_> {
         None
     }
 
+    /// Does a bound expression start here (`bound ...`, `owners of bound ...`)?
+    fn bound_head(&self, lw: &str) -> bool {
+        let at = |n: usize, lit: &str| matches!(self.toks.get(self.pos + n), Some(t) if t.is_lit(lit));
+        match lw {
+            "bound" | "event-bound" => true,
+            "bounds" => at(0, "at"),
+            "all" => at(0, "bounds"),
+            "owners" | "members" | "world" | "volume" => at(0, "of") && at(1, "bound"),
+            "lesser" | "greater" => at(0, "corner") && at(1, "of"),
+            "flag" => self.toks.iter().skip(self.pos).any(|t| t.is_lit("bound")),
+            _ => false,
+        }
+    }
+
+    fn bound_operand(&mut self) -> Result<Expr, String> {
+        let e = self.primary()?;
+        match e.ty(self.env) {
+            Ty::Text | Ty::Object => Ok(e),
+            t => Err(format!("expected a bound, got a {}", t.name())),
+        }
+    }
+
+    fn bound_expr(&mut self, lw: &str) -> Result<Expr, String> {
+        use crate::skbee_bound::BoundExpr as B;
+        let b = match lw {
+            "event-bound" => {
+                if !self.env.has_bound || self.env.in_function {
+                    return Err(format!(
+                        "'event-bound' only exists in 'on bound enter' and 'on bound exit', not in {}",
+                        self.env.trigger_name
+                    ));
+                }
+                B::Event
+            }
+            "all" => {
+                self.pos += 1;
+                B::All
+            }
+            "bounds" | "bound" if matches!(self.peek(), Some(t) if t.is_lit("at")) => {
+                self.pos += 1;
+                let loc = self.primary()?;
+                if !matches!(loc.ty(self.env), Ty::Location | Ty::Player | Ty::Object) {
+                    return Err("'bound at' needs a location or a player".into());
+                }
+                if lw == "bound" { B::At(loc) } else { B::BoundsAt(loc) }
+            }
+            "bound" => {
+                self.pos = crate::skbee_bound::skip_id_words(self.toks, self.pos);
+                B::Named(self.bound_operand()?)
+            }
+            "owners" | "members" => {
+                self.pos += 1;
+                B::People(lw == "owners", self.bound_operand()?)
+            }
+            "lesser" | "greater" => {
+                self.pos += 2;
+                B::Corner(lw == "greater", self.bound_operand()?)
+            }
+            "world" => {
+                self.pos += 1;
+                B::WorldOf(self.bound_operand()?)
+            }
+            "volume" => {
+                self.pos += 1;
+                B::Volume(self.bound_operand()?)
+            }
+            _ => {
+                let flag = self.primary()?;
+                if !matches!(self.peek(), Some(t) if t.is_lit("of")) {
+                    return Err("expected 'flag \"name\" of bound <id>'".into());
+                }
+                self.pos += 1;
+                B::Flag(flag, self.bound_operand()?)
+            }
+        };
+        Ok(Expr::Bound(Box::new(b)))
+    }
+
     fn primary_base(&mut self) -> Result<Expr, String> {
         let Some(tok) = self.peek().cloned() else {
             return Err("missing expression".into());
@@ -885,6 +968,7 @@ impl P<'_> {
                 }
                 match lw.as_str() {
                     "the" => self.primary(),
+                    _ if self.bound_head(&lw) => self.bound_expr(&lw),
                     _ if crate::gamemode::is_mode_word(&lw) => Ok(Expr::Text(vec![Part::Lit(lw)])),
                     "game"
                         if matches!(self.peek(), Some(t) if t.is_lit("mode"))

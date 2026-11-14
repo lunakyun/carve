@@ -23,6 +23,7 @@ pub mod text_join_split;
 pub mod text_case_substring;
 pub mod time_dates;
 pub mod senders;
+pub mod skbee_bound;
 pub mod player_flags;
 pub mod timespans;
 pub mod value;

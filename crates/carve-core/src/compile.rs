@@ -30,6 +30,10 @@ pub enum EventKind {
     SneakToggle,
     SprintToggle,
     FlightToggle,
+    /// A player walks into a bound.
+    BoundEnter,
+    /// A player walks out of a bound.
+    BoundExit,
 }
 
 impl EventKind {
@@ -50,6 +54,8 @@ impl EventKind {
             EventKind::SneakToggle => "sneak toggle",
             EventKind::SprintToggle => "sprint toggle",
             EventKind::FlightToggle => "flight toggle",
+            EventKind::BoundEnter => "bound enter",
+            EventKind::BoundExit => "bound exit",
         }
     }
 
@@ -75,13 +81,16 @@ impl EventKind {
             "sneak toggle" | "toggle sneak" | "player toggle sneak" => EventKind::SneakToggle,
             "sprint toggle" | "toggle sprint" | "player toggle sprint" => EventKind::SprintToggle,
             "flight toggle" | "toggle flight" | "player toggle flight" => EventKind::FlightToggle,
-            _ => return None,
+            _ => return crate::skbee_bound::parse_event(s),
         })
     }
 
     /// Whether `cancel event` means anything here.
     pub fn cancellable(self) -> bool {
-        !matches!(self, EventKind::Respawn | EventKind::Load)
+        !matches!(
+            self,
+            EventKind::Respawn | EventKind::Load | EventKind::BoundEnter | EventKind::BoundExit
+        )
     }
 }
 
@@ -203,6 +212,8 @@ pub enum Cond {
     Admin(AdminCond, Expr, bool),
     /// `player has potion effect speed`.
     World(Box<crate::world_effects::WorldCond>),
+    /// Bound conditions (`is within bound`, `bound exists`, ...).
+    Bound(Box<crate::skbee_bound::BoundCond>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -280,6 +291,8 @@ pub enum Effect {
     Admin(AdminEff, Expr, Option<Expr>),
     /// Lightning, explosions, particles, potion effects, fire.
     World(Box<crate::world_effects::WorldFx>),
+    /// Create, delete and change bounds.
+    Bound(Box<crate::skbee_bound::BoundEff>),
 }
 
 /// What a `loop` goes over.
@@ -1080,6 +1093,9 @@ impl Cx<'_> {
         if let Some(c) = crate::world_effects::parse_cond(toks, &self.env) {
             return Some(c);
         }
+        if let Some(c) = crate::skbee_bound::parse_cond(toks, &self.env) {
+            return Some(c);
+        }
         let mut memo = Memo::default();
         registry()
             .conditions
@@ -1224,6 +1240,17 @@ impl Cx<'_> {
             None => {}
         }
         match crate::world_effects::parse_effect(&toks, &self.env) {
+            Ok(Some(eff)) => {
+                self.emit(Instr::Eff(eff), num);
+                return;
+            }
+            Ok(None) => {}
+            Err(msg) => {
+                self.err(num, msg);
+                return;
+            }
+        }
+        match crate::skbee_bound::parse_effect(&toks, &self.env) {
             Ok(Some(eff)) => {
                 self.emit(Instr::Eff(eff), num);
                 return;
@@ -2018,7 +2045,7 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                         file,
                         top.num,
                         format!(
-                            "unknown event '{ev}', known: join, quit, chat, break, place, death, damage, respawn, click, right click, left click, sneak toggle, sprint toggle, flight toggle, load (and 'every N seconds:')"
+                            "unknown event '{ev}', known: join, quit, chat, break, place, death, damage, respawn, click, right click, left click, sneak toggle, sprint toggle, flight toggle, bound enter, bound exit, load (and 'every N seconds:')"
                         ),
                     ));
                 continue;
@@ -2041,6 +2068,7 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                 has_damage: k == EventKind::Damage,
                 has_attacker: matches!(k, EventKind::Damage | EventKind::Death),
                 has_block: matches!(k, EventKind::Click | EventKind::RightClick | EventKind::LeftClick),
+                has_bound: matches!(k, EventKind::BoundEnter | EventKind::BoundExit),
                 ..Env::default()
             };
             click_filters.extend(filters);

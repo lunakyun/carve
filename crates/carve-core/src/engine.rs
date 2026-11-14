@@ -229,7 +229,7 @@ pub(crate) struct Exec {
     loops: Vec<LoopFrame>,
     /// Callers of the running function, innermost last.
     callers: Vec<Frame>,
-    ctx: EventCtx,
+    pub(crate) ctx: EventCtx,
     waited: bool,
     cancelled: bool,
     /// uuid -> current name (None = offline), for the current run slice only.
@@ -351,6 +351,8 @@ pub struct Engine {
     pub errors: Vec<ScriptError>,
     /// Per-trigger run times while `/carve timings on`.
     pub timings: Option<BTreeMap<String, Timing>>,
+    /// SkBee-style bounds (see `skbee_bound`).
+    pub bounds: crate::skbee_bound::Bounds,
 }
 
 impl Default for Engine {
@@ -438,6 +440,7 @@ impl Engine {
             sources: BTreeMap::new(),
             errors: Vec::new(),
             timings: None,
+            bounds: crate::skbee_bound::Bounds::default(),
         }
     }
 
@@ -624,6 +627,9 @@ impl Engine {
     /// Call once per server tick with a counter that goes up by one. Runs the
     /// `every ...:` triggers that are due.
     pub fn tick(&mut self, tick: u64, host: &mut dyn Host) {
+        if tick.is_multiple_of(crate::skbee_bound::POLL_TICKS) && self.bounds_wanted() {
+            self.bounds_poll(host);
+        }
         if self.table.every.is_empty() {
             return;
         }
@@ -1178,6 +1184,7 @@ impl Engine {
                 Ok(crate::op_kick_ban::check(host, *kind, &name, p.as_ref()) != *negate)
             }
             Cond::World(w) => self.world_cond(w, ex, host),
+            Cond::Bound(b) => self.bound_cond(b, ex, host),
             Cond::HasPerm { player, node, negate } => {
                 let p = self.eval(player, ex, host)?;
                 let node = self.text(node, ex, host)?;
@@ -1189,7 +1196,7 @@ impl Engine {
         }
     }
 
-    fn text(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<String, String> {
+    pub(crate) fn text(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<String, String> {
         let mut s = String::new();
         self.write(e, ex, host, &mut s)?;
         Ok(s)
@@ -1612,6 +1619,7 @@ impl Engine {
                 count: *count,
             },
             Expr::WorldNamed(n) => Value::World(self.text(n, ex, host)?),
+            Expr::Bound(b) => self.bound_eval(b, ex, host)?,
             Expr::Loc(x, y, z, w) => {
                 let (x, y, z) = (
                     self.num(x, ex, host)?,
@@ -2043,6 +2051,7 @@ impl Engine {
                 }
             }
             Effect::World(w) => self.world_effect(w, ex, host)?,
+            Effect::Bound(b) => self.bound_effect(b, ex, host)?,
             Effect::Cancel => {
                 if ex.waited {
                     host.log(
