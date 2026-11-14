@@ -672,10 +672,10 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Choice Argument
 - ⬜ Chunk
 - 🟡 Clicked Block/Entity/Inventory/Slot — `clicked block` only
-- ⬜ Color from Hex Code ⭐
+- 🟡 Color from Hex Code ⭐ — `<#rrggbb>`, `&#rrggbb` and `&x&r...` in text; no `rgb(...)` color value
 - ⬜ Color of
-- ⬜ Colored / Uncolored ⭐
-- ⬜ Colored/Formatted/Uncolored
+- ✅ Colored / Uncolored ⭐ — `colored`, `uncolored`
+- ✅ Colored/Formatted/Uncolored — `colored`, `formatted`, `uncolored`, `unformatted`
 - ✅ Command — args, permission, aliases, usage, executable by; no cooldown; new commands need a restart
 - ⬜ Command Block Command
 - ✅ Command Executor — `executor`, same as `sender`
@@ -1042,7 +1042,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Spectator Target
 - ⛔ Speed (walk and fly speed: no attribute API in the plugin API)
 - ⬜ Stored Enchantments
-- ⬜ String Colors
+- ✅ String Colors — `&a` codes, `§a` codes and `<red>` tags in sent messages
 - ⬜ Style
 - ✅ Substring ⭐ — `substring of x from a to b`, `first N characters of x`, `last N characters of x`, `character at index N of x`
 - ⬜ Tab List Name

@@ -147,6 +147,8 @@ pub enum Expr {
     Elem(ElemSel, VarRef),
     /// `now`, `unix timestamp of d`, `date from unix timestamp n`, `d formatted as f`.
     Date(DateOp, Vec<Expr>),
+    /// `colored x` (true) / `uncolored x` (false).
+    Color(bool, Box<Expr>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -296,6 +298,7 @@ impl Expr {
             Expr::Distance(..) | Expr::Random(..) | Expr::Damage => Ty::Number,
             Expr::Attacker => Ty::Player,
             Expr::Math(..) | Expr::ParseNum(_) => Ty::Number,
+            Expr::Color(..) => Ty::Text,
             Expr::RandomOf(_) | Expr::Split(..) | Expr::Elem(..) => Ty::Object,
             Expr::Join(..) | Expr::Replaced(..) => Ty::Text,
             Expr::Length(_) => Ty::Number,
@@ -681,6 +684,13 @@ impl P<'_> {
                         self.pos += 1;
                         self.prop_of(Prop::Gamemode)
                     }
+                    "colored" | "coloured" | "uncolored" | "uncoloured" | "unformatted" => {
+                        if self.pos >= self.toks.len() {
+                            self.hit_end.set(true);
+                        }
+                        let inner = self.primary()?;
+                        Ok(Expr::Color(!lw.starts_with('u'), Box::new(inner)))
+                    }
                     "true" | "yes" => Ok(Expr::Bool(true)),
                     "false" | "no" => Ok(Expr::Bool(false)),
                     "player" if self.env.in_function => {
@@ -767,10 +777,13 @@ impl P<'_> {
                     "formatted" => {
                         // `formatted now as "..."` / `formatted {date}`
                         let d = self.primary_base()?;
-                        if !matches!(d.ty(self.env), Ty::Date | Ty::Object) {
-                            return Err("'formatted' needs a date, like 'formatted now'".into());
+                        let as_next = matches!(self.peek(), Some(t) if t.is_lit("as"));
+                        match d.ty(self.env) {
+                            Ty::Date => self.date_format(d),
+                            Ty::Object | Ty::Text if as_next => self.date_format(d),
+                            Ty::Object | Ty::Text => Ok(Expr::Color(true, Box::new(d))),
+                            _ => Err("'formatted' needs a date or text, like 'formatted now'".into()),
                         }
-                        self.date_format(d)
                     }
                     "arg" | "argument" => self.arg(1),
                     "join" if matches!(self.peek(), Some(Tok::Var(_))) => {
