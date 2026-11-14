@@ -949,9 +949,10 @@ pub trait Host {
     // ---- ray tracing, worlds and chunks (`w4_skbee_raytrace_world`) ----
 
     /// Cast a ray and report the first block and the first entity on it.
-    /// The default finds nothing.
-    fn ray_trace(&mut self, _req: &crate::w4_skbee_raytrace_world::RayReq) -> crate::w4_skbee_raytrace_world::RayRaw {
-        crate::w4_skbee_raytrace_world::RayRaw::default()
+    /// The default walks the blocks with `block_type` (every solid block counts
+    /// as a full cube) and finds no entities.
+    fn ray_trace(&mut self, req: &crate::w4_skbee_raytrace_world::RayReq) -> crate::w4_skbee_raytrace_world::RayRaw {
+        crate::w4_skbee_raytrace_world::walk_blocks(req, self)
     }
 
     /// Create a world, or load it when it exists.

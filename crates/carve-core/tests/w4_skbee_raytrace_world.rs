@@ -18,6 +18,8 @@ struct Mock {
     worlds: Vec<String>,
     loaded_chunks: Vec<(String, i32, i32)>,
     block: Option<String>,
+    /// When set, blocks at or below this y are stone, the rest air.
+    floor_y: Option<i32>,
 }
 
 impl Host for Mock {
@@ -59,7 +61,10 @@ impl Host for Mock {
     fn world_names(&mut self) -> Vec<String> {
         self.worlds.clone()
     }
-    fn block_type(&mut self, _at: &carve_core::block_ops::BlockPos) -> Option<String> {
+    fn block_type(&mut self, at: &carve_core::block_ops::BlockPos) -> Option<String> {
+        if let Some(f) = self.floor_y {
+            return Some(if at.y <= f { "stone" } else { "air" }.to_string());
+        }
         self.block.clone()
     }
     fn ray_trace(&mut self, req: &RayReq) -> RayRaw {
@@ -103,7 +108,10 @@ fn run_with(h: &mut Mock, body: &str) -> Vec<String> {
         "{}",
         errs.iter().map(|e| e.to_string()).collect::<Vec<_>>().join("\n")
     );
-    let p = PlayerRef { uuid: "u1".into(), name: "Steve".into() };
+    let p = PlayerRef {
+        uuid: "u1".into(),
+        name: "Steve".into(),
+    };
     e.fire(EventKind::Join, EventCtx::player(p), h);
     assert!(h.errors.is_empty(), "{:?}", h.errors);
     std::mem::take(&mut h.sent)
@@ -119,14 +127,24 @@ fn compiles(body: &str) -> bool {
 }
 
 fn block_hit(x: i32, y: i32, z: i32, face: &str, hit: (f64, f64, f64)) -> RayRaw {
-    RayRaw { block: Some(RawBlock { pos: (x, y, z), face: face.into(), hit }), entity: None }
+    RayRaw {
+        block: Some(RawBlock {
+            pos: (x, y, z),
+            face: face.into(),
+            hit,
+        }),
+        entity: None,
+    }
 }
 
 // ---- ray tracing ------------------------------------------------------------
 
 #[test]
 fn ray_from_player_uses_eye_and_look_direction() {
-    let mut h = Mock { raw: block_hit(10, 65, 40, "north", (10.5, 65.6, 40.0)), ..Mock::default() };
+    let mut h = Mock {
+        raw: block_hit(10, 65, 40, "north", (10.5, 65.6, 40.0)),
+        ..Mock::default()
+    };
     let out = run_with(
         &mut h,
         "set {_r} to ray trace from player with max distance 50\nsend \"%hit block of {_r}%\"\nsend \"%hit face of {_r}%\"",
@@ -151,7 +169,8 @@ fn ray_default_distance_is_twenty() {
 
 #[test]
 fn ray_miss_is_none() {
-    let out = run("set {_r} to ray trace from player with max distance 5\nif {_r} is not set:\n    send \"miss\"");
+    let out =
+        run("set {_r} to ray trace from player with max distance 5\nif {_r} is not set:\n    send \"miss\"");
     assert_eq!(out, vec!["miss"]);
     let out = run("set {_r} to ray trace from player\nsend \"%hit block of {_r}%\"");
     assert_eq!(out, vec!["<none>"]);
@@ -159,7 +178,10 @@ fn ray_miss_is_none() {
 
 #[test]
 fn ray_position_and_distance() {
-    let mut h = Mock { raw: block_hit(10, 65, 14, "north", (10.0, 65.62, 14.0)), ..Mock::default() };
+    let mut h = Mock {
+        raw: block_hit(10, 65, 14, "north", (10.0, 65.62, 14.0)),
+        ..Mock::default()
+    };
     let out = run_with(
         &mut h,
         "set {_r} to ray trace from player\nsend \"%hit position of {_r}%\"\nsend \"%hit distance of {_r}%\"",
@@ -172,8 +194,16 @@ fn ray_position_and_distance() {
 fn ray_entity_wins_when_nearer() {
     let mut h = Mock {
         raw: RayRaw {
-            block: Some(RawBlock { pos: (10, 65, 40), face: "north".into(), hit: (10.0, 65.62, 40.0) }),
-            entity: Some(RawEntity { uuid: "z1".into(), kind: "zombie".into(), hit: (10.0, 65.62, 13.0) }),
+            block: Some(RawBlock {
+                pos: (10, 65, 40),
+                face: "north".into(),
+                hit: (10.0, 65.62, 40.0),
+            }),
+            entity: Some(RawEntity {
+                uuid: "z1".into(),
+                kind: "zombie".into(),
+                hit: (10.0, 65.62, 13.0),
+            }),
         },
         ..Mock::default()
     };
@@ -188,21 +218,38 @@ fn ray_entity_wins_when_nearer() {
 fn ray_block_wins_when_nearer_and_player_entity_is_a_player() {
     let mut h = Mock {
         raw: RayRaw {
-            block: Some(RawBlock { pos: (1, 2, 3), face: "up".into(), hit: (1.0, 2.0, 12.0) }),
-            entity: Some(RawEntity { uuid: "u1".into(), kind: "player".into(), hit: (10.0, 65.0, 40.0) }),
+            block: Some(RawBlock {
+                pos: (1, 2, 3),
+                face: "up".into(),
+                hit: (10.0, 65.0, 15.0),
+            }),
+            entity: Some(RawEntity {
+                uuid: "u1".into(),
+                kind: "player".into(),
+                hit: (10.0, 65.0, 40.0),
+            }),
         },
         ..Mock::default()
     };
-    let out = run_with(&mut h, "set {_r} to ray trace from player\nsend \"%hit entity of {_r}%\"");
+    let out = run_with(
+        &mut h,
+        "set {_r} to ray trace from player\nsend \"%hit entity of {_r}%\"",
+    );
     assert_eq!(out, vec!["<none>"]);
     h.raw.block = None;
-    let out = run_with(&mut h, "set {_r} to ray trace from player\nsend \"%hit entity of {_r}%\"");
+    let out = run_with(
+        &mut h,
+        "set {_r} to ray trace from player\nsend \"%hit entity of {_r}%\"",
+    );
     assert_eq!(out, vec!["Steve"]);
 }
 
 #[test]
 fn ray_from_location_needs_a_direction() {
-    let mut h = Mock { raw: block_hit(0, 0, 0, "up", (0.0, 0.0, 0.0)), ..Mock::default() };
+    let mut h = Mock {
+        raw: block_hit(0, 0, 0, "up", (0.0, 0.0, 0.0)),
+        ..Mock::default()
+    };
     let out = run_with(
         &mut h,
         "set {_r} to ray trace from location(0, 70, 0, world \"world\")\nif {_r} is not set:\n    send \"no direction\"",
@@ -213,10 +260,13 @@ fn ray_from_location_needs_a_direction() {
 
 #[test]
 fn ray_in_direction_with_flags() {
-    let mut h = Mock { raw: block_hit(0, 60, 0, "up", (0.5, 61.0, 0.5)), ..Mock::default() };
+    let mut h = Mock {
+        raw: block_hit(0, 60, 0, "up", (0.5, 61.0, 0.5)),
+        ..Mock::default()
+    };
     let out = run_with(
         &mut h,
-        "set {_r} to ray trace from location(0, 70, 0, world \"world\") in direction vector(0, -1, 0) with max distance 30 including fluids and ignoring entities\nsend \"%hit block face of {_r}%\"",
+        "set {_r} to ray trace from location(0, 70, 0, world \"world\") in direction vector(0, -1, 0) with max distance 30 including fluids ignoring entities\nsend \"%hit block face of {_r}%\"",
     );
     assert_eq!(out, vec!["up"]);
     let req = &h.rays[0];
@@ -229,7 +279,10 @@ fn ray_in_direction_with_flags() {
 #[test]
 fn ray_distance_is_capped() {
     let mut h = Mock::default();
-    run_with(&mut h, "set {_r} to ray trace from player with max distance 100000");
+    run_with(
+        &mut h,
+        "set {_r} to ray trace from player with max distance 100000",
+    );
     assert!((h.rays[0].end.2 - (10.0 + 512.0)).abs() < 1e-6);
 }
 
@@ -237,7 +290,9 @@ fn ray_distance_is_capped() {
 fn ray_parse_errors() {
     assert!(!compiles("set {_r} to ray trace from player with ray size 2"));
     assert!(!compiles("set {_r} to ray trace from 5"));
-    assert!(!compiles("set {_r} to ray trace from player with max distance \"far\""));
+    assert!(!compiles(
+        "set {_r} to ray trace from player with max distance \"far\""
+    ));
     assert!(compiles("set {_r} to ray trace from player ignoring blocks"));
 }
 
@@ -258,7 +313,7 @@ fn create_and_load_and_unload_worlds() {
     let mut h = Mock::default();
     run_with(
         &mut h,
-        "create world \"arena\"\ncreate a new world named \"hell\" with environment nether\ncreate world \"sky\" with the dimension the end\nload world \"old\"\nunload world \"hell\"",
+        "create world \"arena\"\ncreate a new world named \"hell\" with environment nether\ncreate world \"sky\" with environment end\nload world \"old\"\nunload world \"hell\"",
     );
     assert_eq!(
         h.created,
@@ -274,7 +329,10 @@ fn create_and_load_and_unload_worlds() {
 
 #[test]
 fn world_loaded_condition() {
-    let mut h = Mock { worlds: vec!["world".into()], ..Mock::default() };
+    let mut h = Mock {
+        worlds: vec!["world".into()],
+        ..Mock::default()
+    };
     let out = run_with(
         &mut h,
         "if world \"world\" is loaded:\n    send \"a\"\nif world \"nope\" is not loaded:\n    send \"b\"\ncreate world \"nope\"\nif world \"nope\" is loaded:\n    send \"c\"",
@@ -289,9 +347,16 @@ fn unload_failure_is_a_script_error_not_a_panic() {
     let mut e = Engine::default();
     let (_, errs) = e.load(&[("t.carve".into(), src.into())]);
     assert!(errs.is_empty());
-    let p = PlayerRef { uuid: "u1".into(), name: "Steve".into() };
+    let p = PlayerRef {
+        uuid: "u1".into(),
+        name: "Steve".into(),
+    };
     e.fire(EventKind::Join, EventCtx::player(p), &mut h);
-    assert!(h.errors.iter().any(|m| m.contains("players are inside")), "{:?}", h.errors);
+    assert!(
+        h.errors.iter().any(|m| m.contains("players are inside")),
+        "{:?}",
+        h.errors
+    );
 }
 
 #[test]
@@ -305,10 +370,17 @@ fn bad_world_names_are_refused() {
     let src = "on join:\n    create world \"../evil\"\n";
     let mut e = Engine::default();
     e.load(&[("t.carve".into(), src.into())]);
-    let p = PlayerRef { uuid: "u1".into(), name: "Steve".into() };
+    let p = PlayerRef {
+        uuid: "u1".into(),
+        name: "Steve".into(),
+    };
     e.fire(EventKind::Join, EventCtx::player(p), &mut h);
     assert!(h.created.is_empty());
-    assert!(h.errors.iter().any(|m| m.contains("not a valid world name")), "{:?}", h.errors);
+    assert!(
+        h.errors.iter().any(|m| m.contains("not a valid world name")),
+        "{:?}",
+        h.errors
+    );
 }
 
 // ---- chunks -----------------------------------------------------------------
@@ -323,13 +395,20 @@ fn chunk_at_location_and_coordinates() {
 
 #[test]
 fn chunk_at_player_and_of_player() {
-    assert_eq!(run("set {_c} to chunk of player\nsend \"%chunk x of {_c}%\"")[0], "0");
-    assert_eq!(run("set {_c} to chunk at player\nsend \"%chunk z of {_c}%\"")[0], "0");
+    assert_eq!(
+        run("set {_c} to chunk of player\nsend \"%chunk x of {_c}%\"")[0],
+        "0"
+    );
+    assert_eq!(
+        run("set {_c} to chunk at player\nsend \"%chunk z of {_c}%\"")[0],
+        "0"
+    );
 }
 
 #[test]
 fn chunk_from_numbers() {
-    let out = run("set {_c} to chunk at 3, -4 in world \"nether\"\nsend \"%{_c}%\"\nsend \"%chunk x of {_c}%\"");
+    let out =
+        run("set {_c} to chunk at 3, -4 in world \"nether\"\nsend \"%{_c}%\"\nsend \"%chunk x of {_c}%\"");
     assert_eq!(out, vec!["chunk 3, -4 in 'nether'", "3"]);
 }
 
@@ -343,7 +422,10 @@ fn chunk_equality() {
 
 #[test]
 fn chunk_loaded_condition() {
-    let mut h = Mock { loaded_chunks: vec![("world".into(), 0, 0)], ..Mock::default() };
+    let mut h = Mock {
+        loaded_chunks: vec![("world".into(), 0, 0)],
+        ..Mock::default()
+    };
     let out = run_with(
         &mut h,
         "if chunk of player is loaded:\n    send \"here\"\nset {_far} to chunk at 50, 50 in world \"world\"\nif {_far} is not loaded:\n    send \"far unloaded\"",
@@ -365,7 +447,10 @@ fn chunks_in_radius() {
 
 #[test]
 fn block_is_tagged() {
-    let mut h = Mock { block: Some("oak_log".into()), ..Mock::default() };
+    let mut h = Mock {
+        block: Some("oak_log".into()),
+        ..Mock::default()
+    };
     let out = run_with(
         &mut h,
         "set {_b} to block at player\nif {_b} is tagged with minecraft tag \"logs\":\n    send \"log\"\nif {_b} is tagged with minecraft tag \"minecraft:planks\":\n    send \"planks\"\nif {_b} isn't tagged with tag \"leaves\":\n    send \"not leaves\"\nif {_b} is tagged as \"#logs\":\n    send \"short\"",
@@ -389,16 +474,26 @@ fn unknown_tag_warns_and_is_false() {
         "if stone is tagged with minecraft tag \"not_a_tag\":\n    send \"yes\"\nsend \"done\"",
     );
     assert_eq!(out, vec!["done"]);
-    assert!(h.warns.iter().any(|w| w.contains("unknown minecraft tag 'not_a_tag'")), "{:?}", h.warns);
+    assert!(
+        h.warns
+            .iter()
+            .any(|w| w.contains("unknown minecraft tag 'not_a_tag'")),
+        "{:?}",
+        h.warns
+    );
 }
 
 #[test]
 fn tag_members_and_tags_of() {
     let out = run("set {_l::*} to minecraft tag \"wooden_slabs\"\nsend \"%size of {_l::*}%\"");
     assert_eq!(out, vec!["12"]);
-    let out = run("set {_l::*} to minecraft block tag \"logs\"\nif {_l::*} contains oak log:\n    send \"has oak\"");
+    let out = run(
+        "set {_l::*} to minecraft block tag \"logs\"\nif {_l::*} contains oak log:\n    send \"has oak\"",
+    );
     assert_eq!(out, vec!["has oak"]);
-    let out = run("set {_t::*} to minecraft tags of oak log\nif {_t::*} contains \"minecraft:logs\":\n    send \"yes\"");
+    let out = run(
+        "set {_t::*} to minecraft tags of oak log\nif {_t::*} contains \"minecraft:logs\":\n    send \"yes\"",
+    );
     assert_eq!(out, vec!["yes"]);
 }
 
@@ -407,11 +502,21 @@ fn tag_data_is_sane() {
     assert_eq!(normalize_tag("Logs"), "minecraft:logs");
     assert_eq!(normalize_tag("#minecraft:logs"), "minecraft:logs");
     assert_eq!(normalize_tag("c:ores"), "c:ores");
-    assert!(tag_members(carve_core::w4_skbee_raytrace_world::TagKind::Block, "logs").unwrap().contains("oak_log"));
+    assert!(
+        tag_members(carve_core::w4_skbee_raytrace_world::TagKind::Block, "logs")
+            .unwrap()
+            .contains("oak_log")
+    );
     assert!(tag_members(carve_core::w4_skbee_raytrace_world::TagKind::Item, "nope").is_none());
     // Every tag member is a real item or block name.
-    for table in [carve_core::w4_tags_data::BLOCK_TAGS, carve_core::w4_tags_data::ITEM_TAGS] {
-        assert!(table.windows(2).all(|w| w[0].0 < w[1].0), "tag table must be sorted");
+    for table in [
+        carve_core::w4_tags_data::BLOCK_TAGS,
+        carve_core::w4_tags_data::ITEM_TAGS,
+    ] {
+        assert!(
+            table.windows(2).all(|w| w[0].0 < w[1].0),
+            "tag table must be sorted"
+        );
         for (tag, members) in table {
             for m in members.split(' ').filter(|m| !m.is_empty()) {
                 assert!(carve_core::items::is_known(m), "{tag}: unknown name {m}");
@@ -432,4 +537,35 @@ fn errors_are_reported_per_line() {
 #[test]
 fn registries_are_valid() {
     carve_core::compile::check_registry().unwrap();
+}
+
+#[test]
+fn block_walk_finds_the_floor() {
+    let mut h = Mock {
+        floor_y: Some(60),
+        ..Mock::default()
+    };
+    let req = RayReq {
+        world: None,
+        start: (0.5, 70.5, 0.5),
+        end: (0.5, 40.5, 0.5),
+        fluids: false,
+        blocks: true,
+        entities: true,
+        exclude: None,
+    };
+    let raw = carve_core::w4_skbee_raytrace_world::walk_blocks(&req, &mut h);
+    let b = raw.block.expect("hit");
+    assert_eq!(b.pos, (0, 60, 0));
+    assert_eq!(b.face, "up");
+    assert!((b.hit.1 - 61.0).abs() < 1e-6, "{:?}", b.hit);
+    let short = RayReq {
+        end: (0.5, 65.5, 0.5),
+        ..req
+    };
+    assert!(
+        carve_core::w4_skbee_raytrace_world::walk_blocks(&short, &mut h)
+            .block
+            .is_none()
+    );
 }

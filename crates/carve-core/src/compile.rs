@@ -1284,7 +1284,11 @@ impl Cx<'_> {
         }
         let mut type_err = None;
         let mut memo = Memo::default();
+        let rtw = crate::w4_skbee_raytrace_world::line_may_match(&toks);
         for p in &registry().conditions {
+            if !rtw && matches!(p.kind, CondKind::Rtw(..)) {
+                continue;
+            }
             match p.matches_memo(&toks, &self.env, &mut memo) {
                 Ok(caps) => return Some(build_cond(p.kind, caps)),
                 Err(Some(e)) if type_err.is_none() => type_err = Some(e),

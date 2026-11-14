@@ -330,7 +330,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Leash entities
 - ✅ Lightning ⭐ — `strike lightning [effect] at ...`
 - ⬜ Load Server Icon
-- ⬜ Load World
+- 🟡 Load World — `create world "x" [with environment nether]`, `load world "x"`, `unload world "x"`; works only on hosts that can create worlds (Pumpkin 0.1 cannot, the script gets an error)
 - 🟡 Locally Suppress Warning — accepted and ignored; Carve has no such warnings
 - ✅ Log — `log "x" [to file "name"]` appends to `logs/<name>`
 - ✅ Look At — `make player look at <location>` (players)
@@ -517,7 +517,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Is Invulnerable
 - ⛔ Is Jumping — no jump state in the plugin API
 - ⛔ Is Leashed — no leads in the plugin API
-- ⛔ Is Loaded — no chunk load query in the plugin API
+- 🟡 Is Loaded — `world "x" is loaded`, `chunk of player is loaded`; chunk checks need a host that can tell (see syntax/w4-skbee-raytrace-world.md)
 - ⛔ Is Lootable — no loot tables in the plugin API
 - 🟡 Is Member/Owner of Region — `is an owner of bound`, `is a member of bound` (Carve bounds, not WorldGuard)
 - ⛔ Is Normalized — Carve has no vector type
@@ -549,7 +549,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Is Sprinting ⭐
 - ⬜ Is Stackable
 - ✅ Is Swimming
-- ⛔ Is Tagged — no tag registry in the plugin API
+- ✅ Is Tagged — `stone is tagged with minecraft tag "base_stone_overworld"` (built-in vanilla tag list; see syntax/w4-skbee-raytrace-world.md)
 - ⬜ Is Tameable — needs entity values (entities slice), not done here
 - ⬜ Is Tamed — needs entity values (entities slice), not done here
 - ⛔ Is Ticking — no tick manager in the plugin API
@@ -601,7 +601,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ All Permissions — the plugin API cannot list permissions
 - ⛔ All Persistent Data Keys — the plugin API cannot list data keys
 - ✅ All Scripts — `all scripts`: file names of the loaded scripts, usable as a list
-- ⛔ All Tags of a Type — no tag registry in the plugin API
+- 🟡 All Tags of a Type — `minecraft block tag "logs"`, `minecraft item tag "x"`; built-in list of the vanilla block and item tags
 - ⛔ Allay Duplication Cooldown — no mob-specific API
 - ⛔ Allay Target Jukebox — no mob-specific API
 - 🟡 Alpha/Red/Green/Blue Color Value — `red value of "#ff8000"`; works on hex and named color text (no color type yet)
@@ -1047,10 +1047,10 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Substring ⭐ — `substring of x from a to b`, `first N characters of x`, `last N characters of x`, `character at index N of x`
 - ✅ Tab List Name — `<player>'s tab list name`, same as Player List Name
 - 🟡 Tablisted Players — all online players; Pumpkin cannot tell who is hidden from a player's tab list
-- ⛔ Tag — no tag registry in the plugin API
+- 🟡 Tag — `minecraft tag "logs"`; built-in vanilla tags only, no custom tags
 - ⛔ Tag Namespaced Key — no tag registry in the plugin API
-- ⛔ Tags Contents — no tag registry in the plugin API
-- ⛔ Tags of X — no tag registry in the plugin API
+- ✅ Tags Contents — `minecraft tag "logs"` lists the member blocks or items
+- ✅ Tags of X — `minecraft tags of oak log`
 - ⬜ Tamer
 - ⬜ Target
 - ✅ Targeted Block ⭐ — `targeted block of player`
@@ -1226,7 +1226,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 BossBar — bars are named by a text id; there is no bar value to keep in a variable
 - ⬜ Cat Type
 - ⬜ Chicken Variant
-- ⬜ Chunk
+- ✅ Chunk — `chunk at player`, `chunk at 3, 4 in world "w"`, `chunk x of c`, `chunks in radius 2 around player`
 - ⬜ Click Type
 - ⬜ Color
 - ✅ Command Sender ⭐ — `sender`, `command sender`, `sender is a player`
@@ -1283,7 +1283,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Loot Context
 - ⬜ Loot Table
 - ⬜ Metadata Holder
-- ⬜ Minecraft Tag
+- 🟡 Minecraft Tag — `minecraft tag "logs"`; built-in vanilla tag list
 - ⛔ Money — needs an economy plugin (Vault)
 - ⬜ Moon Phase
 - ⬜ Nameable

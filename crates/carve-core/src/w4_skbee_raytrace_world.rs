@@ -80,6 +80,91 @@ pub struct RayHit {
     pub distance: f64,
 }
 
+/// Walk the ray block by block (voxel traversal) and stop at the first block
+/// that is not air. Fluids are skipped unless the request includes them.
+pub fn walk_blocks<H: Host + ?Sized>(req: &RayReq, host: &mut H) -> RayRaw {
+    use crate::block_ops::BlockPos;
+    let mut raw = RayRaw::default();
+    if !req.blocks {
+        return raw;
+    }
+    let (sx, sy, sz) = req.start;
+    let d = (req.end.0 - sx, req.end.1 - sy, req.end.2 - sz);
+    let len = (d.0 * d.0 + d.1 * d.1 + d.2 * d.2).sqrt();
+    if !len.is_finite() || len < 1e-9 {
+        return raw;
+    }
+    let dir = [d.0 / len, d.1 / len, d.2 / len];
+    let o = [sx, sy, sz];
+    let mut cell = [sx.floor() as i32, sy.floor() as i32, sz.floor() as i32];
+    let mut step = [0i32; 3];
+    let mut t_max = [f64::INFINITY; 3];
+    let mut t_delta = [f64::INFINITY; 3];
+    for a in 0..3 {
+        if dir[a] > 0.0 {
+            step[a] = 1;
+            t_delta[a] = 1.0 / dir[a];
+            t_max[a] = (f64::from(cell[a]) + 1.0 - o[a]) / dir[a];
+        } else if dir[a] < 0.0 {
+            step[a] = -1;
+            t_delta[a] = -1.0 / dir[a];
+            t_max[a] = (o[a] - f64::from(cell[a])) / -dir[a];
+        }
+    }
+    let mut t = 0.0;
+    let mut face_axis = 1;
+    for _ in 0..(MAX_RAY_DISTANCE as usize * 3 + 3) {
+        if t > len {
+            break;
+        }
+        let at = BlockPos {
+            x: cell[0],
+            y: cell[1],
+            z: cell[2],
+            world: req.world.clone(),
+        };
+        if let Some(id) = host.block_type(&at) {
+            let solid = match id.as_str() {
+                "air" | "cave_air" | "void_air" | "light" => false,
+                "water" | "lava" | "bubble_column" => req.fluids,
+                _ => true,
+            };
+            if solid {
+                let face = match (face_axis, step[face_axis]) {
+                    (0, s) if s > 0 => "west",
+                    (0, _) => "east",
+                    (1, s) if s > 0 => "down",
+                    (1, _) => "up",
+                    (_, s) if s > 0 => "north",
+                    _ => "south",
+                };
+                let tt = t.min(len);
+                raw.block = Some(RawBlock {
+                    pos: (cell[0], cell[1], cell[2]),
+                    face: face.to_string(),
+                    hit: (o[0] + dir[0] * tt, o[1] + dir[1] * tt, o[2] + dir[2] * tt),
+                });
+                return raw;
+            }
+        }
+        let a = if t_max[0] <= t_max[1] && t_max[0] <= t_max[2] {
+            0
+        } else if t_max[1] <= t_max[2] {
+            1
+        } else {
+            2
+        };
+        if !t_max[a].is_finite() {
+            break;
+        }
+        t = t_max[a];
+        t_max[a] += t_delta[a];
+        cell[a] += step[a];
+        face_axis = a;
+    }
+    raw
+}
+
 fn dist(a: (f64, f64, f64), b: (f64, f64, f64)) -> f64 {
     ((a.0 - b.0).powi(2) + (a.1 - b.1).powi(2) + (a.2 - b.2).powi(2)).sqrt()
 }
@@ -97,9 +182,15 @@ pub fn pick_hit(req: &RayReq, raw: RayRaw, host: &mut dyn Host) -> Option<RayHit
         let e = raw.entity?;
         let value = if e.kind == "player" {
             let name = host.resolve_player(&e.uuid).unwrap_or_default();
-            Value::Player(PlayerRef { uuid: e.uuid.clone(), name })
+            Value::Player(PlayerRef {
+                uuid: e.uuid.clone(),
+                name,
+            })
         } else {
-            Value::Entity(EntityRef { uuid: e.uuid.clone(), kind: e.kind.clone() })
+            Value::Entity(EntityRef {
+                uuid: e.uuid.clone(),
+                kind: e.kind.clone(),
+            })
         };
         return Some(RayHit {
             world: req.world.clone(),
@@ -141,7 +232,10 @@ fn loc_of(v: &Value, host: &mut dyn Host) -> Option<(f64, f64, f64, Option<Strin
 }
 
 fn live_player(p: &PlayerRef, host: &mut dyn Host) -> Option<PlayerRef> {
-    host.resolve_player(&p.uuid).map(|name| PlayerRef { uuid: p.uuid.clone(), name })
+    host.resolve_player(&p.uuid).map(|name| PlayerRef {
+        uuid: p.uuid.clone(),
+        name,
+    })
 }
 
 fn vec_of(v: &Value) -> Option<(f64, f64, f64)> {
@@ -189,7 +283,7 @@ fn build_ray(
         _ => return None,
     };
     let len = (dir.0 * dir.0 + dir.1 * dir.1 + dir.2 * dir.2).sqrt();
-    if !(len > 1e-9) || !max.is_finite() || max <= 0.0 {
+    if len.is_nan() || len <= 1e-9 || !max.is_finite() || max <= 0.0 {
         return None;
     }
     let max = max.min(MAX_RAY_DISTANCE);
@@ -261,7 +355,12 @@ fn node(op: Op, args: Vec<Expr>, ty: Ty) -> Expr {
 // ---- evaluation -------------------------------------------------------------
 
 fn loc_value(p: (i32, i32, i32), world: Option<String>) -> Value {
-    Value::Location { x: f64::from(p.0), y: f64::from(p.1), z: f64::from(p.2), world }
+    Value::Location {
+        x: f64::from(p.0),
+        y: f64::from(p.1),
+        z: f64::from(p.2),
+        world,
+    }
 }
 
 fn chunk_floor(c: f64) -> i32 {
@@ -295,7 +394,11 @@ pub fn apply(op: Op, vals: &[Value], host: &mut dyn Host) -> Result<Value, Strin
             if f.dir && dir.is_none() {
                 return Ok(Value::None);
             }
-            let max = if f.dist { vals.get(i).and_then(num) } else { Some(DEFAULT_RAY_DISTANCE) };
+            let max = if f.dist {
+                vals.get(i).and_then(num)
+            } else {
+                Some(DEFAULT_RAY_DISTANCE)
+            };
             let Some(max) = max else { return Ok(Value::None) };
             let Some(req) = build_ray(first, dir, max, f, host) else {
                 return Ok(Value::None);
@@ -310,7 +413,9 @@ pub fn apply(op: Op, vals: &[Value], host: &mut dyn Host) -> Result<Value, Strin
             }
         }
         Op::Hit(field) => {
-            let Value::Ray(h) = first else { return Ok(Value::None) };
+            let Value::Ray(h) = first else {
+                return Ok(Value::None);
+            };
             match field {
                 HitField::Block => h.block.map_or(Value::None, |b| loc_value(b, h.world.clone())),
                 HitField::Position => Value::Location {
@@ -335,18 +440,26 @@ pub fn apply(op: Op, vals: &[Value], host: &mut dyn Host) -> Result<Value, Strin
             let (Some(x), Some(z)) = (num(first), vals.get(1).and_then(num)) else {
                 return Ok(Value::None);
             };
-            let world = if has_world { vals.get(2).and_then(world_name) } else { None };
+            let world = if has_world {
+                vals.get(2).and_then(world_name)
+            } else {
+                None
+            };
             chunk_value(world, x.floor() as i32, z.floor() as i32)
         }
         Op::ChunksAround => {
-            let Some(r) = num(first) else { return Ok(Value::None) };
+            let Some(r) = num(first) else {
+                return Ok(Value::None);
+            };
             let r = r.clamp(0.0, MAX_CHUNK_RADIUS) as i32;
             let centre = match vals.get(1) {
                 Some(Value::Chunk { world, x, z }) => Some((world.clone(), *x, *z)),
                 Some(v) => loc_of(v, host).map(|(x, _, z, w)| (w, chunk_floor(x), chunk_floor(z))),
                 None => None,
             };
-            let Some((world, cx, cz)) = centre else { return Ok(Value::None) };
+            let Some((world, cx, cz)) = centre else {
+                return Ok(Value::None);
+            };
             let mut out = Vec::with_capacity(((2 * r + 1) * (2 * r + 1)) as usize);
             for dz in -r..=r {
                 for dx in -r..=r {
@@ -356,7 +469,9 @@ pub fn apply(op: Op, vals: &[Value], host: &mut dyn Host) -> Result<Value, Strin
             Value::List(out)
         }
         Op::TagMembers(kind) => {
-            let Some(name) = text_of(first) else { return Ok(Value::None) };
+            let Some(name) = text_of(first) else {
+                return Ok(Value::None);
+            };
             let Some(names) = tag_members(kind, &name) else {
                 host.log(
                     crate::host::LogLevel::Warn,
@@ -368,12 +483,18 @@ pub fn apply(op: Op, vals: &[Value], host: &mut dyn Host) -> Result<Value, Strin
                 names
                     .split(' ')
                     .filter(|n| !n.is_empty())
-                    .map(|n| Value::Item { id: n.to_string(), count: 1, meta: None })
+                    .map(|n| Value::Item {
+                        id: n.to_string(),
+                        count: 1,
+                        meta: None,
+                    })
                     .collect(),
             )
         }
         Op::TagsOf => {
-            let Some((id, block)) = subject_id(first, host) else { return Ok(Value::None) };
+            let Some((id, block)) = subject_id(first, host) else {
+                return Ok(Value::None);
+            };
             let mut out: Vec<Value> = Vec::new();
             let tables: &[&[(&str, &str)]] = match block {
                 Some(true) => &[crate::w4_tags_data::BLOCK_TAGS],
@@ -406,12 +527,23 @@ fn text_of(v: &Value) -> Option<String> {
 
 /// `Logs`, `#logs`, `minecraft:logs` all name `minecraft:logs`.
 pub fn normalize_tag(raw: &str) -> String {
-    let t = raw.trim().trim_start_matches('#').to_ascii_lowercase().replace(' ', "_");
-    if t.contains(':') { t } else { format!("minecraft:{t}") }
+    let t = raw
+        .trim()
+        .trim_start_matches('#')
+        .to_ascii_lowercase()
+        .replace(' ', "_");
+    if t.contains(':') {
+        t
+    } else {
+        format!("minecraft:{t}")
+    }
 }
 
 fn lookup(table: &'static [(&'static str, &'static str)], tag: &str) -> Option<&'static str> {
-    table.binary_search_by(|(k, _)| (*k).cmp(tag)).ok().map(|i| table[i].1)
+    table
+        .binary_search_by(|(k, _)| (*k).cmp(tag))
+        .ok()
+        .map(|i| table[i].1)
 }
 
 /// Space separated member names of a tag. `Any` tries items first, then blocks.
@@ -431,12 +563,22 @@ pub fn tag_members(kind: TagKind, raw: &str) -> Option<&'static str> {
 fn subject_id(v: &Value, host: &mut dyn Host) -> Option<(String, Option<bool>)> {
     match v {
         Value::Location { x, y, z, world } => {
-            let at = BlockPos { x: x.floor() as i32, y: y.floor() as i32, z: z.floor() as i32, world: world.clone() };
-            host.block_type(&at).map(|id| (id.trim_start_matches("minecraft:").to_string(), Some(true)))
+            let at = BlockPos {
+                x: x.floor() as i32,
+                y: y.floor() as i32,
+                z: z.floor() as i32,
+                world: world.clone(),
+            };
+            host.block_type(&at)
+                .map(|id| (id.trim_start_matches("minecraft:").to_string(), Some(true)))
         }
         Value::Item { id, .. } => Some((id.clone(), None)),
         Value::Text(t) => {
-            let id = t.trim().trim_start_matches("minecraft:").to_ascii_lowercase().replace(' ', "_");
+            let id = t
+                .trim()
+                .trim_start_matches("minecraft:")
+                .to_ascii_lowercase()
+                .replace(' ', "_");
             Some((id, None))
         }
         _ => None,
@@ -477,15 +619,18 @@ const fn ck(kind: CKind, negate: bool) -> CondKind {
 /// Tried before the plain `is` comparison.
 pub const CONDITION_PATTERNS: &[(&str, CondKind)] = &[
     (
-        "%object% is tagged (as|with) [a] [the] [minecraft] [block|item] tag[s] %text%",
+        "%object% is tagged (as|with) [a] [the] [minecraft] [(block|item)] tag[s] %text%",
         ck(CKind::Tagged, false),
     ),
     (
-        "%object% (is not|isn't) tagged (as|with) [a] [the] [minecraft] [block|item] tag[s] %text%",
+        "%object% (is not|isn't) tagged (as|with) [a] [the] [minecraft] [(block|item)] tag[s] %text%",
         ck(CKind::Tagged, true),
     ),
     ("%object% is tagged (as|with) %text%", ck(CKind::Tagged, false)),
-    ("%object% (is not|isn't) tagged (as|with) %text%", ck(CKind::Tagged, true)),
+    (
+        "%object% (is not|isn't) tagged (as|with) %text%",
+        ck(CKind::Tagged, true),
+    ),
     ("%object% is loaded", ck(CKind::Loaded, false)),
     ("%object% (is not|isn't) loaded", ck(CKind::Loaded, true)),
     ("%object% is unloaded", ck(CKind::Loaded, true)),
@@ -499,7 +644,9 @@ pub fn kind_has_b(k: CKind) -> bool {
 pub fn check(c: &RtwCond, a: &Value, b: Option<&Value>, host: &mut dyn Host) -> bool {
     let hit = match c.kind {
         CKind::Tagged => {
-            let Some(tag) = b.and_then(text_of) else { return false };
+            let Some(tag) = b.and_then(text_of) else {
+                return false;
+            };
             match is_tagged(a, &tag, host) {
                 Some(h) => h,
                 None => {
@@ -535,7 +682,12 @@ fn is_loaded(v: &Value, host: &mut dyn Host) -> bool {
 }
 
 pub fn build_cond(kind: CKind, negate: bool, a: Expr, b: Option<Expr>) -> RtwCond {
-    RtwCond { kind, negate, a, b: if kind_has_b(kind) { b } else { None } }
+    RtwCond {
+        kind,
+        negate,
+        a,
+        b: if kind_has_b(kind) { b } else { None },
+    }
 }
 
 // ---- effects ----------------------------------------------------------------
@@ -564,20 +716,23 @@ use EffKind::Rtw as R;
 
 pub const EFFECT_PATTERNS: &[(&str, EffKind)] = &[
     (
-        "create [a] [new] world [named|called] %text% with [the] (environment|dimension) (normal|overworld)",
+        "create [a] [new] world [named] %text% with environment (normal|overworld)",
         R(EOp::Create(Env::Normal)),
     ),
     (
-        "create [a] [new] world [named|called] %text% with [the] (environment|dimension) (nether|the nether)",
+        "create [a] [new] world [named] %text% with environment nether",
         R(EOp::Create(Env::Nether)),
     ),
     (
-        "create [a] [new] world [named|called] %text% with [the] (environment|dimension) (end|the end)",
+        "create [a] [new] world [named] %text% with environment end",
         R(EOp::Create(Env::End)),
     ),
-    ("create [a] [new] world [named|called] %text%", R(EOp::Create(Env::Normal))),
-    ("load [the] world [named|called] %text%", R(EOp::Create(Env::Normal))),
-    ("unload [the] world [named|called] %text%", R(EOp::Unload)),
+    (
+        "create [a] [new] world [named] %text%",
+        R(EOp::Create(Env::Normal)),
+    ),
+    ("load world [named] %text%", R(EOp::Create(Env::Normal))),
+    ("unload world [named] %text%", R(EOp::Unload)),
 ];
 
 pub fn build(op: EOp, caps: &mut [Option<Capture>]) -> Option<Effect> {
@@ -594,17 +749,24 @@ pub fn clean_world_name(raw: &str) -> Result<String, String> {
     let ok = !n.is_empty()
         && n.len() <= 64
         && !n.starts_with('.')
-        && n.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '.'));
+        && n.chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '.'));
     if ok {
         Ok(n.to_string())
     } else {
-        Err(format!("'{raw}' is not a valid world name (letters, digits, - _ . only, no folders)"))
+        Err(format!(
+            "'{raw}' is not a valid world name (letters, digits, - _ . only, no folders)"
+        ))
     }
 }
 
 pub fn run_effect(e: &RtwEffect, name: &Value, host: &mut dyn Host) -> Result<(), String> {
     let Some(raw) = world_name(name) else {
-        return Err(format!("expected a world name, got {} ({})", name.type_name(), name));
+        return Err(format!(
+            "expected a world name, got {} ({})",
+            name.type_name(),
+            name
+        ));
     };
     match e.op {
         EOp::Create(env) => {
@@ -640,23 +802,39 @@ impl P<'_> {
         }
         let from = self.primary().map_err(|e| format!("{usage}: {e}"))?;
         if !matches!(from.ty(self.env), Ty::Player | Ty::Location | Ty::Object) {
-            return Err(format!("ray trace needs a player, entity or location, got {}", from.ty(self.env).name()));
+            return Err(format!(
+                "ray trace needs a player, entity or location, got {}",
+                from.ty(self.env).name()
+            ));
         }
-        let mut f = RayFlags { dir: false, dist: false, fluids: false, blocks: true, entities: true };
+        let mut f = RayFlags {
+            dir: false,
+            dist: false,
+            fluids: false,
+            blocks: true,
+            entities: true,
+        };
         let mut dir = None;
         let mut dist = None;
         loop {
-            if self.r_lit(0, "and") && (self.r_lit(1, "with") || self.r_lit(1, "ignoring") || self.r_lit(1, "including")) {
+            if self.r_lit(0, "and")
+                && (self.r_lit(1, "with") || self.r_lit(1, "ignoring") || self.r_lit(1, "including"))
+            {
                 self.pos += 1;
             }
-            if self.r_lit(0, "in") && (self.r_lit(1, "direction") || (self.r_lit(1, "the") && self.r_lit(2, "direction"))) {
+            if self.r_lit(0, "in")
+                && (self.r_lit(1, "direction") || (self.r_lit(1, "the") && self.r_lit(2, "direction")))
+            {
                 self.pos += if self.r_lit(1, "the") { 3 } else { 2 };
                 if self.r_lit(0, "of") {
                     self.pos += 1;
                 }
                 let v = self.primary()?;
                 if !matches!(v.ty(self.env), Ty::Vector | Ty::Object) {
-                    return Err(format!("'in direction' needs a vector, got {}", v.ty(self.env).name()));
+                    return Err(format!(
+                        "'in direction' needs a vector, got {}",
+                        v.ty(self.env).name()
+                    ));
                 }
                 f.dir = true;
                 dir = Some(v);
@@ -671,11 +849,17 @@ impl P<'_> {
                 return Err("'with ray size' is not supported: Pumpkin only traces thin rays".into());
             } else if self.r_lit(0, "ignoring") || self.r_lit(0, "including") {
                 let ignore = self.r_lit(0, "ignoring");
+                // A flag word cut off at the end of the span means a longer span may parse.
+                if self.pos + 1 >= self.toks.len() {
+                    self.hit_end.set(true);
+                }
                 let target = match self.toks.get(self.pos + 1) {
                     Some(t) if t.is_lit("fluids") || t.is_lit("fluid") => 0,
                     Some(t) if t.is_lit("blocks") || t.is_lit("block") => 1,
                     Some(t) if t.is_lit("entities") || t.is_lit("entity") => 2,
-                    _ => return Err("expected 'ignoring fluids|blocks|entities' or 'including fluids'".into()),
+                    _ => {
+                        return Err("expected 'ignoring fluids|blocks|entities' or 'including fluids'".into());
+                    }
                 };
                 self.pos += 2;
                 match (target, ignore) {
@@ -697,7 +881,9 @@ impl P<'_> {
         let (field, n) = match (self.toks.get(self.pos), self.toks.get(self.pos + 1)) {
             (Some(a), Some(b)) if a.is_lit("block") && b.is_lit("face") => (HitField::Face, 2),
             (Some(a), _) if a.is_lit("block") => (HitField::Block, 1),
-            (Some(a), _) if a.is_lit("position") || a.is_lit("location") || a.is_lit("point") => (HitField::Position, 1),
+            (Some(a), _) if a.is_lit("position") || a.is_lit("location") || a.is_lit("point") => {
+                (HitField::Position, 1)
+            }
             (Some(a), _) if a.is_lit("entity") => (HitField::Entity, 1),
             (Some(a), _) if a.is_lit("face") => (HitField::Face, 1),
             (Some(a), _) if a.is_lit("distance") => (HitField::Distance, 1),
@@ -827,4 +1013,25 @@ impl P<'_> {
         };
         Ok(Some(e))
     }
+}
+
+/// Cheap pre-check: can any of our condition patterns match this line? They
+/// all begin with a slot, so trying them on every line is slow.
+pub fn line_may_match(toks: &[crate::lexer::Tok]) -> bool {
+    toks.iter()
+        .any(|t| t.is_lit("tagged") || t.is_lit("loaded") || t.is_lit("unloaded"))
+}
+
+/// Does this token run start one of our list expressions (`chunks in radius`,
+/// `minecraft tag "x"`, `minecraft tags of x`)?
+pub fn is_list_expr(toks: &[crate::lexer::Tok]) -> bool {
+    let lit = |i: usize, w: &str| toks.get(i).is_some_and(|t| t.is_lit(w));
+    if lit(0, "chunks") {
+        return lit(1, "in") || lit(1, "around");
+    }
+    if lit(0, "minecraft") || lit(0, "vanilla") {
+        let skip = usize::from(lit(1, "block") || lit(1, "item"));
+        return lit(1 + skip, "tags") || lit(1 + skip, "tag");
+    }
+    false
 }
