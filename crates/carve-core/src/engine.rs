@@ -37,6 +37,8 @@ pub struct EventCtx {
     pub block: Option<String>,
     /// Values of the item and level events (see `events_items`).
     pub extra: Option<Box<crate::events_items::EventExtra>>,
+    /// The clicked slot in `on inventory click`.
+    pub inv: Option<Box<crate::inventories::InvClick>>,
 }
 
 impl EventCtx {
@@ -50,6 +52,7 @@ impl EventCtx {
             attacker: None,
             block: None,
             extra: None,
+            inv: None,
         }
     }
 
@@ -64,6 +67,7 @@ impl EventCtx {
             attacker: None,
             block: None,
             extra: None,
+            inv: None,
         }
     }
 
@@ -233,7 +237,7 @@ pub(crate) struct Exec {
     loops: Vec<LoopFrame>,
     /// Callers of the running function, innermost last.
     callers: Vec<Frame>,
-    ctx: EventCtx,
+    pub(crate) ctx: EventCtx,
     waited: bool,
     cancelled: bool,
     /// uuid -> current name (None = offline), for the current run slice only.
@@ -1194,7 +1198,7 @@ impl Engine {
         }
     }
 
-    fn text(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<String, String> {
+    pub(crate) fn text(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<String, String> {
         let mut s = String::new();
         self.write(e, ex, host, &mut s)?;
         Ok(s)
@@ -1595,6 +1599,7 @@ impl Engine {
                     .unwrap_or(Value::None),
                 None => Value::None,
             },
+            Expr::Inv(i) => self.inv_expr(i, ex, host)?,
             Expr::ClickedBlock => match &ex.ctx.block {
                 Some(b) => Value::Item {
                     id: b.clone(),
@@ -2051,6 +2056,7 @@ impl Engine {
             }
             Effect::World(w) => self.world_effect(w, ex, host)?,
             Effect::Block(b) => self.block_effect(b, ex, host)?,
+            Effect::Inv(i) => self.inv_effect(i, ex, host)?,
             Effect::Cancel => {
                 if ex.waited {
                     host.log(

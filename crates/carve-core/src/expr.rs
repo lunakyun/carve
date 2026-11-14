@@ -133,6 +133,8 @@ pub enum Expr {
     ClickedBlock,
     /// `event-item`, `new level`, ... in the item and level events.
     EventVal(crate::events_items::EventVal),
+    /// Inventory values: `slot 3 of player's inventory`, `clicked slot`.
+    Inv(Box<crate::inventories::InvExpr>),
     /// `a ? b`: a, or b when a is not set.
     Default(Box<Expr>, Box<Expr>),
     /// `floor(x)`, `max(a, b)`, ...
@@ -326,6 +328,8 @@ pub struct Env {
     pub has_block: bool,
     /// Bit set of the event values of the trigger (`events_items::mask`).
     pub event_vals: u16,
+    /// `on inventory click`: `clicked slot` and `clicked item` exist.
+    pub has_inv: bool,
 }
 
 impl Expr {
@@ -367,6 +371,7 @@ impl Expr {
             }
             Expr::ClickedBlock => Ty::Item,
             Expr::EventVal(v) => v.ty(),
+            Expr::Inv(i) => i.ty(),
             Expr::LoopValue(d) => match env.loops.get(*d) {
                 Some(LoopKind::Times) => Ty::Number,
                 Some(LoopKind::Players) => Ty::Player,
@@ -753,6 +758,75 @@ impl P<'_> {
         Ok(Expr::SpanPart(ms, total, Box::new(inner)))
     }
 
+    /// `slot 3 of ...inventory`: a number or variable, then an inventory somewhere after.
+    fn slot_head(&self) -> bool {
+        matches!(self.toks.get(self.pos), Some(Tok::Num(_) | Tok::Var(_) | Tok::Sym("(")))
+    }
+
+    /// `clicked slot`, `clicked item`, `click type` in `on inventory click`, and
+    /// how many tokens follow the first word.
+    fn inv_event_head(&self, first: &str) -> Option<(crate::inventories::InvExpr, usize)> {
+        use crate::inventories::InvExpr;
+        let next = match self.toks.get(self.pos) {
+            Some(Tok::Word(w)) => w.to_ascii_lowercase(),
+            _ => String::new(),
+        };
+        match (first, next.as_str()) {
+            ("clicked", "slot") => Some((InvExpr::ClickedSlot, 1)),
+            ("clicked", "item") => Some((InvExpr::ClickedItem, 1)),
+            ("click", "type") => Some((InvExpr::ClickType, 1)),
+            ("event-slot", _) => Some((InvExpr::ClickedSlot, 0)),
+            ("event-item", _) => Some((InvExpr::ClickedItem, 0)),
+            _ => None,
+        }
+    }
+
+    /// `slot N of <player>'s [current] inventory` (the `slot` word is read).
+    fn slot_expr(&mut self) -> Result<Expr, String> {
+        use crate::inventories::{InvExpr, InvTarget, inv_target, inv_target_len};
+        let slot = self.primary()?;
+        if !Ty::Number.accepts(slot.ty(self.env)) {
+            return Err("the slot must be a number".into());
+        }
+        if !matches!(self.peek(), Some(t) if t.is_lit("of")) {
+            return Err("expected 'slot <number> of <player>'s inventory'".into());
+        }
+        self.pos += 1;
+        let toks = self.toks;
+        let rest = toks.get(self.pos..).unwrap_or_default();
+        let inv = if let Some(len) = inv_target_len(rest) {
+            let inv = inv_target(rest.get(..len).unwrap_or_default(), self.env)
+                .ok_or("expected a player before 's inventory")?;
+            self.pos += len;
+            inv
+        } else {
+            let mut current = false;
+            if !rest.iter().any(|t| t.is_lit("inventory")) {
+                // A shorter token list may still grow into one.
+                self.hit_end.set(true);
+            }
+            if matches!(self.peek(), Some(t) if t.is_lit("the")) {
+                self.pos += 1;
+            }
+            if matches!(self.peek(), Some(t) if t.is_lit("current")) {
+                current = true;
+                self.pos += 1;
+            }
+            if !(matches!(self.peek(), Some(t) if t.is_lit("inventory"))
+                && matches!(self.peek_at(1), Some(t) if t.is_lit("of")))
+            {
+                return Err("expected 'slot <number> of <player>'s inventory'".into());
+            }
+            self.pos += 2;
+            let who = self.primary()?;
+            if !matches!(who.ty(self.env), Ty::Player | Ty::Object) {
+                return Err("the inventory belongs to a player".into());
+            }
+            InvTarget { who, current }
+        };
+        Ok(Expr::Inv(Box::new(InvExpr::Slot { slot, inv })))
+    }
+
     /// The admin properties (`display name`, `nickname`, `tab list name`,
     /// `ping`, `ip [address]`) when their words start at `at`, with the
     /// position after them.
@@ -979,6 +1053,14 @@ impl P<'_> {
                     "damage" if self.env.has_damage && !self.env.in_function => Ok(Expr::Damage),
                     "attacker" | "damager" if self.env.has_attacker && !self.env.in_function => {
                         Ok(Expr::Attacker)
+                    }
+                    "slot" if self.slot_head() => self.slot_expr(),
+                    "clicked" | "click" | "event-slot" | "event-item"
+                        if self.env.has_inv && !self.env.in_function && self.inv_event_head(&lw).is_some() =>
+                    {
+                        let (e, n) = self.inv_event_head(&lw).ok_or("unknown inventory value")?;
+                        self.pos += n;
+                        Ok(Expr::Inv(Box::new(e)))
                     }
                     "clicked" | "event-block"
                         if self.env.has_block

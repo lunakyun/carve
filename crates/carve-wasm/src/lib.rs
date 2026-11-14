@@ -6,6 +6,7 @@ use std::sync::Mutex;
 
 use carve_core::health_food::Vital;
 use carve_core::block_ops::BlockPos;
+use carve_core::inventories::InvClick;
 use carve_core::world_effects::{FxPos, ParticleFx};
 use carve_core::{
     CommandOutcome, Engine, EventCtx, EventKind, Host, LogLevel, PlayerFlag, PlayerRef, Recipient, ScriptError, Variables,
@@ -20,7 +21,7 @@ use pumpkin_plugin_api::command::{
 use pumpkin_plugin_api::commands::CommandHandler;
 use pumpkin_plugin_api::common::{BlockPos as WitPos, EntityPose, GameMode, Hand, RgbColor};
 use pumpkin_plugin_api::events::{
-    BlockBreakEvent, BlockPlaceEvent, EntityDamageByEntityEvent, EntityDamageEvent, EventData, EventHandler,
+    BlockBreakEvent, BlockPlaceEvent, EntityDamageByEntityEvent, InventoryClickEvent, InventoryCloseEvent, EntityDamageEvent, EventData, EventHandler,
     EventPriority, FromIntoEvent, InteractAction, PlayerChatEvent, PlayerDeathEvent, PlayerInteractEvent,
     PlayerJoinEvent, PlayerLeaveEvent, PlayerRespawnEvent, PlayerToggleFlightEvent, PlayerToggleSneakEvent,
     PlayerToggleSprintEvent,
@@ -35,6 +36,7 @@ use pumpkin_plugin_api::{
 
 mod events_items;
 mod fx;
+mod inv;
 
 const SCRIPTS_DIR: &str = "scripts";
 const VARS_FILE: &str = "variables.json";
@@ -489,6 +491,41 @@ impl WasmHost<'_> {
         }
     }
 
+    fn open_chest(&mut self, p: &PlayerRef, rows: u8, title: &str) {
+        if let Some(pl) = self.get(p) {
+            inv::open_chest(pl, &p.uuid, rows, text(title));
+        }
+    }
+
+    fn inv_get(&mut self, p: &PlayerRef, current: bool, slot: i64) -> Option<(String, u32)> {
+        let pl = self.get(p)?;
+        inv::get(pl, &p.uuid, current, slot)
+    }
+
+    fn inv_set(&mut self, p: &PlayerRef, current: bool, slot: i64, item: Option<(&str, u32)>) {
+        if let Some(pl) = self.get(p) {
+            inv::set(pl, &p.uuid, current, slot, item);
+        }
+    }
+
+    fn inv_clear(&mut self, p: &PlayerRef, current: bool) {
+        if let Some(pl) = self.get(p) {
+            inv::clear(pl, &p.uuid, current);
+        }
+    }
+
+    fn inv_remove(&mut self, p: &PlayerRef, id: &str, count: u32) -> u32 {
+        self.get(p).map_or(0, |pl| inv::remove(pl, id, count))
+    }
+
+    /// Pumpkin's plugin API v0.1 has no call to close a window (v0.2 does).
+    fn close_inventory(&mut self, _p: &PlayerRef) {
+        plog(
+            ApiLevel::Warn,
+            "close inventory: this Pumpkin plugin API has no way to close a window yet",
+        );
+    }
+
     fn has_effect(&mut self, p: &PlayerRef, effect: &str) -> bool {
         let Some(kind) = fx::effect(effect) else {
             return false;
@@ -662,6 +699,12 @@ impl Host for TickHost<'_, '_> {
         set_block(at: &BlockPos, id: &str);
         break_block(at: &BlockPos);
         targeted_block(p: &PlayerRef, max: f64) -> Option<BlockPos>;
+        open_chest(p: &PlayerRef, rows: u8, title: &str);
+        inv_get(p: &PlayerRef, current: bool, slot: i64) -> Option<(String, u32)>;
+        inv_set(p: &PlayerRef, current: bool, slot: i64, item: Option<(&str, u32)>);
+        inv_clear(p: &PlayerRef, current: bool);
+        inv_remove(p: &PlayerRef, id: &str, count: u32) -> u32;
+        close_inventory(p: &PlayerRef);
     }
 
     fn schedule_wait(&mut self, ticks: u64, token: u64) {
@@ -827,6 +870,42 @@ impl EventAccess for PlayerToggleFlightEvent {
                 f.push(u);
             }
         }
+    }
+}
+
+impl EventAccess for InventoryClickEvent {
+    fn ctx(d: &EventData<Self>) -> EventCtx {
+        let mut c = EventCtx::player(player_ref(&d.player));
+        c.inv = Some(Box::new(InvClick {
+            slot: i32::from(d.slot),
+            item: d.clicked_item.as_ref().map(inv::pair),
+            click: format!("{:?}", d.click_type).to_lowercase(),
+        }));
+        c
+    }
+    fn set_cancelled(d: &mut EventData<Self>) {
+        d.cancelled = true;
+    }
+}
+
+/// A window closed: forget the menu, then run `on inventory close`.
+struct OnInvClose;
+
+impl EventHandler<InventoryCloseEvent> for OnInvClose {
+    fn handle(&self, server: Server, data: EventData<InventoryCloseEvent>) -> EventData<InventoryCloseEvent> {
+        let who = player_ref(&data.player);
+        inv::forget(&who.uuid);
+        with_state(&server, None, |st, host| {
+            if !st.engine.table().has_event(EventKind::InventoryClose) {
+                return;
+            }
+            let mut th = TickHost {
+                inner: host,
+                hs: &mut st.hs,
+            };
+            st.engine.fire(EventKind::InventoryClose, EventCtx::player(who), &mut th);
+        });
+        data
     }
 }
 
@@ -1397,8 +1476,10 @@ impl Plugin for Carve {
         register_event::<PlayerToggleSprintEvent>(&context, EventKind::SprintToggle);
         register_event::<PlayerToggleFlightEvent>(&context, EventKind::FlightToggle);
         events_items::register(&context);
+        register_event::<InventoryClickEvent>(&context, EventKind::InventoryClick);
         for r in [
             context.register_event_handler::<PlayerInteractEvent, _>(OnInteract, EventPriority::Normal, true),
+            context.register_event_handler::<InventoryCloseEvent, _>(OnInvClose, EventPriority::Normal, true),
             context.register_event_handler::<EntityDamageEvent, _>(OnDamage, EventPriority::Normal, true),
             context.register_event_handler::<EntityDamageByEntityEvent, _>(
                 OnDamageByEntity,

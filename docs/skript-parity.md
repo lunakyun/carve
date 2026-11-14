@@ -153,8 +153,8 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ On Horse Jump
 - ⬜ On Hunger Meter Change
 - ⬜ On Ignition
-- ⬜ On Inventory Click ⭐
-- ⬜ On Inventory Close
+- ✅ On Inventory Click ⭐ — `on inventory click:` with `clicked slot`, `clicked item`, `click type`, `cancel event`
+- ✅ On Inventory Close — `on inventory close:`; cannot be cancelled
 - ⬜ On Inventory Drag
 - ⬜ On Inventory Item Move
 - ⬜ On Inventory Open
@@ -354,7 +354,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Message — `send ... [to ...]`
 - ✅ op/deop ⭐ — `op player`, `deop player`
 - ⬜ Open Book
-- ⬜ Open/Close Inventory ⭐
+- 🟡 Open/Close Inventory ⭐ — `open chest with 3 rows named "x" to player` works; `close` compiles but Pumpkin's plugin API v0.1 cannot close a window (v0.2 can)
 - ⬜ Open/Close Lid
 - ⬜ Pathfind
 - ⬜ Persistent
@@ -671,7 +671,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Chat Recipients
 - ⬜ Choice Argument
 - ⬜ Chunk
-- 🟡 Clicked Block/Entity/Inventory/Slot — `clicked block` only
+- 🟡 Clicked Block/Entity/Inventory/Slot — `clicked block`, `clicked slot`, `clicked item`; no clicked entity
 - 🟡 Color from Hex Code ⭐ — `<#rrggbb>`, `&#rrggbb` and `&x&r...` in text; no `rgb(...)` color value
 - ⬜ Color of
 - ✅ Colored / Uncolored ⭐ — `colored`, `uncolored`
@@ -693,7 +693,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Created Potion Effect
 - ⬜ Creature/Entity/Player/Projectile/Villager/Powered Creeper/etc.
 - ⬜ Cursor Slot
-- ⬜ Custom Chest Inventory ⭐
+- 🟡 Custom Chest Inventory ⭐ — `open chest with N rows [named "x"] to player`, then `set slot`; no inventory value you can fill first and open later
 - ⬜ Custom Model Data
 - ✅ Damage — read only
 - ⬜ Damage Amount of World Border
@@ -824,11 +824,11 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Initiator Inventory
 - ⬜ Input
 - ⬜ Interaction Height/Width
-- ⬜ Inventory ⭐
+- 🟡 Inventory ⭐ — `player's inventory` and `player's current inventory` in slot, contains, clear, add and remove; not a value you can store
 - ⬜ Inventory Action
 - ⬜ Inventory Close Reason
 - ⬜ Inventory Holder/Viewers/Rows/Slots
-- ⬜ Inventory Slot ⭐
+- ✅ Inventory Slot ⭐ — `slot 3 of player's inventory`, `set slot 3 of player's current inventory to diamond`
 - ⬜ Inverse Boolean
 - ✅ IP — `ip of player`
 - 🟡 Item — item literals like `2 diamonds`
@@ -935,7 +935,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Offline players ⭐
 - ⬜ On-Screen Kick Message
 - ⬜ Online Player Count ⭐
-- ⬜ Opened Inventory
+- 🟡 Opened Inventory — `current inventory` of a player, for menus opened by Carve
 - ⬜ Panda Gene
 - 🟡 Parse — `parsed as number` only
 - ⬜ Parse Error
