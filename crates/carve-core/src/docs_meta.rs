@@ -223,8 +223,8 @@ pub const DOCS: &[Doc] = &[
     ),
     doc(
         Ev,
-        "command",
-        "Command",
+        "command-event",
+        "Command (event)",
         NEXT,
         "syntax/w4-events-movement",
         &["on command", "on command \"<name>\"", "on player command"],

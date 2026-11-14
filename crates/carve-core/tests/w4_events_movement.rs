@@ -178,7 +178,12 @@ fn world_change_values() {
 fn swap_hands_cancel() {
     let mut e = engine("on swap hand items:\n    cancel event\n");
     let mut h = Mock::default();
-    assert!(fire(&mut e, MvEvent::SwapHands, EventCtx::player(steve()), &mut h));
+    assert!(fire(
+        &mut e,
+        MvEvent::SwapHands,
+        EventCtx::player(steve()),
+        &mut h
+    ));
 }
 
 #[test]

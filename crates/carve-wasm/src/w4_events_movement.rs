@@ -48,7 +48,11 @@ impl MvAccess for PlayerMoveEvent {
             return None;
         }
         let mut c = EventCtx::player(player_ref(&d.player));
-        c.ev = mv::loc_vals(d.to_position, d.from_position, Some(d.player.get_world().get_name()));
+        c.ev = mv::loc_vals(
+            d.to_position,
+            d.from_position,
+            Some(d.player.get_world().get_name()),
+        );
         Some(c)
     }
     fn cancel(d: &mut EventData<Self>) {
@@ -60,7 +64,11 @@ impl MvAccess for PlayerTeleportEvent {
     const KIND: MvEvent = MvEvent::Teleport;
     fn ctx(d: &EventData<Self>) -> Option<EventCtx> {
         let mut c = EventCtx::player(player_ref(&d.player));
-        c.ev = mv::loc_vals(d.to_position, d.from_position, Some(d.player.get_world().get_name()));
+        c.ev = mv::loc_vals(
+            d.to_position,
+            d.from_position,
+            Some(d.player.get_world().get_name()),
+        );
         Some(c)
     }
     fn cancel(d: &mut EventData<Self>) {
@@ -166,7 +174,11 @@ pub fn register_all(ctx: &Context, move_used: bool) {
     if move_used {
         reg::<PlayerMoveEvent>(ctx);
     }
-    if let Err(e) = ctx.register_event_handler::<PlayerJoinEvent, _>(OnFirstJoin, EventPriority::Normal, true) {
-        log(ApiLevel::Error, &format!("could not listen to first join events: {e}"));
+    if let Err(e) = ctx.register_event_handler::<PlayerJoinEvent, _>(OnFirstJoin, EventPriority::Normal, true)
+    {
+        log(
+            ApiLevel::Error,
+            &format!("could not listen to first join events: {e}"),
+        );
     }
 }

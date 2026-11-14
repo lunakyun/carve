@@ -48,7 +48,10 @@ const NAMES: &[(&str, MvEvent)] = &[
 type F = &'static [(&'static str, Ty)];
 
 const COMMAND_FIELDS: F = &[("event-command", Ty::Text), ("event-full-command", Ty::Text)];
-const LOC_FIELDS: F = &[("event-location", Ty::Location), ("event-past-location", Ty::Location)];
+const LOC_FIELDS: F = &[
+    ("event-location", Ty::Location),
+    ("event-past-location", Ty::Location),
+];
 const WORLD_FIELDS: F = &[("event-world", Ty::World), ("event-past-world", Ty::World)];
 
 impl MvEvent {
@@ -96,11 +99,18 @@ impl MvEvent {
 /// Other headers come back unchanged.
 pub fn split_command_filter(ev: &str) -> (&str, Option<String>) {
     for base in ["player command", "command"] {
-        let Some(rest) = ev.strip_prefix(base) else { continue };
+        let Some(rest) = ev.strip_prefix(base) else {
+            continue;
+        };
         if !rest.starts_with(' ') {
             continue;
         }
-        let text = rest.trim().trim_matches('"').trim().trim_start_matches('/').trim();
+        let text = rest
+            .trim()
+            .trim_matches('"')
+            .trim()
+            .trim_start_matches('/')
+            .trim();
         if !text.is_empty() {
             return (base, Some(text.to_string()));
         }
