@@ -249,6 +249,7 @@ pub enum Effect {
     Heal(Expr),
     Hf(Box<crate::health_food::HfEffect>),
     W2(Box<crate::w2_effects_1::W2Effect>),
+    W2b(Box<crate::w2_effects_2::W2Effect>),
     SetHealth(Expr, Expr),
     SetGamemode(Expr, Expr),
     /// Experience change; the two expressions are in pattern order.
@@ -381,6 +382,7 @@ pub enum EffKind {
     Heal,
     Hf(crate::health_food::HfOp),
     W2(crate::w2_effects_1::W2Op),
+    W2b(crate::w2_effects_2::W2Op),
     SetHealth,
     SetGamemode,
     Xp(crate::xp_level::XpOp),
@@ -571,6 +573,11 @@ fn registry() -> &'static Registry {
                     .iter()
                     .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
             )
+            .chain(
+                crate::w2_effects_2::EFFECT_PATTERNS
+                    .iter()
+                    .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
+            )
             .collect(),
         conditions: crate::senders::SENDER_CONDITION_PATTERNS
             .iter()
@@ -592,6 +599,7 @@ pub fn check_registry() -> Result<(), String> {
         .chain(TEXT_EFFECT_PATTERNS)
         .chain(crate::health_food::EFFECT_PATTERNS)
         .chain(crate::w2_effects_1::EFFECT_PATTERNS)
+        .chain(crate::w2_effects_2::EFFECT_PATTERNS)
     {
         Pattern::new(s, *k)?;
     }
@@ -1301,6 +1309,7 @@ impl Cx<'_> {
             .chain(TEXT_EFFECT_PATTERNS)
             .chain(crate::health_food::EFFECT_PATTERNS)
             .chain(crate::w2_effects_1::EFFECT_PATTERNS)
+            .chain(crate::w2_effects_2::EFFECT_PATTERNS)
             .map(|(s, _)| *s)
             .collect();
         let mut e = ScriptError::new(
@@ -1496,6 +1505,7 @@ fn build_effect(kind: EffKind, mut c: Vec<Option<Capture>>) -> Option<Effect> {
         EffKind::Broadcast => Effect::Broadcast(take_expr(c, 0)?),
         EffKind::Hf(op) => return crate::health_food::build(op, c),
         EffKind::W2(op) => return crate::w2_effects_1::build(op, c),
+        EffKind::W2b(op) => return crate::w2_effects_2::build(op, c),
         EffKind::Heal => Effect::Heal(take_expr(c, 0)?),
         EffKind::SetHealth => Effect::SetHealth(take_expr(c, 0)?, take_expr(c, 1)?),
         EffKind::SetGamemode => Effect::SetGamemode(take_expr(c, 0)?, take_expr(c, 1)?),

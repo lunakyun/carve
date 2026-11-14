@@ -216,6 +216,7 @@ impl LoopFrame {
 /// `a, b and c`, like Skript prints a list.
 mod list_eval;
 mod w2_run;
+mod w2;
 
 fn join_list(items: &[(String, Value)], out: &mut String) {
     if items.is_empty() {
@@ -1891,6 +1892,7 @@ impl Engine {
                     host.send_action_bar(&p, &t);
                 }
             }
+            Effect::W2b(w) => self.run_w2b(w, ex, host)?,
             Effect::Hf(h) => {
                 let amount = match &h.amount {
                     Some(a) => self.num(a, ex, host)?,

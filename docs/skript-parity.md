@@ -321,44 +321,53 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Ignite/Extinguish
 - ⬜ Insert Entity Storage
 - ⬜ Item Despawn
+- ⬜ Force Panda On Back
+- ⬜ Force Respawn
+- ⛔ Generate Loot — the plugin API has a loot event but no call to roll a loot table into items
+- ⛔ Goat Horns — no goat or instrument API
+- ⛔ Handedness — the plugin API cannot read or change a player's main hand
+- ⛔ Hide Player from Server List — the server list ping event has no player sample to edit
+- ✅ Ignite/Extinguish — players only (`ignite`, `set on fire`, `extinguish`); see docs/syntax/w2-effects-2.md
+- ⛔ Insert Entity Storage — no bee hive or entity storage API
+- ⛔ Item Despawn — no item-entity despawn timer in the plugin API
 - ⬜ Item Tooltips
 - ⬜ Keep Inventory / Experience
 - ⬜ Kick ⭐
 - ✅ Kill — players
-- ⬜ Knockback
+- ✅ Knockback — players only (`knock p away from loc [with strength n]`)
 - ⬜ Launch firework
 - ⬜ Leash entities
 - ⬜ Lightning ⭐
 - ⬜ Load Server Icon
 - ⬜ Load World
-- ⬜ Locally Suppress Warning
-- ⬜ Log
-- ⬜ Look At
+- 🟡 Locally Suppress Warning — accepted and ignored; Carve has no such warnings
+- ✅ Log — `log "x" [to file "name"]` appends to `logs/<name>`
+- ✅ Look At — `make player look at <location>` (players)
 - ⬜ Make Adult/Baby
-- ⬜ Make Allay Duplicate
+- ⛔ Make Allay Duplicate — no allay API
 - ⬜ Make Breedable
-- ⬜ Make Disturbance
-- ⬜ Make Egg Hatch
-- ⬜ Make Entity Scream
-- ⬜ Make Fire Resistant
-- ⬜ Make Fly ⭐
-- ⬜ Make Goat Ram
-- ⬜ Make Incendiary
-- ⬜ Make Interaction Responsive
-- ⬜ Make Invisible
-- ⬜ Make Invulnerable
-- ⬜ Make Panda Roll
-- ⬜ Make Panda Sneeze
-- ⬜ Make Say
+- ⛔ Make Disturbance — the plugin API cannot emit game events
+- ⛔ Make Egg Hatch — no egg hatch API
+- ⛔ Make Entity Scream — no goat scream API
+- ⛔ Make Fire Resistant — item fire resistance is a data component scripts cannot set through the plugin API
+- ✅ Make Fly ⭐ — `make player fly` / `stop flying` (allow flight and flying)
+- ⛔ Make Goat Ram — no goat API
+- ⛔ Make Incendiary — no fireball or explosion API
+- ⛔ Make Interaction Responsive — no interaction entity API
+- ✅ Make Invisible — players only; sets the entity flag
+- ✅ Make Invulnerable — players only
+- ⛔ Make Panda Roll — no panda API
+- ⛔ Make Panda Sneeze — no panda API
+- 🟡 Make Say — runs the vanilla `say` command as the player, so it shows as a say message, not normal chat
 - ⬜ Make Sign Glow
 - ✅ Message — `send ... [to ...]`
 - ⬜ op/deop ⭐
-- ⬜ Open Book
+- 🟡 Open Book — opens the written book already in the player's main or off hand; cannot open an arbitrary item
 - ⬜ Open/Close Inventory ⭐
-- ⬜ Open/Close Lid
+- ⛔ Open/Close Lid — no chest or barrel lid API
 - ⬜ Pathfind
 - ⬜ Persistent
-- ⬜ Play Dead
+- ⛔ Play Dead — no death animation call in the plugin API
 - ⬜ Play Effect
 - ⬜ Play or Draw an Effect ⭐
 - 🟡 Play Sound ⭐ (volume, pitch, location, via `playsound`; no categories)
@@ -1142,7 +1151,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Delay — `wait N ticks/seconds`, `wait 1 minute and 30 seconds`, `wait {span}`
 - ⬜ Filter ⭐
 - 🟡 For Each Loop — `loop {list::*}` works; no `for each` wording
-- ⬜ Locally Suppress Warning
+- 🟡 Locally Suppress Warning — accepted and ignored; Carve has no such warnings
 - ✅ Loop — times, lists, all players, values
 - ⬜ Shoot
 - ⬜ Spawn ⭐
