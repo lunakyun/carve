@@ -1315,7 +1315,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Teleport Cause
 - ⬜ Teleport Flag
 - ✅ Text
-- ⬜ Text Component
+- 🟡 Text Component — as markup text (see skbee-text); no separate type
 - 🟡 Time ⭐ — a number of ticks; `6:00` and `6 pm` literals; no separate time type
 - ⬜ Timeperiod
 - ✅ Timespan ⭐ — `5 minutes`, `1 hour and 30 seconds`, math, comparisons

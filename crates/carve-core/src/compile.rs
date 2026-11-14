@@ -579,8 +579,9 @@ fn registry() -> &'static Registry {
     static R: OnceLock<Registry> = OnceLock::new();
     R.get_or_init(|| Registry {
         // The pattern strings are constants covered by tests; a bad one is skipped.
-        effects: crate::op_kick_ban::EFFECT_PATTERNS
+        effects: crate::skbee_text::EFFECT_PATTERNS
             .iter()
+            .chain(crate::op_kick_ban::EFFECT_PATTERNS)
             .filter_map(|(s, k)| Pattern::new(s, *k).ok())
             .chain(crate::xp_level::XP_EFFECT_PATTERNS
             .iter()
@@ -630,8 +631,9 @@ fn registry() -> &'static Registry {
 
 /// Checks every registered pattern compiles. Used by tests.
 pub fn check_registry() -> Result<(), String> {
-    for (s, k) in crate::op_kick_ban::EFFECT_PATTERNS
+    for (s, k) in crate::skbee_text::EFFECT_PATTERNS
         .iter()
+        .chain(crate::op_kick_ban::EFFECT_PATTERNS)
         .chain(crate::senders::SENDER_EFFECT_PATTERNS)
         .chain(crate::gamemode::EFFECT_PATTERNS)
         .chain(EFFECT_PATTERNS)
@@ -1348,6 +1350,17 @@ impl Cx<'_> {
             }
         }
         match crate::skbee_bound::parse_effect(&toks, &self.env) {
+            Ok(Some(eff)) => {
+                self.emit(Instr::Eff(eff), num);
+                return;
+            }
+            Ok(None) => {}
+            Err(msg) => {
+                self.err(num, msg);
+                return;
+            }
+        }
+        match crate::skbee_text::parse_effect(&toks, &self.env) {
             Ok(Some(eff)) => {
                 self.emit(Instr::Eff(eff), num);
                 return;

@@ -165,6 +165,8 @@ pub enum Expr {
     Elem(ElemSel, VarRef),
     /// `now`, `unix timestamp of d`, `date from unix timestamp n`, `d formatted as f`.
     Date(DateOp, Vec<Expr>),
+    /// SkBee-style text components (markup text): see `skbee_text`.
+    Comp(crate::skbee_text::CompFn, Vec<Expr>),
     /// `colored x` (true) / `uncolored x` (false).
     Color(bool, Box<Expr>),
     /// A time span literal like `1 hour and 30 seconds`, in milliseconds.
@@ -377,7 +379,7 @@ impl Expr {
             Expr::Distance(..) | Expr::Random(..) | Expr::Damage => Ty::Number,
             Expr::Attacker => Ty::Player,
             Expr::Math(..) | Expr::ParseNum(_) => Ty::Number,
-            Expr::Color(..) => Ty::Text,
+            Expr::Color(..) | Expr::Comp(..) => Ty::Text,
             Expr::RandomOf(_) | Expr::Split(..) | Expr::Elem(..) => Ty::Object,
             Expr::Join(..) | Expr::Replaced(..) => Ty::Text,
             Expr::Length(_) => Ty::Number,
@@ -1278,6 +1280,9 @@ impl P<'_> {
                     self.pos += n;
                     return Ok(Expr::EventVal(v));
                 }
+                if let Some(e) = self.comp_expr(&lw)? {
+                    return Ok(e);
+                }
                 match lw.as_str() {
                     "the" => self.primary(),
                     _ if self.bound_head(&lw) => self.bound_expr(&lw),
@@ -1865,6 +1870,150 @@ impl P<'_> {
                     return Err("location at x, y, z".into());
                 };
                 Ok(Some(Expr::Loc(Box::new(x), Box::new(y), Box::new(z), world)))
+            }
+            _ => Ok(None),
+        }
+    }
+
+    /// SkBee text components. The first word `lw` is already consumed. Gives
+    /// `Ok(None)` (position restored) when the words are not one of these forms.
+    fn comp_expr(&mut self, lw: &str) -> Result<Option<Expr>, String> {
+        if !crate::skbee_text::starts_comp(lw) {
+            return Ok(None);
+        }
+        let save = self.pos;
+        let mut first = lw.to_string();
+        while matches!(first.as_str(), "a" | "an" | "new") {
+            match self.toks.get(self.pos) {
+                Some(Tok::Word(w)) => {
+                    first = w.to_ascii_lowercase();
+                    self.pos += 1;
+                }
+                _ => {
+                    self.pos = save;
+                    return Ok(None);
+                }
+            }
+        }
+        match self.comp_phrase(&first) {
+            Ok(Some(e)) => Ok(Some(e)),
+            Ok(None) => {
+                self.pos = save;
+                Ok(None)
+            }
+            Err(e) => Err(e),
+        }
+    }
+
+    fn comp_phrase(&mut self, first: &str) -> Result<Option<Expr>, String> {
+        use crate::skbee_text::{ClickKind, CompFn};
+        let one = |f: CompFn, a: Expr| Ok(Some(Expr::Comp(f, vec![a])));
+        match first {
+            "text" if self.is_word(0, "component") || self.is_word(0, "components") => {
+                self.pos += 1;
+                if !(self.is_word(0, "from") || self.is_word(0, "of")) {
+                    return Ok(None);
+                }
+                self.pos += 1;
+                let a = self.primary()?;
+                one(CompFn::Plain, a)
+            }
+            "mini" | "minimessage" | "mm" => {
+                if first == "mini" {
+                    if !self.is_word(0, "message") {
+                        return Ok(None);
+                    }
+                    self.pos += 1;
+                }
+                if !(self.is_word(0, "from") || self.is_word(0, "of")) {
+                    return Ok(None);
+                }
+                self.pos += 1;
+                let a = self.primary()?;
+                one(CompFn::Mini, a)
+            }
+            "hover" if self.is_word(0, "event") && self.is_word(1, "showing") => {
+                self.pos += 2;
+                let a = self.primary()?;
+                one(CompFn::HoverEvent, a)
+            }
+            "click" if self.is_word(0, "event") && self.is_word(1, "to") => {
+                self.pos += 2;
+                let kind = if self.is_word(0, "open") && self.is_word(1, "url") {
+                    self.pos += 2;
+                    ClickKind::OpenUrl
+                } else if self.is_word(0, "run") && self.is_word(1, "command") {
+                    self.pos += 2;
+                    ClickKind::RunCommand
+                } else if self.is_word(0, "suggest") && self.is_word(1, "command") {
+                    self.pos += 2;
+                    ClickKind::SuggestCommand
+                } else if self.is_word(0, "copy") && self.is_word(1, "to") && self.is_word(2, "clipboard") {
+                    self.pos += 3;
+                    ClickKind::CopyToClipboard
+                } else if self.is_word(0, "change") && self.is_word(1, "page") {
+                    self.pos += 2;
+                    ClickKind::ChangePage
+                } else {
+                    return Err(
+                        "click event needs 'open url', 'run command', 'suggest command', 'copy to clipboard' or 'change page'"
+                            .into(),
+                    );
+                };
+                let a = self.primary()?;
+                one(CompFn::ClickEvent(kind), a)
+            }
+            "translate" | "translatable" if self.is_word(0, "component") => {
+                self.pos += 1;
+                let key = self.primary()?;
+                let mut args = vec![key];
+                if self.is_word(0, "with") {
+                    self.pos += 1;
+                    args.push(self.primary()?);
+                    while self.eat_sym(",") || self.is_word(0, "and") {
+                        if self.is_word(0, "and") {
+                            self.pos += 1;
+                        }
+                        args.push(self.primary()?);
+                    }
+                }
+                Ok(Some(Expr::Comp(CompFn::Translate, args)))
+            }
+            "keybind" if self.is_word(0, "component") => {
+                self.pos += 1;
+                let a = self.primary()?;
+                one(CompFn::Keybind, a)
+            }
+            "merged" | "merge" => {
+                if self.is_word(0, "text") {
+                    self.pos += 1;
+                }
+                if !(self.is_word(0, "component") || self.is_word(0, "components")) {
+                    return Ok(None);
+                }
+                self.pos += 1;
+                if self.is_word(0, "of") {
+                    self.pos += 1;
+                }
+                let mut args = vec![self.primary()?];
+                while self.eat_sym(",") || self.is_word(0, "and") {
+                    if self.is_word(0, "and") {
+                        self.pos += 1;
+                    }
+                    args.push(self.primary()?);
+                }
+                if let [Expr::Var(v)] = args.as_slice()
+                    && v.is_list()
+                {
+                    let v = v.clone();
+                    return Ok(Some(Expr::Join(v, Box::new(Expr::Text(vec![Part::Lit(String::new())])))));
+                }
+                Ok(Some(Expr::Comp(CompFn::Merge, args)))
+            }
+            "plain" if self.is_word(0, "text") && self.is_word(1, "of") => {
+                self.pos += 2;
+                let a = self.primary()?;
+                one(CompFn::PlainText, a)
             }
             _ => Ok(None),
         }

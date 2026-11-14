@@ -1739,6 +1739,13 @@ impl Engine {
                 let to = self.text(to, ex, host)?;
                 Value::Text(crate::text_join_split::replace_text(&t, &from, &to, *all))
             }
+            Expr::Comp(f, args) => {
+                let mut vals = Vec::with_capacity(args.len());
+                for a in args {
+                    vals.push(self.eval(a, ex, host)?);
+                }
+                crate::skbee_text::apply(*f, &vals)
+            }
             Expr::TextFn(f, args) => {
                 let mut vals = Vec::with_capacity(args.len());
                 for a in args {

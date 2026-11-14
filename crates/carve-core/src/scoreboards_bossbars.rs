@@ -470,6 +470,9 @@ fn clear_title_line(toks: &[Tok], env: &Env) -> Option<SbFx> {
 /// `send actionbar "x" to <who>`. The two-word `send action bar` to one player
 /// is the registry's job; the same line to `all players` is handled here too.
 fn action_line(toks: &[Tok], env: &Env) -> Result<Option<SbFx>, String> {
+    if toks.get(2).is_some_and(|t| is(t, "component") || is(t, "components")) {
+        return Ok(None);
+    }
     let body = &toks[2..];
     let Some(to_i) = body.iter().rposition(|t| is(t, "to")) else {
         return Err("expected 'send actionbar \"text\" to <player>'".into());
