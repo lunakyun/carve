@@ -119,53 +119,53 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ On Drop ⭐
 - ⬜ On Egg Throw
 - ⬜ On Elytra Boost
-- ⬜ On Enchant
-- ⬜ On Enchant Prepare
-- ⬜ On Enderman Enrage
-- ⬜ On Enderman/Sheep/Silverfish/Falling Block
-- ⬜ On Entity Breed
-- ⬜ On Entity Dismount
-- ⬜ On Entity Jump
-- ⬜ On Entity Mount
-- ⬜ On Entity Potion Effect
-- ⬜ On Entity Shoot Bow
-- ⬜ On Entity Transform
-- ⬜ On Experience Change
-- ⬜ On Experience Cooldown Change
-- ⬜ On Experience Spawn
-- ⬜ On Explode
-- ⬜ On Explosion Prime
-- ⬜ On Fade
-- ⬜ On Firework Explode
+- ✅ On Enchant — values: `enchanted item`, `enchantment cost`, `enchant option`
+- ✅ On Enchant Prepare — `bookshelf count`, `enchanted item`
+- ⛔ On Enderman Enrage — Pumpkin has no enderman anger event
+- ✅ On Enderman/Sheep/Silverfish/Falling Block — also `on entity change block`; `new block`, `block x/y/z`
+- ✅ On Entity Breed — `father id`, `mother id`, `child id`; no player
+- ✅ On Entity Dismount — `player` is set when a player dismounts; `vehicle id`
+- ⛔ On Entity Jump — Pumpkin has no entity jump event
+- ✅ On Entity Mount — `player` is set when a player mounts; `vehicle id`
+- ✅ On Entity Potion Effect — `effect name`, `effect duration`, `effect amplifier`
+- 🟡 On Entity Shoot Bow — wired; Pumpkin only fires it for mobs, not for players' bows
+- ✅ On Entity Transform — `transform reason`, `new entity id`
+- ✅ On Experience Change — `experience amount`
+- 🟡 On Experience Cooldown Change — wired; Pumpkin never fires this event yet
+- ⛔ On Experience Spawn — Pumpkin has no experience orb spawn event
+- ✅ On Explode — entity and block explosions; `explosion yield`, `explosion x/y/z`
+- ✅ On Explosion Prime — `explosion radius`, `explosion fire`
+- 🟡 On Fade — wired; Pumpkin never fires block fade yet
+- ✅ On Firework Explode — `event-entity`
 - ⬜ On First Join ⭐
-- ⬜ On Fishing
+- ✅ On Fishing — `fishing state`, `caught type`, `fishing xp`
 - ✅ On Flight Toggle
-- ⬜ On Flow
-- ⬜ On Form
-- ⬜ On Fuel Burn
-- ⬜ On Furnace Item Extract
+- ✅ On Flow — liquid flow; `flow source x/y/z`, `flow target x/y/z`
+- ✅ On Form — `block x/y/z`
+- ✅ On Fuel Burn — `fuel item`, `burn time`
+- ✅ On Furnace Item Extract — `extracted item`, `extracted amount`, `extracted xp`
 - ⬜ On Gamemode Change ⭐
-- ⬜ On Gliding State Change
-- ⬜ On Grow
+- ✅ On Gliding State Change — `gliding state` is true when gliding starts
+- ✅ On Grow — `old block`, `new block`, `block x/y/z`
 - ⬜ On Hand Item Swap ⭐
-- ⬜ On Harvest Block
-- ⬜ On Heal
-- ⬜ On Horse Jump
-- ⬜ On Hunger Meter Change
-- ⬜ On Ignition
+- ✅ On Harvest Block — `harvested count`, `block x/y/z`
+- ✅ On Heal — `heal amount`; `player` is set when a player heals
+- ✅ On Horse Jump — `jump power`
+- ✅ On Hunger Meter Change — `new food level`
+- ✅ On Ignition — `block x/y/z`
 - ⬜ On Inventory Click ⭐
-- ⬜ On Inventory Close
-- ⬜ On Inventory Drag
-- ⬜ On Inventory Item Move
-- ⬜ On Inventory Open
-- ⬜ On Inventory Pickup
-- ⬜ On Inventory Slot Change
-- ⬜ On Item Break
-- ⬜ On Item Damage
-- ⬜ On Item Despawn
-- ⬜ On Item Mend
-- ⬜ On Item Merge
-- ⬜ On Item Spawn
+- ✅ On Inventory Close — can't be cancelled
+- ✅ On Inventory Drag — no slot details from Pumpkin
+- ✅ On Inventory Item Move — hopper moves; `moved item`, `moved amount`
+- ✅ On Inventory Open
+- ✅ On Inventory Pickup — hopper pickups; `picked up item`
+- ⛔ On Inventory Slot Change — Pumpkin has no slot change event
+- ✅ On Item Break — `broken item`; can't be cancelled
+- ✅ On Item Damage — `damaged item`, `item damage amount`
+- ✅ On Item Despawn — `event-entity` (entity id)
+- ✅ On Item Mend — `mended item`, `repair amount`, `mending xp`
+- ✅ On Item Merge — `merge target id`
+- ✅ On Item Spawn — `spawned item`, `block x/y/z`
 - ✅ On Join
 - ⬜ On Jump
 - ⬜ On Kick
