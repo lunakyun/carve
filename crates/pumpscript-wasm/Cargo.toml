@@ -1,0 +1,12 @@
+[package]
+name = "pumpscript-wasm"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+pumpscript-core = { path = "../pumpscript-core" }
+pumpkin-plugin-api = { git = "https://github.com/Pumpkin-MC/Pumpkin", rev = "058f7ec6fde8a8f24e3d6bb92344df48a2f07ffc" }

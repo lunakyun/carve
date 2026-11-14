@@ -1,0 +1,19 @@
+# Greets players and counts how often they joined.
+on join:
+    add 1 to {joins::%player%}
+    if {joins::%player%} is 1:
+        send title "Welcome, %player%!" with subtitle "First time here" to player
+        broadcast "Say hi to %player%, they are new!"
+    else:
+        send title "Welcome back!" to player
+        send "You joined %{joins::%player%}% times." to player
+    wait 3 seconds
+    send action bar "Type /heal if you get hurt" to player
+
+on quit:
+    broadcast "%player% left the server"
+
+on chat:
+    if message is "badword":
+        cancel event
+        send "Please keep the chat friendly." to player

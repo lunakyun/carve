@@ -1,0 +1,21 @@
+# /heal heals yourself, /heal <player> heals someone else.
+command /heal [<player>]:
+    permission: pumpscript:heal
+    description: Heal yourself or another player
+    trigger:
+        if arg is set:
+            heal arg
+            send "Healed %arg%."
+            send "You were healed by %player%." to arg
+        else:
+            heal player
+            set health of player to 20
+            send "You feel much better."
+
+# /hurt <number> takes some health away (for testing).
+command /hurt <number>:
+    trigger:
+        if arg-1 > 19:
+            send "That would kill you, try less."
+        else:
+            set health of player to 20 - arg-1
