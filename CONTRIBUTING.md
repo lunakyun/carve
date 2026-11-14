@@ -20,6 +20,7 @@ cargo build -p carve-wasm --release --target wasm32-wasip2   # the plugin
 cargo run --release -p carve-core --example bench            # the benchmark
 cargo fmt --all                                              # format
 cargo clippy -p carve-core --all-targets                     # lints
+node tests/ingame/run.js                                     # real server, see docs/ingame-testing.md
 ```
 
 The plugin ends up in `target/wasm32-wasip2/release/carve.wasm`.

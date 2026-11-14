@@ -68,6 +68,7 @@ cargo build -p carve-wasm --release --target wasm32-wasip2
 - [Known limits](docs/limits.md)
 - [Architecture](docs/architecture.md)
 - [Performance](docs/performance.md)
+- [In-game testing](docs/ingame-testing.md)
 - [Examples](examples/): economy, starter kit, chat filter, join counter, heal, welcome
 
 ## FAQ

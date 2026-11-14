@@ -1,0 +1,53 @@
+# Test script for tests/ingame/run.js. Every message starts with "t:" so the
+# runner can tell it apart from the example scripts.
+on join:
+    send "t:join %player%" to player
+    send title "t:title" with subtitle "t:sub" to player
+    send action bar "t:bar" to player
+    wait 1 second
+    send "t:waited %player%" to player
+    cancel event
+
+on quit:
+    broadcast "t:quit %player%"
+
+on chat:
+    if message is "blockme":
+        cancel event
+        send "t:blocked %message%" to player
+
+on break:
+    send "t:break" to player
+    cancel event
+
+on place:
+    send "t:place" to player
+
+command /tperm <text>:
+    permission: tperm
+    trigger:
+        send "t:arg %arg-1%"
+
+command /thealth:
+    trigger:
+        set health of player to 7
+        send "t:health-set"
+
+command /theal:
+    trigger:
+        heal player
+        send "t:healed"
+
+command /ttp:
+    trigger:
+        teleport player to 10, 100, 10
+        send "t:tp"
+
+command /tvar:
+    trigger:
+        add 1 to {t_counter}
+        send "t:counter %{t_counter}%"
+
+command /tconsole:
+    trigger:
+        execute console command "say t:console"
