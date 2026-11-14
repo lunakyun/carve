@@ -239,7 +239,7 @@ pub fn format_number(n: f64, pattern: &str) -> Option<String> {
         let chars: Vec<char> = int.chars().collect();
         let mut out = String::new();
         for (i, c) in chars.iter().enumerate() {
-            if i > 0 && (chars.len() - i) % g == 0 {
+            if i > 0 && (chars.len() - i).is_multiple_of(g) {
                 out.push(',');
             }
             out.push(*c);

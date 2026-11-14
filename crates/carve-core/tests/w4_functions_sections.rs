@@ -32,7 +32,7 @@ impl Host for Mock {
         }
     }
     fn find_player(&mut self, name: &str) -> Option<PlayerRef> {
-        (name == "Steve").then(|| steve())
+        (name == "Steve").then(steve)
     }
     fn has_permission(&mut self, _: &PlayerRef, _: &str) -> bool {
         false
@@ -277,7 +277,7 @@ fn filter_section_keeps_matching() {
     let out = run(
         "on join:\n\tset {_l::*} to 1, 2, 3, 4, 5, 6\n\tfilter {_l::*} to match:\n\t\tinput > 2\n\t\tinput < 6\n\tbroadcast \"%{_l::*}%\"\n\tbroadcast size of {_l::*}\n",
     );
-    assert_eq!(out.last().map(String::as_str), Some("4"));
+    assert_eq!(out.last().map(String::as_str), Some("3"));
 }
 
 #[test]

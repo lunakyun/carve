@@ -398,7 +398,7 @@ fn glowing_text(v: &Value, host: &mut dyn Host) -> Option<bool> {
     let nbt = Compound::from_bytes(&bytes).ok()?;
     let on = |side: &str| {
         matches!(
-            nbt.get_path(&format!("{side}.has_glowing_text")),
+            nbt.get_path(&format!("{side};has_glowing_text")),
             Some(Tag::Byte(b)) if *b != 0
         )
     };
