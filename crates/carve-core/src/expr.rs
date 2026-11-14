@@ -120,6 +120,8 @@ pub enum Expr {
     ParseNum(Box<Expr>),
     /// `random element of {list::*}`.
     RandomOf(VarRef),
+    /// `colored x` (true) / `uncolored x` (false).
+    Color(bool, Box<Expr>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -252,6 +254,7 @@ impl Expr {
             Expr::Attacker => Ty::Player,
             Expr::Math(..) | Expr::ParseNum(_) => Ty::Number,
             Expr::RandomOf(_) => Ty::Object,
+            Expr::Color(..) => Ty::Text,
             Expr::Default(a, b) => {
                 let (x, y) = (a.ty(env), b.ty(env));
                 if x == y { x } else { Ty::Object }
@@ -560,6 +563,13 @@ impl P<'_> {
                 let lw = w.to_ascii_lowercase();
                 match lw.as_str() {
                     "the" => self.primary(),
+                    "colored" | "coloured" | "formatted" | "uncolored" | "uncoloured" | "unformatted" => {
+                        if self.pos >= self.toks.len() {
+                            self.hit_end.set(true);
+                        }
+                        let inner = self.primary()?;
+                        Ok(Expr::Color(!lw.starts_with('u'), Box::new(inner)))
+                    }
                     "true" | "yes" => Ok(Expr::Bool(true)),
                     "false" | "no" => Ok(Expr::Bool(false)),
                     "player" if self.env.in_function => {

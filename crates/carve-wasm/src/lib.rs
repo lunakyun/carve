@@ -12,7 +12,7 @@ use pumpkin_plugin_api::command::{
     ArgumentType, Command, CommandError, CommandNode, CommandSender, ConsumedArgs, StringType,
 };
 use pumpkin_plugin_api::commands::CommandHandler;
-use pumpkin_plugin_api::common::Hand;
+use pumpkin_plugin_api::common::{Hand, RgbColor};
 use pumpkin_plugin_api::events::{
     BlockBreakEvent, BlockPlaceEvent, EntityDamageByEntityEvent, EntityDamageEvent, EventData, EventHandler,
     EventPriority, FromIntoEvent, InteractAction, PlayerChatEvent, PlayerDeathEvent, PlayerInteractEvent,
@@ -57,8 +57,36 @@ fn plog(level: ApiLevel, msg: &str) {
     log(level, &format!("[Carve] {msg}"));
 }
 
+/// Build a component from `&a` / `§a` codes, `<#rrggbb>` and `<red>` style tags.
 fn text(s: &str) -> TextComponent {
-    TextComponent::from_legacy_string_with_code(s, '&')
+    if !s.contains(['&', '§', '<']) {
+        return TextComponent::text(s);
+    }
+    let mut root = TextComponent::text("");
+    for span in carve_core::colors::parse(s) {
+        let mut part = TextComponent::text(&span.text);
+        let st = span.style;
+        if let Some((r, g, b)) = st.color {
+            part = part.color_rgb(RgbColor { r, g, b });
+        }
+        if st.bold {
+            part = part.bold(true);
+        }
+        if st.italic {
+            part = part.italic(true);
+        }
+        if st.underlined {
+            part = part.underlined(true);
+        }
+        if st.strikethrough {
+            part = part.strikethrough(true);
+        }
+        if st.obfuscated {
+            part = part.obfuscated(true);
+        }
+        root = root.add_child(part);
+    }
+    root
 }
 
 /// Runs `f` with the plugin state. Returns None (and logs) when the state is

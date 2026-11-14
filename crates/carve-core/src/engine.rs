@@ -1391,6 +1391,10 @@ impl Engine {
                     _ => Value::None,
                 }
             }
+            Expr::Color(on, e) => {
+                let t = self.text(e, ex, host)?;
+                Value::Text(if *on { crate::colors::colorize(&t) } else { crate::colors::strip(&t) })
+            }
             Expr::ParseNum(e) => {
                 let t = self.text(e, ex, host)?;
                 t.trim()

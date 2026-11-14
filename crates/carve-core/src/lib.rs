@@ -3,6 +3,7 @@
 
 pub mod admin;
 pub mod blocks;
+pub mod colors;
 pub mod compile;
 pub mod engine;
 pub mod error;
