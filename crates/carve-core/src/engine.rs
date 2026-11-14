@@ -39,6 +39,12 @@ pub struct EventCtx {
     pub ev: Vec<Value>,
     /// Values of the extra events in `w2_events_2`.
     pub ext: Option<Box<crate::w2_events_2::ExtVals>>,
+    /// `death message` in `on death`.
+    pub death_message: Option<String>,
+    /// `damage cause` in `on damage` (lower case, like `fall`).
+    pub damage_cause: Option<String>,
+    /// `chat recipients` in `on chat`.
+    pub recipients: Option<Vec<PlayerRef>>,
 }
 
 impl EventCtx {
@@ -53,6 +59,9 @@ impl EventCtx {
             block: None,
             ev: Vec::new(),
             ext: None,
+            death_message: None,
+            damage_cause: None,
+            recipients: None,
         }
     }
 
@@ -68,6 +77,9 @@ impl EventCtx {
             block: None,
             ev: Vec::new(),
             ext: None,
+            death_message: None,
+            damage_cause: None,
+            recipients: None,
         }
     }
 
@@ -218,6 +230,7 @@ mod list_eval;
 mod w2_run;
 mod w2;
 mod w2_eval;
+mod x2_eval;
 
 fn join_list(items: &[(String, Value)], out: &mut String) {
     if items.is_empty() {
@@ -1673,6 +1686,7 @@ impl Engine {
                 }
             }
             Expr::Date(op, args) => self.eval_date(*op, args, ex, host)?,
+            Expr::X2(w) => self.eval_x2(w, ex, host)?,
             Expr::Color(on, e) => {
                 let t = self.text(e, ex, host)?;
                 Value::Text(if *on { crate::colors::colorize(&t) } else { crate::colors::strip(&t) })
@@ -1962,6 +1976,7 @@ impl Engine {
                     crate::xp_level::apply(host, &p, op.field, op.mode, n);
                 }
             }
+            Effect::X2(k, a) => self.run_x2(*k, a, ex, host)?,
             Effect::Kill(p) => {
                 if let Some(p) = self.player(p, ex, host)? {
                     host.kill(&p);

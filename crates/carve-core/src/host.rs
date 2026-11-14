@@ -185,6 +185,14 @@ pub trait Host {
         None
     }
 
+    /// Where the player's compass points: x, y, z and world name.
+    fn compass_target(&mut self, _player: &PlayerRef) -> Option<(f64, f64, f64, Option<String>)> {
+        None
+    }
+
+    /// Point the player's compass at a place. Hosts that cannot do it ignore it.
+    fn set_compass_target(&mut self, _player: &PlayerRef, _x: f64, _y: f64, _z: f64, _world: Option<&str>) {}
+
     /// Hurt the player. The default lowers health and kills at zero.
     fn damage(&mut self, player: &PlayerRef, amount: f64) {
         if let Some(h) = self.health(player) {

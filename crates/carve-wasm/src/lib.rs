@@ -607,6 +607,18 @@ impl WasmHost<'_> {
         }
     }
 
+    fn compass_target(&mut self, p: &PlayerRef) -> Option<(f64, f64, f64, Option<String>)> {
+        let pl = self.get(p)?;
+        let (x, y, z) = pl.get_compass_target();
+        Some((x, y, z, Some(pl.get_world().get_name())))
+    }
+
+    fn set_compass_target(&mut self, p: &PlayerRef, x: f64, y: f64, z: f64, _world: Option<&str>) {
+        if let Some(pl) = self.get(p) {
+            pl.set_compass_target((x, y, z));
+        }
+    }
+
     fn log(&mut self, level: LogLevel, msg: &str) {
         let l = match level {
             LogLevel::Info => ApiLevel::Info,
@@ -680,6 +692,8 @@ impl Host for TickHost<'_, '_> {
         biome_at(world: &str, x: i32, y: i32, z: i32) -> Option<String>;
         armor_item(p: &PlayerRef, slot: carve_core::w2_expressions_1::ArmorSlot) -> Option<(String, u32)>;
         block_entity_nbt(world: &str, x: i32, y: i32, z: i32) -> Option<Vec<u8>>;
+        compass_target(p: &PlayerRef) -> Option<(f64, f64, f64, Option<String>)>;
+        set_compass_target(p: &PlayerRef, x: f64, y: f64, z: f64, world: Option<&str>);
     }
 
     fn schedule_wait(&mut self, ticks: u64, token: u64) {
@@ -773,7 +787,9 @@ impl EventAccess for PlayerLeaveEvent {
 
 impl EventAccess for PlayerChatEvent {
     fn ctx(d: &EventData<Self>) -> EventCtx {
-        EventCtx::chat(player_ref(&d.player), d.message.clone())
+        let mut ctx = EventCtx::chat(player_ref(&d.player), d.message.clone());
+        ctx.recipients = Some(d.recipients.iter().map(player_ref).collect());
+        ctx
     }
     fn set_cancelled(d: &mut EventData<Self>) {
         d.cancelled = true;
@@ -803,7 +819,9 @@ impl EventAccess for BlockPlaceEvent {
 
 impl EventAccess for PlayerDeathEvent {
     fn ctx(d: &EventData<Self>) -> EventCtx {
-        EventCtx::player(player_ref(&d.player))
+        let mut ctx = EventCtx::player(player_ref(&d.player));
+        ctx.death_message = Some(d.death_message.get_text());
+        ctx
     }
     fn set_cancelled(d: &mut EventData<Self>) {
         d.cancelled = true;
@@ -953,9 +971,11 @@ impl State {
         victim: PlayerRef,
         damage: f32,
         attacker: Option<PlayerRef>,
+        cause: String,
     ) -> bool {
         let mut ctx = EventCtx::player(victim);
         ctx.damage = Some(f64::from(damage));
+        ctx.damage_cause = Some(cause);
         ctx.attacker = attacker;
         let mut th = TickHost {
             inner: host,
@@ -981,7 +1001,8 @@ impl EventHandler<EntityDamageEvent> for OnDamage {
                 return false;
             }
             st.damage_pending = Some((data.entity_id, true, st.hs.tick));
-            st.fire_damage(host, victim, data.damage, None)
+            let cause = carve_core::w2_expressions_2::snake_case(&format!("{:?}", data.damage_type));
+            st.fire_damage(host, victim, data.damage, None, cause)
         });
         if cancelled == Some(true) {
             data.cancelled = true;
@@ -1014,7 +1035,8 @@ impl EventHandler<EntityDamageByEntityEvent> for OnDamageByEntity {
                 return false;
             };
             let attacker = st.player_by_entity(host, data.damager_id);
-            st.fire_damage(host, victim, data.damage, attacker)
+            let cause = data.cause.strip_prefix("minecraft:").unwrap_or(&data.cause).to_string();
+            st.fire_damage(host, victim, data.damage, attacker, cause)
         });
         if cancelled == Some(true) {
             data.cancelled = true;
