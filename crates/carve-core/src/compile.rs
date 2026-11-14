@@ -378,6 +378,10 @@ pub enum Instr {
     Return(Option<Expr>),
     /// A condition on its own line: stop here when it is false (Skript style).
     StopUnless(Cond),
+    /// Start of `catch runtime errors:`; an error inside jumps to the target.
+    CatchBegin(usize),
+    /// End of the section (also emitted before a jump that leaves it).
+    CatchEnd,
 }
 
 /// A compiled body: a trigger's or a function's instructions.
@@ -414,6 +418,8 @@ pub struct Compiled {
     /// By function id; `None` when the function's body had errors.
     pub functions: Vec<Option<Arc<Function>>>,
     pub errors: Vec<ScriptError>,
+    /// `variables:` defaults: (applies per player, code). See `structures`.
+    pub var_defaults: Vec<(bool, Trigger)>,
 }
 
 // ---- syntax registry ----
@@ -712,34 +718,56 @@ struct LoopCx {
     frame: bool,
     next: usize,
     breaks: Vec<usize>,
+    /// `catch runtime errors` sections open around the loop itself.
+    catch: usize,
 }
 
-struct Cx<'a> {
-    file: &'a str,
-    env: Env,
-    is_command: bool,
+pub(crate) struct Cx<'a> {
+    pub(crate) file: &'a str,
+    pub(crate) env: Env,
+    pub(crate) is_command: bool,
     /// Return type of the function being compiled (`Some(None)`: returns nothing).
-    func_ret: Option<Option<Ty>>,
+    pub(crate) func_ret: Option<Option<Ty>>,
     /// Why `cancel event` is not allowed here, if it isn't.
-    no_cancel: Option<String>,
-    code: Vec<Instr>,
-    lines: Vec<usize>,
-    errors: Vec<ScriptError>,
+    pub(crate) no_cancel: Option<String>,
+    pub(crate) code: Vec<Instr>,
+    pub(crate) lines: Vec<usize>,
+    pub(crate) errors: Vec<ScriptError>,
     loops: Vec<LoopCx>,
+    /// `catch runtime errors` sections open around the current line.
+    pub(crate) catch_depth: usize,
+}
+
+impl<'a> Cx<'a> {
+    /// An empty compile state for a body that is not a trigger or function.
+    pub(crate) fn new(file: &'a str, env: Env) -> Self {
+        Cx {
+            file,
+            env,
+            is_command: false,
+            func_ret: None,
+            no_cancel: None,
+            code: Vec::new(),
+            lines: Vec::new(),
+            errors: Vec::new(),
+            loops: Vec::new(),
+            catch_depth: 0,
+        }
+    }
 }
 
 impl Cx<'_> {
-    fn err(&mut self, line: usize, msg: impl Into<String>) {
+    pub(crate) fn err(&mut self, line: usize, msg: impl Into<String>) {
         self.errors.push(ScriptError::new(self.file, line, msg));
     }
 
-    fn emit(&mut self, i: Instr, line: usize) -> usize {
+    pub(crate) fn emit(&mut self, i: Instr, line: usize) -> usize {
         self.code.push(i);
         self.lines.push(line);
         self.code.len() - 1
     }
 
-    fn block(&mut self, lines: &[Line]) {
+    pub(crate) fn block(&mut self, lines: &[Line]) {
         let mut i = 0;
         while i < lines.len() {
             let line = &lines[i];
@@ -792,6 +820,10 @@ impl Cx<'_> {
                 i += 1;
                 continue;
             }
+            if line.opens_block() && crate::structures::section(self, line, &lower) {
+                i += 1;
+                continue;
+            }
             if lower.starts_with("else") {
                 self.err(line.num, "'else' without an 'if' before it");
                 i += 1;
@@ -808,6 +840,10 @@ impl Cx<'_> {
                 i += 1;
                 continue;
             }
+            if crate::structures::inline_if(self, line) {
+                i += 1;
+                continue;
+            }
             if self.control(line.num, &lower) {
                 i += 1;
                 continue;
@@ -818,7 +854,7 @@ impl Cx<'_> {
     }
 
     /// `stop`, `stop loop` / `exit loop`, `continue`. Returns true if handled.
-    fn control(&mut self, num: usize, lower: &str) -> bool {
+    pub(crate) fn control(&mut self, num: usize, lower: &str) -> bool {
         // Most lines are effects: check the first word before collecting all.
         let first = lower.split_whitespace().next().unwrap_or("");
         if !matches!(first, "stop" | "exit" | "break" | "continue" | "return") {
@@ -834,7 +870,11 @@ impl Cx<'_> {
                     self.err(num, "'exit loop' only works inside a loop");
                     return true;
                 };
-                let instr = if lp.frame {
+                let (frame, open) = (lp.frame, self.catch_depth - lp.catch);
+                for _ in 0..open {
+                    self.emit(Instr::CatchEnd, num);
+                }
+                let instr = if frame {
                     Instr::LoopBreak(usize::MAX)
                 } else {
                     Instr::Jump(usize::MAX)
@@ -848,10 +888,13 @@ impl Cx<'_> {
                 self.return_stmt(num, lower);
             }
             ["continue"] | ["continue", "loop"] => {
-                let Some(next) = self.loops.last().map(|l| l.next) else {
+                let Some((next, open)) = self.loops.last().map(|l| (l.next, self.catch_depth - l.catch)) else {
                     self.err(num, "'continue' only works inside a loop");
                     return true;
                 };
+                for _ in 0..open {
+                    self.emit(Instr::CatchEnd, num);
+                }
                 self.emit(Instr::Jump(next), num);
             }
             _ => return false,
@@ -947,6 +990,7 @@ impl Cx<'_> {
                 frame: false,
                 next: start,
                 breaks: Vec::new(),
+                catch: self.catch_depth,
             });
             self.block(&line.children);
             self.emit(Instr::Jump(start), line.num);
@@ -969,6 +1013,7 @@ impl Cx<'_> {
             frame: true,
             next,
             breaks: Vec::new(),
+            catch: self.catch_depth,
         });
         self.env.loops.push(kind);
         self.block(&line.children);
@@ -1070,7 +1115,7 @@ impl Cx<'_> {
         Some((LoopSrc::Values(items), LoopKind::Values))
     }
 
-    fn cond(&mut self, num: usize, text: &str) -> Option<Cond> {
+    pub(crate) fn cond(&mut self, num: usize, text: &str) -> Option<Cond> {
         let toks = match lex(text) {
             Ok(t) => t,
             Err(e) => {
@@ -1280,7 +1325,7 @@ impl Cx<'_> {
         })
     }
 
-    fn effect(&mut self, num: usize, text: &str) {
+    pub(crate) fn effect(&mut self, num: usize, text: &str) {
         let toks = match lex(text) {
             Ok(t) => t,
             Err(e) => {
@@ -1809,6 +1854,7 @@ pub fn compile_file(file: &str, src: &str) -> Result<Vec<Trigger>, Vec<ScriptErr
 struct Parsed {
     name: String,
     tree: Vec<Line>,
+    structs: crate::structures::FileStructs,
 }
 
 /// Compile a set of files together, so functions can be called across files.
@@ -1820,6 +1866,8 @@ pub fn compile_all(files: &[(String, String)]) -> Compiled {
     let mut sigs: Vec<Sig> = Vec::new();
     let mut func_src: Vec<(usize, usize)> = Vec::new(); // (parsed index, top line index)
     let mut defaults_src: Vec<Vec<Option<String>>> = Vec::new();
+    // Per function: declared `local function`, and the index of its file.
+    let mut sig_scope: Vec<(bool, usize)> = Vec::new();
     for (name, src) in files {
         let tree = match parse_blocks(name, src) {
             Ok(t) => t,
@@ -1843,12 +1891,19 @@ pub fn compile_all(files: &[(String, String)]) -> Compiled {
                 continue;
             }
         };
+        let (tree, structs) = match crate::structures::extract(name, tree) {
+            Ok(t) => t,
+            Err(e) => {
+                out.errors.extend(e);
+                bad_files.push(name.clone());
+                continue;
+            }
+        };
         for (ti, top) in tree.iter().enumerate() {
-            if top.head().to_ascii_lowercase().starts_with("function ") {
-                match parse_function_header(name, top.num, top.head()) {
+            if let Some((head, local)) = crate::structures::function_head(top.head()) {
+                match parse_function_header(name, top.num, head) {
                     Ok((sig, defs)) => {
-                        if let Some(prev) = sigs.iter().position(|s| s.name.eq_ignore_ascii_case(&sig.name)) {
-                            let _ = prev;
+                        if crate::structures::function_clash(&sigs, &sig_scope, &sig.name, local, parsed.len()) {
                             out.errors.push(ScriptError::new(
                                 name,
                                 top.num,
@@ -1857,6 +1912,7 @@ pub fn compile_all(files: &[(String, String)]) -> Compiled {
                             continue;
                         }
                         sigs.push(sig);
+                        sig_scope.push((local, parsed.len()));
                         defaults_src.push(defs);
                         func_src.push((parsed.len(), ti));
                     }
@@ -1867,9 +1923,11 @@ pub fn compile_all(files: &[(String, String)]) -> Compiled {
         parsed.push(Parsed {
             name: name.clone(),
             tree,
+            structs,
         });
     }
-    let sigs = Arc::new(sigs);
+    // Each file sees the global functions plus its own local ones.
+    let views = crate::structures::function_views(&sigs, &sig_scope, parsed.len());
 
     // Pass 2: function bodies.
     for (id, &(pi, ti)) in func_src.iter().enumerate() {
@@ -1883,7 +1941,7 @@ pub fn compile_all(files: &[(String, String)]) -> Compiled {
         };
         let env = Env {
             trigger_name: format!("function {}()", sig.name),
-            functions: sigs.clone(),
+            functions: views.get(pi).cloned().unwrap_or_default(),
             in_function: true,
             ..Env::default()
         };
@@ -1916,6 +1974,7 @@ pub fn compile_all(files: &[(String, String)]) -> Compiled {
             lines: Vec::new(),
             errors: errs,
             loops: Vec::new(),
+            catch_depth: 0,
         };
         cx.block(&top.children);
         if cx.errors.is_empty() {
@@ -1937,9 +1996,12 @@ pub fn compile_all(files: &[(String, String)]) -> Compiled {
     }
 
     // Pass 3: triggers.
-    for p in &parsed {
-        let (trigs, errs) = compile_triggers(&p.name, &p.tree, &sigs);
+    for (pi, p) in parsed.iter().enumerate() {
+        let Some(view) = views.get(pi) else { continue };
+        let (trigs, mut errs) = compile_triggers(&p.name, &p.tree, view);
+        let defaults = crate::structures::compile_defaults(&p.name, &p.structs, view, &mut errs);
         if errs.is_empty() && !bad_files.contains(&p.name) {
+            out.var_defaults.extend(defaults);
             out.files.push((p.name.clone(), trigs));
         } else {
             out.errors.extend(errs);
@@ -2168,7 +2230,7 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
     for top in tree {
         click_filters.clear();
         let lower = top.head().to_ascii_lowercase();
-        if lower.starts_with("function ") {
+        if crate::structures::function_head(top.head()).is_some() {
             continue;
         }
         if !top.opens_block() {
@@ -2355,6 +2417,7 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
             lines: Vec::new(),
             errors: Vec::new(),
             loops: Vec::new(),
+            catch_depth: 0,
         };
         cx.env.functions = sigs.clone();
         // `on right click with diamond on stone:` checks first.

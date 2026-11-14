@@ -1137,8 +1137,8 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 
 ## Sections (11)
 
-- ⬜ Catch Runtime Errors
-- ✅ Conditionals — `if` / `else if` / `else`
+- ✅ Catch Runtime Errors — `catch runtime errors:`, message in `last caught runtime error`
+- ✅ Conditionals — `if` / `else if` / `else`, inline `<effect> if <cond>` / `unless`, `parse if`
 - ✅ Delay — `wait N ticks/seconds`, `wait 1 minute and 30 seconds`, `wait {span}`
 - ⬜ Filter ⭐
 - 🟡 For Each Loop — `loop {list::*}` works; no `for each` wording
@@ -1151,14 +1151,14 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 
 ## Structures (8)
 
-- ⛔ Aliases — item aliases come from Minecraft ids; no custom aliases
+- 🟡 Aliases — `aliases:` section replaces a name by any text (an item, say); no plural forms, no variants
 - ⬜ Auto Reload
 - ✅ Command — args, permission, aliases, usage, executable by; no cooldown; new commands need a restart
 - ✅ Event — see events
-- ✅ Function
+- ✅ Function — also `local function` (visible in its own file only)
 - ✅ Options — `{@name}`
-- ⬜ Using Experimental Feature
-- ⬜ Variables ⭐
+- 🟡 Using Experimental Feature — `using ...` lines are accepted and ignored; Carve has no experimental features
+- ✅ Variables ⭐ — `variables:` defaults, also per player (`{coins::%player%} = 0`)
 
 ## Functions (45)
 
