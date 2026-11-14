@@ -1319,6 +1319,45 @@ impl Engine {
     }
 
     #[inline(never)]
+    fn eval_date(
+        &mut self,
+        op: crate::expr::DateOp,
+        args: &[Expr],
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<Value, String> {
+        use crate::expr::DateOp;
+        if op == DateOp::Now {
+            return Ok(Value::Date(host.wall_clock_millis()));
+        }
+        let first = match args.first() {
+            Some(a) => self.eval(a, ex, host)?,
+            None => Value::None,
+        };
+        if op == DateOp::FromUnix {
+            return Ok(match to_num_opt(&first) {
+                Some(n) if n.is_finite() && !matches!(first, Value::Date(_)) => {
+                    Value::Date((n * 1000.0).round() as i64)
+                }
+                _ => Value::None,
+            });
+        }
+        let Value::Date(d) = first else {
+            return Ok(Value::None);
+        };
+        Ok(match op {
+            DateOp::ToUnix => Value::Num(d as f64 / 1000.0),
+            _ => {
+                let fmt = match args.get(1) {
+                    Some(f) => self.text(f, ex, host)?,
+                    None => crate::time_dates::DEFAULT_FORMAT.to_string(),
+                };
+                Value::Text(crate::time_dates::format_date(d, &fmt))
+            }
+        })
+    }
+
+    #[inline(never)]
     fn eval_rare(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
         Ok(match e {
             Expr::Num(n) => Value::Num(*n),
@@ -1391,6 +1430,7 @@ impl Engine {
                     _ => Value::None,
                 }
             }
+            Expr::Date(op, args) => self.eval_date(*op, args, ex, host)?,
             Expr::ParseNum(e) => {
                 let t = self.text(e, ex, host)?;
                 t.trim()
@@ -1726,6 +1766,7 @@ fn to_num_opt(v: &Value) -> Option<f64> {
     match v {
         Value::Num(n) => Some(*n),
         Value::Text(t) => t.trim().parse().ok(),
+        Value::Date(d) => Some(*d as f64),
         _ => None,
     }
 }

@@ -14,6 +14,7 @@ pub enum Ty {
     Item,
     Location,
     World,
+    Date,
     /// Unknown until runtime (variables).
     Object,
 }
@@ -28,13 +29,18 @@ impl Ty {
             Ty::Item => "item",
             Ty::Location => "location",
             Ty::World => "world",
+            Ty::Date => "date",
             Ty::Object => "object",
         }
     }
 
     /// Can a value of type `got` fill a slot of type `self`?
     pub fn accepts(self, got: Ty) -> bool {
-        self == Ty::Object || got == Ty::Object || self == Ty::Text || self == got
+        self == Ty::Object
+            || got == Ty::Object
+            || self == Ty::Text
+            || self == got
+            || (self == Ty::Number && got == Ty::Date)
     }
 }
 
@@ -120,6 +126,19 @@ pub enum Expr {
     ParseNum(Box<Expr>),
     /// `random element of {list::*}`.
     RandomOf(VarRef),
+    /// `now`, `unix timestamp of d`, `date from unix timestamp n`, `d formatted as f`.
+    Date(DateOp, Vec<Expr>),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DateOp {
+    Now,
+    /// Seconds since 1970 of a date.
+    ToUnix,
+    /// Date from seconds since 1970.
+    FromUnix,
+    /// Date, optional format text.
+    Format,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -252,6 +271,11 @@ impl Expr {
             Expr::Attacker => Ty::Player,
             Expr::Math(..) | Expr::ParseNum(_) => Ty::Number,
             Expr::RandomOf(_) => Ty::Object,
+            Expr::Date(op, _) => match op {
+                DateOp::Now | DateOp::FromUnix => Ty::Date,
+                DateOp::ToUnix => Ty::Number,
+                DateOp::Format => Ty::Text,
+            },
             Expr::Default(a, b) => {
                 let (x, y) = (a.ty(env), b.ty(env));
                 if x == y { x } else { Ty::Object }
@@ -323,6 +347,15 @@ struct P<'a> {
 impl P<'_> {
     fn peek(&self) -> Option<&Tok> {
         let t = self.toks.get(self.pos);
+        if t.is_none() {
+            self.hit_end.set(true);
+        }
+        t
+    }
+
+    /// Like `peek`, `n` tokens further on; running off the end counts as "need more tokens".
+    fn peek_at(&self, n: usize) -> Option<&Tok> {
+        let t = self.toks.get(self.pos + n);
         if t.is_none() {
             self.hit_end.set(true);
         }
@@ -436,6 +469,13 @@ impl P<'_> {
                     return Err("expected 'parsed as number'".into());
                 }
             }
+        }
+        // `now formatted as "yyyy-MM-dd"`
+        while matches!(self.toks.get(self.pos), Some(t) if t.is_lit("formatted"))
+            && matches!(e.ty(self.env), Ty::Date | Ty::Object)
+        {
+            self.pos += 1;
+            e = self.date_format(e)?;
         }
         // `player's location`, `player's world`, ...
         while matches!(self.toks.get(self.pos), Some(Tok::Sym("'s"))) {
@@ -595,6 +635,41 @@ impl P<'_> {
                                 self.env.trigger_name
                             ))
                         }
+                    }
+                    "now" => Ok(Expr::Date(DateOp::Now, Vec::new())),
+                    "unix"
+                        if matches!(self.peek(), Some(t) if t.is_lit("timestamp"))
+                            && matches!(self.peek_at(1), Some(t) if t.is_lit("of")) =>
+                    {
+                        self.pos += 2;
+                        let d = self.primary()?;
+                        if !matches!(d.ty(self.env), Ty::Date | Ty::Object) {
+                            return Err("'unix timestamp of' needs a date, like 'unix timestamp of now'".into());
+                        }
+                        Ok(Expr::Date(DateOp::ToUnix, vec![d]))
+                    }
+                    "unix"
+                        if matches!(self.peek(), Some(t) if t.is_lit("date"))
+                            && matches!(self.peek_at(1), Some(t) if t.is_lit("of")) =>
+                    {
+                        self.pos += 2;
+                        self.date_from_unix()
+                    }
+                    "date"
+                        if matches!(self.peek(), Some(t) if t.is_lit("from"))
+                            && matches!(self.peek_at(1), Some(t) if t.is_lit("unix"))
+                            && matches!(self.peek_at(2), Some(t) if t.is_lit("timestamp")) =>
+                    {
+                        self.pos += 3;
+                        self.date_from_unix()
+                    }
+                    "formatted" => {
+                        // `formatted now as "..."` / `formatted {date}`
+                        let d = self.primary_base()?;
+                        if !matches!(d.ty(self.env), Ty::Date | Ty::Object) {
+                            return Err("'formatted' needs a date, like 'formatted now'".into());
+                        }
+                        self.date_format(d)
                     }
                     "arg" | "argument" => self.arg(1),
                     "size" | "amount" | "count" => {
@@ -771,6 +846,28 @@ impl P<'_> {
             }
             other => Err(format!("unexpected {}", describe(&other))),
         }
+    }
+
+    fn date_from_unix(&mut self) -> Result<Expr, String> {
+        let n = self.primary()?;
+        if !Ty::Number.accepts(n.ty(self.env)) {
+            return Err("'date from unix timestamp' needs a number of seconds".into());
+        }
+        Ok(Expr::Date(DateOp::FromUnix, vec![n]))
+    }
+
+    /// After a date and the word `formatted`: optional `as "pattern"`.
+    fn date_format(&mut self, d: Expr) -> Result<Expr, String> {
+        let mut args = vec![d];
+        if matches!(self.peek(), Some(t) if t.is_lit("as")) {
+            self.pos += 1;
+            let f = self.primary()?;
+            if !Ty::Text.accepts(f.ty(self.env)) {
+                return Err("'formatted as' needs a format text like \"yyyy-MM-dd\"".into());
+            }
+            args.push(f);
+        }
+        Ok(Expr::Date(DateOp::Format, args))
     }
 
     /// `loop-value`, `loop-value-2`, `loop-player`, `loop-index`, `loop-number`, `loop-iteration`.

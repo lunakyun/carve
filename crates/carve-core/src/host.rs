@@ -32,6 +32,14 @@ pub trait Host {
     fn now(&mut self) -> u64;
     fn log(&mut self, level: LogLevel, msg: &str);
 
+    /// Wall-clock time in milliseconds since 1970-01-01 UTC (for `now`).
+    fn wall_clock_millis(&mut self) -> i64 {
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis() as i64)
+            .unwrap_or(0)
+    }
+
     /// Everyone online, for `loop all players`.
     fn online_players(&mut self) -> Vec<PlayerRef> {
         Vec::new()
