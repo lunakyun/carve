@@ -76,6 +76,7 @@ impl Variables {
                     json!({"location": {"x": x, "y": y, "z": z, "world": world}})
                 }
                 Value::World(w) => json!({"world": w}),
+                Value::Date(d) => json!({"date": d}),
             };
             obj.insert(k.clone(), j);
         }
@@ -134,6 +135,9 @@ fn object_value(o: &Map<String, Json>) -> Option<Value> {
             z: l.get("z")?.as_f64()?,
             world: l.get("world").and_then(Json::as_str).map(str::to_string),
         });
+    }
+    if let Some(d) = o.get("date").and_then(Json::as_i64) {
+        return Some(Value::Date(d));
     }
     o.get("world")
         .and_then(Json::as_str)

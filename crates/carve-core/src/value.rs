@@ -34,6 +34,8 @@ pub enum Value {
         world: Option<String>,
     },
     World(String),
+    /// A point in time: milliseconds since 1970-01-01 UTC.
+    Date(i64),
 }
 
 impl Value {
@@ -47,6 +49,7 @@ impl Value {
             Value::Item { .. } => "item",
             Value::Location { .. } => "location",
             Value::World(_) => "world",
+            Value::Date(_) => "date",
         }
     }
 
@@ -99,6 +102,7 @@ impl Value {
                     && (az - bz).abs() < 1e-9
                     && (aw.is_none() || bw.is_none() || aw == bw)
             }
+            (Value::Date(a), Value::Date(b)) => a == b,
             (Value::World(a), Value::World(b)) => a.eq_ignore_ascii_case(b),
             (Value::World(w), Value::Text(t)) | (Value::Text(t), Value::World(w)) => {
                 w.eq_ignore_ascii_case(t)
@@ -160,6 +164,7 @@ impl Value {
                 }
             }
             Value::World(w) => out.push_str(w),
+            Value::Date(d) => out.push_str(&crate::time_dates::format_date(*d, crate::time_dates::DEFAULT_FORMAT)),
         }
     }
 }

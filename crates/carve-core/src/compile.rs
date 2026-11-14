@@ -1620,6 +1620,7 @@ pub fn type_from_name(name: &str) -> Option<Ty> {
         "item" | "itemtype" | "item type" | "block" => Ty::Item,
         "location" => Ty::Location,
         "world" => Ty::World,
+        "date" => Ty::Date,
         "object" => Ty::Object,
         _ => return None,
     })

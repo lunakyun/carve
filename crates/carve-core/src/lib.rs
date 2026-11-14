@@ -15,6 +15,7 @@ pub mod pattern;
 pub mod sounds;
 pub mod text_join_split;
 pub mod text_case_substring;
+pub mod time_dates;
 pub mod value;
 pub mod vars;
 

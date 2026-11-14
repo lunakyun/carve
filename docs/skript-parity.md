@@ -708,7 +708,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Damage Source - Source Location
 - ⬜ Damage Value/Durability
 - ⬜ Damaged Item
-- ⬜ Date Ago/Later ⭐
+- ⛔ Date Ago/Later ⭐ (needs time spans, a separate slice)
 - ⬜ De-queue Queue (Experimental)
 - ⬜ Death Message ⭐
 - ⬜ Debug Info
@@ -783,7 +783,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Fishing Wait Time
 - ⬜ Flight Mode
 - ⬜ Food Level ⭐
-- ⬜ Formatted Date ⭐
+- ✅ Formatted Date ⭐
 - ⬜ Formatted Time
 - ⬜ Former/Future State
 - ⬜ Free / Max / Total Memory
@@ -928,7 +928,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ No Damage Ticks
 - ⬜ No Damage Time
 - ⬜ Node
-- ⬜ Now ⭐
+- ✅ Now ⭐
 - ✅ Number Of — `number of {list::*}` (also `size of`, `amount of`)
 - ⬜ Number of Characters
 - ⬜ Numbers
@@ -1076,8 +1076,8 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Transformed List
 - ⬜ Type of
 - ⬜ Unbreakable Items
-- ⬜ Unix Date
-- ⬜ Unix Timestamp ⭐
+- ✅ Unix Date
+- ✅ Unix Timestamp ⭐
 - ⬜ Unknown Command Message
 - ⬜ Unleash Reason
 - ✅ UUID — `uuid of player`
@@ -1175,7 +1175,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ combinations
 - ⬜ concat
 - ⬜ cos
-- ⬜ date
+- ✅ date
 - ⬜ entity
 - ⬜ exp
 - ⬜ factorial
@@ -1236,7 +1236,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Damage Cause
 - ⬜ Damage Source
 - ⬜ Damage Type
-- ⬜ Date ⭐
+- ✅ Date ⭐
 - ⬜ Difficulty
 - ⬜ Direction
 - ⬜ Directional Particle Effect
