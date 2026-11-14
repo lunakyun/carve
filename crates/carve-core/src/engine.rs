@@ -198,6 +198,7 @@ impl LoopFrame {
 
 /// `a, b and c`, like Skript prints a list.
 mod list_eval;
+mod w2_eval;
 
 fn join_list(items: &[(String, Value)], out: &mut String) {
     if items.is_empty() {
@@ -1670,6 +1671,7 @@ impl Engine {
             },
             Expr::Items(s) => Value::List(self.eval_list(s, ex, host)?),
             Expr::ListAgg(a, s) => self.eval_agg(*a, s, ex, host)?,
+            Expr::W2(w) => self.eval_w2(w, ex, host)?,
             Expr::RandomOf(v) => {
                 let items = self.list_items(v, ex, host)?;
                 if items.is_empty() {

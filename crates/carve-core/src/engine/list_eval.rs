@@ -57,6 +57,11 @@ impl Engine {
                 v.sort_by(compare);
                 v
             }
+            ListSrc::SortedAlpha(i) => {
+                let mut v = self.eval_list(i, ex, host)?;
+                v.sort_by_cached_key(|x| x.to_string().to_lowercase());
+                v
+            }
             ListSrc::Reversed(i) => {
                 let mut v = self.eval_list(i, ex, host)?;
                 v.reverse();
