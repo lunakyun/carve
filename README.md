@@ -1,12 +1,22 @@
+<p align="center">
+  <img src="assets/carve-icon-256.png" alt="Carve icon: a pixel-art pumpkin block with code carved into it" width="160">
+</p>
+
 # Carve
 
 Simple, readable scripts for the Pumpkin Minecraft server.
 
-**[Documentation](https://void1z2.github.io/carve/)** · [Syntax reference](https://void1z2.github.io/carve/reference/)
+**[Documentation](https://lunakyun.github.io/carve/)** · [Syntax reference](https://lunakyun.github.io/carve/reference/)
 
-[![CI](https://github.com/void1z2/carve/actions/workflows/ci.yml/badge.svg)](https://github.com/void1z2/carve/actions/workflows/ci.yml)
+[![CI](https://github.com/lunakyun/carve/actions/workflows/ci.yml/badge.svg)](https://github.com/lunakyun/carve/actions/workflows/ci.yml)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 [![Pumpkin plugin API v0.1](https://img.shields.io/badge/Pumpkin%20API-v0.1-orange.svg)](https://github.com/Pumpkin-MC/Pumpkin)
+
+> [!WARNING]
+> Some of Carve's code was written with the help of AI. It is held to the same bar as the
+> rest: every feature has automated tests, CI checks formatting and builds, the engine is
+> benchmarked for speed, and the core features are tested in-game on a real Pumpkin server.
+> Found a bug? [Open an issue](https://github.com/lunakyun/carve/issues).
 
 Carve is a scripting plugin for [Pumpkin](https://github.com/Pumpkin-MC/Pumpkin),
 in the spirit of Skript. You write what should happen in almost-plain English,

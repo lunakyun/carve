@@ -1,10 +1,11 @@
 # Known limits
 
-Carve is young. These are the things that work differently from what you might
-expect, or don't exist yet. Plans for some of them are in the
-[roadmap](../README.md#roadmap).
+These are the places where Carve works differently from Skript, or can't do
+something yet. Most of them come from Pumpkin's plugin API (v0.1), not from
+Carve itself. For the full feature-by-feature status, see the
+[Skript parity checklist](./skript-parity.md).
 
-## Commands
+## Commands and permissions
 
 - **New commands need a restart.** Pumpkin's plugin API registers commands
   only while the plugin loads, and it can't unregister them. A reload updates
@@ -18,60 +19,66 @@ expect, or don't exist yet. Plans for some of them are in the
   any node that was never registered, unless it is given to the player
   directly. A node from another plugin (`other:x`) works only if that plugin
   registered it.
+- **Tab completion** works for `/carve` subcommands only. Pumpkin 0.2.2 crashes
+  when it asks a plugin for completions, so Carve offers none for script
+  names or script command arguments.
 
-## The /carve command
+## Reloading
 
-- **Tab completion** works for subcommands only. Pumpkin 0.2.2 crashes when it
-  asks a plugin for completions, so Carve offers none for script names.
-- **Single-file reload** doesn't run `on load`.
+- A single-file reload (`/carve reload <script>`) doesn't run `on load`.
+  A full reload does.
 
 ## Events
 
-- **Events:** join, quit, chat, break, place, death, damage, respawn, clicks,
-  `on load` and `every`. Inventory, GUI, sneaking and other events are not
-  there yet.
-- **Damage:** a few hits of an attacking type come without the attacking
+- **Late damage:** a few hits of an attacking type come without the attacking
   entity (`/damage`, the ender dragon's wing attack, snowballs). Carve sees
-  that only after Pumpkin has applied them, so `on damage` still runs, with
-  `attacker` `<none>`, but cancelling or changing the damage has no effect
-  for those hits.
+  those only after Pumpkin has applied them, so `on damage` still runs, with
+  `attacker` `<none>`, but cancelling or changing the damage has no effect.
 - **Death:**
-  - `attacker` in `on death` is the last entity that hit the player in the
-    5 seconds before; Pumpkin's death event doesn't say who did it.
-  - Cancelling a death leaves the player at 0 health.
-- A block break without a player has no `player`.
-- If the server calls back into Carve while a script is running (a nested
-  event), that event is skipped with a warning. Console commands from scripts
+  - Pumpkin's death event doesn't say who did it, so `attacker` in `on death`
+    is the last entity that hit the player in the 5 seconds before.
+  - `on death` is for players only.
+  - Cancelling a death leaves the player at 0 health. Pumpkin marks the player
+    as dead before the event runs.
+- **Events Pumpkin doesn't fire yet:** `on swap hand items` is wired up, but
+  Pumpkin 0.2.2 never sends it. `on move` runs when the player moves to
+  another block, not on every small move or turn of the head.
+- **Nested events:** if the server calls back into Carve while a script is
+  running, that event is skipped with a warning. Console commands from scripts
   run after the script finishes, which avoids this in the common case.
 
-## Language
+## Inventories
 
-- **Missing values:** no dates or time spans (`now`, `time since`), no
-  vectors, no entities other than players.
-- **Items:** no item names, lore or enchantments. `give` uses Pumpkin's
-  `/give` command, so `give ... named "..."` doesn't exist.
-- **Inventory:** `player has` counts the 36 main slots only.
-- **Lists:** lists can't be passed to or returned from functions. There is
-  no `set {list::*} to a, b and c` yet; add the items one by one.
-- **Effects not there yet:** sounds, game modes, blocks in the world, and
-  `set damage`.
-- **Functions:** a function used as a value can't `wait`. Functions can call
-  each other 64 levels deep.
-- **Commands:** no `cooldown:` entry.
+- **No closing windows.** `close player's inventory` compiles, but Pumpkin's
+  plugin API v0.1 has no call to close a window, so it only logs a warning.
+- **No stored inventories.** You open a chest menu straight to a player
+  (`open chest with 3 rows named "Shop" to player`) and fill it with
+  `set slot`. You can't build an inventory in a variable first and open it
+  later, and there are no named inventory values yet.
 
 ## Variables
 
-- Names are lowercased.
-- A player in a variable name is written as the player's name, not their UUID.
-  A player who changes their name starts over.
+- A player in a variable name is written as the player's **name**, not their
+  UUID (Skript uses the UUID by default). A player who changes their name
+  starts over. Use `%uuid of player%` in the name if you want Skript's
+  behavior.
 - If `variables.json` is broken, Carve moves it to `variables.json.broken` and
   starts with no variables.
 
-## Waits and the console
+## Running scripts
 
-- When a command run by the console reaches a `wait`, messages sent to the
+- Each run slice (the part between two `wait`s) can run at most 100,000
+  instructions. A run that hits the limit stops with an error, so a runaway
+  loop can't freeze the server.
+- A function used as a value (`set {_x} to f()`) can't `wait`. Call it on its
+  own line instead. Functions can call each other 64 levels deep.
+- When a command run from the console reaches a `wait`, messages sent to the
   console after the wait go to the server log.
-- After a run's first `wait`, `cancel event` does nothing and logs a warning,
-  because the event already happened.
-- Each run slice (the part between two waits) can run at most 100,000
-  instructions. A run that hits the limit stops with an error.
+
+## Plugin API v0.2
+
+Pumpkin is working on a plugin API v0.2. It is switched off in normal Pumpkin
+builds until it's finished, so Carve uses v0.1. v0.2 adds calls that would
+lift several limits above (closing inventories, real entity spawning, tags and
+scores). Carve's engine doesn't depend on the API version, so a v0.2 build
+can be added once Pumpkin turns it on.

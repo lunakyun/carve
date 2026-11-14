@@ -2,7 +2,7 @@
 
 Thanks for helping! The full guide for code changes (adding an effect, rules
 for code) is
-[CONTRIBUTING.md](https://github.com/void1z2/carve/blob/master/CONTRIBUTING.md)
+[CONTRIBUTING.md](https://github.com/lunakyun/carve/blob/master/CONTRIBUTING.md)
 in the repository. This page covers the commands and the docs site.
 
 ## Run the tests
@@ -65,5 +65,5 @@ generator twice changes nothing.
 
 Pushing to `master` runs `.github/workflows/docs.yml`: it runs the generator,
 builds the site and publishes it to GitHub Pages at
-<https://void1z2.github.io/carve/>. In the repository settings, Pages must use
+<https://lunakyun.github.io/carve/>. In the repository settings, Pages must use
 **GitHub Actions** as its source.

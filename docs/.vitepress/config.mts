@@ -7,7 +7,7 @@ import carveGrammar from './carve.tmLanguage.json' with { type: 'json' }
 
 const docsDir = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const repoRoot = resolve(docsDir, '..')
-const repo = 'https://github.com/void1z2/carve'
+const repo = 'https://github.com/lunakyun/carve'
 
 const inside = (dir: string, p: string) => {
   const r = relative(dir, p)

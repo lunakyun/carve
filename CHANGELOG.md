@@ -140,5 +140,5 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - Faster pattern matching at load time.
 - The release build uses `opt-level = 3`.
 
-[Unreleased]: https://github.com/void1z2/carve/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/void1z2/carve/releases/tag/v0.1.0
+[Unreleased]: https://github.com/lunakyun/carve/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/lunakyun/carve/releases/tag/v0.1.0
