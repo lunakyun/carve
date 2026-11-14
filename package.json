@@ -1,0 +1,15 @@
+{
+  "name": "carve-docs",
+  "private": true,
+  "type": "module",
+  "description": "Documentation site for Carve",
+  "scripts": {
+    "docs:gen": "cargo run -q -p carve-core --example gen_docs",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
+  },
+  "devDependencies": {
+    "vitepress": "^1.6.4"
+  }
+}

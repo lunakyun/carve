@@ -6,6 +6,7 @@ pub mod block_ops;
 pub mod blocks;
 pub mod colors;
 pub mod compile;
+pub mod docs_meta;
 pub mod engine;
 pub mod entities;
 pub mod entity_names;

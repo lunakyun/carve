@@ -1,0 +1,6568 @@
+{
+  "categories": [
+    {
+      "id": "event",
+      "page": "reference/events",
+      "title": "Events"
+    },
+    {
+      "id": "effect",
+      "page": "reference/effects",
+      "title": "Effects"
+    },
+    {
+      "id": "condition",
+      "page": "reference/conditions",
+      "title": "Conditions"
+    },
+    {
+      "id": "expression",
+      "page": "reference/expressions",
+      "title": "Expressions"
+    },
+    {
+      "id": "type",
+      "page": "reference/types",
+      "title": "Types"
+    },
+    {
+      "id": "function",
+      "page": "reference/functions",
+      "title": "Functions"
+    }
+  ],
+  "entries": [
+    {
+      "category": "event",
+      "description": "A block is broken. Has `player` (`<none>` when no player broke it). Can be cancelled.",
+      "example": "on break:\n    if player does not have permission \"builder\":\n        cancel event",
+      "id": "break",
+      "name": "Block break",
+      "page": "syntax/triggers",
+      "patterns": [
+        "on break",
+        "on block break",
+        "on mine"
+      ],
+      "since": "0.1.0",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "A player places a block. Can be cancelled.",
+      "example": "on place:\n    add 1 to {placed::%player%}",
+      "id": "place",
+      "name": "Block place",
+      "page": "syntax/triggers",
+      "patterns": [
+        "on place",
+        "on block place"
+      ],
+      "since": "0.1.0",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "A player sends a chat message. Has `player` and `message`. Can be cancelled.",
+      "example": "on chat:\n    if message is \"help\":\n        send \"Try /rules\" to player",
+      "id": "chat",
+      "name": "Chat",
+      "page": "syntax/triggers",
+      "patterns": [
+        "on chat",
+        "on player chat"
+      ],
+      "since": "0.1.0",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "A player clicks air or a block. `with` checks the held item, `on` the clicked block, in any order. Has `clicked block` (also `event-block`). Can be cancelled.",
+      "example": "on right click with blaze rod:\n    send \"Whoosh!\" to player",
+      "id": "click",
+      "name": "Click",
+      "page": "syntax/triggers",
+      "patterns": [
+        "on click",
+        "on (right click|rightclick) [with %item%] [on %item%]",
+        "on (left click|leftclick) [with %item%] [on %item%]"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "Adds a script command. Entries: `permission:`, `description:` and the required `trigger:`. Argument types: `<text>`, `<number>`, `<player>`; `[ ]` makes one optional. New commands need a server restart.",
+      "example": "command /greet <player> [<text>]:\n    permission: greet\n    trigger:\n        send \"%player% says hi!\" to arg-1",
+      "id": "command",
+      "name": "Command",
+      "page": "commands",
+      "patterns": [
+        "command [/]<name> [<type>] [[<type>]]"
+      ],
+      "since": "0.1.0",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "A player eats or drinks. Has `event-item` and `player`. Can be cancelled.",
+      "example": "on eat:\n    send \"yum\" to player",
+      "id": "consume",
+      "name": "Consume",
+      "page": "syntax/events-items",
+      "patterns": [
+        "on consume",
+        "on eat",
+        "on drink",
+        "on item consume",
+        "on player consume"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "A player crafts an item. Has `event-recipe`, `event-item` and `player`. Can be cancelled.",
+      "example": "on craft:\n    send \"crafted %event-item%\" to player",
+      "id": "craft",
+      "name": "Craft",
+      "page": "syntax/events-items",
+      "patterns": [
+        "on craft",
+        "on item craft",
+        "on craft item",
+        "on player craft"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "A player takes damage. Has `damage`, `attacker` (`<none>` for mobs and falls) and `victim`. Can be cancelled.",
+      "example": "on damage:\n    if damage > 10:\n        cancel event",
+      "id": "damage",
+      "name": "Damage",
+      "page": "syntax/triggers",
+      "patterns": [
+        "on damage",
+        "on damage of player",
+        "on player damage"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "A player dies. Has `player` and `victim`; `attacker` is always `<none>` here. Cancelling stops Pumpkin's death handling but leaves 0 health.",
+      "example": "on death of player:\n    broadcast \"%player% died\"",
+      "id": "death",
+      "name": "Death",
+      "page": "syntax/triggers",
+      "patterns": [
+        "on death",
+        "on death of player",
+        "on player death"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "A player drops an item. Has `event-item` and `player`. Can be cancelled.",
+      "example": "on drop:\n    if event-item is diamond:\n        cancel event",
+      "id": "drop",
+      "name": "Drop",
+      "page": "syntax/events-items",
+      "patterns": [
+        "on drop",
+        "on item drop",
+        "on player drop",
+        "on drop item",
+        "on player drop item"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "A player starts or stops flying. Can be cancelled.",
+      "example": "on flight toggle:\n    send \"wheee\" to player",
+      "id": "flight_toggle",
+      "name": "Flight toggle",
+      "page": "syntax/player-flags",
+      "patterns": [
+        "on flight toggle",
+        "on toggle flight",
+        "on player toggle flight"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "A player's game mode changes. Has `old gamemode`, `new gamemode` and `player`. `to creative` filters by the new mode. Can be cancelled.",
+      "example": "on gamemode change to creative:\n    send \"creative on\" to player",
+      "id": "gamemode_change",
+      "name": "Gamemode change",
+      "page": "syntax/events-items",
+      "patterns": [
+        "on gamemode change [to %text%]",
+        "on game mode change",
+        "on player gamemode change",
+        "on player game mode change"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "A player clicks a slot in an open inventory, any window. Has `clicked slot`, `clicked item` and `click type`. Cancel it so players cannot take menu items.",
+      "example": "on inventory click:\n    if clicked slot is 4:\n        cancel event",
+      "id": "inventory_click",
+      "name": "Inventory click",
+      "page": "syntax/inventories",
+      "patterns": [
+        "on inventory click",
+        "on inventory clicking",
+        "on inventory click event"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "A player closes an inventory. Cannot be cancelled.",
+      "example": "on inventory close:\n    send \"Bye.\" to player",
+      "id": "inventory_close",
+      "name": "Inventory close",
+      "page": "syntax/inventories",
+      "patterns": [
+        "on inventory close",
+        "on inventory closing",
+        "on inventory close event"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "A player joins the server. Has `player`.",
+      "example": "on join:\n    send title \"Welcome, %player%!\" to player",
+      "id": "join",
+      "name": "Join",
+      "page": "syntax/triggers",
+      "patterns": [
+        "on join",
+        "on player join",
+        "on login"
+      ],
+      "since": "0.1.0",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "A player's level changes. Has `old level`, `new level` and `player`. Cannot be cancelled.",
+      "example": "on level change:\n    if new level > old level:\n        send \"level up!\" to player",
+      "id": "level_change",
+      "name": "Level change",
+      "page": "syntax/events-items",
+      "patterns": [
+        "on level change",
+        "on player level change"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "Runs after scripts load, and after every successful `/carve reload`. No `player`. Cannot be cancelled.",
+      "example": "on load:\n    if {spawn} is not set:\n        set {spawn} to location(0, 64, 0)",
+      "id": "load",
+      "name": "Load",
+      "page": "syntax/triggers",
+      "patterns": [
+        "on load",
+        "on script load",
+        "on server start",
+        "on skript load"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "A mob spawns. Has `event-entity`, `event-location` and `spawn reason`. `of zombie` filters by entity type. Can be cancelled.",
+      "example": "on spawn of zombie:\n    broadcast \"a zombie spawned\"",
+      "id": "mob_spawn",
+      "name": "Mob spawn",
+      "page": "syntax/events-items",
+      "patterns": [
+        "on mob spawn [of %text%]",
+        "on spawn [of %text%]",
+        "on creature spawn",
+        "on entity spawn"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_advancement_done",
+      "name": "on advancement done",
+      "page": "",
+      "patterns": [
+        "on advancement done"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_anvil_prepare",
+      "name": "on anvil prepare",
+      "page": "",
+      "patterns": [
+        "on anvil prepare"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_arm_swing",
+      "name": "on arm swing",
+      "page": "",
+      "patterns": [
+        "on arm swing"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_at_time",
+      "name": "on at time",
+      "page": "",
+      "patterns": [
+        "on at time"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_bed_enter",
+      "name": "on bed enter",
+      "page": "",
+      "patterns": [
+        "on bed enter"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_bed_leave",
+      "name": "on bed leave",
+      "page": "",
+      "patterns": [
+        "on bed leave"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_bell_ring",
+      "name": "on bell ring",
+      "page": "",
+      "patterns": [
+        "on bell ring"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_block_damage",
+      "name": "on block damage",
+      "page": "",
+      "patterns": [
+        "on block damage"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_block_drop",
+      "name": "on block drop",
+      "page": "",
+      "patterns": [
+        "on block drop"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_block_fertilize",
+      "name": "on block fertilize",
+      "page": "",
+      "patterns": [
+        "on block fertilize"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_block_growth",
+      "name": "on block growth",
+      "page": "",
+      "patterns": [
+        "on block growth"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_book_edit",
+      "name": "on book edit",
+      "page": "",
+      "patterns": [
+        "on book edit"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_book_sign",
+      "name": "on book sign",
+      "page": "",
+      "patterns": [
+        "on book sign"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_bound_enter",
+      "name": "on bound enter",
+      "page": "",
+      "patterns": [
+        "on bound enter"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_bound_exit",
+      "name": "on bound exit",
+      "page": "",
+      "patterns": [
+        "on bound exit"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_brewing_complete",
+      "name": "on brewing complete",
+      "page": "",
+      "patterns": [
+        "on brewing complete"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_brewing_fuel",
+      "name": "on brewing fuel",
+      "page": "",
+      "patterns": [
+        "on brewing fuel"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_brewing_start",
+      "name": "on brewing start",
+      "page": "",
+      "patterns": [
+        "on brewing start"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_broadcast",
+      "name": "on broadcast",
+      "page": "",
+      "patterns": [
+        "on broadcast"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_bucket_catch_entity",
+      "name": "on bucket catch entity",
+      "page": "",
+      "patterns": [
+        "on bucket catch entity"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_bucket_empty",
+      "name": "on bucket empty",
+      "page": "",
+      "patterns": [
+        "on bucket empty"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_bucket_fill",
+      "name": "on bucket fill",
+      "page": "",
+      "patterns": [
+        "on bucket fill"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_burn",
+      "name": "on burn",
+      "page": "",
+      "patterns": [
+        "on burn"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_can_build_check",
+      "name": "on can build check",
+      "page": "",
+      "patterns": [
+        "on can build check"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_chunk_generate",
+      "name": "on chunk generate",
+      "page": "",
+      "patterns": [
+        "on chunk generate"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_chunk_unload",
+      "name": "on chunk unload",
+      "page": "",
+      "patterns": [
+        "on chunk unload"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_combust",
+      "name": "on combust",
+      "page": "",
+      "patterns": [
+        "on combust"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_connect",
+      "name": "on connect",
+      "page": "",
+      "patterns": [
+        "on connect"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_dispense",
+      "name": "on dispense",
+      "page": "",
+      "patterns": [
+        "on dispense"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_egg_throw",
+      "name": "on egg throw",
+      "page": "",
+      "patterns": [
+        "on egg throw"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_elytra_boost",
+      "name": "on elytra boost",
+      "page": "",
+      "patterns": [
+        "on elytra boost"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_enchant",
+      "name": "on enchant",
+      "page": "",
+      "patterns": [
+        "on enchant"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_enchant_prepare",
+      "name": "on enchant prepare",
+      "page": "",
+      "patterns": [
+        "on enchant prepare"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_enderman_sheep_silverfish_falling_block",
+      "name": "on enderman/sheep/silverfish/falling block",
+      "page": "",
+      "patterns": [
+        "on enderman/sheep/silverfish/falling block"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_entity_breed",
+      "name": "on entity breed",
+      "page": "",
+      "patterns": [
+        "on entity breed"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_entity_dismount",
+      "name": "on entity dismount",
+      "page": "",
+      "patterns": [
+        "on entity dismount"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_entity_mount",
+      "name": "on entity mount",
+      "page": "",
+      "patterns": [
+        "on entity mount"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_entity_potion_effect",
+      "name": "on entity potion effect",
+      "page": "",
+      "patterns": [
+        "on entity potion effect"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_entity_shoot_bow",
+      "name": "on entity shoot bow",
+      "page": "",
+      "patterns": [
+        "on entity shoot bow"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_entity_transform",
+      "name": "on entity transform",
+      "page": "",
+      "patterns": [
+        "on entity transform"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_experience_change",
+      "name": "on experience change",
+      "page": "",
+      "patterns": [
+        "on experience change"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_experience_cooldown_change",
+      "name": "on experience cooldown change",
+      "page": "",
+      "patterns": [
+        "on experience cooldown change"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_explode",
+      "name": "on explode",
+      "page": "",
+      "patterns": [
+        "on explode"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_explosion_prime",
+      "name": "on explosion prime",
+      "page": "",
+      "patterns": [
+        "on explosion prime"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_fade",
+      "name": "on fade",
+      "page": "",
+      "patterns": [
+        "on fade"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_firework_explode",
+      "name": "on firework explode",
+      "page": "",
+      "patterns": [
+        "on firework explode"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_fishing",
+      "name": "on fishing",
+      "page": "",
+      "patterns": [
+        "on fishing"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_flow",
+      "name": "on flow",
+      "page": "",
+      "patterns": [
+        "on flow"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_form",
+      "name": "on form",
+      "page": "",
+      "patterns": [
+        "on form"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_fuel_burn",
+      "name": "on fuel burn",
+      "page": "",
+      "patterns": [
+        "on fuel burn"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_furnace_item_extract",
+      "name": "on furnace item extract",
+      "page": "",
+      "patterns": [
+        "on furnace item extract"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_gliding_state_change",
+      "name": "on gliding state change",
+      "page": "",
+      "patterns": [
+        "on gliding state change"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_grow",
+      "name": "on grow",
+      "page": "",
+      "patterns": [
+        "on grow"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_harvest_block",
+      "name": "on harvest block",
+      "page": "",
+      "patterns": [
+        "on harvest block"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_heal",
+      "name": "on heal",
+      "page": "",
+      "patterns": [
+        "on heal"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_horse_jump",
+      "name": "on horse jump",
+      "page": "",
+      "patterns": [
+        "on horse jump"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_hunger_meter_change",
+      "name": "on hunger meter change",
+      "page": "",
+      "patterns": [
+        "on hunger meter change"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_ignition",
+      "name": "on ignition",
+      "page": "",
+      "patterns": [
+        "on ignition"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_inventory_drag",
+      "name": "on inventory drag",
+      "page": "",
+      "patterns": [
+        "on inventory drag"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_inventory_item_move",
+      "name": "on inventory item move",
+      "page": "",
+      "patterns": [
+        "on inventory item move"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_inventory_open",
+      "name": "on inventory open",
+      "page": "",
+      "patterns": [
+        "on inventory open"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_inventory_pickup",
+      "name": "on inventory pickup",
+      "page": "",
+      "patterns": [
+        "on inventory pickup"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_item_break",
+      "name": "on item break",
+      "page": "",
+      "patterns": [
+        "on item break"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_item_damage",
+      "name": "on item damage",
+      "page": "",
+      "patterns": [
+        "on item damage"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_item_despawn",
+      "name": "on item despawn",
+      "page": "",
+      "patterns": [
+        "on item despawn"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_item_mend",
+      "name": "on item mend",
+      "page": "",
+      "patterns": [
+        "on item mend"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_item_merge",
+      "name": "on item merge",
+      "page": "",
+      "patterns": [
+        "on item merge"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_item_spawn",
+      "name": "on item spawn",
+      "page": "",
+      "patterns": [
+        "on item spawn"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_kick",
+      "name": "on kick",
+      "page": "",
+      "patterns": [
+        "on kick"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_language_change",
+      "name": "on language change",
+      "page": "",
+      "patterns": [
+        "on language change"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_leash",
+      "name": "on leash",
+      "page": "",
+      "patterns": [
+        "on leash"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_leaves_decay",
+      "name": "on leaves decay",
+      "page": "",
+      "patterns": [
+        "on leaves decay"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_lightning_strike",
+      "name": "on lightning strike",
+      "page": "",
+      "patterns": [
+        "on lightning strike"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_loot_generate",
+      "name": "on loot generate",
+      "page": "",
+      "patterns": [
+        "on loot generate"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_love_mode_enter",
+      "name": "on love mode enter",
+      "page": "",
+      "patterns": [
+        "on love mode enter"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_piglin_barter",
+      "name": "on piglin barter",
+      "page": "",
+      "patterns": [
+        "on piglin barter"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_piston_extend",
+      "name": "on piston extend",
+      "page": "",
+      "patterns": [
+        "on piston extend"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_piston_retract",
+      "name": "on piston retract",
+      "page": "",
+      "patterns": [
+        "on piston retract"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_player_input",
+      "name": "on player input",
+      "page": "",
+      "patterns": [
+        "on player input"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_portal",
+      "name": "on portal",
+      "page": "",
+      "patterns": [
+        "on portal"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_portal_create",
+      "name": "on portal create",
+      "page": "",
+      "patterns": [
+        "on portal create"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_portal_enter",
+      "name": "on portal enter",
+      "page": "",
+      "patterns": [
+        "on portal enter"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_recipe_discover",
+      "name": "on recipe discover",
+      "page": "",
+      "patterns": [
+        "on recipe discover"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_redstone",
+      "name": "on redstone",
+      "page": "",
+      "patterns": [
+        "on redstone"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_resource_pack_response",
+      "name": "on resource pack response",
+      "page": "",
+      "patterns": [
+        "on resource pack response"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_resurrect_attempt",
+      "name": "on resurrect attempt",
+      "page": "",
+      "patterns": [
+        "on resurrect attempt"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_send_command_list",
+      "name": "on send command list",
+      "page": "",
+      "patterns": [
+        "on send command list"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_server_list_ping",
+      "name": "on server list ping",
+      "page": "",
+      "patterns": [
+        "on server list ping"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_sheep_regrow_wool",
+      "name": "on sheep regrow wool",
+      "page": "",
+      "patterns": [
+        "on sheep regrow wool"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_shoot",
+      "name": "on shoot",
+      "page": "",
+      "patterns": [
+        "on shoot"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_sign_change",
+      "name": "on sign change",
+      "page": "",
+      "patterns": [
+        "on sign change"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_slime_split",
+      "name": "on slime split",
+      "page": "",
+      "patterns": [
+        "on slime split"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_smelt",
+      "name": "on smelt",
+      "page": "",
+      "patterns": [
+        "on smelt"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_spawn_change",
+      "name": "on spawn change",
+      "page": "",
+      "patterns": [
+        "on spawn change"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_sponge_absorb",
+      "name": "on sponge absorb",
+      "page": "",
+      "patterns": [
+        "on sponge absorb"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_spread",
+      "name": "on spread",
+      "page": "",
+      "patterns": [
+        "on spread"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_start_smelt",
+      "name": "on start smelt",
+      "page": "",
+      "patterns": [
+        "on start smelt"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_swim_toggle",
+      "name": "on swim toggle",
+      "page": "",
+      "patterns": [
+        "on swim toggle"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_tame",
+      "name": "on tame",
+      "page": "",
+      "patterns": [
+        "on tame"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_target",
+      "name": "on target",
+      "page": "",
+      "patterns": [
+        "on target"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_throwing_of_an_egg",
+      "name": "on throwing of an egg",
+      "page": "",
+      "patterns": [
+        "on throwing of an egg"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_tool_change",
+      "name": "on tool change",
+      "page": "",
+      "patterns": [
+        "on tool change"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_unleash",
+      "name": "on unleash",
+      "page": "",
+      "patterns": [
+        "on unleash"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_vault_display_item",
+      "name": "on vault display item",
+      "page": "",
+      "patterns": [
+        "on vault display item"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_vehicle_collision",
+      "name": "on vehicle collision",
+      "page": "",
+      "patterns": [
+        "on vehicle collision"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_vehicle_create",
+      "name": "on vehicle create",
+      "page": "",
+      "patterns": [
+        "on vehicle create"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_vehicle_damage",
+      "name": "on vehicle damage",
+      "page": "",
+      "patterns": [
+        "on vehicle damage"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_vehicle_destroy",
+      "name": "on vehicle destroy",
+      "page": "",
+      "patterns": [
+        "on vehicle destroy"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_vehicle_enter",
+      "name": "on vehicle enter",
+      "page": "",
+      "patterns": [
+        "on vehicle enter"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_vehicle_exit",
+      "name": "on vehicle exit",
+      "page": "",
+      "patterns": [
+        "on vehicle exit"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_vehicle_move",
+      "name": "on vehicle move",
+      "page": "",
+      "patterns": [
+        "on vehicle move"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_villager_career_change",
+      "name": "on villager career change",
+      "page": "",
+      "patterns": [
+        "on villager career change"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_weather_change",
+      "name": "on weather change",
+      "page": "",
+      "patterns": [
+        "on weather change"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_weather_change_to_clear",
+      "name": "on weather change to clear",
+      "page": "",
+      "patterns": [
+        "on weather change to clear"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_weather_change_to_rain",
+      "name": "on weather change to rain",
+      "page": "",
+      "patterns": [
+        "on weather change to rain"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_world_init",
+      "name": "on world init",
+      "page": "",
+      "patterns": [
+        "on world init"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_world_load",
+      "name": "on world load",
+      "page": "",
+      "patterns": [
+        "on world load"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_world_save",
+      "name": "on world save",
+      "page": "",
+      "patterns": [
+        "on world save"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_world_unload",
+      "name": "on world unload",
+      "page": "",
+      "patterns": [
+        "on world unload"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_zombie_break_door",
+      "name": "on zombie break door",
+      "page": "",
+      "patterns": [
+        "on zombie break door"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
+      "description": "A block of named constants, used as `{@name}` anywhere in the same file.",
+      "example": "options:\n    prefix: &8[&6Shop&8]&r\non join:\n    send \"{@prefix} Welcome\" to player",
+      "id": "options",
+      "name": "Options",
+      "page": "syntax/functions",
+      "patterns": [
+        "options:"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "Runs on a timer counted in server ticks from plugin load. No `player`. A `wait` inside does not delay the next round.",
+      "example": "every 5 minutes:\n    broadcast \"&eDon't forget to vote!\"",
+      "id": "every",
+      "name": "Periodic (every)",
+      "page": "syntax/triggers",
+      "patterns": [
+        "every %timespan%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "A player picks up an item. Has `event-item` and `player`. Can be cancelled.",
+      "example": "on pick up:\n    send \"you got %event-item%\" to player",
+      "id": "pick_up",
+      "name": "Pick up",
+      "page": "syntax/events-items",
+      "patterns": [
+        "on pick up",
+        "on pickup",
+        "on item pickup",
+        "on item pick up",
+        "on player pickup",
+        "on player pick up",
+        "on pick up item"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "A projectile hits something. Has `event-location` and `hit player` (`<none>` when it hit something else). Can be cancelled.",
+      "example": "on projectile hit:\n    strike lightning effect at event-location",
+      "id": "projectile_hit",
+      "name": "Projectile hit",
+      "page": "syntax/events-items",
+      "patterns": [
+        "on projectile hit",
+        "on projectile land"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "A player leaves. The player is already gone, so `%player%` works until the first `wait` but effects on them do nothing.",
+      "example": "on quit:\n    broadcast \"%player% left the server\"",
+      "id": "quit",
+      "name": "Quit",
+      "page": "syntax/triggers",
+      "patterns": [
+        "on quit",
+        "on player quit",
+        "on leave",
+        "on disconnect"
+      ],
+      "since": "0.1.0",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "A player respawns. Cannot be cancelled.",
+      "example": "on respawn:\n    send \"Welcome back\" to player",
+      "id": "respawn",
+      "name": "Respawn",
+      "page": "syntax/triggers",
+      "patterns": [
+        "on respawn",
+        "on player respawn"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "A player starts or stops sneaking. State conditions show the state before the change. Can be cancelled.",
+      "example": "on sneak toggle:\n    if player is sneaking:\n        send \"standing up\" to player",
+      "id": "sneak_toggle",
+      "name": "Sneak toggle",
+      "page": "syntax/player-flags",
+      "patterns": [
+        "on sneak toggle",
+        "on toggle sneak",
+        "on player toggle sneak"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "A player starts or stops sprinting. Can be cancelled.",
+      "example": "on sprint toggle:\n    send \"zoom\" to player",
+      "id": "sprint_toggle",
+      "name": "Sprint toggle",
+      "page": "syntax/player-flags",
+      "patterns": [
+        "on sprint toggle",
+        "on toggle sprint",
+        "on player toggle sprint"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "burn_burning_fire_duration_time",
+      "name": "(burn|burning|fire) (duration|time)",
+      "page": "",
+      "patterns": [
+        "(burn|burning|fire) (duration|time)"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "cure_unpoison_player_of_poison",
+      "name": "(cure|unpoison) %player% [of poison]",
+      "page": "",
+      "patterns": [
+        "(cure|unpoison) %player% [of poison]"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "delete_clear_reset_metadata_value_text_of_object",
+      "name": "(delete|clear|reset) metadata value %text% of %object%",
+      "page": "",
+      "patterns": [
+        "(delete|clear|reset) metadata value %text% of %object%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "delete_clear_reset_persistent_data_value_text_of_object",
+      "name": "(delete|clear|reset) persistent data value %text% of %object%",
+      "page": "",
+      "patterns": [
+        "(delete|clear|reset) persistent data value %text% of %object%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "extinguish_put_out_player",
+      "name": "(extinguish|put out) %player%",
+      "page": "",
+      "patterns": [
+        "(extinguish|put out) %player%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "reset_clear_player_s_player_tab_list_name",
+      "name": "(reset|clear) %player%'s (player|tab) list name",
+      "page": "",
+      "patterns": [
+        "(reset|clear) %player%'s (player|tab) list name"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "reset_clear_player_tab_list_name_of_player",
+      "name": "(reset|clear) (player|tab) list name of %player%",
+      "page": "",
+      "patterns": [
+        "(reset|clear) (player|tab) list name of %player%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "toggle_switch_variable",
+      "name": "(toggle|switch) %variable%",
+      "page": "",
+      "patterns": [
+        "(toggle|switch) %variable%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "locally_suppress_conflict_conjunction_missing_conjunction_variable_save_variable_saved_deprecation_deprecated_syntax_unreachable_code_empty_script_warning_warnings",
+      "name": "[locally] suppress (conflict|conjunction|missing conjunction|variable save|variable saved|deprecation|deprecated syntax|unreachable code|empty script) (warning|warnings)",
+      "page": "",
+      "patterns": [
+        "[locally] suppress (conflict|conjunction|missing conjunction|variable save|variable saved|deprecation|deprecated syntax|unreachable code|empty script) (warning|warnings)"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Adds to a number variable, or appends to a list (`add \"x\" and \"y\" to {list::*}`).",
+      "example": "add 1 to {joins::%uuid of player%}",
+      "id": "add",
+      "name": "Add",
+      "page": "syntax/effects",
+      "patterns": [
+        "add %object% to %variable%"
+      ],
+      "since": "0.1.0",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "add_timespan_to_player_s_remaining_air",
+      "name": "add %timespan% to %player%'s remaining air",
+      "page": "",
+      "patterns": [
+        "add %timespan% to %player%'s remaining air"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "add_timespan_to_remaining_air_of_player",
+      "name": "add %timespan% to remaining air of %player%",
+      "page": "",
+      "patterns": [
+        "add %timespan% to remaining air of %player%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Adds items to, or takes up to that many items from, a player's inventory.",
+      "example": "remove 2 diamonds from player",
+      "id": "inventory_items",
+      "name": "Add or remove items",
+      "page": "syntax/inventories",
+      "patterns": [
+        "add %item% to %player%'s inventory",
+        "remove %item% from %player%['s inventory]"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
+      "description": "Gives a potion effect. The number is the tier (default 1); the time defaults to 15 seconds.",
+      "example": "apply potion of speed 2 to player for 10 seconds",
+      "id": "apply_potion",
+      "name": "Apply potion effect",
+      "page": "syntax/world-effects",
+      "patterns": [
+        "apply [potion of] <effect> [[of tier] %number%] to %player% [for %timespan%]"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
+      "description": "Bans a player or name, or their IP, with an optional reason.",
+      "example": "ban \"Alex\" because of \"cheating\"",
+      "id": "ban",
+      "name": "Ban",
+      "page": "syntax/op-kick-ban",
+      "patterns": [
+        "ban ip %object% [(by reason of|because of|because|on account of|due to|for|with reason) %text%]",
+        "ban %object% by ip [(by reason of|because of|because|on account of|due to|for|with reason) %text%]",
+        "ban %object% [(by reason of|because of|because|on account of|due to|for|with reason) %text%]"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Breaks a block and updates its neighbours. No drops.",
+      "example": "break targeted block of player",
+      "id": "break_block",
+      "name": "Break block",
+      "page": "syntax/blocks",
+      "patterns": [
+        "(break|destroy) %block%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
+      "description": "Sends a message to every online player.",
+      "example": "broadcast \"&e%player% joined!\"",
+      "id": "broadcast",
+      "name": "Broadcast",
+      "page": "syntax/effects",
+      "patterns": [
+        "broadcast %text%"
+      ],
+      "since": "0.1.0",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "broadcast_text_component_components_text",
+      "name": "broadcast [text] (component|components) %text%",
+      "page": "",
+      "patterns": [
+        "broadcast [text] (component|components) %text%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Stops the event. Works before the first `wait`. Some events cannot be cancelled; using it there is a load error.",
+      "example": "on chat:\n    cancel event",
+      "id": "cancel",
+      "name": "Cancel event",
+      "page": "syntax/effects",
+      "patterns": [
+        "cancel [the] event"
+      ],
+      "since": "0.1.0",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Changes total experience points. Never below 0.",
+      "example": "give player 10 xp",
+      "id": "xp",
+      "name": "Change experience",
+      "page": "syntax/xp-level",
+      "patterns": [
+        "set (xp|exp|experience|total experience) of %player% to %number%",
+        "set %player%'s (xp|exp|experience|total experience) to %number%",
+        "add %number% to (xp|exp|experience|total experience) of %player%",
+        "add %number% to %player%'s (xp|exp|experience|total experience)",
+        "add %number% (xp|exp|experience) [points] to %player%",
+        "remove %number% from (xp|exp|experience|total experience) of %player%",
+        "remove %number% from %player%'s (xp|exp|experience|total experience)",
+        "remove %number% (xp|exp|experience) [points] from %player%",
+        "give %number% (xp|exp|experience) [points] to %player%",
+        "give %player% %number% (xp|exp|experience) [points]"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Changes the food level, 0 to 20.",
+      "example": "remove 2 from food level of player",
+      "id": "food",
+      "name": "Change food level",
+      "page": "syntax/health-food",
+      "patterns": [
+        "set (food level|hunger) of %player% to %number%",
+        "set %player%'s (food level|hunger) to %number%",
+        "add %number% to (food level|hunger) of %player%",
+        "add %number% to %player%'s (food level|hunger)",
+        "remove %number% from (food level|hunger) of %player%",
+        "remove %number% from %player%'s (food level|hunger)"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Sets, raises or lowers health (20 = 10 hearts). Values are kept between 0 and max health; 0 kills.",
+      "example": "set health of player to 10",
+      "id": "health",
+      "name": "Change health",
+      "page": "syntax/health-food",
+      "patterns": [
+        "set health of %player% to %number%",
+        "set %player%'s health to %number%",
+        "add %number% to health of %player%",
+        "add %number% to %player%'s health",
+        "remove %number% from health of %player%",
+        "remove %number% from %player%'s health"
+      ],
+      "since": "0.1.0",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Sets, adds or removes whole levels. Never below 0.",
+      "example": "give player 3 levels",
+      "id": "level",
+      "name": "Change level",
+      "page": "syntax/xp-level",
+      "patterns": [
+        "set (level|levels) of %player% to %number%",
+        "set %player%'s (level|levels) to %number%",
+        "add %number% to (level|levels) of %player%",
+        "add %number% to %player%'s (level|levels)",
+        "add %number% (level|levels) to %player%",
+        "remove %number% from (level|levels) of %player%",
+        "remove %number% from %player%'s (level|levels)",
+        "remove %number% (level|levels) from %player%",
+        "give %number% (level|levels) to %player%",
+        "give %player% %number% (level|levels)"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Changes progress to the next level, kept between 0 and 1.",
+      "example": "set level progress of player to 0.5",
+      "id": "level_progress",
+      "name": "Change level progress",
+      "page": "syntax/xp-level",
+      "patterns": [
+        "set level progress of %player% to %number%",
+        "set %player%'s level progress to %number%",
+        "add %number% to level progress of %player%",
+        "add %number% to %player%'s level progress",
+        "remove %number% from level progress of %player%",
+        "remove %number% from %player%'s level progress"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Changes max health. Lowering it also lowers current health when needed.",
+      "example": "set max health of player to 40",
+      "id": "max_health",
+      "name": "Change max health",
+      "page": "syntax/health-food",
+      "patterns": [
+        "set max health of %player% to %number%",
+        "set %player%'s max health to %number%",
+        "add %number% to max health of %player%",
+        "add %number% to %player%'s max health",
+        "remove %number% from max health of %player%",
+        "remove %number% from %player%'s max health"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Changes saturation, 0 to 20.",
+      "example": "set saturation of player to 5",
+      "id": "saturation",
+      "name": "Change saturation",
+      "page": "syntax/health-food",
+      "patterns": [
+        "set saturation of %player% to %number%",
+        "set %player%'s saturation to %number%",
+        "add %number% to saturation of %player%",
+        "add %number% to %player%'s saturation",
+        "remove %number% from saturation of %player%",
+        "remove %number% from %player%'s saturation"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "clear_player_s_title",
+      "name": "clear %player%'s title",
+      "page": "",
+      "patterns": [
+        "clear %player%'s title"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "clear_the_title",
+      "name": "clear [the] title",
+      "page": "",
+      "patterns": [
+        "clear [the] title"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "clear_the_title_of_player",
+      "name": "clear [the] title of %player%",
+      "page": "",
+      "patterns": [
+        "clear [the] title of %player%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Empties the player's inventory, armor and off hand included, or the open menu.",
+      "example": "clear player's inventory",
+      "id": "clear_inventory",
+      "name": "Clear inventory",
+      "page": "syntax/inventories",
+      "patterns": [
+        "clear %player%'s [current] inventory"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
+      "description": "Loads, but does nothing yet: plugin API v0.1 has no call to close a window. A warning is logged.",
+      "example": "close player's inventory",
+      "id": "close_inventory",
+      "name": "Close inventory",
+      "page": "syntax/inventories",
+      "patterns": [
+        "close %player%'s inventory"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "connect_player_to_the_server_text_on_port_number",
+      "name": "connect %player% to [the] [server] %text% [on port %number%]",
+      "page": "",
+      "patterns": [
+        "connect %player% to [the] [server] %text% [on port %number%]"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "copy_variable_into_to_variable",
+      "name": "copy %variable% (into|to) %variable%",
+      "page": "",
+      "patterns": [
+        "copy %variable% (into|to) %variable%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Makes an explosion that breaks blocks like TNT. Default force 3, max 100.",
+      "example": "create explosion of force 3 at player",
+      "id": "explosion",
+      "name": "Create explosion",
+      "page": "syntax/world-effects",
+      "patterns": [
+        "create [an] explosion [(of force|with power) %number%] [with fire] at %location%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
+      "description": "Hurts the player with generic damage.",
+      "example": "damage player by 2",
+      "id": "damage",
+      "name": "Damage",
+      "page": "syntax/health-food",
+      "patterns": [
+        "damage %player% by %number%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Deletes a variable, or a whole list with `{list::*}`.",
+      "example": "delete {home::%uuid of player%}",
+      "id": "delete",
+      "name": "Delete",
+      "page": "syntax/effects",
+      "patterns": [
+        "delete %variable%"
+      ],
+      "since": "0.1.0",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "dismount_player",
+      "name": "dismount %player%",
+      "page": "",
+      "patterns": [
+        "dismount %player%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Sets or resets a player's display name. Color codes work.",
+      "example": "set display name of player to \"&6Boss\"",
+      "id": "display_name",
+      "name": "Display name",
+      "page": "syntax/op-kick-ban",
+      "patterns": [
+        "set (display name|nickname) of %object% to %text%",
+        "set %object%'s (display name|nickname) to %text%",
+        "reset (display name|nickname) of %object%",
+        "reset %object%'s (display name|nickname)"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "eject_player",
+      "name": "eject %player%",
+      "page": "",
+      "patterns": [
+        "eject %player%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "eject_all_passengers_of_player",
+      "name": "eject [all] passengers of %player%",
+      "page": "",
+      "patterns": [
+        "eject [all] passengers of %player%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "equip_player_with_item",
+      "name": "equip %player% with %item%",
+      "page": "",
+      "patterns": [
+        "equip %player% with %item%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Runs a server command as the console, right after the script finishes.",
+      "example": "execute console command \"say hi\"",
+      "id": "console_command",
+      "name": "Execute console command",
+      "page": "syntax/effects",
+      "patterns": [
+        "execute console command %text%"
+      ],
+      "since": "0.1.0",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "exhaustion",
+      "name": "exhaustion",
+      "page": "",
+      "patterns": [
+        "exhaustion"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Leaves the innermost loop, or skips to its next round.",
+      "example": "loop 10 times:\n    if loop-number is 5:\n        exit loop",
+      "id": "exit_loop",
+      "name": "Exit loop / continue",
+      "page": "syntax/loops",
+      "patterns": [
+        "(exit|stop) loop",
+        "break",
+        "continue"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "fall_distance",
+      "name": "fall distance",
+      "page": "",
+      "patterns": [
+        "fall distance"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Fills food level and saturation to 20, or adds to the food level.",
+      "example": "feed player",
+      "id": "feed",
+      "name": "Feed",
+      "page": "syntax/health-food",
+      "patterns": [
+        "feed %player% [by %number%]"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "force_player_to_respawn",
+      "name": "force %player% to respawn",
+      "page": "",
+      "patterns": [
+        "force %player% to respawn"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "force_the_respawn_of_player",
+      "name": "force [the] respawn of %player%",
+      "page": "",
+      "patterns": [
+        "force [the] respawn of %player%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "freeze_duration_time",
+      "name": "freeze (duration|time)",
+      "page": "",
+      "patterns": [
+        "freeze (duration|time)"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Gives items to a player. Item names are checked when the script loads.",
+      "example": "give 2 diamonds to player",
+      "id": "give",
+      "name": "Give item",
+      "page": "syntax/effects",
+      "patterns": [
+        "give %number% [of] %item% to %player%",
+        "give %item% to %player%",
+        "give %player% %item%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "glowing_state",
+      "name": "glowing [state]",
+      "page": "",
+      "patterns": [
+        "glowing [state]"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "gravity_state",
+      "name": "gravity [state]",
+      "page": "",
+      "patterns": [
+        "gravity [state]"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Heals to full health, or adds that much health up to the max.",
+      "example": "heal player by 4",
+      "id": "heal",
+      "name": "Heal",
+      "page": "syntax/health-food",
+      "patterns": [
+        "heal %player%",
+        "heal %player% by %number%"
+      ],
+      "since": "0.1.0",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "hide_player",
+      "name": "hide %player%",
+      "page": "",
+      "patterns": [
+        "hide %player%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "hide_player_from_player",
+      "name": "hide %player% from %player%",
+      "page": "",
+      "patterns": [
+        "hide %player% from %player%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "hide_player_s_custom_name",
+      "name": "hide %player%'s custom name",
+      "page": "",
+      "patterns": [
+        "hide %player%'s custom name"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "hide_the_custom_name_of_player",
+      "name": "hide [the] custom name of %player%",
+      "page": "",
+      "patterns": [
+        "hide [the] custom name of %player%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Runs the indented block when the condition is true. A condition on its own line stops the trigger when false.",
+      "example": "if {coins::%uuid of player%} >= 10:\n    send \"rich\" to player\nelse:\n    send \"poor\" to player",
+      "id": "if",
+      "name": "If / else",
+      "page": "syntax/conditions",
+      "patterns": [
+        "if %condition%:",
+        "else if %condition%:",
+        "else:"
+      ],
+      "since": "0.1.0",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
+      "description": "Sets a player on fire (default 5 seconds) or puts the fire out.",
+      "example": "ignite player for 5 seconds",
+      "id": "ignite",
+      "name": "Ignite / extinguish",
+      "page": "syntax/world-effects",
+      "patterns": [
+        "ignite %player% [for %timespan%]",
+        "set %player% on fire [for %timespan%]",
+        "extinguish %player%"
+      ],
+      "since": "unreleased",
+      "source": "registry+hand"
+    },
+    {
+      "category": "effect",
+      "description": "Kicks a player, with an optional reason.",
+      "example": "kick player due to \"bad vibes\"",
+      "id": "kick",
+      "name": "Kick",
+      "page": "syntax/op-kick-ban",
+      "patterns": [
+        "kick %object% [(by reason of|because of|because|on account of|due to|for|with reason) %text%]"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Kills the player.",
+      "example": "kill player",
+      "id": "kill",
+      "name": "Kill",
+      "page": "syntax/effects",
+      "patterns": [
+        "kill %player%"
+      ],
+      "since": "0.1.0",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "knock_player_away_from_away_location_with_strength_force_number",
+      "name": "knock %player% (away from|away) %location% [with (strength|force) %number%]",
+      "page": "",
+      "patterns": [
+        "knock %player% (away from|away) %location% [with (strength|force) %number%]"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "knock_player_toward_towards_to_location_with_strength_force_number",
+      "name": "knock %player% (toward|towards|to) %location% [with (strength|force) %number%]",
+      "page": "",
+      "patterns": [
+        "knock %player% (toward|towards|to) %location% [with (strength|force) %number%]"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "log_text",
+      "name": "log %text%",
+      "page": "",
+      "patterns": [
+        "log %text%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "log_text_to_file_text",
+      "name": "log %text% to [file] %text%",
+      "page": "",
+      "patterns": [
+        "log %text% to [file] %text%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Runs the block for each item, value or online player. Gives `loop-value`, `loop-index` or `loop-player`.",
+      "example": "loop all players:\n    send \"Restart in 1 minute\" to loop-player",
+      "id": "loop_list",
+      "name": "Loop list",
+      "page": "syntax/loops",
+      "patterns": [
+        "loop %list%:",
+        "loop %object%, %object% and %object%:",
+        "loop all players:"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
+      "description": "Runs the block N times. `loop-number` counts from 1.",
+      "example": "loop 3 times:\n    send \"Round %loop-number%\" to player",
+      "id": "loop_times",
+      "name": "Loop times",
+      "page": "syntax/loops",
+      "patterns": [
+        "loop %number% times:"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "make_player_fly_start_flying_be_able_to_fly",
+      "name": "make %player% (fly|start flying|be able to fly)",
+      "page": "",
+      "patterns": [
+        "make %player% (fly|start flying|be able to fly)"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "make_player_look_face_at_location",
+      "name": "make %player% (look|face) at %location%",
+      "page": "",
+      "patterns": [
+        "make %player% (look|face) at %location%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "make_player_ride_mount_player",
+      "name": "make %player% (ride|mount) %player%",
+      "page": "",
+      "patterns": [
+        "make %player% (ride|mount) %player%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "make_player_stop_flying_not_fly_stop_fly_unable_to_fly",
+      "name": "make %player% (stop flying|not fly|stop fly|unable to fly)",
+      "page": "",
+      "patterns": [
+        "make %player% (stop flying|not fly|stop fly|unable to fly)"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "make_player_visible_not_invisible",
+      "name": "make %player% (visible|not invisible)",
+      "page": "",
+      "patterns": [
+        "make %player% (visible|not invisible)"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "make_player_vulnerable_not_invulnerable",
+      "name": "make %player% (vulnerable|not invulnerable)",
+      "page": "",
+      "patterns": [
+        "make %player% (vulnerable|not invulnerable)"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "make_player_dismount",
+      "name": "make %player% dismount",
+      "page": "",
+      "patterns": [
+        "make %player% dismount"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "make_player_invisible",
+      "name": "make %player% invisible",
+      "page": "",
+      "patterns": [
+        "make %player% invisible"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "make_player_invulnerable",
+      "name": "make %player% invulnerable",
+      "page": "",
+      "patterns": [
+        "make %player% invulnerable"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "make_player_say_text",
+      "name": "make %player% say %text%",
+      "page": "",
+      "patterns": [
+        "make %player% say %text%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "make_player_sprint",
+      "name": "make %player% sprint",
+      "page": "",
+      "patterns": [
+        "make %player% sprint"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "make_player_start_sprinting",
+      "name": "make %player% start sprinting",
+      "page": "",
+      "patterns": [
+        "make %player% start sprinting"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "make_player_stop_sprinting",
+      "name": "make %player% stop sprinting",
+      "page": "",
+      "patterns": [
+        "make %player% stop sprinting"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "make_player_swing",
+      "name": "make %player% swing",
+      "page": "",
+      "patterns": [
+        "make %player% swing"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "make_player_swing_their_main_hand",
+      "name": "make %player% swing [their] [main] hand",
+      "page": "",
+      "patterns": [
+        "make %player% swing [their] [main] hand"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "make_player_swing_their_off_hand",
+      "name": "make %player% swing [their] off hand",
+      "page": "",
+      "patterns": [
+        "make %player% swing [their] off hand"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Runs a command as a player (their permissions apply) or the console. A leading `/` is ignored. Without `by` it runs as the console.",
+      "example": "make player execute command \"/spawn\"",
+      "id": "make_execute",
+      "name": "Make execute command",
+      "page": "syntax/senders",
+      "patterns": [
+        "make %object% execute [the] [command] %text%",
+        "force %object% to execute [the] [command] %text%",
+        "execute [the] command %text% by %object%",
+        "execute [the] command %text%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Gives or takes operator status, through the server's own command. Works for offline names.",
+      "example": "op player",
+      "id": "op",
+      "name": "Op / deop",
+      "page": "syntax/op-kick-ban",
+      "patterns": [
+        "op %object%",
+        "deop %object%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "open_the_book_in_the_main_hand_to_player",
+      "name": "open [the] book [in [the] main hand] to %player%",
+      "page": "",
+      "patterns": [
+        "open [the] book [in [the] main hand] to %player%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "open_the_book_in_the_off_hand_to_player",
+      "name": "open [the] book in [the] off hand to %player%",
+      "page": "",
+      "patterns": [
+        "open [the] book in [the] off hand to %player%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Opens an empty chest menu with 1 to 6 rows. Fill it with `set slot`.",
+      "example": "open chest with 3 rows named \"Shop\" to player",
+      "id": "open_chest",
+      "name": "Open chest menu",
+      "page": "syntax/inventories",
+      "patterns": [
+        "open [a] chest with %number% (row|rows) [(named|titled|called|with title) %text%] (to|for) %player%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
+      "description": "Shows particles. The name is the Minecraft particle id with spaces and is checked at load. Count defaults to 1, max 1000.",
+      "example": "show 20 happy villager particles at player with spread 0.5",
+      "id": "particles",
+      "name": "Particles",
+      "page": "syntax/world-effects",
+      "patterns": [
+        "(play|show|draw|spawn|create|make) [%number%] <particle> particles at %location% [with spread %number%] [with speed %number%]"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
+      "description": "Plays a sound id to a player, or at a location for everyone. Volume 0 or more, pitch 0 to 2.",
+      "example": "play sound \"block.note_block.pling\" with volume 0.5 and pitch 2 to player",
+      "id": "play_sound",
+      "name": "Play sound",
+      "page": "syntax/sounds",
+      "patterns": [
+        "play [the] (sound|sounds) %text% [(at|with) volume %number%] [(and|and at|and with|at|with) pitch %number%] [(to|for) %player%] [at %location%]"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "poison_player_for_timespan",
+      "name": "poison %player% [for %timespan%]",
+      "page": "",
+      "patterns": [
+        "poison %player% [for %timespan%]"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Subtracts from a number variable, or removes every equal item from a list.",
+      "example": "remove 5 from {coins::%uuid of player%}",
+      "id": "remove",
+      "name": "Remove",
+      "page": "syntax/effects",
+      "patterns": [
+        "remove %object% from %variable%"
+      ],
+      "since": "0.1.0",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "remove_timespan_from_player_s_remaining_air",
+      "name": "remove %timespan% from %player%'s remaining air",
+      "page": "",
+      "patterns": [
+        "remove %timespan% from %player%'s remaining air"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "remove_timespan_from_remaining_air_of_player",
+      "name": "remove %timespan% from remaining air of %player%",
+      "page": "",
+      "patterns": [
+        "remove %timespan% from remaining air of %player%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Removes one potion effect or all of them.",
+      "example": "remove all potion effects from player",
+      "id": "remove_potion",
+      "name": "Remove potion effects",
+      "page": "syntax/world-effects",
+      "patterns": [
+        "remove all potion effects from %player%",
+        "remove [the] <effect> potion effect from %player%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
+      "description": "Replaces text inside a text variable. Matching is exact and case sensitive.",
+      "example": "set {_t} to \"a-b-c\"\nreplace all \"-\" with \" \" in {_t}",
+      "id": "replace",
+      "name": "Replace text",
+      "page": "syntax/text-join-split",
+      "patterns": [
+        "replace first %text% in %variable% with %text%",
+        "replace first %text% with %text% in %variable%",
+        "replace [all] %text% in %variable% with %text%",
+        "replace [all] %text% with %text% in %variable%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "reset_player_s_compass_target",
+      "name": "reset %player%'s compass target",
+      "page": "",
+      "patterns": [
+        "reset %player%'s compass target"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "reset_player_s_title",
+      "name": "reset %player%'s title",
+      "page": "",
+      "patterns": [
+        "reset %player%'s title"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "reset_the_item_cooldown_of_item_for_player",
+      "name": "reset [the] [item] cooldown of %item% for %player%",
+      "page": "",
+      "patterns": [
+        "reset [the] [item] cooldown of %item% for %player%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "reset_the_title",
+      "name": "reset [the] title",
+      "page": "",
+      "patterns": [
+        "reset [the] title"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "reset_the_title_of_player",
+      "name": "reset [the] title of %player%",
+      "page": "",
+      "patterns": [
+        "reset [the] title of %player%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "reset_compass_target_of_player",
+      "name": "reset compass target of %player%",
+      "page": "",
+      "patterns": [
+        "reset compass target of %player%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Gives back a value from a function. Its type must match the return type.",
+      "example": "function double(n: number) :: number:\n    return {_n} * 2",
+      "id": "return",
+      "name": "Return",
+      "page": "syntax/functions",
+      "patterns": [
+        "return [%object%]"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "reveal_player",
+      "name": "reveal %player%",
+      "page": "",
+      "patterns": [
+        "reveal %player%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "reveal_player_to_player",
+      "name": "reveal %player% to %player%",
+      "page": "",
+      "patterns": [
+        "reveal %player% to %player%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "save_the_world_worlds",
+      "name": "save [the] (world|worlds)",
+      "page": "",
+      "patterns": [
+        "save [the] (world|worlds)"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "save_all_worlds",
+      "name": "save all worlds",
+      "page": "",
+      "patterns": [
+        "save all worlds"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "send_text_component_components_text_to_player",
+      "name": "send [text] (component|components) %text% [to %player%]",
+      "page": "",
+      "patterns": [
+        "send [text] (component|components) %text% [to %player%]"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "send_the_resource_pack_text_with_hash_text_to_player",
+      "name": "send [the] resource pack %text% [with hash %text%] to %player%",
+      "page": "",
+      "patterns": [
+        "send [the] resource pack %text% [with hash %text%] to %player%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Shows text just above the hotbar.",
+      "example": "send action bar \"&7Coins: %{coins::%uuid of player%}%\" to player",
+      "id": "action_bar",
+      "name": "Send action bar",
+      "page": "syntax/effects",
+      "patterns": [
+        "send action bar %text% to %player%"
+      ],
+      "since": "0.1.0",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "send_action_bar_text_component_components_text_to_player",
+      "name": "send action bar [text] (component|components) %text% to %player%",
+      "page": "",
+      "patterns": [
+        "send action bar [text] (component|components) %text% to %player%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Sends a message. Without `to` it goes to whoever started the trigger. `to console` writes to the server log. Color codes work.",
+      "example": "send \"&aHello %player%!\" to player",
+      "id": "send",
+      "name": "Send message",
+      "page": "syntax/effects",
+      "patterns": [
+        "send %text% [to %player%]"
+      ],
+      "since": "0.1.0",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Shows a big title, with an optional subtitle, on the player's screen.",
+      "example": "send title \"Welcome\" with subtitle \"to the server\" to player",
+      "id": "title",
+      "name": "Send title",
+      "page": "syntax/effects",
+      "patterns": [
+        "send title %text% [with subtitle %text%] to %player%"
+      ],
+      "since": "0.1.0",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Stores a value in a variable. `set {list::*} to a, b and c` replaces a whole list.",
+      "example": "set {spawn} to location of player",
+      "id": "set",
+      "name": "Set",
+      "page": "syntax/effects",
+      "patterns": [
+        "set %variable% to %object%"
+      ],
+      "since": "0.1.0",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "set_player_s_player_tab_list_name_to_text",
+      "name": "set %player%'s (player|tab) list name to %text%",
+      "page": "",
+      "patterns": [
+        "set %player%'s (player|tab) list name to %text%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "set_player_s_player_tab_list_priority_to_number",
+      "name": "set %player%'s (player|tab) list priority to %number%",
+      "page": "",
+      "patterns": [
+        "set %player%'s (player|tab) list priority to %number%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "set_player_s_compass_target_to_location",
+      "name": "set %player%'s compass target to %location%",
+      "page": "",
+      "patterns": [
+        "set %player%'s compass target to %location%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "set_player_s_remaining_air_to_timespan",
+      "name": "set %player%'s remaining air to %timespan%",
+      "page": "",
+      "patterns": [
+        "set %player%'s remaining air to %timespan%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "set_player_s_respawn_location_to_location",
+      "name": "set %player%'s respawn location to %location%",
+      "page": "",
+      "patterns": [
+        "set %player%'s respawn location to %location%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "set_player_tab_list_name_of_player_to_text",
+      "name": "set (player|tab) list name of %player% to %text%",
+      "page": "",
+      "patterns": [
+        "set (player|tab) list name of %player% to %text%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "set_player_tab_list_priority_of_player_to_number",
+      "name": "set (player|tab) list priority of %player% to %number%",
+      "page": "",
+      "patterns": [
+        "set (player|tab) list priority of %player% to %number%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "set_the_item_cooldown_of_item_for_player_to_timespan",
+      "name": "set [the] [item] cooldown of %item% for %player% to %timespan%",
+      "page": "",
+      "patterns": [
+        "set [the] [item] cooldown of %item% for %player% to %timespan%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "set_the_join_message_to_text",
+      "name": "set [the] join message to %text%",
+      "page": "",
+      "patterns": [
+        "set [the] join message to %text%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Places a block of that type. Any block form works on the left.",
+      "example": "set block below player to diamond block",
+      "id": "set_block",
+      "name": "Set block",
+      "page": "syntax/blocks",
+      "patterns": [
+        "set %block% to %item%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "set_compass_target_of_player_to_location",
+      "name": "set compass target of %player% to %location%",
+      "page": "",
+      "patterns": [
+        "set compass target of %player% to %location%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Changes the game mode. The mode can be a word, text, a number 0 to 3 or a short form (`s`, `c`, `a`, `sp`).",
+      "example": "set gamemode of player to creative",
+      "id": "gamemode",
+      "name": "Set gamemode",
+      "page": "syntax/gamemode",
+      "patterns": [
+        "set gamemode of %player% to %text% [mode]",
+        "set game mode of %player% to %text% [mode]",
+        "set %player%'s gamemode to %text% [mode]",
+        "set %player%'s game mode to %text% [mode]"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "set_metadata_value_text_of_object_to_object",
+      "name": "set metadata value %text% of %object% to %object%",
+      "page": "",
+      "patterns": [
+        "set metadata value %text% of %object% to %object%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "set_persistent_data_value_text_of_object_to_object",
+      "name": "set persistent data value %text% of %object% to %object%",
+      "page": "",
+      "patterns": [
+        "set persistent data value %text% of %object% to %object%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "set_remaining_air_of_player_to_timespan",
+      "name": "set remaining air of %player% to %timespan%",
+      "page": "",
+      "patterns": [
+        "set remaining air of %player% to %timespan%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "set_respawn_location_of_player_to_location",
+      "name": "set respawn location of %player% to %location%",
+      "page": "",
+      "patterns": [
+        "set respawn location of %player% to %location%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Puts an item in a slot (counted from 0). `air` empties it. `player's current inventory` is the open Carve menu.",
+      "example": "set slot 4 of player's current inventory to diamond",
+      "id": "set_slot",
+      "name": "Set slot",
+      "page": "syntax/inventories",
+      "patterns": [
+        "set slot %number% of %inventory% to %item%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "show_player_s_custom_name",
+      "name": "show %player%'s custom name",
+      "page": "",
+      "patterns": [
+        "show %player%'s custom name"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "show_the_custom_name_of_player",
+      "name": "show [the] custom name of %player%",
+      "page": "",
+      "patterns": [
+        "show [the] custom name of %player%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "shut_down_the_server",
+      "name": "shut down [the] server",
+      "page": "",
+      "patterns": [
+        "shut down [the] server"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "shutdown_the_server",
+      "name": "shutdown [the] server",
+      "page": "",
+      "patterns": [
+        "shutdown [the] server"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Sorts a list in place. Numbers sort by value, before text.",
+      "example": "set {_n::*} to 3, 1 and 2\nsort {_n::*}",
+      "id": "sort",
+      "name": "Sort list",
+      "page": "syntax/list-ops",
+      "patterns": [
+        "sort %list% [in descending order]"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
+      "description": "Ends the whole trigger, or a function that returns nothing.",
+      "example": "if player does not have permission \"vip\":\n    stop",
+      "id": "stop",
+      "name": "Stop",
+      "page": "syntax/loops",
+      "patterns": [
+        "stop"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "stop_the_server",
+      "name": "stop [the] server",
+      "page": "",
+      "patterns": [
+        "stop [the] server"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Stops one sound or all sounds for a player.",
+      "example": "stop all sounds for player",
+      "id": "stop_sound",
+      "name": "Stop sound",
+      "page": "syntax/sounds",
+      "patterns": [
+        "stop all sounds [(for|from) %player%]",
+        "stop [the] (sound|sounds) %text% [(for|from) %player%]"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Strikes a real bolt. With `effect` it is only the flash and sound.",
+      "example": "strike lightning effect at player",
+      "id": "lightning",
+      "name": "Strike lightning",
+      "page": "syntax/world-effects",
+      "patterns": [
+        "strike lightning [effect] at %location%",
+        "show [a] lightning effect at %location%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
+      "description": "Sets or resets the name shown in the tab list.",
+      "example": "set tab list name of player to \"&a[VIP] %player%\"",
+      "id": "tab_list_name",
+      "name": "Tab list name",
+      "page": "syntax/op-kick-ban",
+      "patterns": [
+        "set tab list name of %object% to %text%",
+        "set %object%'s tab list name to %text%",
+        "reset tab list name of %object%",
+        "reset %object%'s tab list name"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Teleports the player to coordinates in their current world.",
+      "example": "teleport player to 0, 64, 0",
+      "id": "teleport",
+      "name": "Teleport",
+      "page": "syntax/effects",
+      "patterns": [
+        "teleport %player% to %number%, %number%, %number%"
+      ],
+      "since": "0.1.0",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Teleports the player to a location. A location without a world keeps the player in their world.",
+      "example": "teleport player to location(0, 64, 0, world \"world\")",
+      "id": "teleport_location",
+      "name": "Teleport to location",
+      "page": "syntax/effects",
+      "patterns": [
+        "teleport %player% to %location%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Lifts a ban or an IP ban.",
+      "example": "unban \"Alex\"",
+      "id": "unban",
+      "name": "Unban",
+      "page": "syntax/op-kick-ban",
+      "patterns": [
+        "(unban|pardon) ip %object%",
+        "(unban|pardon) %object%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Pauses the run without blocking the server. A timespan is rounded to the nearest tick.",
+      "example": "wait 5 seconds\nsend \"5 seconds later\" to player",
+      "id": "wait",
+      "name": "Wait",
+      "page": "syntax/timespans",
+      "patterns": [
+        "wait %number% (tick|ticks)",
+        "wait %number% (second|seconds)",
+        "wait %timespan%"
+      ],
+      "since": "0.1.0",
+      "source": "registry+hand"
+    },
+    {
+      "category": "effect",
+      "description": "Runs the block while the condition holds. Checked before every round.",
+      "example": "set {_i} to 0\nwhile {_i} < 5:\n    add 1 to {_i}",
+      "id": "while",
+      "name": "While loop",
+      "page": "syntax/loops",
+      "patterns": [
+        "while %condition%:"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "date_is_not_isn_t_in_the_future",
+      "name": "%date% (is not|isn't) in [the] future",
+      "page": "",
+      "patterns": [
+        "%date% (is not|isn't) in [the] future"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "date_is_not_isn_t_in_the_past",
+      "name": "%date% (is not|isn't) in [the] past",
+      "page": "",
+      "patterns": [
+        "%date% (is not|isn't) in [the] past"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "date_is_in_the_future",
+      "name": "%date% is in [the] future",
+      "page": "",
+      "patterns": [
+        "%date% is in [the] future"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "date_is_in_the_past",
+      "name": "%date% is in [the] past",
+      "page": "",
+      "patterns": [
+        "%date% is in [the] past"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "item_is_not_isn_t_passable",
+      "name": "%item% (is not|isn't) passable",
+      "page": "",
+      "patterns": [
+        "%item% (is not|isn't) passable"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "item_is_not_isn_t_solid",
+      "name": "%item% (is not|isn't) solid",
+      "page": "",
+      "patterns": [
+        "%item% (is not|isn't) solid"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "item_is_not_isn_t_transparent",
+      "name": "%item% (is not|isn't) transparent",
+      "page": "",
+      "patterns": [
+        "%item% (is not|isn't) transparent"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "item_isn_t_is_not_enchanted",
+      "name": "%item% (isn't|is not) enchanted",
+      "page": "",
+      "patterns": [
+        "%item% (isn't|is not) enchanted"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "item_isn_t_is_not_enchanted_with_text",
+      "name": "%item% (isn't|is not) enchanted with %text%",
+      "page": "",
+      "patterns": [
+        "%item% (isn't|is not) enchanted with %text%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "item_is_enchanted",
+      "name": "%item% is enchanted",
+      "page": "",
+      "patterns": [
+        "%item% is enchanted"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "item_is_enchanted_with_text",
+      "name": "%item% is enchanted with %text%",
+      "page": "",
+      "patterns": [
+        "%item% is enchanted with %text%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "item_is_passable",
+      "name": "%item% is passable",
+      "page": "",
+      "patterns": [
+        "%item% is passable"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "item_is_solid",
+      "name": "%item% is solid",
+      "page": "",
+      "patterns": [
+        "%item% is solid"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "item_is_transparent",
+      "name": "%item% is transparent",
+      "page": "",
+      "patterns": [
+        "%item% is transparent"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "number_is_not_isn_t_evenly_divisible_by_number",
+      "name": "%number% (is not|isn't) [evenly] divisible by %number%",
+      "page": "",
+      "patterns": [
+        "%number% (is not|isn't) [evenly] divisible by %number%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "number_is_evenly_divisible_by_number",
+      "name": "%number% is [evenly] divisible by %number%",
+      "page": "",
+      "patterns": [
+        "%number% is [evenly] divisible by %number%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_not_isn_t_a_fuel",
+      "name": "%object% (is not|isn't) [a] fuel",
+      "page": "",
+      "patterns": [
+        "%object% (is not|isn't) [a] fuel"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_not_isn_t_edible",
+      "name": "%object% (is not|isn't) edible",
+      "page": "",
+      "patterns": [
+        "%object% (is not|isn't) edible"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_not_isn_t_empty",
+      "name": "%object% (is not|isn't) empty",
+      "page": "",
+      "patterns": [
+        "%object% (is not|isn't) empty"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_not_isn_t_fire_resistant",
+      "name": "%object% (is not|isn't) fire resistant",
+      "page": "",
+      "patterns": [
+        "%object% (is not|isn't) fire resistant"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_not_isn_t_flammable",
+      "name": "%object% (is not|isn't) flammable",
+      "page": "",
+      "patterns": [
+        "%object% (is not|isn't) flammable"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_not_isn_t_in_the_world_object",
+      "name": "%object% (is not|isn't) in [the] world %object%",
+      "page": "",
+      "patterns": [
+        "%object% (is not|isn't) in [the] world %object%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_not_isn_t_of_type_object",
+      "name": "%object% (is not|isn't) of type %object%",
+      "page": "",
+      "patterns": [
+        "%object% (is not|isn't) of type %object%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_not_isn_t_offline",
+      "name": "%object% (is not|isn't) offline",
+      "page": "",
+      "patterns": [
+        "%object% (is not|isn't) offline"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_not_isn_t_online",
+      "name": "%object% (is not|isn't) online",
+      "page": "",
+      "patterns": [
+        "%object% (is not|isn't) online"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_not_isn_t_valid",
+      "name": "%object% (is not|isn't) valid",
+      "page": "",
+      "patterns": [
+        "%object% (is not|isn't) valid"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_not_isn_t_within_number_block_blocks_meter_meters_metre_metres_around_of_from_object",
+      "name": "%object% (is not|isn't) within %number% (block|blocks|meter|meters|metre|metres) (around|of|from) %object%",
+      "page": "",
+      "patterns": [
+        "%object% (is not|isn't) within %number% (block|blocks|meter|meters|metre|metres) (around|of|from) %object%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_not_isn_t_within_object_and_to_object",
+      "name": "%object% (is not|isn't) within %object% (and|to) %object%",
+      "page": "",
+      "patterns": [
+        "%object% (is not|isn't) within %object% (and|to) %object%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_not_isn_t_within_world",
+      "name": "%object% (is not|isn't) within %world%",
+      "page": "",
+      "patterns": [
+        "%object% (is not|isn't) within %world%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_a_fuel",
+      "name": "%object% is [a] fuel",
+      "page": "",
+      "patterns": [
+        "%object% is [a] fuel"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_edible",
+      "name": "%object% is edible",
+      "page": "",
+      "patterns": [
+        "%object% is edible"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_empty",
+      "name": "%object% is empty",
+      "page": "",
+      "patterns": [
+        "%object% is empty"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_fire_resistant",
+      "name": "%object% is fire resistant",
+      "page": "",
+      "patterns": [
+        "%object% is fire resistant"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_flammable",
+      "name": "%object% is flammable",
+      "page": "",
+      "patterns": [
+        "%object% is flammable"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_in_the_world_object",
+      "name": "%object% is in [the] world %object%",
+      "page": "",
+      "patterns": [
+        "%object% is in [the] world %object%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_of_type_object",
+      "name": "%object% is of type %object%",
+      "page": "",
+      "patterns": [
+        "%object% is of type %object%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_offline",
+      "name": "%object% is offline",
+      "page": "",
+      "patterns": [
+        "%object% is offline"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_online",
+      "name": "%object% is online",
+      "page": "",
+      "patterns": [
+        "%object% is online"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_valid",
+      "name": "%object% is valid",
+      "page": "",
+      "patterns": [
+        "%object% is valid"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_within_number_block_blocks_meter_meters_metre_metres_around_of_from_object",
+      "name": "%object% is within %number% (block|blocks|meter|meters|metre|metres) (around|of|from) %object%",
+      "page": "",
+      "patterns": [
+        "%object% is within %number% (block|blocks|meter|meters|metre|metres) (around|of|from) %object%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_within_object_and_to_object",
+      "name": "%object% is within %object% (and|to) %object%",
+      "page": "",
+      "patterns": [
+        "%object% is within %object% (and|to) %object%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_within_world",
+      "name": "%object% is within %world%",
+      "page": "",
+      "patterns": [
+        "%object% is within %world%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "player_does_not_doesn_t_have_a_resource_pack_loaded",
+      "name": "%player% (does not|doesn't) have [a] resource pack [loaded]",
+      "page": "",
+      "patterns": [
+        "%player% (does not|doesn't) have [a] resource pack [loaded]"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "player_is_not_isn_t_burning_on_fire",
+      "name": "%player% (is not|isn't) (burning|on fire)",
+      "page": "",
+      "patterns": [
+        "%player% (is not|isn't) (burning|on fire)"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "player_is_not_isn_t_gliding_fall_flying",
+      "name": "%player% (is not|isn't) (gliding|fall flying)",
+      "page": "",
+      "patterns": [
+        "%player% (is not|isn't) (gliding|fall flying)"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "player_is_not_isn_t_alive",
+      "name": "%player% (is not|isn't) alive",
+      "page": "",
+      "patterns": [
+        "%player% (is not|isn't) alive"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "player_is_not_isn_t_dead",
+      "name": "%player% (is not|isn't) dead",
+      "page": "",
+      "patterns": [
+        "%player% (is not|isn't) dead"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "player_is_not_isn_t_frozen",
+      "name": "%player% (is not|isn't) frozen",
+      "page": "",
+      "patterns": [
+        "%player% (is not|isn't) frozen"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "player_is_not_isn_t_gliding",
+      "name": "%player% (is not|isn't) gliding",
+      "page": "",
+      "patterns": [
+        "%player% (is not|isn't) gliding"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "player_is_not_isn_t_glowing",
+      "name": "%player% (is not|isn't) glowing",
+      "page": "",
+      "patterns": [
+        "%player% (is not|isn't) glowing"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "player_is_not_isn_t_invisible",
+      "name": "%player% (is not|isn't) invisible",
+      "page": "",
+      "patterns": [
+        "%player% (is not|isn't) invisible"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "player_is_not_isn_t_invulnerable",
+      "name": "%player% (is not|isn't) invulnerable",
+      "page": "",
+      "patterns": [
+        "%player% (is not|isn't) invulnerable"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "player_is_not_isn_t_are_not_aren_t_poisoned",
+      "name": "%player% (is not|isn't|are not|aren't) poisoned",
+      "page": "",
+      "patterns": [
+        "%player% (is not|isn't|are not|aren't) poisoned"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "player_is_not_isn_t_are_not_aren_t_riding",
+      "name": "%player% (is not|isn't|are not|aren't) riding",
+      "page": "",
+      "patterns": [
+        "%player% (is not|isn't|are not|aren't) riding"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "player_is_not_isn_t_are_not_aren_t_silent",
+      "name": "%player% (is not|isn't|are not|aren't) silent",
+      "page": "",
+      "patterns": [
+        "%player% (is not|isn't|are not|aren't) silent"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "player_is_are_poisoned",
+      "name": "%player% (is|are) poisoned",
+      "page": "",
+      "patterns": [
+        "%player% (is|are) poisoned"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "player_is_are_riding",
+      "name": "%player% (is|are) riding",
+      "page": "",
+      "patterns": [
+        "%player% (is|are) riding"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "player_is_are_silent",
+      "name": "%player% (is|are) silent",
+      "page": "",
+      "patterns": [
+        "%player% (is|are) silent"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "player_has_a_resource_pack_loaded",
+      "name": "%player% has [a] resource pack [loaded]",
+      "page": "",
+      "patterns": [
+        "%player% has [a] resource pack [loaded]"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "player_is_burning_on_fire",
+      "name": "%player% is (burning|on fire)",
+      "page": "",
+      "patterns": [
+        "%player% is (burning|on fire)"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "player_is_gliding_fall_flying",
+      "name": "%player% is (gliding|fall flying)",
+      "page": "",
+      "patterns": [
+        "%player% is (gliding|fall flying)"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "player_is_alive",
+      "name": "%player% is alive",
+      "page": "",
+      "patterns": [
+        "%player% is alive"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "player_is_dead",
+      "name": "%player% is dead",
+      "page": "",
+      "patterns": [
+        "%player% is dead"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "player_is_frozen",
+      "name": "%player% is frozen",
+      "page": "",
+      "patterns": [
+        "%player% is frozen"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "player_is_gliding",
+      "name": "%player% is gliding",
+      "page": "",
+      "patterns": [
+        "%player% is gliding"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "player_is_glowing",
+      "name": "%player% is glowing",
+      "page": "",
+      "patterns": [
+        "%player% is glowing"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "player_is_invisible",
+      "name": "%player% is invisible",
+      "page": "",
+      "patterns": [
+        "%player% is invisible"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "player_is_invulnerable",
+      "name": "%player% is invulnerable",
+      "page": "",
+      "patterns": [
+        "%player% is invulnerable"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "player_s_custom_name_is_not_isn_t_visible",
+      "name": "%player%'s custom name (is not|isn't) visible",
+      "page": "",
+      "patterns": [
+        "%player%'s custom name (is not|isn't) visible"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "player_s_custom_name_is_visible",
+      "name": "%player%'s custom name is visible",
+      "page": "",
+      "patterns": [
+        "%player%'s custom name is visible"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "text_contains_contain_regex_text",
+      "name": "%text% (contains|contain) regex %text%",
+      "page": "",
+      "patterns": [
+        "%text% (contains|contain) regex %text%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "text_doesn_t_does_not_don_t_do_not_contain_regex_text",
+      "name": "%text% (doesn't|does not|don't|do not) contain regex %text%",
+      "page": "",
+      "patterns": [
+        "%text% (doesn't|does not|don't|do not) contain regex %text%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "text_doesn_t_does_not_don_t_do_not_match_text",
+      "name": "%text% (doesn't|does not|don't|do not) match %text%",
+      "page": "",
+      "patterns": [
+        "%text% (doesn't|does not|don't|do not) match %text%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "text_is_not_isn_t_are_not_aren_t_instant",
+      "name": "%text% (is not|isn't|are not|aren't) instant",
+      "page": "",
+      "patterns": [
+        "%text% (is not|isn't|are not|aren't) instant"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "text_is_are_instant",
+      "name": "%text% (is|are) instant",
+      "page": "",
+      "patterns": [
+        "%text% (is|are) instant"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "text_matches_match_text",
+      "name": "%text% (matches|match) %text%",
+      "page": "",
+      "patterns": [
+        "%text% (matches|match) %text%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "the_command_text_is_not_isn_t_a_script_command",
+      "name": "[the] command %text% (is not|isn't) a [script] command",
+      "page": "",
+      "patterns": [
+        "[the] command %text% (is not|isn't) a [script] command"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "the_command_text_is_a_script_command",
+      "name": "[the] command %text% is a [script] command",
+      "page": "",
+      "patterns": [
+        "[the] command %text% is a [script] command"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Joins conditions. Brackets group them.",
+      "example": "if player is sneaking and player is on the ground:\n    send \"crouched\" to player",
+      "id": "and_or",
+      "name": "And / or",
+      "page": "syntax/conditions",
+      "patterns": [
+        "%condition% and %condition%",
+        "%condition% or %condition%",
+        "%condition%, %condition% and %condition%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "condition",
+      "description": "Checks a block's type. False when the block cannot be read.",
+      "example": "if block below player is grass block or dirt:\n    send \"soft ground\" to player",
+      "id": "block_is",
+      "name": "Block is type",
+      "page": "syntax/blocks",
+      "patterns": [
+        "%block% is [not] %item% [or %item%]"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "condition",
+      "description": "Whether the player may fly. Follows the game mode (creative and spectator).",
+      "example": "if player can fly:\n    send \"you can fly\" to player",
+      "id": "can_fly",
+      "name": "Can fly",
+      "page": "syntax/player-flags",
+      "patterns": [
+        "%player% can fly",
+        "%player% (can't|cannot|can not) fly"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "True with that percent chance.",
+      "example": "if chance of 10%:\n    give diamond to player",
+      "id": "chance",
+      "name": "Chance",
+      "page": "syntax/conditions",
+      "patterns": [
+        "chance of %number%%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "condition",
+      "description": "Compares numbers, timespans or dates.",
+      "example": "if health of player < 6:\n    send \"Careful!\" to player",
+      "id": "compare",
+      "name": "Compare numbers",
+      "page": "syntax/conditions",
+      "patterns": [
+        "%number% > %number%",
+        "%number% < %number%",
+        "%number% >= %number%",
+        "%number% <= %number%"
+      ],
+      "since": "0.1.0",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Whether a text ends with another. Case is ignored.",
+      "example": "on chat:\n    if message ends with \"?\":\n        send \"good question\" to player",
+      "id": "ends_with",
+      "name": "Ends with",
+      "page": "syntax/conditions",
+      "patterns": [
+        "%text% ends with %text%",
+        "%text% (does not|doesn't) end with %text%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Whether the player has at least that many of an item.",
+      "example": "if player has 3 diamonds:\n    send \"rich\" to player",
+      "id": "has_item",
+      "name": "Has item",
+      "page": "syntax/conditions",
+      "patterns": [
+        "%player% has %item%",
+        "%player% (does not|doesn't) have %item%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Checks a permission node.",
+      "example": "if player has permission \"vip\":\n    send \"Hi VIP\" to player",
+      "id": "permission",
+      "name": "Has permission",
+      "page": "syntax/conditions",
+      "patterns": [
+        "%player% has permission %text%",
+        "%player% does not have permission %text%"
+      ],
+      "since": "0.1.0",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Whether the player has a potion effect.",
+      "example": "if player has potion effect speed:\n    send \"zoom\" to player",
+      "id": "potion",
+      "name": "Has potion effect",
+      "page": "syntax/world-effects",
+      "patterns": [
+        "%player% has potion effect <effect>",
+        "%player% (does not|doesn't) have potion effect <effect>"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "condition",
+      "description": "Whether the player's inventory holds the item.",
+      "example": "if player's inventory contains 2 diamonds:\n    send \"ok\" to player",
+      "id": "inventory_contains",
+      "name": "Inventory contains",
+      "page": "syntax/inventories",
+      "patterns": [
+        "%player%'s inventory contains %item%",
+        "inventory of %player% contains %item%",
+        "%player%'s inventory does not contain %item%"
+      ],
+      "since": "unreleased",
+      "source": "registry+hand"
+    },
+    {
+      "category": "condition",
+      "description": "Whether a value, usually `sender`, is a player.",
+      "example": "if sender is a player:\n    send \"hi\" to sender",
+      "id": "is_player",
+      "name": "Is a player",
+      "page": "syntax/senders",
+      "patterns": [
+        "%object% is (a|an) player",
+        "%object% (is not|isn't) (a|an) player"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Parses, but is always false for now: Pumpkin gives plugins no way to read the ban list.",
+      "example": "if \"Alex\" is banned:\n    send \"banned\"",
+      "id": "banned",
+      "name": "Is banned",
+      "page": "syntax/op-kick-ban",
+      "patterns": [
+        "%object% is banned",
+        "%object% (is not|isn't) banned"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Whether a number is in a range, both ends included.",
+      "example": "if level of player is between 10 and 20:\n    send \"mid level\" to player",
+      "id": "between",
+      "name": "Is between",
+      "page": "syntax/conditions",
+      "patterns": [
+        "%number% is between %number% and %number%",
+        "%number% is not between %number% and %number%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Always false for now: the plugin API has no shield state.",
+      "example": "if player is blocking:\n    send \"blocked\" to player",
+      "id": "blocking",
+      "name": "Is blocking",
+      "page": "syntax/player-flags",
+      "patterns": [
+        "%player% is blocking",
+        "%player% (is not|isn't) blocking"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Compares two values. Text compares without case; `x is a or b` checks several options.",
+      "example": "command /toggle <text>:\n    trigger:\n        if arg is \"on\" or \"yes\":\n            send \"enabled\"",
+      "id": "equal",
+      "name": "Is equal",
+      "page": "syntax/conditions",
+      "patterns": [
+        "%object% (is|=) %object%",
+        "%object% (is not|!=) %object%"
+      ],
+      "since": "0.1.0",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Whether the player is flying, tracked from flight toggle events.",
+      "example": "if player is flying:\n    send \"up there\" to player",
+      "id": "flying",
+      "name": "Is flying",
+      "page": "syntax/player-flags",
+      "patterns": [
+        "%player% is flying",
+        "%player% (is not|isn't) flying"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Checks the player's game mode.",
+      "example": "if player is in creative:\n    send \"creative!\" to player",
+      "id": "in_gamemode",
+      "name": "Is in gamemode",
+      "page": "syntax/gamemode",
+      "patterns": [
+        "%player% is in %text% [mode]",
+        "%player% (isn't|is not) in %text% [mode]"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Whether the player stands on the ground.",
+      "example": "if player is not on the ground:\n    send \"in the air\" to player",
+      "id": "on_ground",
+      "name": "Is on ground",
+      "page": "syntax/player-flags",
+      "patterns": [
+        "%player% is on [the] ground",
+        "%player% (is not|isn't) on [the] ground"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Whether the player's permission level is above zero.",
+      "example": "if player is op:\n    send \"hi admin\" to player",
+      "id": "op",
+      "name": "Is op",
+      "page": "syntax/op-kick-ban",
+      "patterns": [
+        "%object% is [an] (op|operator)",
+        "%object% (is not|isn't) [an] (op|operator)"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Whether a variable or value has a value. A list is set when it has at least one item.",
+      "example": "if {home::%uuid of player%} is not set:\n    send \"No home yet\" to player",
+      "id": "is_set",
+      "name": "Is set",
+      "page": "syntax/conditions",
+      "patterns": [
+        "%object% is set",
+        "%object% is not set"
+      ],
+      "since": "0.1.0",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Whether the player is in a bed.",
+      "example": "if player is sleeping:\n    send \"zzz\" to player",
+      "id": "sleeping",
+      "name": "Is sleeping",
+      "page": "syntax/player-flags",
+      "patterns": [
+        "%player% is sleeping",
+        "%player% (is not|isn't) sleeping"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Whether the player is sneaking.",
+      "example": "if player is sneaking:\n    send \"sneaky\" to player",
+      "id": "sneaking",
+      "name": "Is sneaking",
+      "page": "syntax/player-flags",
+      "patterns": [
+        "%player% is sneaking",
+        "%player% (is not|isn't) sneaking"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Whether the player is sprinting.",
+      "example": "if player is sprinting:\n    send \"fast\" to player",
+      "id": "sprinting",
+      "name": "Is sprinting",
+      "page": "syntax/player-flags",
+      "patterns": [
+        "%player% is sprinting",
+        "%player% (is not|isn't) sprinting"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Whether the player is swimming.",
+      "example": "if player is swimming:\n    send \"splash\" to player",
+      "id": "swimming",
+      "name": "Is swimming",
+      "page": "syntax/player-flags",
+      "patterns": [
+        "%player% is swimming",
+        "%player% (is not|isn't) swimming"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Whether a value, usually `sender`, is the console.",
+      "example": "if sender is console:\n    stop",
+      "id": "is_console",
+      "name": "Is the console",
+      "page": "syntax/senders",
+      "patterns": [
+        "%object% is [the] console",
+        "%object% (is not|isn't) [the] console"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "pvp_is_disabled_not_enabled",
+      "name": "pvp is (disabled|not enabled)",
+      "page": "",
+      "patterns": [
+        "pvp is (disabled|not enabled)"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "pvp_is_disabled_not_enabled_in_world",
+      "name": "pvp is (disabled|not enabled) in %world%",
+      "page": "",
+      "patterns": [
+        "pvp is (disabled|not enabled) in %world%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "pvp_is_enabled",
+      "name": "pvp is enabled",
+      "page": "",
+      "patterns": [
+        "pvp is enabled"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "pvp_is_enabled_in_world",
+      "name": "pvp is enabled in %world%",
+      "page": "",
+      "patterns": [
+        "pvp is enabled in %world%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "script_text_is_not_isn_t_loaded",
+      "name": "script %text% (is not|isn't) loaded",
+      "page": "",
+      "patterns": [
+        "script %text% (is not|isn't) loaded"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "script_text_is_loaded",
+      "name": "script %text% is loaded",
+      "page": "",
+      "patterns": [
+        "script %text% is loaded"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Whether a text starts with another. Case is ignored.",
+      "example": "on chat:\n    if message starts with \"!\":\n        cancel event",
+      "id": "starts_with",
+      "name": "Starts with",
+      "page": "syntax/conditions",
+      "patterns": [
+        "%text% starts with %text%",
+        "%text% (does not|doesn't) start with %text%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Whether a text has a piece in it, or a list has an item. Case is ignored.",
+      "example": "on chat:\n    if message contains \"hello\":\n        send \"hi!\" to player",
+      "id": "contains",
+      "name": "Text or list contains",
+      "page": "syntax/conditions",
+      "patterns": [
+        "%text% contains %text%",
+        "%text% (does not|doesn't) contain %text%",
+        "%list% contains %object%"
+      ],
+      "since": "unreleased",
+      "source": "registry+hand"
+    },
+    {
+      "category": "expression",
+      "description": "A date relative to now, or the time since or until a date.",
+      "example": "if time since {last::%uuid of player%} < 30 seconds:\n    send \"slow down\" to player",
+      "id": "ago",
+      "name": "Ago / later",
+      "page": "syntax/timespans",
+      "patterns": [
+        "%timespan% ago",
+        "%timespan% later",
+        "time since %date%",
+        "time until %date%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "A command argument, counted from 1. Its type comes from the command line.",
+      "example": "command /pay <player> <number>:\n    trigger:\n        send \"Paying %arg-2% to %arg-1%\"",
+      "id": "arg",
+      "name": "Argument",
+      "page": "syntax/expressions",
+      "patterns": [
+        "arg[ument]",
+        "arg-%number%"
+      ],
+      "since": "0.1.0",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "Math with the usual order. Works on timespans and dates too. Dividing by zero is a runtime error.",
+      "example": "set {_half} to (5 + 3) / 2",
+      "id": "math",
+      "name": "Arithmetic",
+      "page": "syntax/expressions",
+      "patterns": [
+        "%number% (+|-|*|/) %number%",
+        "-%number%",
+        "(%number%)"
+      ],
+      "since": "0.1.0",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "A block position. `targeted block` looks up to 100 blocks.",
+      "example": "set {_b} to block below player",
+      "id": "block",
+      "name": "Block",
+      "page": "syntax/blocks",
+      "patterns": [
+        "block at %location%",
+        "block (below|above) %location%",
+        "block (north|south|east|west) of %location%",
+        "targeted block [of %player%]",
+        "%player%'s targeted block"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "The block type as an item, like `stone`.",
+      "example": "send \"You stand on %type of block below player%.\" to player",
+      "id": "block_type",
+      "name": "Block type",
+      "page": "syntax/blocks",
+      "patterns": [
+        "type of %block%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "A true or false value.",
+      "example": "set {_on} to true",
+      "id": "boolean",
+      "name": "Boolean",
+      "page": "syntax/types",
+      "patterns": [
+        "(true|false|yes|no)"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "The chat text. Only in `on chat`.",
+      "example": "on chat:\n    send \"You said: %message%\" to player",
+      "id": "message",
+      "name": "Chat message",
+      "page": "syntax/expressions",
+      "patterns": [
+        "message"
+      ],
+      "since": "0.1.0",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "In click events: the clicked block type as an item (`air` for air).",
+      "example": "on right click:\n    if clicked block is chest:\n        send \"a chest\" to player",
+      "id": "clicked_block",
+      "name": "Clicked block",
+      "page": "syntax/triggers",
+      "patterns": [
+        "clicked block",
+        "event-block"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "Turns color codes and tags into `§` codes, or strips them all.",
+      "example": "set {_plain} to uncolored \"<red>Hello\"",
+      "id": "colored",
+      "name": "Colored / uncolored",
+      "page": "syntax/colors",
+      "patterns": [
+        "(colored|formatted) %text%",
+        "(uncolored|unformatted) %text%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "One coordinate of a location or player.",
+      "example": "send \"You are at y %y of player%\" to player",
+      "id": "coordinates",
+      "name": "Coordinates",
+      "page": "syntax/types",
+      "patterns": [
+        "(x|y|z)[-coordinate] of %location%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "In `on damage` and `on death`: the damage of the hit, the attacking player and the hurt player.",
+      "example": "on damage:\n    if attacker is set:\n        send \"%attacker% hit you for %damage%\" to victim",
+      "id": "damage_values",
+      "name": "Damage values",
+      "page": "syntax/triggers",
+      "patterns": [
+        "damage",
+        "attacker",
+        "victim"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "The first value, or the second when the first is not set.",
+      "example": "send \"Coins: %{coins::%uuid of player%} ? 0%\" to player",
+      "id": "default",
+      "name": "Default value",
+      "page": "syntax/expressions",
+      "patterns": [
+        "%object% ? %object%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "The display or tab list name, falling back to the account name.",
+      "example": "send \"Hi %display name of player%\" to player",
+      "id": "display_name",
+      "name": "Display and tab list name",
+      "page": "syntax/op-kick-ban",
+      "patterns": [
+        "(display name|nickname) of %player%",
+        "%player%'s display name",
+        "tab list name of %player%",
+        "%player%'s tab list name"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "The distance between two locations or players.",
+      "example": "set {_d} to distance between player and location(0, 64, 0)",
+      "id": "distance",
+      "name": "Distance",
+      "page": "syntax/types",
+      "patterns": [
+        "distance between %location% and %location%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "In `on mob spawn`: the entity type as text, and why it spawned.",
+      "example": "on mob spawn:\n    if event-entity is a creeper:\n        cancel event",
+      "id": "event_entity",
+      "name": "Event entity",
+      "page": "syntax/events-items",
+      "patterns": [
+        "event-entity",
+        "spawn reason"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "The item of a drop, pick up, consume or craft event.",
+      "example": "on drop:\n    send \"dropped %event-item%\" to player",
+      "id": "event_item",
+      "name": "Event item",
+      "page": "syntax/events-items",
+      "patterns": [
+        "event-item"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "The location of a projectile hit or mob spawn.",
+      "example": "on projectile hit:\n    strike lightning effect at event-location",
+      "id": "event_location",
+      "name": "Event location",
+      "page": "syntax/events-items",
+      "patterns": [
+        "event-location"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "In `on craft`: the recipe id without `minecraft:`.",
+      "example": "on craft:\n    send \"%event-recipe%\" to player",
+      "id": "event_recipe",
+      "name": "Event recipe",
+      "page": "syntax/events-items",
+      "patterns": [
+        "event-recipe",
+        "recipe id"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "The items for which the test holds. `input` is the item being tested.",
+      "example": "set {_n::*} to 1, 5 and 9\nset {_big::*} to {_n::*} where [input > 2]",
+      "id": "where",
+      "name": "Filtered list",
+      "page": "syntax/list-ops",
+      "patterns": [
+        "%list% where [<condition with input>]"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "Food level and saturation, 0 to 20.",
+      "example": "if food level of player < 6:\n    send \"You are hungry.\" to player",
+      "id": "food",
+      "name": "Food and saturation",
+      "page": "syntax/health-food",
+      "patterns": [
+        "(food level|hunger) of %player%",
+        "%player%'s (food level|hunger)",
+        "saturation of %player%",
+        "%player%'s saturation"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "A date as text, Java-style format letters. Default `yyyy-MM-dd HH:mm:ss`.",
+      "example": "send \"It is %now formatted as \"yyyy-MM-dd HH:mm\"%\" to player",
+      "id": "formatted_date",
+      "name": "Formatted date",
+      "page": "syntax/time-dates",
+      "patterns": [
+        "%date% formatted [as %text%]",
+        "formatted %date% [as %text%]"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "The player's game mode as text.",
+      "example": "send \"%gamemode of player%\" to player",
+      "id": "gamemode",
+      "name": "Gamemode",
+      "page": "syntax/gamemode",
+      "patterns": [
+        "(gamemode|game mode) of %player%",
+        "%player%'s gamemode"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "Current or max health (20 = 10 hearts).",
+      "example": "send \"%health of player% / %max health of player%\" to player",
+      "id": "health",
+      "name": "Health",
+      "page": "syntax/health-food",
+      "patterns": [
+        "health of %player%",
+        "%player%'s health",
+        "max health of %player%",
+        "%player%'s max health"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "In `on projectile hit`: the player that was hit, or `<none>`.",
+      "example": "on projectile hit:\n    if hit player is set:\n        send \"ouch\" to hit player",
+      "id": "hit_player",
+      "name": "Hit player",
+      "page": "syntax/events-items",
+      "patterns": [
+        "hit player"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "Where a text appears, from 1. 0 when not found. Case sensitive.",
+      "example": "send \"%index of \"l\" in \"hello\"%\" to player",
+      "id": "index_of",
+      "name": "Index of",
+      "page": "syntax/text-case-substring",
+      "patterns": [
+        "[first|last] index of %text% in %text%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "In `on inventory click`: the slot number, the item in it and the kind of click.",
+      "example": "on inventory click:\n    send \"%click type% on %clicked slot%\" to player",
+      "id": "click_values",
+      "name": "Inventory click values",
+      "page": "syntax/inventories",
+      "patterns": [
+        "clicked slot",
+        "clicked item",
+        "click type"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "The item in a slot, unset when empty. Slots count from 0.",
+      "example": "set {_item} to slot 3 of player's current inventory",
+      "id": "slot",
+      "name": "Inventory slot",
+      "page": "syntax/inventories",
+      "patterns": [
+        "slot %number% of %player%'s [current] inventory",
+        "slot %number% of [current] inventory of %player%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "A Minecraft item id with spaces, optionally with an amount. Checked at load.",
+      "example": "give 16 oak logs to player",
+      "id": "item",
+      "name": "Item",
+      "page": "syntax/types",
+      "patterns": [
+        "[%number%] <item name>"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "One text from a list. Unset items are skipped.",
+      "example": "set {_l::*} to \"a\" and \"b\"\nsend join {_l::*} with \", \" to player",
+      "id": "join",
+      "name": "Join list",
+      "page": "syntax/text-join-split",
+      "patterns": [
+        "join %list% with %text%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "The number of characters.",
+      "example": "send \"%length of \"hello\"%\" to player",
+      "id": "length",
+      "name": "Length",
+      "page": "syntax/text-join-split",
+      "patterns": [
+        "length of %text%",
+        "(amount|number|size) of characters in %text%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "Whole levels, total experience points, or progress to the next level (0 to 1).",
+      "example": "send \"You are level %level of player%\" to player",
+      "id": "level",
+      "name": "Level and experience",
+      "page": "syntax/xp-level",
+      "patterns": [
+        "level of %player%",
+        "%player%'s level",
+        "(xp|exp|experience|total experience) of %player%",
+        "level progress of %player%",
+        "%player%'s level progress"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "Items of a list by position, at random, or its indices.",
+      "example": "send \"%random element of {_l::*}%\" to player",
+      "id": "elements",
+      "name": "List elements",
+      "page": "syntax/list-literals",
+      "patterns": [
+        "(first|last) element of %list%",
+        "element %number% of %list%",
+        "random element of %list%",
+        "random %number% elements of %list%",
+        "indices of %list%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "Several values in a row. Used with `set`, `add`, `remove` and `loop`.",
+      "example": "set {_colors::*} to \"red\", \"green\" and \"blue\"",
+      "id": "list_literal",
+      "name": "List literal",
+      "page": "syntax/list-literals",
+      "patterns": [
+        "%object%, %object% (and|or) %object%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "A point in a world. Without a world, a teleport keeps the player in theirs.",
+      "example": "set {spawn} to location of player",
+      "id": "location",
+      "name": "Location",
+      "page": "syntax/types",
+      "patterns": [
+        "location(%number%, %number%, %number%[, %world%])",
+        "location at %number%, %number%, %number% [in %world%]",
+        "location of %player%",
+        "%player%'s location"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "Values of the current loop: the item, the player, the list index, the count or the round number.",
+      "example": "loop 3 times:\n    send \"%loop-number%\" to player",
+      "id": "loop_value",
+      "name": "Loop values",
+      "page": "syntax/loops",
+      "patterns": [
+        "loop-value[-%number%]",
+        "loop-player",
+        "loop-index",
+        "loop-number",
+        "loop-iteration"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "The player's name as text.",
+      "example": "set {owner} to name of player",
+      "id": "name",
+      "name": "Name",
+      "page": "syntax/expressions",
+      "patterns": [
+        "name of %player%",
+        "%player%'s name"
+      ],
+      "since": "0.1.0",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "A line break, text without outer spaces, or text backwards.",
+      "example": "send \"line one%nl%line two\" to player",
+      "id": "text_misc",
+      "name": "Newline, trimmed, reversed",
+      "page": "syntax/text-case-substring",
+      "patterns": [
+        "(nl|newline|new line)",
+        "trimmed %text%",
+        "reversed %text%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "The current date (UTC), a date from a unix timestamp in seconds, or the timestamp of a date.",
+      "example": "set {last::%uuid of player%} to now",
+      "id": "now",
+      "name": "Now and unix dates",
+      "page": "syntax/time-dates",
+      "patterns": [
+        "now",
+        "date from unix timestamp %number%",
+        "unix date of %number%",
+        "unix timestamp of %date%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "A number like `5` or `-2.5`. Prints at most 4 decimals.",
+      "example": "set {_a} to 10",
+      "id": "number",
+      "name": "Number",
+      "page": "syntax/expressions",
+      "patterns": [
+        "%number%"
+      ],
+      "since": "0.1.0",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "In `on gamemode change`: the mode before and after.",
+      "example": "on gamemode change:\n    send \"%old gamemode% to %new gamemode%\" to player",
+      "id": "gamemode_values",
+      "name": "Old and new gamemode",
+      "page": "syntax/events-items",
+      "patterns": [
+        "(old|previous) (gamemode|game mode)",
+        "new (gamemode|game mode)"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "In `on level change`: the level before and after.",
+      "example": "on level change:\n    send \"now level %new level%\" to player",
+      "id": "level_values",
+      "name": "Old and new level",
+      "page": "syntax/events-items",
+      "patterns": [
+        "old level",
+        "new level"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "The value of an option from the file's `options:` block.",
+      "example": "options:\n    price: 25\non join:\n    send \"That costs {@price} coins.\" to player",
+      "id": "option",
+      "name": "Option",
+      "page": "syntax/functions",
+      "patterns": [
+        "{@name}"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "The number in a text, or `<none>` if it isn't one.",
+      "example": "set {_n} to \"42\" parsed as number",
+      "id": "parsed_number",
+      "name": "Parsed as number",
+      "page": "syntax/expressions",
+      "patterns": [
+        "%text% parsed as number"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "The player's ping in milliseconds, or their IP address.",
+      "example": "send \"Ping: %ping of player% ms\" to player",
+      "id": "ping",
+      "name": "Ping and IP",
+      "page": "syntax/op-kick-ban",
+      "patterns": [
+        "ping of %player%",
+        "ip [address] of %player%",
+        "%player%'s ip"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "The player of the event, or who ran the command. `<none>` when offline or for the console.",
+      "example": "send \"Hi %player%\" to player",
+      "id": "player",
+      "name": "Player",
+      "page": "syntax/expressions",
+      "patterns": [
+        "[the] player"
+      ],
+      "since": "0.1.0",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "A random whole number (both ends included) or decimal number.",
+      "example": "set {_roll} to random integer between 1 and 6",
+      "id": "random_number",
+      "name": "Random number",
+      "page": "syntax/expressions",
+      "patterns": [
+        "random integer between %number% and %number%",
+        "random number between %number% and %number%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "A new text with matches replaced.",
+      "example": "set {_t} to \"a-b\" with all \"-\" replaced with \" \"",
+      "id": "replaced",
+      "name": "Replaced text",
+      "page": "syntax/text-join-split",
+      "patterns": [
+        "%text% with (all|first) %text% replaced (with|by) %text%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "Who started the trigger (a player or the console), the console itself, or the player.",
+      "example": "send \"hello\" to sender",
+      "id": "sender",
+      "name": "Sender",
+      "page": "syntax/senders",
+      "patterns": [
+        "[command] sender",
+        "executor",
+        "console",
+        "me",
+        "myself"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "The number of direct items of a list.",
+      "example": "send \"%size of {warps::*}% warps\" to player",
+      "id": "size",
+      "name": "Size of list",
+      "page": "syntax/list-literals",
+      "patterns": [
+        "(size|amount|count|number) of %list%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "A reordered copy of a list.",
+      "example": "set {_n::*} to 3, 1 and 2\nset {_s::*} to sorted {_n::*}",
+      "id": "list_order",
+      "name": "Sorted, reversed, shuffled",
+      "page": "syntax/list-ops",
+      "patterns": [
+        "sorted %list%",
+        "reversed %list%",
+        "shuffled %list%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "A list from a text. Works in `set {x::*} to` and `loop`.",
+      "example": "set {_parts::*} to split \"a,b,c\" at \",\"",
+      "id": "split",
+      "name": "Split text",
+      "page": "syntax/text-join-split",
+      "patterns": [
+        "split %text% (at|by) %text%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "Pieces of a text. Positions count from 1.",
+      "example": "send \"%first 3 characters of \"hello\"%\" to player",
+      "id": "substring",
+      "name": "Substring",
+      "page": "syntax/text-case-substring",
+      "patterns": [
+        "(substring|subtext) of %text% from %number% [to %number%]",
+        "(first|last) %number% characters of %text%",
+        "character at index %number% of %text%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "Numbers from a list. Non-numbers are skipped.",
+      "example": "set {_n::*} to 1, 5 and 9\nsend \"%sum of {_n::*}%\" to player",
+      "id": "aggregate",
+      "name": "Sum, average, min, max",
+      "page": "syntax/list-ops",
+      "patterns": [
+        "(sum|average|min|max) of %list%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "Text in double quotes. `%...%` inserts a value, `%%` is a percent sign, `\"\"` a quote.",
+      "example": "send \"Sale: 50%% off for %player%\" to player",
+      "id": "text",
+      "name": "Text",
+      "page": "syntax/expressions",
+      "patterns": [
+        "\"text with %expression%\""
+      ],
+      "since": "0.1.0",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "Changes letter case.",
+      "example": "send \"%capitalized \"steve\"%\" to player",
+      "id": "case",
+      "name": "Text case",
+      "page": "syntax/text-case-substring",
+      "patterns": [
+        "(uppercase|upper case|lowercase|lower case) of %text%",
+        "%text% in (upper|lower|proper) case",
+        "capitalized %text%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "A length of time, like `1 hour and 30 seconds`.",
+      "example": "set {delay} to 1 minute and 30 seconds",
+      "id": "timespan",
+      "name": "Timespan",
+      "page": "syntax/timespans",
+      "patterns": [
+        "%number% (tick|second|minute|hour|day|week|month|year)[s] [and ...]"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "One part of a timespan, or the whole span in that unit with `total`.",
+      "example": "set {_t} to 1 hour and 30 minutes\nsend \"%total minutes of {_t}%\" to player",
+      "id": "timespan_parts",
+      "name": "Timespan parts",
+      "page": "syntax/timespans",
+      "patterns": [
+        "[total] (milliseconds|ticks|seconds|minutes|hours|days|weeks|months|years) of %timespan%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "The item in the main hand, `air` when empty.",
+      "example": "if tool of player is diamond sword:\n    send \"nice sword\" to player",
+      "id": "tool",
+      "name": "Tool",
+      "page": "syntax/types",
+      "patterns": [
+        "tool of %player%",
+        "%player%'s tool",
+        "held item of %player%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "The player's UUID as text. Good for variable names.",
+      "example": "add 1 to {joins::%uuid of player%}",
+      "id": "uuid",
+      "name": "UUID",
+      "page": "syntax/types",
+      "patterns": [
+        "uuid of %player%",
+        "%player%'s uuid"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "A global (saved) or local (`_`) variable. `<none>` when never set.",
+      "example": "set {_x} to {coins::%uuid of player%}",
+      "id": "variable",
+      "name": "Variable",
+      "page": "variables",
+      "patterns": [
+        "{name}",
+        "{_local}",
+        "{list::*}",
+        "{name::%object%}"
+      ],
+      "since": "0.1.0",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "A world by name, or the world of a location or player.",
+      "example": "if world of player is \"world\":\n    send \"overworld\" to player",
+      "id": "world",
+      "name": "World",
+      "page": "syntax/types",
+      "patterns": [
+        "world %text%",
+        "world of %location%",
+        "%player%'s world"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "type",
+      "description": "`true` or `false` (also `yes` and `no`).",
+      "example": "",
+      "id": "boolean",
+      "name": "Boolean",
+      "page": "syntax/types",
+      "patterns": [
+        "boolean"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "type",
+      "description": "A moment in time, in UTC.",
+      "example": "",
+      "id": "date",
+      "name": "Date",
+      "page": "syntax/time-dates",
+      "patterns": [
+        "date"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "type",
+      "description": "An item type with an amount. Compares by type, not amount.",
+      "example": "",
+      "id": "item",
+      "name": "Item",
+      "page": "syntax/types",
+      "patterns": [
+        "item"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "type",
+      "description": "A list parameter or result in a function. The element type is not checked.",
+      "example": "",
+      "id": "list",
+      "name": "List",
+      "page": "syntax/list-ops",
+      "patterns": [
+        "list",
+        "numbers",
+        "texts",
+        "players",
+        "items",
+        "locations",
+        "worlds",
+        "booleans",
+        "objects"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "type",
+      "description": "A point with x, y, z and an optional world. Blocks are locations with whole numbers.",
+      "example": "",
+      "id": "location",
+      "name": "Location",
+      "page": "syntax/types",
+      "patterns": [
+        "location"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "type",
+      "description": "Whole or decimal numbers, like `5` or `-2.5`.",
+      "example": "",
+      "id": "number",
+      "name": "Number",
+      "page": "syntax/types",
+      "patterns": [
+        "number",
+        "integer"
+      ],
+      "since": "0.1.0",
+      "source": "hand"
+    },
+    {
+      "category": "type",
+      "description": "Any value. Checked when the line runs.",
+      "example": "",
+      "id": "object",
+      "name": "Object",
+      "page": "syntax/types",
+      "patterns": [
+        "object"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "type",
+      "description": "An online player. Prints as the name.",
+      "example": "",
+      "id": "player",
+      "name": "Player",
+      "page": "syntax/types",
+      "patterns": [
+        "player"
+      ],
+      "since": "0.1.0",
+      "source": "hand"
+    },
+    {
+      "category": "type",
+      "description": "Text in quotes. A text slot accepts any value and prints it.",
+      "example": "",
+      "id": "text",
+      "name": "Text",
+      "page": "syntax/types",
+      "patterns": [
+        "text",
+        "string"
+      ],
+      "since": "0.1.0",
+      "source": "hand"
+    },
+    {
+      "category": "type",
+      "description": "A length of time in milliseconds. One tick is 50 ms.",
+      "example": "",
+      "id": "timespan",
+      "name": "Timespan",
+      "page": "syntax/timespans",
+      "patterns": [
+        "timespan"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "type",
+      "description": "",
+      "example": "",
+      "id": "vector",
+      "name": "vector",
+      "page": "",
+      "patterns": [
+        "vector"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "type",
+      "description": "A world. Equals text with its name.",
+      "example": "",
+      "id": "world",
+      "name": "World",
+      "page": "syntax/types",
+      "patterns": [
+        "world"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "function",
+      "description": "The number without its minus sign.",
+      "example": "send \"%abs(-3)%\" to player",
+      "id": "abs",
+      "name": "abs",
+      "page": "syntax/expressions",
+      "patterns": [
+        "abs(%number%)"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "function",
+      "description": "Rounds down, up, or to the nearest whole number.",
+      "example": "send \"%round(2.6)%\" to player",
+      "id": "floor",
+      "name": "floor / ceil / round",
+      "page": "syntax/expressions",
+      "patterns": [
+        "floor(%number%)",
+        "ceil(%number%)",
+        "ceiling(%number%)",
+        "round(%number%)"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "function",
+      "description": "Makes a location, optionally in a world.",
+      "example": "teleport player to location(0, 64, 0)",
+      "id": "location",
+      "name": "location",
+      "page": "syntax/types",
+      "patterns": [
+        "location(%number%, %number%, %number%[, %world%])"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "function",
+      "description": "The smaller or bigger of two numbers.",
+      "example": "send \"%max(3, 7)%\" to player",
+      "id": "min_max",
+      "name": "min / max",
+      "page": "syntax/expressions",
+      "patterns": [
+        "min(%number%, %number%)",
+        "max(%number%, %number%)"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "function",
+      "description": "Remainder, always 0 or more: `mod(-1, 5)` is 4.",
+      "example": "send \"%mod(7, 3)%\" to player",
+      "id": "mod",
+      "name": "mod",
+      "page": "syntax/expressions",
+      "patterns": [
+        "mod(%number%, %number%)"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "function",
+      "description": "Defines a function callable from any script, as a value or on its own line. A script function wins over a built-in with the same name.",
+      "example": "function coins(p: player) :: number:\n    return {coins::%uuid of {_p}%} ? 0\non join:\n    send \"%coins(player)% coins\" to player",
+      "id": "script_function",
+      "name": "Script functions",
+      "page": "syntax/functions",
+      "patterns": [
+        "function <name>([<param>: <type> [= <default>], ...]) [:: <type>]:"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "function",
+      "description": "Square root. A negative number is an error.",
+      "example": "send \"%sqrt(16)%\" to player",
+      "id": "sqrt",
+      "name": "sqrt",
+      "page": "syntax/expressions",
+      "patterns": [
+        "sqrt(%number%)"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    }
+  ],
+  "version": "0.1.0"
+}
