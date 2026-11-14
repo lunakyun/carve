@@ -901,8 +901,8 @@ impl Engine {
                     count: 1,
                 },
             },
-            Prop::Health => online(v, &mut ex.seen, host)
-                .and_then(|p| host.health(&p))
+            Prop::Health | Prop::MaxHealth | Prop::Food | Prop::Saturation => online(v, &mut ex.seen, host)
+                .and_then(|p| host.vital(&p, crate::health_food::Vital::of_prop(prop)?))
                 .map(Value::Num)
                 .unwrap_or(Value::None),
         }
@@ -1561,6 +1561,15 @@ impl Engine {
                 let t = self.text(text, ex, host)?;
                 if let Some(p) = self.player(to, ex, host)? {
                     host.send_action_bar(&p, &t);
+                }
+            }
+            Effect::Hf(h) => {
+                let amount = match &h.amount {
+                    Some(a) => self.num(a, ex, host)?,
+                    None => 0.0,
+                };
+                if let Some(p) = self.player(&h.player, ex, host)? {
+                    crate::health_food::run(h, amount, &p, host);
                 }
             }
             Effect::Heal(p) => {

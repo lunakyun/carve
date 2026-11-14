@@ -62,6 +62,7 @@ A world equals text with its name: `if world of player is "world":`.
 | `name of %player%`, `%player%'s name` | text |
 | `uuid of %player%`, `%player%'s uuid` | text. Good for variable names: `{coins::%uuid of player%}`. |
 | `health of %player%`, `%player%'s health` | number |
+| `max health`, `food level`, `saturation` of a player | number. See [health and food](health-food.md). |
 
 ## In functions
 

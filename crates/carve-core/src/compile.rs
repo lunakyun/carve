@@ -202,6 +202,7 @@ pub enum Effect {
         to: Expr,
     },
     Heal(Expr),
+    Hf(Box<crate::health_food::HfEffect>),
     SetHealth(Expr, Expr),
     Kill(Expr),
     Teleport(Expr, Expr, Expr, Expr),
@@ -298,6 +299,7 @@ pub enum EffKind {
     Send,
     Broadcast,
     Heal,
+    Hf(crate::health_food::HfOp),
     SetHealth,
     Kill,
     Teleport,
@@ -412,6 +414,7 @@ fn registry() -> &'static Registry {
         // The pattern strings are constants covered by tests; a bad one is skipped.
         effects: EFFECT_PATTERNS
             .iter()
+            .chain(crate::health_food::EFFECT_PATTERNS)
             .filter_map(|(s, k)| Pattern::new(s, *k).ok())
             .collect(),
         conditions: CONDITION_PATTERNS
@@ -423,7 +426,7 @@ fn registry() -> &'static Registry {
 
 /// Checks every registered pattern compiles. Used by tests.
 pub fn check_registry() -> Result<(), String> {
-    for (s, k) in EFFECT_PATTERNS {
+    for (s, k) in EFFECT_PATTERNS.iter().chain(crate::health_food::EFFECT_PATTERNS) {
         Pattern::new(s, *k)?;
     }
     for (s, k) in CONDITION_PATTERNS {
@@ -1022,7 +1025,11 @@ impl Cx<'_> {
             return;
         }
         let type_err = inner_error(&toks, &self.env).or(type_err);
-        let srcs: Vec<&'static str> = EFFECT_PATTERNS.iter().map(|(s, _)| *s).collect();
+        let srcs: Vec<&'static str> = EFFECT_PATTERNS
+            .iter()
+            .chain(crate::health_food::EFFECT_PATTERNS)
+            .map(|(s, _)| *s)
+            .collect();
         let mut e = ScriptError::new(
             self.file,
             num,
@@ -1195,6 +1202,7 @@ fn build_effect(kind: EffKind, mut c: Vec<Option<Capture>>) -> Option<Effect> {
             to: take_expr(c, 1),
         },
         EffKind::Broadcast => Effect::Broadcast(take_expr(c, 0)?),
+        EffKind::Hf(op) => return crate::health_food::build(op, c),
         EffKind::Heal => Effect::Heal(take_expr(c, 0)?),
         EffKind::SetHealth => Effect::SetHealth(take_expr(c, 0)?, take_expr(c, 1)?),
         EffKind::Kill => Effect::Kill(take_expr(c, 0)?),

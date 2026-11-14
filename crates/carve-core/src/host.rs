@@ -66,4 +66,30 @@ pub trait Host {
     fn health(&mut self, _player: &PlayerRef) -> Option<f64> {
         None
     }
+
+    /// Read health, max health, food level or saturation.
+    fn vital(&mut self, player: &PlayerRef, v: crate::health_food::Vital) -> Option<f64> {
+        match v {
+            crate::health_food::Vital::Health => self.health(player),
+            _ => None,
+        }
+    }
+
+    /// Write one of those values. The core has already clamped it.
+    fn set_vital(&mut self, player: &PlayerRef, v: crate::health_food::Vital, value: f64) {
+        if v == crate::health_food::Vital::Health {
+            self.set_health(player, value);
+        }
+    }
+
+    /// Hurt the player. The default lowers health and kills at zero.
+    fn damage(&mut self, player: &PlayerRef, amount: f64) {
+        if let Some(h) = self.health(player) {
+            if h - amount <= 0.0 {
+                self.kill(player);
+            } else {
+                self.set_health(player, h - amount);
+            }
+        }
+    }
 }

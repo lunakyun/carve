@@ -286,7 +286,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Consume Brewing Fuel
 - ✅ Continue
 - ⬜ Copy Into Variable
-- 🟡 Damage/Heal/Repair — `heal`, `set health of`; no damage or repair
+- 🟡 Damage/Heal/Repair — `heal`, `heal by`, `damage player by`; no repair
 - ⬜ Dance
 - ⬜ Detonate Entities
 - ⬜ Do If ⭐
@@ -308,7 +308,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Explode Creeper
 - ⬜ Explosion ⭐
 - ⬜ Fail Command Execution
-- ⬜ Feed ⭐
+- ✅ Feed ⭐ — `feed player [by n]`
 - ⬜ Force Attack
 - ⬜ Force Eating
 - ⬜ Force Enchantment Glint
@@ -782,7 +782,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Fishing Hooked Entity
 - ⬜ Fishing Wait Time
 - ⬜ Flight Mode
-- ⬜ Food Level ⭐
+- ✅ Food Level ⭐ — read, set, add, remove; `hunger` too
 - ⬜ Formatted Date ⭐
 - ⬜ Formatted Time
 - ⬜ Former/Future State
@@ -806,7 +806,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Head location
 - ⬜ Heal Amount
 - ⬜ Heal Reason
-- 🟡 Health — read; set via `set health of`
+- ✅ Health — read, set, add, remove
 - ⬜ Hex Code
 - ⬜ Hidden Players
 - ⬜ Highest Solid Block
@@ -891,7 +891,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Lowest/Highest Solid Block
 - ⬜ Luck of Loot Context
 - ⬜ Max Durability
-- ⬜ Max Health ⭐
+- ✅ Max Health ⭐ — read, set, add, remove
 - ⬜ Max Item Use Time
 - ⬜ Max Minecart Speed
 - ⬜ Max Players
@@ -1010,7 +1010,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Rotated Quaternion/Vector
 - ⬜ Rotation Axis/Angle
 - 🟡 Rounding — as functions
-- ⬜ Saturation
+- ✅ Saturation — read, set, add, remove
 - ⬜ Scale
 - ⬜ Scoreboard Tags
 - 🟡 Script — through `/carve`

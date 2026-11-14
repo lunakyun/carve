@@ -4,6 +4,7 @@
 use std::collections::BTreeSet;
 use std::sync::Mutex;
 
+use carve_core::health_food::Vital;
 use carve_core::{
     CommandOutcome, Engine, EventCtx, EventKind, Host, LogLevel, PlayerRef, Recipient, ScriptError, Variables,
 };
@@ -273,6 +274,32 @@ impl WasmHost<'_> {
         self.get(p).map(|pl| f64::from(pl.get_health()))
     }
 
+    fn vital(&mut self, p: &PlayerRef, v: Vital) -> Option<f64> {
+        self.get(p).map(|pl| match v {
+            Vital::Health => f64::from(pl.get_health()),
+            Vital::MaxHealth => f64::from(pl.get_max_health()),
+            Vital::Food => f64::from(pl.get_food_level()),
+            Vital::Saturation => f64::from(pl.get_saturation()),
+        })
+    }
+
+    fn set_vital(&mut self, p: &PlayerRef, v: Vital, value: f64) {
+        if let Some(pl) = self.get(p) {
+            match v {
+                Vital::Health => pl.set_health(value as f32),
+                Vital::MaxHealth => pl.set_max_health(value as f32),
+                Vital::Food => pl.set_food_level(value.round() as u8),
+                Vital::Saturation => pl.set_saturation(value as f32),
+            }
+        }
+    }
+
+    fn damage(&mut self, p: &PlayerRef, amount: f64) {
+        if let Some(pl) = self.get(p) {
+            pl.damage(amount as f32, DamageType::Generic);
+        }
+    }
+
     fn log(&mut self, level: LogLevel, msg: &str) {
         let l = match level {
             LogLevel::Info => ApiLevel::Info,
@@ -317,6 +344,9 @@ impl Host for TickHost<'_, '_> {
         held_item(p: &PlayerRef) -> Option<(String, u32)>;
         count_item(p: &PlayerRef, id: &str) -> u32;
         health(p: &PlayerRef) -> Option<f64>;
+        vital(p: &PlayerRef, v: Vital) -> Option<f64>;
+        set_vital(p: &PlayerRef, v: Vital, value: f64);
+        damage(p: &PlayerRef, amount: f64);
     }
 
     fn schedule_wait(&mut self, ticks: u64, token: u64) {
