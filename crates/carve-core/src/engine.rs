@@ -103,6 +103,8 @@ pub struct ScriptTable {
     commands: BTreeMap<String, Arc<Trigger>>,
     functions: Vec<Option<Arc<Function>>>,
     every: Vec<(u64, Arc<Trigger>)>,
+    /// `variables:` defaults: (applies per player, code).
+    pub(crate) var_defaults: Vec<(bool, Arc<Trigger>)>,
     pub file_info: Vec<FileInfo>,
     pub files: usize,
     pub triggers: usize,
@@ -198,6 +200,8 @@ impl LoopFrame {
 
 /// `a, b and c`, like Skript prints a list.
 mod list_eval;
+mod structures_rt;
+pub(crate) use structures_rt::ERROR_KEY;
 
 fn join_list(items: &[(String, Value)], out: &mut String) {
     if items.is_empty() {
@@ -232,6 +236,8 @@ pub(crate) struct Exec {
     ctx: EventCtx,
     waited: bool,
     cancelled: bool,
+    /// Open `catch runtime errors:` sections, innermost last.
+    catches: Vec<structures_rt::Catch>,
     /// uuid -> current name (None = offline), for the current run slice only.
     /// Cleared at every wait, because a player can leave while a run waits.
     pub(crate) seen: Vec<(String, Option<String>)>,
@@ -257,6 +263,7 @@ impl Exec {
             ctx,
             waited: false,
             cancelled: false,
+            catches: Vec::new(),
             seen,
         }
     }
@@ -289,6 +296,8 @@ impl Exec {
             self.pc = f.pc;
             self.locals = f.locals;
             self.loops = f.loops;
+            let depth = self.callers.len();
+            self.catches.retain(|c| c.depth <= depth);
         }
     }
 }
@@ -340,6 +349,10 @@ pub struct Engine {
     next_token: u64,
     pub vars: Variables,
     pub max_instructions: usize,
+    /// `variables:` defaults still to apply (after a load or reload).
+    pending_defaults: bool,
+    /// Message of the last error that an outer `catch runtime errors` will take.
+    caught_stash: String,
     dirty_since: Option<u64>,
     /// Instructions left in the current run slice (shared by function calls).
     budget: usize,
@@ -364,6 +377,7 @@ fn build_table(files: &[(String, String)]) -> (ScriptTable, Vec<ScriptError>) {
     let compiled = compile_all(files);
     let mut errors = compiled.errors;
     table.functions = compiled.functions;
+    table.var_defaults = compiled.var_defaults.into_iter().map(|(p, t)| (p, Arc::new(t))).collect();
     for (name, trigs) in compiled.files {
         table.files += 1;
         let mut info = FileInfo {
@@ -432,6 +446,8 @@ impl Engine {
             next_token: 1,
             vars,
             max_instructions: DEFAULT_MAX_INSTRUCTIONS,
+            pending_defaults: false,
+            caught_stash: String::new(),
             dirty_since: None,
             budget: 0,
             rng: 0,
@@ -526,6 +542,7 @@ impl Engine {
         let (table, errors) = build_table(files);
         let good: Vec<String> = table.file_info.iter().map(|f| f.name.clone()).collect();
         self.sources = files.iter().filter(|(n, _)| good.contains(n)).cloned().collect();
+        self.pending_defaults = !table.var_defaults.is_empty();
         self.table = Arc::new(table);
         self.errors = errors.clone();
         (self.summary(), errors)
@@ -539,6 +556,7 @@ impl Engine {
             self.errors = errors.clone();
             return Err(errors);
         }
+        self.pending_defaults = !table.var_defaults.is_empty();
         self.table = Arc::new(table);
         self.sources = files.iter().cloned().collect();
         self.errors.clear();
@@ -552,6 +570,9 @@ impl Engine {
     /// Run every trigger for `kind`. Returns whether the event got cancelled
     /// (only `cancel event` before the first `wait` counts).
     pub fn fire(&mut self, kind: EventKind, ctx: EventCtx, host: &mut dyn Host) -> FireOutcome {
+        if self.pending_defaults || kind == EventKind::Join {
+            self.defaults_for(kind, &ctx, host);
+        }
         let table = self.table.clone();
         let mut cancelled = false;
         let trigs = table.events.get(&kind).map(Vec::as_slice).unwrap_or_default();
@@ -580,6 +601,9 @@ impl Engine {
         raw_args: &str,
         host: &mut dyn Host,
     ) -> CommandOutcome {
+        if self.pending_defaults {
+            self.apply_defaults(host);
+        }
         let name = name.trim_start_matches('/').to_ascii_lowercase();
         let Some(trig) = self.table.commands.get(&name).cloned() else {
             return CommandOutcome::NotFound;
@@ -624,6 +648,9 @@ impl Engine {
     /// Call once per server tick with a counter that goes up by one. Runs the
     /// `every ...:` triggers that are due.
     pub fn tick(&mut self, tick: u64, host: &mut dyn Host) {
+        if self.pending_defaults {
+            self.apply_defaults(host);
+        }
         if self.table.every.is_empty() {
             return;
         }
@@ -757,6 +784,14 @@ impl Engine {
                         }
                     }
                     Instr::Call(id, args) => self.enter(*id, args, ex, host).map(|()| None),
+                    Instr::CatchBegin(end) => {
+                        structures_rt::catch_begin(ex, *end);
+                        Ok(None)
+                    }
+                    Instr::CatchEnd => {
+                        ex.catches.pop();
+                        Ok(None)
+                    }
                     Instr::StopUnless(c) => match self.cond(c, ex, host) {
                         Ok(true) => Ok(None),
                         Ok(false) => {
@@ -787,7 +822,10 @@ impl Engine {
                         return Step::Wait(ticks);
                     }
                     Err(e) => {
-                        if e != SILENT {
+                        if !ex.catches.is_empty() && self.catch_error(ex, &e, base) {
+                            continue;
+                        }
+                        if e != SILENT && ex.catches.is_empty() {
                             host.log(LogLevel::Error, &format!("{}:{}: {}", code.file, line, e));
                         }
                         return Step::Abort;

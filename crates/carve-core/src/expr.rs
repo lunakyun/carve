@@ -975,6 +975,26 @@ impl P<'_> {
                             ))
                         }
                     }
+                    "last" | "caught" | "runtime"
+                        if crate::structures::error_phrase(&lw, self.toks.get(self.pos..).unwrap_or_default())
+                            .is_some()
+                            || crate::structures::error_phrase_start(
+                                &lw,
+                                self.toks.get(self.pos..).unwrap_or_default(),
+                            ) =>
+                    {
+                        let rest = self.toks.get(self.pos..).unwrap_or_default();
+                        match crate::structures::error_phrase(&lw, rest) {
+                            Some(n) => {
+                                self.pos += n;
+                                Ok(crate::structures::caught_error_expr())
+                            }
+                            None => {
+                                self.hit_end.set(true);
+                                Err("expected 'last runtime error'".into())
+                            }
+                        }
+                    }
                     "now" => Ok(Expr::Date(DateOp::Now, Vec::new())),
                     "unix"
                         if matches!(self.peek(), Some(t) if t.is_lit("timestamp"))
