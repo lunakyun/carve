@@ -359,8 +359,8 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Pathfind
 - ⬜ Persistent
 - ⬜ Play Dead
-- 🟡 Play Effect — particles only: `play 5 flame particles at player`
-- 🟡 Play or Draw an Effect ⭐ — particles only, with `with spread N` and `with speed N`
+- 🟡 Play Effect — particles only: `play 5 flame particles at player` (more options: syntax/skbee-particles-display.md)
+- 🟡 Play or Draw an Effect ⭐ — particles with `spread`, `offset x, y, z`, `speed`, `extra`, `force`; dust color, block and item data parse but the server cannot send them (see syntax/skbee-particles-display.md)
 - 🟡 Play Sound ⭐ (volume, pitch, location, via `playsound`; no categories)
 - ⬜ Player Info Visibility
 - ⬜ Player Visibility

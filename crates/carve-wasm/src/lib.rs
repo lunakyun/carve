@@ -32,6 +32,7 @@ use pumpkin_plugin_api::{
     Context, Player, Plugin, PluginMetadata, Server, permissions, register_plugin, uuid,
 };
 
+mod displays;
 mod fx;
 
 const SCRIPTS_DIR: &str = "scripts";
@@ -411,9 +412,23 @@ impl WasmHost<'_> {
         let Some(kind) = fx::particle(&p.name) else {
             return;
         };
+        // Only the command can force-show a particle to far away players.
+        if p.force {
+            self.execute_command(&carve_core::skbee_particles_display::particle_command(p));
+            return;
+        }
         if let Some(w) = self.fx_world(&p.at) {
-            let s = p.spread;
-            w.spawn_particle(kind, (p.at.x, p.at.y, p.at.z), (s, s, s), p.speed as f32, p.count as i32);
+            let [dx, dy, dz] = p.offsets();
+            w.spawn_particle(kind, (p.at.x, p.at.y, p.at.z), (dx, dy, dz), p.speed as f32, p.count as i32);
+        }
+    }
+
+    fn spawn_display(&mut self, d: &carve_core::skbee_particles_display::DisplaySpec) {
+        let Some(w) = self.fx_world(&d.at) else {
+            return;
+        };
+        if let Err(e) = displays::spawn(&w, d, text) {
+            plog(ApiLevel::Warn, &format!("display not spawned: {e}"));
         }
     }
 

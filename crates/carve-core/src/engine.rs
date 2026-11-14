@@ -1189,7 +1189,7 @@ impl Engine {
         }
     }
 
-    fn text(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<String, String> {
+    pub(crate) fn text(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<String, String> {
         let mut s = String::new();
         self.write(e, ex, host, &mut s)?;
         Ok(s)
