@@ -212,7 +212,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ On Riptide
 - 🟡 On Script Load/Unload — `on load` only
 - ⬜ On Send Command List
-- ⬜ On Server List Ping
+- 🟡 On Server List Ping — `on server list ping` runs with no player; it cannot change the MOTD or counts shown
 - 🟡 On Server Start/Stop — `on load` runs at start; no stop
 - ⬜ On Sheep Regrow Wool
 - ⬜ On Shoot
@@ -269,7 +269,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 Ban ⭐ — name, with reason, by IP; works on offline names
 - ⬜ Boss Bar Flags
 - ⬜ Break Block ⭐
-- ✅ Broadcast
+- ✅ Broadcast — also `broadcast "x" to world "name"`
 - ⬜ Cancel Active Item
 - ⬜ Cancel Command Cooldown
 - ⬜ Cancel Drops
@@ -558,7 +558,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Is Using Experimental Feature
 - ⬜ Is Valid
 - ⬜ Is Wearing
-- ⬜ Is Whitelisted
+- ✅ Is Whitelisted — `player is whitelisted`, `"Name" is not on the whitelist`
 - ⬜ Is Within
 - ⬜ Is Within Radius
 - ⬜ Item Has Enchantment Glint Override
@@ -894,7 +894,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Max Health ⭐ — read, set, add, remove
 - ⬜ Max Item Use Time
 - ⬜ Max Minecart Speed
-- ⬜ Max Players
+- ✅ Max Players — `max players`, `max player count` (read only)
 - ⬜ Maximum Double Value
 - ⬜ Maximum Float Value
 - ⬜ Maximum Freeze Time
@@ -904,7 +904,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Me ⭐ — `me`, `myself`
 - ⬜ Mending Repair Amount
 - ✅ Message — `send ... [to ...]`
-- ⬜ Message of the Day
+- 🟡 Message of the Day — `motd` (read only)
 - ⬜ Metadata
 - ⬜ Middle of Location
 - ⬜ Midpoint
@@ -934,7 +934,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Numbers
 - ⬜ Offline players ⭐
 - ⬜ On-Screen Kick Message
-- ⬜ Online Player Count ⭐
+- ✅ Online Player Count ⭐ — `online players count`, `amount of players`, `player count`
 - ⬜ Opened Inventory
 - ⬜ Panda Gene
 - 🟡 Parse — `parsed as number` only
@@ -1028,13 +1028,13 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Sign Text
 - ⬜ Simulation Distance
 - ✅ Size — `size of {list::*}`
-- ⬜ Size of World Border
+- 🟡 Size of World Border — `world border size [of world]`, `set world border size to 500 over 30 seconds`; no add or remove
 - ⬜ Skull Owner
 - ⬜ Skull Texture
 - ⬜ Slot Index
 - 🟡 Sorted List ⭐ — `sorted {x::*}`; no `by` expression
 - ⬜ Source Block
-- ⬜ Spawn ⭐
+- 🟡 Spawn ⭐ — `spawn of world "x"` (a location); also `teleport player to spawn`; no setting it
 - ⬜ Spawn Egg Entity
 - ⬜ Spawn Reason
 - ⬜ Spawner Type
@@ -1108,7 +1108,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Vectors - Yaw and Pitch
 - ⬜ Vehicle
 - ⬜ Velocity ⭐
-- ⬜ Version
+- 🟡 Version — `server version` is the Pumpkin version, not the Minecraft version
 - ⬜ Version String
 - ⬜ View Distance
 - ⬜ View Distance of Client
@@ -1122,14 +1122,14 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Warning Time of World Border
 - ⬜ Weather ⭐
 - ⬜ Whether
-- ⬜ Whitelist
+- 🟡 Whitelist — `add player to the whitelist`, `whitelist player`, `unwhitelist player`; no player list, no on/off
 - ⬜ With Fire Resistance
 - ✅ World — `world of`
 - ⬜ World Border
 - ⬜ World Environment
 - ✅ World from Name — `world "name"`
 - ⬜ World Seed
-- ⬜ Worlds
+- ✅ Worlds — `all worlds` in `loop` and `set {w::*} to all worlds`
 - ⬜ WXYZ Component/Coordinate
 - ⬜ X of Item/Entity Type
 - ⬜ X Times

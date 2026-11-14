@@ -367,3 +367,22 @@ fn default_host_uses_commands() {
         ["whitelist add Bob", "whitelist remove Bob", "worldborder set 300 10s"]
     );
 }
+
+#[test]
+fn doc_lines_compile() {
+    for line in [
+        "send \"%online player count% %number of players% %amount of online players%\"",
+        "send \"%maximum players% %player limit% %server motd% %message of the day%\"",
+        "send \"%pumpkin version% %version of the server%\"",
+        "send \"%spawn point of world \"nether\"% %world spawn of player's world%\"",
+        "send \"%border size% %world border diameter%\"",
+        "teleport player to the spawn of world \"nether\"",
+        "teleport player to spawn of world \"nether\"",
+        "broadcast \"x\" in player's world",
+        "set world border size of world \"nether\" to 200 in 30 seconds",
+        "if player is on the whitelist:\n        send \"listed\"",
+        "if \"Alex\" is not whitelisted:\n        send \"no\"",
+    ] {
+        assert!(compiles(line), "does not compile: {line}");
+    }
+}
