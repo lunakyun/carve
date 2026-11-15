@@ -233,33 +233,35 @@ pub fn apply(op: W4Op, args: &[Value], host: &mut dyn Host) -> Value {
             .and_then(|p| host.resource_pack_status(p))
             .map_or(Value::None, Value::Text),
         Light | BlockLight | SkyLight => match a0 {
-            Value::Location {
-                x,
-                y,
-                z,
-                world: Some(w),
-            } => {
+            Value::Location { x, y, z, world } => {
                 let kind = match op {
                     BlockLight => 0,
                     SkyLight => 1,
                     _ => 2,
                 };
-                host.light_level(w, x.floor() as i32, y.floor() as i32, z.floor() as i32, kind)
+                // `location(x, y, z)` has no world: use the default one.
+                world
+                    .clone()
+                    .or_else(|| host.default_world())
+                    .and_then(|w| {
+                        host.light_level(&w, x.floor() as i32, y.floor() as i32, z.floor() as i32, kind)
+                    })
                     .map_or(Value::None, |l| Value::Num(f64::from(l)))
             }
             _ => Value::None,
         },
         Highest | Lowest => match a0 {
-            Value::Location {
-                x, z, world: Some(w), ..
-            } => {
+            Value::Location { x, z, world, .. } => {
+                let Some(w) = world.clone().or_else(|| host.default_world()) else {
+                    return Value::None;
+                };
                 let (bx, bz) = (x.floor() as i32, z.floor() as i32);
-                host.solid_block_y(w, bx, bz, op == Highest)
+                host.solid_block_y(&w, bx, bz, op == Highest)
                     .map_or(Value::None, |y| Value::Location {
                         x: f64::from(bx),
                         y: f64::from(y),
                         z: f64::from(bz),
-                        world: Some(w.clone()),
+                        world: Some(w),
                     })
             }
             _ => Value::None,

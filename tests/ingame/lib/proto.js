@@ -20,8 +20,8 @@ const lookups = {}
 function byId (kind) {
   if (lookups[kind]) return lookups[kind]
   const out = []
-  if (kind === 'entity' || kind === 'item') {
-    const j = asset(kind === 'entity' ? 'entities.json' : 'items.json') || {}
+  if (kind === 'entity' || kind === 'item' || kind === 'effect') {
+    const j = asset({ entity: 'entities.json', item: 'items.json', effect: 'effect.json' }[kind]) || {}
     for (const [name, v] of Object.entries(j)) out[v.id] = name
   } else if (kind === 'block_state') {
     const j = asset('blocks.json')

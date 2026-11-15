@@ -78,6 +78,9 @@ impl Host for Mock {
     fn solid_block_y(&mut self, world: &str, x: i32, z: i32, highest: bool) -> Option<i32> {
         (world == "world" && x == 3 && z == 4).then_some(if highest { 70 } else { -64 })
     }
+    fn world_names(&mut self) -> Vec<String> {
+        vec!["world".into()]
+    }
     fn light_level(&mut self, _: &str, _: i32, y: i32, _: i32, kind: u8) -> Option<u8> {
         Some(
             match kind {
@@ -292,6 +295,18 @@ fn light_levels() {
     assert_eq!(run(&format!("send \"%sky light level of {at}%\"")), vec!["15"]);
     assert_eq!(run(&format!("send \"%light level at {at}%\"")), vec!["15"]);
     assert!(errs("send \"%light level at 5%\"") > 0);
+}
+
+#[test]
+fn light_and_highest_without_world_use_the_default_world() {
+    assert_eq!(
+        run("send \"%sky light level at location(1, 64, 1)%\""),
+        vec!["15"]
+    );
+    assert_eq!(
+        run("set {_l} to lowest block at location(3, 64, 4)\nsend \"%y of {_l}%\""),
+        vec!["-64"]
+    );
 }
 
 #[test]

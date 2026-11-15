@@ -45,12 +45,19 @@ Carve itself. For the full feature-by-feature status, see the
   another block, not on every small move or turn of the head.
 - **Nested events:** if the server calls back into Carve while a script is
   running, that event is skipped with a warning. Console commands from scripts
-  run after the script finishes, which avoids this in the common case. A
-  `grant advancement` from a script is one such case: its `on advancement
-  done` does not run.
+  run after the script finishes, which avoids this in the common case.
+  `set weather`, `strike lightning` and `create explosion` fire their
+  `on weather change`, `on lightning strike` and `on explode` events after the
+  script instead, so cancelling those events there has no effect. Other events
+  a script's own effect would start (a block placed by `set block`, for
+  example) are skipped. A `grant advancement` from a script is one such case:
+  its `on advancement done` does not run.
 - **Recipe discover:** Pumpkin fires `on recipe discover` when the client marks
   a recipe as seen in its recipe book, not when the recipe is unlocked, and
   `recipe id` is `display_<n>`.
+- **Weather and lightning events** only come from plugins in Pumpkin 0.2.2:
+  the `/weather` command, the natural weather cycle and `/summon
+  lightning_bolt` don't fire them.
 
 ## Inventories
 
