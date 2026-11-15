@@ -60,6 +60,17 @@ features:
   run themselves, text that doubles in a loop, runaway regexes, huge lists and
   endless waits are now stopped with an error that names the script and line.
   See [the limits](/limits#limits-that-keep-the-server-safe).
+- **0.3.2:** real server scripts load. Indentation works like Skript (each
+  block can use its own width or tabs), `/carve reload` shows every error, and
+  `play sound ... at <location> to all players`, `on place of <block>`,
+  `with priority highest`, `subtract`, `set chat format` and more are in. Lines
+  that need another plugin load with a warning. See
+  [lines from real Skript servers](/syntax/skript-compat).
+- **0.3.3:** 15 public Skript scripts (homes, tpa, shops, chat games, server
+  cores...) now load with almost no core-syntax errors: command argument types
+  and defaults, `permission message:`, `message`, `player command`,
+  `console command`, GUI slots with lore, `loop all offline players` and more.
+  See [syntax from popular scripts](/syntax/popular-syntax).
 
 Everything else is in the [changelog](/changelog).
 
