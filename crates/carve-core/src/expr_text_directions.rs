@@ -22,6 +22,8 @@ pub enum TextOp {
     Difference,
     /// `3 blocks above loc`: args: amount, location. The unit step is x, y, z.
     Offset(i8, i8, i8),
+    /// `3 meters in front of x`: args: amount, place. Forward and sideways steps (right is +1).
+    Facing(i8, i8),
     /// `chunk x of loc`.
     ChunkX,
     /// `chunk z of loc`.
@@ -51,7 +53,7 @@ impl TextOp {
             TextOp::Codepoint | TextOp::ChunkX | TextOp::ChunkZ => Ty::Number,
             TextOp::FromCodepoint | TextOp::DeathMessage | TextOp::DamageCause => Ty::Text,
             TextOp::CharsBetween { .. } | TextOp::ChatRecipients => Ty::List,
-            TextOp::Offset(..) | TextOp::CompassTarget => Ty::Location,
+            TextOp::Offset(..) | TextOp::Facing(..) | TextOp::CompassTarget => Ty::Location,
             TextOp::Victim => Ty::Object,
             TextOp::Difference => match (args.first().map(|a| a.ty(env)), args.get(1).map(|a| a.ty(env))) {
                 (Some(Ty::Number), Some(Ty::Number)) => Ty::Number,

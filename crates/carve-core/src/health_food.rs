@@ -63,7 +63,7 @@ pub fn words_from(toks: &[Tok], i: usize) -> Option<(Prop, usize)> {
     Some(match (w0.as_str(), w1.as_deref()) {
         ("max", Some("health")) => (Prop::MaxHealth, 2),
         ("food", Some("level")) => (Prop::Food, 2),
-        ("hunger", Some("level")) => (Prop::Food, 2),
+        ("hunger", Some("level" | "meter")) => (Prop::Food, 2),
         ("hunger", _) => (Prop::Food, 1),
         ("saturation", Some("level")) => (Prop::Saturation, 2),
         ("saturation", _) => (Prop::Saturation, 1),
@@ -94,16 +94,28 @@ pub const EFFECT_PATTERNS: &[(&str, EffKind)] = &[
     ("add %number% to %player%'s health", Hf(Add(Health))),
     ("remove %number% from health of %player%", Hf(Remove(Health))),
     ("remove %number% from %player%'s health", Hf(Remove(Health))),
-    ("set (food level|hunger) of %player% to %number%", Hf(Set(Food))),
-    ("set %player%'s (food level|hunger) to %number%", Hf(Set(Food))),
-    ("add %number% to (food level|hunger) of %player%", Hf(Add(Food))),
-    ("add %number% to %player%'s (food level|hunger)", Hf(Add(Food))),
     (
-        "remove %number% from (food level|hunger) of %player%",
+        "set (food level|hunger meter|hunger) of %player% to %number%",
+        Hf(Set(Food)),
+    ),
+    (
+        "set %player%'s (food level|hunger meter|hunger) to %number%",
+        Hf(Set(Food)),
+    ),
+    (
+        "add %number% to (food level|hunger meter|hunger) of %player%",
+        Hf(Add(Food)),
+    ),
+    (
+        "add %number% to %player%'s (food level|hunger meter|hunger)",
+        Hf(Add(Food)),
+    ),
+    (
+        "remove %number% from (food level|hunger meter|hunger) of %player%",
         Hf(Remove(Food)),
     ),
     (
-        "remove %number% from %player%'s (food level|hunger)",
+        "remove %number% from %player%'s (food level|hunger meter|hunger)",
         Hf(Remove(Food)),
     ),
     ("set saturation of %player% to %number%", Hf(Set(Saturation))),

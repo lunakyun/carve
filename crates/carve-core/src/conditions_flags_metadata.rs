@@ -398,6 +398,8 @@ const CAUSE_ALIASES: &[(&str, &[&str])] = &[
     ("starvation", &["starve"]),
     ("lightning", &["lightning_bolt"]),
     ("block_explosion", &["explosion", "bad_respawn_point"]),
+    ("primed_tnt", &["explosion", "player_explosion"]),
+    ("tnt", &["explosion", "player_explosion"]),
     (
         "entity_explosion",
         &["explosion", "player_explosion", "fireworks"],

@@ -37,6 +37,18 @@ pub enum EntFx {
         dir: (f64, f64, f64),
         speed: Option<Expr>,
     },
+    /// `push <e> in direction of <who> with force 0.2`: along where `who` looks.
+    PushDir {
+        who: Expr,
+        from: Expr,
+        speed: Option<Expr>,
+    },
+    /// `shoot <kind> from <who> at speed 2`: a new entity thrown where `who` looks.
+    Shoot {
+        kind: String,
+        who: Expr,
+        speed: Option<Expr>,
+    },
     /// `set y velocity of <e> to 1`: axis 0, 1 or 2.
     SetVel {
         who: Expr,
@@ -86,6 +98,11 @@ pub enum EntExpr {
 /// `zombie`, `zombies`, `iron golems`: the entity type id.
 pub fn kind_of(name: &str) -> Option<&'static str> {
     let find = |n: &str| ENTITY_TYPES.iter().copied().find(|k| *k == n);
+    let name = match name {
+        "primed_tnt" | "tnt_primed" | "primed_tnts" => "tnt",
+        "fire_ball" => "fireball",
+        n => n,
+    };
     find(name)
         .or_else(|| name.strip_suffix('s').and_then(find))
         .or_else(|| name.strip_suffix("es").and_then(find))
@@ -235,8 +252,26 @@ pub fn parse_expr_at(
 type Parsed = Result<Option<(Expr, usize)>, String>;
 
 fn last_spawned(toks: &[Tok], s: usize) -> Parsed {
-    if !toks.get(s + 1).is_some_and(|t| is(t, "spawned")) {
+    if !toks.get(s + 1).is_some_and(|t| is(t, "spawned") || is(t, "shot")) {
         return Ok(None);
+    }
+    // `last shot primed tnt`: the kind may be several words.
+    if is(toks.get(s + 1).unwrap_or(&toks[s]), "shot") {
+        let mut e = s + 2;
+        while toks.get(e).is_some_and(|t| matches!(t, Tok::Word(_))) {
+            e += 1;
+        }
+        let words = toks.get(s + 2..e).unwrap_or_default();
+        let ok = words.is_empty()
+            || matches!(
+                joined(words).as_deref(),
+                Some("entity" | "mob" | "creature" | "projectile")
+            )
+            || kind_words(words).is_some();
+        if !ok {
+            return Err("expected 'last shot entity'".into());
+        }
+        return Ok(Some((ent(EntExpr::LastSpawned), e)));
     }
     match toks.get(s + 2) {
         Some(Tok::Word(w)) if matches!(w.to_ascii_lowercase().as_str(), "entity" | "mob" | "creature") => {
@@ -270,7 +305,15 @@ fn nearest(toks: &[Tok], s: usize, env: &Env) -> Parsed {
 
 fn all_of(toks: &[Tok], s: usize, env: &Env) -> Parsed {
     let m = pos_of(toks, s + 1, &["in", "within"]);
-    let words = toks.get(s + 1..m.unwrap_or(toks.len())).unwrap_or_default();
+    let word_end = {
+        let mut e = s + 1;
+        while toks.get(e).is_some_and(|t| matches!(t, Tok::Word(_))) {
+            e += 1;
+        }
+        e
+    };
+    let m = m.filter(|i| *i < word_end || m.is_some_and(|j| j == word_end));
+    let words = toks.get(s + 1..m.unwrap_or(word_end)).unwrap_or_default();
     if words.is_empty() {
         return Ok(None);
     }
@@ -288,7 +331,7 @@ fn all_of(toks: &[Tok], s: usize, env: &Env) -> Parsed {
                 radius: None,
                 at: None,
             }),
-            toks.len(),
+            word_end,
         )));
     };
     let (radius, j) = radius_at(toks, m + 1, env)?;
@@ -412,7 +455,12 @@ pub fn parse_effect(toks: &[Tok], env: &Env) -> Result<Option<Effect>, String> {
     let fx = match first.to_ascii_lowercase().as_str() {
         "spawn" | "summon" => spawn(toks, env)?,
         "kill" | "remove" | "delete" | "despawn" => kill(toks, env)?,
-        "push" => push(toks, env)?,
+        "push" => match push_dir(toks, env)? {
+            Some(f) => Some(f),
+            None => push(toks, env)?,
+        },
+        "shoot" | "launch" => shoot(toks, env, 0)?,
+        "make" => make_shoot(toks, env)?,
         "set" => set(toks, env)?,
         "teleport" | "tp" => teleport(toks, env)?,
         _ => None,
@@ -543,6 +591,110 @@ fn push(toks: &[Tok], env: &Env) -> Result<Option<EntFx>, String> {
         return Err("expected 'with speed <number>' after the direction".into());
     }
     Ok(Some(EntFx::Push { who, dir, speed }))
+}
+
+/// `push <e> in [the] direction of <who> [with force 0.2]`.
+fn push_dir(toks: &[Tok], env: &Env) -> Result<Option<EntFx>, String> {
+    let Some(d) = pos_of(toks, 2, &["direction"]) else {
+        return Ok(None);
+    };
+    if !toks.get(d + 1).is_some_and(|t| is(t, "of")) {
+        return Ok(None);
+    }
+    let mut who_end = d;
+    while who_end > 1
+        && toks
+            .get(who_end - 1)
+            .is_some_and(|t| is(t, "in") || is(t, "into") || is(t, "the"))
+    {
+        who_end -= 1;
+    }
+    let who = sub(toks, 1, who_end, env)?;
+    let rest = toks.get(d + 2..).unwrap_or_default();
+    let stop = pos_of(rest, 0, &["with", "at", "by", "using"]).unwrap_or(rest.len());
+    let from = sub(rest, 0, stop, env)?;
+    let speed = speed_of(rest.get(stop..).unwrap_or_default(), env)?;
+    Ok(Some(EntFx::PushDir { who, from, speed }))
+}
+
+/// `with|at|by [the] speed|velocity|force <n>` (or nothing).
+fn speed_of(after: &[Tok], env: &Env) -> Result<Option<Expr>, String> {
+    let mut after = after;
+    let Some((p, rest)) = after.split_first() else {
+        return Ok(None);
+    };
+    if !(is(p, "with") || is(p, "at") || is(p, "by") || is(p, "using")) {
+        return Err("expected 'with speed <number>'".into());
+    }
+    after = rest;
+    while after.first().is_some_and(|t| is(t, "the") || is(t, "a")) {
+        after = after.get(1..).unwrap_or_default();
+    }
+    let Some((w, n)) = after.split_first() else {
+        return Err("expected 'speed <number>'".into());
+    };
+    if !(is(w, "speed") || is(w, "velocity") || is(w, "force")) {
+        return Err("expected 'with speed <number>'".into());
+    }
+    Ok(Some(parse_expr(n, env)?))
+}
+
+/// `shoot [a] primed tnt from player at speed 2`, `shoot fireball from player with speed 0.2`.
+fn shoot(toks: &[Tok], env: &Env, _skip: usize) -> Result<Option<EntFx>, String> {
+    let Some(from_i) = pos_of(toks, 1, &["from"]) else {
+        return Ok(None);
+    };
+    let mut kind_toks = toks.get(1..from_i).unwrap_or_default();
+    while kind_toks
+        .first()
+        .is_some_and(|t| is(t, "a") || is(t, "an") || is(t, "the"))
+    {
+        kind_toks = kind_toks.get(1..).unwrap_or_default();
+    }
+    let Some(name) = joined(kind_toks) else {
+        return Ok(None);
+    };
+    let Some(kind) = kind_of(&name) else {
+        return Err(format!("unknown entity '{}'", name.replace('_', " ")));
+    };
+    let rest = toks.get(from_i + 1..).unwrap_or_default();
+    let stop = pos_of(rest, 0, &["with", "at", "by", "using"]).unwrap_or(rest.len());
+    let who = sub(rest, 0, stop, env)?;
+    let speed = speed_of(rest.get(stop..).unwrap_or_default(), env)?;
+    Ok(Some(EntFx::Shoot {
+        kind: kind.to_string(),
+        who,
+        speed,
+    }))
+}
+
+/// `make <who> shoot an egg [at speed 1]`.
+fn make_shoot(toks: &[Tok], env: &Env) -> Result<Option<EntFx>, String> {
+    let Some(sh) = pos_of(toks, 2, &["shoot"]) else {
+        return Ok(None);
+    };
+    let who = sub(toks, 1, sh, env)?;
+    let rest = toks.get(sh + 1..).unwrap_or_default();
+    let stop = pos_of(rest, 0, &["with", "at", "by", "using"]).unwrap_or(rest.len());
+    let mut kind_toks = rest.get(..stop).unwrap_or_default();
+    while kind_toks
+        .first()
+        .is_some_and(|t| is(t, "a") || is(t, "an") || is(t, "the"))
+    {
+        kind_toks = kind_toks.get(1..).unwrap_or_default();
+    }
+    let Some(name) = joined(kind_toks) else {
+        return Ok(None);
+    };
+    let Some(kind) = kind_of(&name) else {
+        return Err(format!("unknown entity '{}'", name.replace('_', " ")));
+    };
+    let speed = speed_of(rest.get(stop..).unwrap_or_default(), env)?;
+    Ok(Some(EntFx::Shoot {
+        kind: kind.to_string(),
+        who,
+        speed,
+    }))
 }
 
 /// `set [the] name of <entity> to "x"`, `set [the] y velocity of <e> to 1`.
@@ -791,6 +943,43 @@ impl Engine {
                     }
                 }
             }
+            EntFx::PushDir { who, from, speed } => {
+                let s = self.ent_num(speed, 1.0, MAX_SPEED, ex, host)?;
+                let fv = self.eval(from, ex, host)?;
+                let Some(dir) = self.look_dir(&fv, ex, host) else {
+                    return Ok(());
+                };
+                for v in self.ent_targets(who, ex, host)? {
+                    if let Some(r) = self.live_handle(&v, ex, host) {
+                        let cur = host.entity_velocity(&r).unwrap_or((0.0, 0.0, 0.0));
+                        host.set_entity_velocity(
+                            &r,
+                            (cur.0 + dir.0 * s, cur.1 + dir.1 * s, cur.2 + dir.2 * s),
+                        );
+                    }
+                }
+            }
+            EntFx::Shoot { kind, who, speed } => {
+                let s = self.ent_num(speed, 1.0, MAX_SPEED, ex, host)?;
+                let wv = self.eval(who, ex, host)?;
+                let Some(mut pos) = self.ent_pos(who, ex, host)? else {
+                    return Ok(());
+                };
+                let Some(dir) = self.look_dir(&wv, ex, host) else {
+                    return Ok(());
+                };
+                if matches!(wv, Value::Player(_) | Value::Text(_)) {
+                    pos.y += 1.5;
+                }
+                pos.x += dir.0 * 0.5;
+                pos.y += dir.1 * 0.5;
+                pos.z += dir.2 * 0.5;
+                self.charge(crate::engine::SPAWN_COST)?;
+                if let Some(e) = host.spawn_entity(kind, &pos) {
+                    host.set_entity_velocity(&e, (dir.0 * s, dir.1 * s, dir.2 * s));
+                    ex.last_entity = Some(Box::new(e));
+                }
+            }
             EntFx::SetVel { who, axis, value } => {
                 let n = self.num(value, ex, host)?;
                 let n = if n.is_finite() {
@@ -847,6 +1036,23 @@ impl Engine {
     }
 
     /// A handle for an entity, or an online player.
+    /// The direction a player looks, as a unit vector.
+    pub(crate) fn look_dir(
+        &mut self,
+        v: &Value,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Option<(f64, f64, f64)> {
+        use crate::expr_player_state::PStat;
+        let p = match v {
+            Value::Player(_) | Value::Text(_) => online(v, &mut ex.seen, host)?,
+            _ => return None,
+        };
+        let yaw = host.pstat(&p, PStat::Yaw).unwrap_or(0.0).to_radians();
+        let pitch = host.pstat(&p, PStat::Pitch).unwrap_or(0.0).to_radians();
+        Some((-yaw.sin() * pitch.cos(), -pitch.sin(), yaw.cos() * pitch.cos()))
+    }
+
     fn live_handle(&mut self, v: &Value, ex: &mut Exec, host: &mut dyn Host) -> Option<EntityRef> {
         match v {
             Value::Entity(r) => Some(r.clone()),

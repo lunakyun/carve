@@ -53,6 +53,8 @@ pub struct EventCtx {
     pub attacker: Option<PlayerRef>,
     /// `clicked block` in click events (block id without `minecraft:`).
     pub block: Option<String>,
+    /// Position of `event-block` (break and place events): x, y, z, world.
+    pub block_at: Option<(f64, f64, f64, Option<String>)>,
     /// Values of the item and level events (see `events_items`).
     pub extra: Option<Box<crate::events_items::EventExtra>>,
     /// The clicked slot in `on inventory click`.
@@ -81,6 +83,7 @@ impl EventCtx {
             damage: None,
             attacker: None,
             block: None,
+            block_at: None,
             extra: None,
             inv: None,
             ev: Vec::new(),
@@ -102,6 +105,7 @@ impl EventCtx {
             damage: None,
             attacker: None,
             block: None,
+            block_at: None,
             extra: None,
             inv: None,
             ev: Vec::new(),
@@ -221,6 +225,11 @@ impl ScriptTable {
             TriggerKind::Command(d) => Some(d),
             TriggerKind::Event(_) | TriggerKind::Every(_) => None,
         }
+    }
+
+    /// The highest `with priority` among the triggers of an event (`None`: no triggers).
+    pub fn event_priority(&self, k: EventKind) -> Option<u8> {
+        self.events.get(&k)?.iter().map(|t| t.prio).max()
     }
 
     pub fn has_event(&self, k: EventKind) -> bool {
@@ -645,6 +654,10 @@ fn build_table(files: &[(String, String)]) -> (ScriptTable, Vec<ScriptError>) {
             }
         }
     }
+    // Like Skript: triggers of one event run from the lowest priority to the highest.
+    for list in table.events.values_mut() {
+        list.sort_by_key(|t| t.prio);
+    }
     crate::error::fill_code(&mut errors, files);
     (table, errors)
 }
@@ -765,8 +778,12 @@ impl Engine {
     /// Load scripts, like Skript: a broken line, section or trigger is
     /// reported and left out, everything that parsed is used.
     pub fn load(&mut self, files: &[(String, String)]) -> (LoadSummary, Vec<ScriptError>) {
-        let (table, errors) = build_table(files);
+        let (table, all) = build_table(files);
+        let (compile_warns, errors): (Vec<_>, Vec<_>) = all.into_iter().partition(|e| e.warning);
         self.warnings = crate::support::scan(&table.codes, &self.unsupported);
+        self.warnings.extend(compile_warns);
+        self.warnings
+            .sort_by(|a, b| (&a.file, a.line).cmp(&(&b.file, b.line)));
         crate::error::fill_code(&mut self.warnings, files);
         self.sources = files.iter().cloned().collect();
         self.pending_defaults = !table.var_defaults.is_empty();
@@ -1184,7 +1201,7 @@ impl Engine {
     }
 
     /// A random number in [0, 1).
-    fn next_random(&mut self, host: &mut dyn Host) -> f64 {
+    pub(crate) fn next_random(&mut self, host: &mut dyn Host) -> f64 {
         if self.rng == 0 {
             self.rng = host.now().wrapping_mul(0x9E37_79B9_7F4A_7C15) | 1;
         }
@@ -2311,6 +2328,7 @@ impl Engine {
                 crate::parsing_loot_components::apply(n.op, &vals, host)?
             }
             Expr::MobsItems(n) => self.eval_mobs_items(n, ex, host)?,
+            Expr::Compat(n) => self.eval_compat(n, ex, host)?,
             Expr::Rtw(n) => {
                 let mut vals = Vec::with_capacity(n.args.len());
                 for a in &n.args {
@@ -2403,7 +2421,19 @@ impl Engine {
                 })
             }
             Expr::Prop(prop, of) => {
-                let v = self.eval(of, ex, host)?;
+                let v = if matches!(**of, Expr::ClickedBlock) {
+                    match &ex.ctx.block_at {
+                        Some((x, y, z, w)) => Value::Location {
+                            x: *x,
+                            y: *y,
+                            z: *z,
+                            world: w.clone(),
+                        },
+                        None => Value::None,
+                    }
+                } else {
+                    self.eval(of, ex, host)?
+                };
                 self.property(*prop, &v, ex, host)
             }
             Expr::LoopValue(d) => ex.loops.get(*d).map(LoopFrame::value).unwrap_or(Value::None),
@@ -2764,6 +2794,7 @@ impl Engine {
                 crate::potions_particles_queues::run_effect(w.op, &vals, host)?;
             }
             Effect::MobsItems(w) => self.run_mobs_items(w, ex, host)?,
+            Effect::Compat(f) => self.compat_effect(f, ex, host)?,
             Effect::Rtw(w) => {
                 let name = self.eval(&w.name, ex, host)?;
                 crate::skbee_raytrace_world::run_effect(w, &name, host)?;
@@ -2868,11 +2899,24 @@ impl Engine {
                         }
                     }
                     (to, at) => {
-                        let target = match to {
-                            Some(t) => self.player(t, ex, host)?,
-                            None => self.player(&Expr::Player, ex, host)?,
-                        };
-                        if let Some(p) = target {
+                        let mut targets: Vec<PlayerRef> = Vec::new();
+                        match to {
+                            Some(t) => {
+                                let v = self.eval(t, ex, host)?;
+                                match v {
+                                    Value::List(items) => {
+                                        for it in &items {
+                                            if let Some(p) = online(it, &mut ex.seen, host) {
+                                                targets.push(p);
+                                            }
+                                        }
+                                    }
+                                    v => targets.extend(online(&v, &mut ex.seen, host)),
+                                }
+                            }
+                            None => targets.extend(self.player(&Expr::Player, ex, host)?),
+                        }
+                        for p in targets {
                             host.play_sound(&p, &id, volume, pitch, at);
                         }
                     }

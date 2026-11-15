@@ -32,6 +32,8 @@ pub enum PStat {
     HotbarSlot,
     Yaw,
     Pitch,
+    /// Ticks since the player last moved, clicked or chatted (`idle time of`).
+    IdleTicks,
 }
 
 impl PStat {
@@ -40,7 +42,7 @@ impl PStat {
     }
 
     fn is_ticks(self) -> bool {
-        matches!(self, PStat::FireTicks | PStat::FreezeTicks)
+        matches!(self, PStat::FireTicks | PStat::FreezeTicks | PStat::IdleTicks)
     }
 }
 
@@ -117,6 +119,8 @@ const OF_NAMES: &[(&[&str], ExtFn)] = &[
     (&["fire", "duration"], ExtFn::Stat(PStat::FireTicks)),
     (&["freeze", "duration"], ExtFn::Stat(PStat::FreezeTicks)),
     (&["freeze", "time"], ExtFn::Stat(PStat::FreezeTicks)),
+    (&["idle", "time"], ExtFn::Stat(PStat::IdleTicks)),
+    (&["idle", "duration"], ExtFn::Stat(PStat::IdleTicks)),
     (&["fall", "distance"], ExtFn::Stat(PStat::FallDistance)),
     (&["gliding", "state"], ExtFn::Stat(PStat::Gliding)),
     (&["glide", "state"], ExtFn::Stat(PStat::Gliding)),
@@ -133,7 +137,23 @@ const OF_NAMES: &[(&[&str], ExtFn)] = &[
 ];
 
 /// Property words at `toks[i..]` (case-insensitive) and how many tokens they use.
+/// Set when a script reads `idle time of`: the game side then listens to movement.
+static IDLE_USED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Does any compiled script use `idle time of`?
+pub fn idle_used() -> bool {
+    IDLE_USED.load(std::sync::atomic::Ordering::Relaxed)
+}
+
 pub fn of_head(toks: &[Tok], i: usize) -> Option<(ExtFn, usize)> {
+    let r = of_head_inner(toks, i);
+    if matches!(r, Some((ExtFn::Stat(PStat::IdleTicks), _))) {
+        IDLE_USED.store(true, std::sync::atomic::Ordering::Relaxed);
+    }
+    r
+}
+
+fn of_head_inner(toks: &[Tok], i: usize) -> Option<(ExtFn, usize)> {
     let first = match toks.get(i) {
         Some(Tok::Word(w)) => w.to_ascii_lowercase(),
         _ => return None,

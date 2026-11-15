@@ -235,6 +235,8 @@ pub enum Expr {
     Rtw(Box<crate::skbee_raytrace_world::Node>),
     /// Operator and ban lists, `any of`, beacon effects (see `conditions_mobs_items`).
     MobsItems(Box<crate::conditions_mobs_items::Node>),
+    /// `region at`, `player's prefix`, `offhand tool` (see `skript_compat`).
+    Compat(Box<crate::skript_compat::Node>),
     /// Inventory values, `items in`, regex replace (see `gaps`).
     Gap(Box<crate::gaps::GapExpr>),
     /// Potion effects, particles, queues and more (see `potions_particles_queues`).
@@ -485,6 +487,7 @@ impl Expr {
             Expr::PotionsParticles(n) => n.ty,
             Expr::ParsingLoot(n) => n.ty,
             Expr::MobsItems(n) => n.ty(),
+            Expr::Compat(n) => n.ty(),
             Expr::EntityBlockProps(n) => n.ty,
             Expr::BlockStateLists(n) => n.ty,
             Expr::Quaternions(n) => n.ty,
@@ -851,6 +854,14 @@ impl P<'_> {
             }
         }
         e = self.replaced_postfix(e);
+        // `{_text} split at " "`
+        if self.is_word(0, "split") && (self.is_word(1, "at") || self.is_word(1, "by")) {
+            self.pos += 2;
+            let sep = self.unary()?;
+            e = Expr::Split(Box::new(e), Box::new(sep));
+        } else if self.is_word(0, "split") {
+            self.hit_end.set(self.pos + 1 >= self.toks.len());
+        }
         e = self.in_case(e);
         e = self.util_postfix(e)?;
         e = self.player_state_post(e)?;
@@ -882,6 +893,11 @@ impl P<'_> {
                 continue;
             }
             self.pos -= 1;
+            if let Some((ne, n)) = self.compat_poss(&lw, &e) {
+                self.pos += 1 + n;
+                e = ne;
+                continue;
+            }
             if let Some(unit) = crate::gaps::span_unit(&lw)
                 && matches!(e.ty(self.env), Ty::Timespan | Ty::Object)
             {
@@ -1495,7 +1511,9 @@ impl P<'_> {
 
     pub(crate) fn prop(&self, prop: Prop, of: Expr) -> Result<Expr, String> {
         let t = of.ty(self.env);
-        if !prop.takes(t) {
+        let block_pos = matches!(of, Expr::ClickedBlock)
+            && matches!(prop, Prop::Location | Prop::X | Prop::Y | Prop::Z | Prop::World);
+        if !block_pos && !prop.takes(t) {
             return Err(format!("can't take the {prop:?} of a {}", t.name()).to_lowercase());
         }
         if prop == Prop::Name && t == Ty::Player {
@@ -1597,6 +1615,23 @@ impl P<'_> {
 
     /// Longest run of words that names an item, like `diamond sword`. Plural
     /// `diamonds` and `torches` work too.
+    /// The item after `a` / `an` (`an egg`): the article is already read.
+    pub(crate) fn item_after_article(&mut self, first: &str) -> Option<Expr> {
+        self.item(first)
+    }
+
+    /// An item whose first word was just read; only when it has more than one word.
+    pub(crate) fn item_at_prev(&mut self, first: &str) -> Option<Expr> {
+        let save = self.pos;
+        match self.item(first) {
+            Some(e) if self.pos > save => Some(e),
+            _ => {
+                self.pos = save;
+                None
+            }
+        }
+    }
+
     fn item(&mut self, first: &str) -> Option<Expr> {
         let lower = first.to_ascii_lowercase();
         if !crate::items::could_start(&lower) {
@@ -1618,6 +1653,13 @@ impl P<'_> {
         }
         for n in (1..=words.len()).rev() {
             let joined = words.get(..n).unwrap_or_default().join("_");
+            if let Some(a) = crate::items::alias(&joined) {
+                self.pos = start + n;
+                return Some(Expr::Item {
+                    id: a.to_string(),
+                    count: 1,
+                });
+            }
             let mut candidates = vec![joined.clone()];
             if let Some(s) = joined.strip_suffix("es") {
                 candidates.push(s.to_string());
@@ -1773,8 +1815,7 @@ impl P<'_> {
                 Ok(Expr::Var(var))
             }
             Tok::Sym("(") => {
-                let _depth = NestGuard::enter()?;
-                let e = self.sum()?;
+                let e = self.top()?;
                 if !self.eat_sym(")") {
                     return Err("missing ')'".into());
                 }
@@ -1782,6 +1823,9 @@ impl P<'_> {
             }
             Tok::Word(w) => {
                 let lw = w.to_ascii_lowercase();
+                if let Some(e) = self.compat_early(&lw)? {
+                    return Ok(e);
+                }
                 if let Some(e) = self.shape_head(&lw)? {
                     return Ok(e);
                 }
@@ -1792,6 +1836,9 @@ impl P<'_> {
                     return Ok(e);
                 }
                 if let Some(e) = self.mobitem_head(&lw)? {
+                    return Ok(e);
+                }
+                if let Some(e) = self.compat_head(&lw)? {
                     return Ok(e);
                 }
                 if let Some(e) = self.state_head(&lw)? {
@@ -2290,9 +2337,14 @@ impl P<'_> {
                         if !self.eat_sym(")") {
                             return Err("missing ')' after location(x, y, z)".into());
                         }
-                        if !(3..=4).contains(&parts.len()) {
-                            return Err("location(x, y, z) or location(x, y, z, world)".into());
+                        if !(3..=6).contains(&parts.len()) {
+                            return Err(
+                                "location(x, y, z), location(x, y, z, world) or location(x, y, z, world, yaw, pitch)"
+                                    .into(),
+                            );
                         }
+                        // Locations here have no rotation: yaw and pitch are read and dropped.
+                        parts.truncate(4);
                         for p in parts.iter().take(3) {
                             if !Ty::Number.accepts(p.ty(self.env)) {
                                 return Err("location() needs numbers for x, y and z".into());
@@ -2341,6 +2393,9 @@ impl P<'_> {
                     }
                     "random" if matches!(self.peek(), Some(t) if t.is_lit("element")) => {
                         self.pos += 1;
+                        if matches!(self.peek(), Some(t) if t.is_lit("out")) {
+                            self.pos += 1;
+                        }
                         if !matches!(self.peek(), Some(t) if t.is_lit("of")) {
                             return Err("expected 'random element of {list::*}'".into());
                         }
@@ -2379,12 +2434,12 @@ impl P<'_> {
                             return Err("expected 'random integer between <number> and <number>'".into());
                         }
                         self.pos += 1;
-                        let a = self.unary()?;
+                        let a = self.sum()?;
                         if !matches!(self.peek(), Some(t) if t.is_lit("and")) {
                             return Err("expected 'random integer between <number> and <number>'".into());
                         }
                         self.pos += 1;
-                        let b = self.unary()?;
+                        let b = self.sum()?;
                         for side in [&a, &b] {
                             if !Ty::Number.accepts(side.ty(self.env)) {
                                 return Err("random needs numbers".into());
@@ -2514,6 +2569,9 @@ impl P<'_> {
                         }
                         if let Some(item) = self.item(&w) {
                             return Ok(item);
+                        }
+                        if let Some(e) = self.compat_article(&lw)? {
+                            return Ok(e);
                         }
                         if let Some(e) = self.t1_literal(&w) {
                             return Ok(e);
@@ -2884,19 +2942,45 @@ impl P<'_> {
 
     /// `3 blocks above loc`, `2 meters north of player's location`. The cursor is
     /// after the number. `None` when the words after it are not this form.
-    fn textdir_offset(&mut self, n: f64) -> Result<Option<Expr>, String> {
+    pub(crate) fn textdir_offset(&mut self, n: f64) -> Result<Option<Expr>, String> {
         let word = |k: usize| match self.toks.get(self.pos + k) {
             Some(Tok::Word(w)) => Some(w.to_ascii_lowercase()),
             _ => None,
         };
-        if self.pos + 1 >= self.toks.len() {
-            self.hit_end.set(true);
-        }
         if !matches!(
             word(0).as_deref(),
             Some("block" | "blocks" | "meter" | "meters" | "metre" | "metres")
         ) {
+            if self.pos + 1 >= self.toks.len() {
+                self.hit_end.set(true);
+            }
             return Ok(None);
+        }
+        if self.pos + 4 >= self.toks.len() {
+            self.hit_end.set(true);
+        }
+        // `3 meters in front of x`, `behind`, `to the left of`, `to the right of`.
+        let facing: Option<(i8, i8, usize)> =
+            match (word(1).as_deref(), word(2).as_deref(), word(3).as_deref()) {
+                (Some("in"), Some("front"), Some("of")) => Some((1, 0, 3)),
+                (Some("behind"), _, _) => Some((-1, 0, 1)),
+                (Some("to"), Some("the"), Some("left")) => Some((0, -1, 3)),
+                (Some("to"), Some("the"), Some("right")) => Some((0, 1, 3)),
+                _ => None,
+            };
+        if let Some((f, s, used)) = facing {
+            self.pos += 1 + used;
+            if self.is_word(0, "of") {
+                self.pos += 1;
+            }
+            let loc = self.primary()?;
+            if !matches!(loc.ty(self.env), Ty::Location | Ty::Player | Ty::Object) {
+                return Err("expected a location or player after 'in front of'".into());
+            }
+            return Ok(Some(Self::textdir_op(
+                TextOp::Facing(f, s),
+                vec![Expr::Num(n), loc],
+            )));
         }
         let Some((dx, dy, dz)) = word(1)
             .as_deref()

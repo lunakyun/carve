@@ -6,6 +6,40 @@ use carve_core::expr_player_state::PStat;
 
 use crate::{WasmHost, world_name};
 
+/// When each player last did something, in milliseconds since the epoch.
+static ACTIVE: std::sync::Mutex<Vec<(String, u64)>> = std::sync::Mutex::new(Vec::new());
+
+fn now_ms() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_millis() as u64)
+}
+
+/// The player did something (moved, clicked, chatted).
+pub(crate) fn touch(uuid: &str) {
+    let now = now_ms();
+    if let Ok(mut a) = ACTIVE.lock() {
+        match a.iter_mut().find(|(u, _)| u == uuid) {
+            Some(e) => e.1 = now,
+            None => a.push((uuid.to_string(), now)),
+        }
+    }
+}
+
+/// Ticks since the player last did something (since the plugin saw them first).
+fn idle_ticks(uuid: &str) -> f64 {
+    let now = now_ms();
+    let Ok(mut a) = ACTIVE.lock() else { return 0.0 };
+    let since = match a.iter().find(|(u, _)| u == uuid) {
+        Some((_, t)) => *t,
+        None => {
+            a.push((uuid.to_string(), now));
+            now
+        }
+    };
+    (now.saturating_sub(since) / 50) as f64
+}
+
 impl WasmHost<'_> {
     pub(crate) fn pstat_impl(&mut self, p: &PlayerRef, s: PStat) -> Option<f64> {
         let pl = self.get(p)?;
@@ -22,6 +56,7 @@ impl WasmHost<'_> {
             PStat::HotbarSlot => f64::from(pl.get_selected_slot()),
             PStat::Yaw => f64::from(e.get_yaw()),
             PStat::Pitch => f64::from(e.get_pitch()),
+            PStat::IdleTicks => idle_ticks(&p.uuid),
         })
     }
 
@@ -36,7 +71,7 @@ impl WasmHost<'_> {
             PStat::Gliding => e.set_fall_flying(v != 0.0),
             PStat::Glowing => e.set_glowing(v != 0.0),
             PStat::Gravity => e.set_has_gravity(v != 0.0),
-            PStat::HotbarSlot | PStat::Yaw | PStat::Pitch => {}
+            PStat::HotbarSlot | PStat::Yaw | PStat::Pitch | PStat::IdleTicks => {}
         }
     }
 

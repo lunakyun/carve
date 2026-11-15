@@ -222,13 +222,14 @@ pub fn expr_head(toks: &[Tok], at: usize, first: &str, hit_end: &Cell<bool>) -> 
 
 /// Is this a world value the host can name?
 pub fn world_ty_ok(t: Ty) -> bool {
-    matches!(t, Ty::World | Ty::Text | Ty::Object)
+    matches!(t, Ty::World | Ty::Text | Ty::Object | Ty::Player)
 }
 
 fn world_name(host: &mut dyn Host, v: Option<Value>) -> Option<String> {
     match v {
         Some(Value::World(n) | Value::Text(n)) => Some(n),
         Some(Value::Location { world: Some(n), .. }) => Some(n),
+        Some(Value::Player(p)) => host.player_location(&p).map(|l| l.3),
         Some(_) => None,
         None => host.default_world(),
     }
@@ -440,17 +441,36 @@ fn border_set(toks: &[Tok], env: &Env) -> Result<Option<ServerFx>, String> {
     if toks.get(i).is_some_and(|t| t.is_lit("world")) {
         i += 1;
     }
-    if !toks.get(i).is_some_and(|t| t.is_lit("border")) {
-        return Ok(None);
-    }
-    i += 1;
-    if !toks
+    // `set size of [the] world border of <world> to <n>`
+    let size_first = toks
         .get(i)
         .is_some_and(|t| t.is_lit("size") || t.is_lit("diameter") || t.is_lit("width"))
-    {
-        return Ok(None);
+        && toks.get(i + 1).is_some_and(|t| t.is_lit("of"));
+    if size_first {
+        i += 2;
+        if toks.get(i).is_some_and(|t| t.is_lit("the")) {
+            i += 1;
+        }
+        if toks.get(i).is_some_and(|t| t.is_lit("world")) {
+            i += 1;
+        }
+        if !toks.get(i).is_some_and(|t| t.is_lit("border")) {
+            return Ok(None);
+        }
+        i += 1;
+    } else {
+        if !toks.get(i).is_some_and(|t| t.is_lit("border")) {
+            return Ok(None);
+        }
+        i += 1;
+        if !toks
+            .get(i)
+            .is_some_and(|t| t.is_lit("size") || t.is_lit("diameter") || t.is_lit("width"))
+        {
+            return Ok(None);
+        }
+        i += 1;
     }
-    i += 1;
     let usage = "set world border size [of <world>] to <number> [over <timespan>]";
     let world = if toks.get(i).is_some_and(|t| t.is_lit("of")) {
         let to = find_lit(toks, i + 1, "to").ok_or_else(|| format!("expected '{usage}'"))?;

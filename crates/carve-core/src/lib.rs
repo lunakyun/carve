@@ -77,6 +77,7 @@ pub mod skbee_recipes_advancements;
 pub mod skbee_scoreboard_teams;
 pub mod skbee_text;
 pub mod skbee_utilities;
+pub mod skript_compat;
 pub mod sounds;
 pub mod structures;
 pub mod support;

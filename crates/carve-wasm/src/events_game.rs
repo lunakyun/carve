@@ -204,9 +204,17 @@ pub fn register_all(c: &Context) {
             &[],
         ))
     });
-    reg!(c, InventoryOpenEvent, Ev::InvOpen, cancel, |_s, _h, d| Some(
-        make_ctx(Ev::InvOpen, Some(player_ref(&d.player)), &[], &[], &[],)
-    ));
+    reg!(c, InventoryOpenEvent, Ev::InvOpen, cancel, |_s, _h, d| {
+        let who = player_ref(&d.player);
+        let menu = crate::inv::menu_info(&who.uuid);
+        let mut ctx = make_ctx(Ev::InvOpen, Some(who), &[], &[], &[]);
+        ctx.inv = Some(Box::new(carve_core::inventories::InvClick {
+            slot: -1,
+            menu,
+            ..Default::default()
+        }));
+        Some(ctx)
+    });
     reg!(c, InventoryDragEvent, Ev::InvDrag, cancel, |_s, _h, d| Some(
         make_ctx(Ev::InvDrag, Some(player_ref(&d.player)), &[], &[], &[],)
     ));

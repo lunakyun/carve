@@ -150,7 +150,7 @@ impl Value {
                 .parse::<f64>()
                 .map(|v| (v - n).abs() < 1e-9)
                 .unwrap_or(false),
-            (Value::Item { id: a, .. }, Value::Item { id: b, .. }) => a == b,
+            (Value::Item { id: a, .. }, Value::Item { id: b, .. }) => crate::items::same_kind(a, b),
             (Value::Item { id, .. }, Value::Text(t)) | (Value::Text(t), Value::Item { id, .. }) => {
                 let t = t.trim().to_ascii_lowercase();
                 let t = t.strip_prefix("minecraft:").unwrap_or(&t);

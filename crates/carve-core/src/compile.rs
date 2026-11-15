@@ -375,6 +375,8 @@ pub enum Effect {
     PotionsParticles(Box<crate::potions_particles_queues::PotionEffect>),
     /// Barter drop changes (`conditions_mobs_items`).
     MobsItems(Box<crate::conditions_mobs_items::MobItemEffect>),
+    /// Chat message edits, look at and the warn-only lines (`skript_compat`).
+    Compat(Box<crate::skript_compat::Fx>),
     /// Changes of `entity_block_properties` expressions (scale, target, sea pickles, ...).
     EntityBlockProps(Box<crate::entity_block_properties::PropertyEffect>),
     /// Changes of `block_state_lists` block properties.
@@ -522,6 +524,8 @@ pub struct Trigger {
     pub file: Arc<str>,
     pub line: usize,
     pub kind: TriggerKind,
+    /// `with priority ...` of an event: 0 lowest ... 2 normal ... 4 highest, 5 monitor.
+    pub prio: u8,
     pub code: Arc<Code>,
 }
 
@@ -565,6 +569,7 @@ pub enum EffKind {
     Rtw(crate::skbee_raytrace_world::EOp),
     PotionsParticles(crate::potions_particles_queues::EOp),
     MobsItems(crate::conditions_mobs_items::EOp),
+    Compat(crate::skript_compat::EOp),
     SetHealth,
     SetGamemode,
     Xp(crate::xp_level::XpOp),
@@ -590,6 +595,8 @@ pub enum EffKind {
     Remove,
     Delete,
     PlaySound,
+    /// `play sound ... at <location> to <players>`.
+    PlaySoundAtTo,
     StopSound,
     StopAllSounds,
     Admin(AdminEff),
@@ -679,10 +686,13 @@ pub const EFFECT_PATTERNS: &[(&str, EffKind)] = &[
     ("set health of %player% to %number%", EffKind::SetHealth),
     ("kill %player%", EffKind::Kill),
     (
-        "teleport %player% to %number%, %number%, %number%",
+        "[(force|forcibly)] teleport %player% to %number%, %number%, %number%",
         EffKind::Teleport,
     ),
-    ("teleport %player% to %location%", EffKind::TeleportTo),
+    (
+        "[(force|forcibly)] teleport %player% to %location%",
+        EffKind::TeleportTo,
+    ),
     ("give %number% [of] %item% to %player%", EffKind::GiveCount),
     ("give %item% to %player%", EffKind::GiveTo),
     ("give %player% %item%", EffKind::Give),
@@ -736,8 +746,9 @@ fn registry() -> &'static Registry {
     static R: OnceLock<Registry> = OnceLock::new();
     R.get_or_init(|| Registry {
         // The pattern strings are constants covered by tests; a bad one is skipped.
-        effects: crate::skbee_text::EFFECT_PATTERNS
+        effects: crate::skript_compat::EFFECT_PATTERNS
             .iter()
+            .chain(crate::skbee_text::EFFECT_PATTERNS)
             .chain(crate::op_kick_ban::EFFECT_PATTERNS)
             .filter_map(|(s, k)| Pattern::new(s, *k).ok())
             .chain(
@@ -831,8 +842,9 @@ fn registry() -> &'static Registry {
                     .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
             )
             .collect(),
-        conditions: crate::op_kick_ban::CONDITION_PATTERNS
+        conditions: crate::skript_compat::CONDITION_PATTERNS
             .iter()
+            .chain(crate::op_kick_ban::CONDITION_PATTERNS)
             .chain(crate::conditions_values::CONDITION_PATTERNS)
             .chain(crate::senders::SENDER_CONDITION_PATTERNS)
             .chain(crate::gamemode::CONDITION_PATTERNS)
@@ -853,6 +865,7 @@ fn registry() -> &'static Registry {
 pub fn check_registry() -> Result<(), String> {
     for (s, k) in crate::skbee_text::EFFECT_PATTERNS
         .iter()
+        .chain(crate::skript_compat::EFFECT_PATTERNS)
         .chain(crate::op_kick_ban::EFFECT_PATTERNS)
         .chain(crate::senders::SENDER_EFFECT_PATTERNS)
         .chain(crate::gamemode::EFFECT_PATTERNS)
@@ -879,6 +892,7 @@ pub fn check_registry() -> Result<(), String> {
     }
     for (s, k) in crate::op_kick_ban::CONDITION_PATTERNS
         .iter()
+        .chain(crate::skript_compat::CONDITION_PATTERNS)
         .chain(crate::senders::SENDER_CONDITION_PATTERNS)
         .chain(crate::gamemode::CONDITION_PATTERNS)
         .chain(crate::item_meta::CONDITION_PATTERNS)
@@ -989,6 +1003,15 @@ impl Cx<'_> {
     }
 
     pub(crate) fn emit(&mut self, i: Instr, line: usize) -> usize {
+        for w in crate::error::take_compile_warns() {
+            let dup = self
+                .errors
+                .iter()
+                .any(|e| e.warning && e.line == line && e.msg == w);
+            if !dup {
+                self.errors.push(ScriptError::warning(self.file, line, w));
+            }
+        }
         self.code.push(i);
         self.lines.push(line);
         self.code.len() - 1
@@ -998,6 +1021,7 @@ impl Cx<'_> {
         let mut i = 0;
         while i < lines.len() {
             let line = &lines[i];
+            let _ = crate::error::take_compile_warns();
             let lower = line.text.to_ascii_lowercase();
             if lower.starts_with("if ") && line.opens_block() {
                 let mut ends = Vec::new();
@@ -1400,6 +1424,7 @@ impl Cx<'_> {
         let type_err = inner_error(&toks, &self.env).or(type_err);
         let srcs: Vec<&'static str> = crate::op_kick_ban::CONDITION_PATTERNS
             .iter()
+            .chain(crate::skript_compat::CONDITION_PATTERNS)
             .chain(PLAYER_FLAG_PATTERNS)
             .chain(crate::conditions_values::CONDITION_PATTERNS)
             .chain(crate::conditions_values::FLAG_PATTERNS)
@@ -1426,6 +1451,9 @@ impl Cx<'_> {
     /// `a or b`, `a and b`, `a, b and c`, `(a or b) and c`, `x is a or b`, or one condition.
     fn parse_cond(&self, toks: &[Tok]) -> Option<Cond> {
         let toks = strip_parens(toks);
+        if let Some(c) = crate::skript_compat::damage_cause_cond(toks, &self.env) {
+            return Some(c);
+        }
         // `chance of 25%`
         if let [first, second, mid @ .., last] = toks
             && first.is_lit("chance")
@@ -1883,6 +1911,17 @@ impl Cx<'_> {
                 return;
             }
         }
+        match crate::skript_compat::parse_effect(&toks, &self.env) {
+            Ok(Some(eff)) => {
+                self.emit(Instr::Eff(eff), num);
+                return;
+            }
+            Ok(None) => {}
+            Err(msg) => {
+                self.err(num, msg);
+                return;
+            }
+        }
         match crate::entities::parse_effect(&toks, &self.env) {
             Ok(Some(eff)) => {
                 self.emit(Instr::Eff(eff), num);
@@ -1925,6 +1964,25 @@ impl Cx<'_> {
                         return;
                     }
                     if matches!(p.kind, EffKind::Add | EffKind::Remove) {
+                        let not_list_ty = matches!(caps.get(1), Some(Some(Capture::Var(v))) if !v.is_list());
+                        let t = match caps.first() {
+                            Some(Some(Capture::Expr(e))) => e.ty(&self.env),
+                            _ => Ty::Object,
+                        };
+                        if not_list_ty && matches!(t, Ty::Timespan | Ty::Date) {
+                            // `subtract 1 minute from {x}`: the time math of `set`.
+                            let mut caps = caps;
+                            if let (Some(v), Some(e)) = (take_var(&mut caps, 1), take_expr(&mut caps, 0)) {
+                                let op = if p.kind == EffKind::Add {
+                                    crate::expr::BinOp::Add
+                                } else {
+                                    crate::expr::BinOp::Sub
+                                };
+                                let sum = Expr::TBin(Box::new(Expr::Var(v.clone())), op, Box::new(e));
+                                self.emit(Instr::Eff(Effect::Set(v, sum)), num);
+                            }
+                            return;
+                        }
                         let not_list = matches!(caps.get(1), Some(Some(Capture::Var(v))) if !v.is_list());
                         let ty = match caps.first() {
                             Some(Some(Capture::Expr(e))) => e.ty(&self.env),
@@ -1956,6 +2014,7 @@ impl Cx<'_> {
         let type_err = inner_error(&toks, &self.env).or(type_err);
         let srcs: Vec<&'static str> = EFFECT_PATTERNS
             .iter()
+            .chain(crate::skript_compat::EFFECT_PATTERNS)
             .chain(TEXT_EFFECT_PATTERNS)
             .chain(crate::health_food::EFFECT_PATTERNS)
             .chain(crate::effects_player_visibility::EFFECT_PATTERNS)
@@ -2040,10 +2099,47 @@ fn top_level(toks: &[Tok], seps: &[&str]) -> Vec<usize> {
 
 /// A broken text template or variable name inside the line, if any.
 fn inner_error(toks: &[Tok], env: &Env) -> Option<String> {
-    toks.iter().find_map(|t| match t {
+    let templ = toks.iter().find_map(|t| match t {
         Tok::Str(s) | Tok::Var(s) => parse_template(s, env).err(),
         _ => None,
-    })
+    });
+    templ.or_else(|| call_error(toks, env))
+}
+
+/// A call `name(...)` in the line that is wrong in itself: an unknown function,
+/// or the wrong number or type of arguments. Says so instead of the line's
+/// general "can't understand".
+fn call_error(toks: &[Tok], env: &Env) -> Option<String> {
+    for (i, w) in toks.iter().enumerate() {
+        let (Tok::Word(_), Some(Tok::Sym("("))) = (w, toks.get(i + 1)) else {
+            continue;
+        };
+        let mut depth = 0i32;
+        let mut end = None;
+        for (j, t) in toks.iter().enumerate().skip(i + 1) {
+            match t {
+                Tok::Sym("(") => depth += 1,
+                Tok::Sym(")") => {
+                    depth -= 1;
+                    if depth == 0 {
+                        end = Some(j);
+                        break;
+                    }
+                }
+                _ => {}
+            }
+        }
+        let slice = toks.get(i..=end?)?;
+        if let Err(e) = parse_expr(slice, env)
+            && (e.starts_with("unknown function")
+                || e.starts_with("the function")
+                || e.starts_with("argument ")
+                || e.contains("() takes "))
+        {
+            return Some(e);
+        }
+    }
+    None
 }
 
 fn take_expr(caps: &mut [Option<Capture>], i: usize) -> Option<Expr> {
@@ -2227,6 +2323,7 @@ fn build_effect(kind: EffKind, mut c: Vec<Option<Capture>>) -> Option<Effect> {
         EffKind::Rtw(op) => return crate::skbee_raytrace_world::build(op, c),
         EffKind::PotionsParticles(op) => return crate::potions_particles_queues::build(op, c),
         EffKind::MobsItems(op) => return crate::conditions_mobs_items::build_effect(op, c),
+        EffKind::Compat(op) => return crate::skript_compat::build_effect(op, c),
         EffKind::Heal => Effect::Heal(take_expr(c, 0)?),
         EffKind::SetHealth => Effect::SetHealth(take_expr(c, 0)?, take_expr(c, 1)?),
         EffKind::SetGamemode => Effect::SetGamemode(take_expr(c, 0)?, take_expr(c, 1)?),
@@ -2259,6 +2356,13 @@ fn build_effect(kind: EffKind, mut c: Vec<Option<Capture>>) -> Option<Effect> {
             pitch: take_expr(c, 2),
             to: take_expr(c, 3),
             at: take_expr(c, 4),
+        })),
+        EffKind::PlaySoundAtTo => Effect::PlaySound(Box::new(PlaySound {
+            sound: take_expr(c, 0)?,
+            volume: take_expr(c, 1),
+            pitch: take_expr(c, 2),
+            at: take_expr(c, 3),
+            to: take_expr(c, 4),
         })),
         EffKind::StopSound => Effect::StopSound(Some(take_expr(c, 0)?), take_expr(c, 1)),
         EffKind::StopAllSounds => Effect::StopSound(None, take_expr(c, 0)),
@@ -2371,7 +2475,7 @@ fn parse_command_header(file: &str, num: usize, head: &str) -> Result<CommandDef
 /// Compile one file on its own (no functions from other files).
 pub fn compile_file(file: &str, src: &str) -> Result<Vec<Trigger>, Vec<ScriptError>> {
     let mut c = compile_all(&[(file.to_string(), src.to_string())]);
-    if c.errors.is_empty() {
+    if c.errors.iter().all(|e| e.warning) {
         Ok(c.files.pop().map(|(_, t)| t).unwrap_or_default())
     } else {
         Err(c.errors)
@@ -2737,6 +2841,32 @@ fn split_click_filters(ev: &str) -> (&str, Vec<(&'static str, String)>) {
     (base, filters)
 }
 
+/// Priority of a trigger with no `with priority`.
+pub const DEFAULT_PRIORITY: u8 = 2;
+
+/// `damage of player with priority highest` -> (`damage of player`, 4).
+/// Priorities: lowest 0, low 1, normal 2, high 3, highest 4, monitor 5.
+pub fn split_priority(ev: &str) -> Result<(&str, u8), String> {
+    let Some(i) = ev.rfind(" with priority ") else {
+        return Ok((ev, DEFAULT_PRIORITY));
+    };
+    let word = ev.get(i + " with priority ".len()..).unwrap_or("").trim();
+    let p = match word {
+        "lowest" => 0,
+        "low" => 1,
+        "normal" => 2,
+        "high" => 3,
+        "highest" => 4,
+        "monitor" => 5,
+        other => {
+            return Err(format!(
+                "unknown priority '{other}': use lowest, low, normal, high, highest or monitor"
+            ));
+        }
+    };
+    Ok((ev.get(..i).unwrap_or(ev).trim(), p))
+}
+
 /// `5 seconds`, `1 minute`, `20 ticks`, `second` -> ticks.
 fn parse_every(s: &str) -> Option<u64> {
     let mut parts = s.split_whitespace();
@@ -2778,9 +2908,18 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
             ));
             continue;
         }
+        let mut prio: u8 = DEFAULT_PRIORITY;
         let (kind, body, env, is_command): (TriggerKind, &[Line], Env, bool) = if let Some(ev) =
             lower.strip_prefix("on ")
         {
+            let (ev, p) = match split_priority(ev.trim()) {
+                Ok(r) => r,
+                Err(m) => {
+                    errors.push(ScriptError::new(file, top.num, m));
+                    continue;
+                }
+            };
+            prio = p;
             let (ev, ev_filter) = crate::events_items::split_filter(ev.trim());
             let (ev, ph_prefix) = crate::placeholders::split_header(ev);
             let (ev, cmd_filter) = crate::events_movement::split_command_filter(ev);
@@ -2810,6 +2949,13 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                 ));
                 continue;
             }
+            if k == EventKind::Mv(crate::events_movement::MvEvent::TabComplete) {
+                errors.push(ScriptError::warning(
+                    file,
+                    top.num,
+                    "'on tab complete' never runs on this server: the plugin API has no tab completion event",
+                ));
+            }
             let mut env = Env {
                 has_message: k == EventKind::Chat || matches!(k, EventKind::PlayerServer(e) if e.has_text()),
                 arg_types: vec![],
@@ -2836,14 +2982,26 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                 has_attacker: matches!(k, EventKind::Damage | EventKind::Death),
                 has_block: matches!(
                     k,
-                    EventKind::Click | EventKind::RightClick | EventKind::LeftClick | EventKind::Break
+                    EventKind::Click
+                        | EventKind::RightClick
+                        | EventKind::LeftClick
+                        | EventKind::Break
+                        | EventKind::Place
                 ),
-                has_inv: k == EventKind::InventoryClick,
+                has_inv: matches!(
+                    k,
+                    EventKind::InventoryClick
+                        | EventKind::InventoryClose
+                        | EventKind::Game(crate::events_game::Ev::InvOpen)
+                ),
                 has_bound: matches!(k, EventKind::BoundEnter | EventKind::BoundExit),
                 ..Env::default()
             };
             if let EventKind::Game(e) = k {
                 crate::events_game::apply_env(&mut env, e);
+            }
+            if k == EventKind::Mv(crate::events_movement::MvEvent::TabComplete) {
+                env.arg_types = vec![Ty::Text; 8];
             }
             click_filters.extend(filters);
             (TriggerKind::Event(k), &top.children, env, false)
@@ -2901,10 +3059,13 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                 }
             };
             let mut body: Option<&[Line]> = None;
+            let mut suggestions: Option<&Line> = None;
             for entry in &top.children {
                 let el = entry.text.to_ascii_lowercase();
                 if el == "trigger:" {
                     body = Some(&entry.children);
+                } else if el == "suggestions:" {
+                    suggestions = Some(entry);
                 } else if el.starts_with("permission:") {
                     let v = entry.text.get("permission:".len()..).unwrap_or("").trim();
                     def.permission = Some(v.to_string()).filter(|s| !s.is_empty());
@@ -2985,6 +3146,33 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                 trigger_name: format!("command /{}", def.name),
                 ..Env::default()
             };
+            if let Some(sec) = suggestions {
+                // Checked like a trigger, but never run: Pumpkin has no custom
+                // command completions.
+                let mut scx = Cx {
+                    file,
+                    env: Env {
+                        functions: sigs.clone(),
+                        trigger_name: format!("suggestions of /{}", def.name),
+                        ..env.clone()
+                    },
+                    is_command: true,
+                    func_ret: None,
+                    no_cancel: None,
+                    code: Vec::new(),
+                    lines: Vec::new(),
+                    errors: Vec::new(),
+                    loops: Vec::new(),
+                    catch_depth: 0,
+                };
+                scx.block(&sec.children);
+                errors.append(&mut scx.errors);
+                errors.push(ScriptError::warning(
+                    file,
+                    sec.num,
+                    "'suggestions:' does nothing on this server: the plugin API can't change command completions",
+                ));
+            }
             (TriggerKind::Command(def), body, env, true)
         } else {
             errors.push(ScriptError::new(
@@ -3043,7 +3231,7 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                 guards.push(at);
                 continue;
             }
-            if what == "on" && matches!(kind, TriggerKind::Event(EventKind::Break)) {
+            if what == "on" && matches!(kind, TriggerKind::Event(EventKind::Break | EventKind::Place)) {
                 // `on break of stone or oak log:` matches any of the blocks.
                 let mut alts = Vec::new();
                 for part in text.split(" or ") {
@@ -3109,6 +3297,7 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
             file: file_arc.clone(),
             line: top.num,
             kind,
+            prio,
             code: Arc::new(Code {
                 file: file_arc.clone(),
                 line: top.num,

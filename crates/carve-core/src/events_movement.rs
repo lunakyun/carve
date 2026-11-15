@@ -22,6 +22,8 @@ pub enum MvEvent {
     Teleport,
     /// A player arrives in another world.
     WorldChange,
+    /// A player presses tab in a command: never fires, the plugin API has no such event.
+    TabComplete,
 }
 
 const NAMES: &[(&str, MvEvent)] = &[
@@ -43,6 +45,9 @@ const NAMES: &[(&str, MvEvent)] = &[
     ("player world change", MvEvent::WorldChange),
     ("world switch", MvEvent::WorldChange),
     ("changed world", MvEvent::WorldChange),
+    ("tab complete", MvEvent::TabComplete),
+    ("tab completion", MvEvent::TabComplete),
+    ("player tab complete", MvEvent::TabComplete),
 ];
 
 type F = &'static [(&'static str, Ty)];
@@ -68,7 +73,7 @@ impl MvEvent {
     pub fn cancellable(self) -> bool {
         matches!(
             self,
-            MvEvent::Command | MvEvent::Move | MvEvent::SwapHands | MvEvent::Teleport
+            MvEvent::Command | MvEvent::Move | MvEvent::SwapHands | MvEvent::Teleport | MvEvent::TabComplete
         )
     }
 
@@ -78,7 +83,7 @@ impl MvEvent {
             MvEvent::Command => COMMAND_FIELDS,
             MvEvent::Move | MvEvent::Teleport => LOC_FIELDS,
             MvEvent::WorldChange => WORLD_FIELDS,
-            MvEvent::FirstJoin | MvEvent::SwapHands => &[],
+            MvEvent::FirstJoin | MvEvent::SwapHands | MvEvent::TabComplete => &[],
         }
     }
 
@@ -90,6 +95,7 @@ impl MvEvent {
             MvEvent::SwapHands,
             MvEvent::Teleport,
             MvEvent::WorldChange,
+            MvEvent::TabComplete,
         ]
         .into_iter()
     }

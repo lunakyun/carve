@@ -65,7 +65,11 @@ pub fn clamp_levels(volume: f64, pitch: f64) -> (f32, f32) {
 /// Registered next to the main effect patterns.
 pub const SOUND_PATTERNS: &[(&str, EffKind)] = &[
     (
-        "play [the] (sound|sounds) %text% [(at|with) volume %number%] [(and|and at|and with|at|with) pitch %number%] [(to|for) %player%] [at %location%]",
+        "play [the] (sound|sounds) %text% [(at|with) volume %number%] [(and|and at|and with|at|with) pitch %number%] at %location% (to|for) %object%",
+        EffKind::PlaySoundAtTo,
+    ),
+    (
+        "play [the] (sound|sounds) %text% [(at|with) volume %number%] [(and|and at|and with|at|with) pitch %number%] [(to|for) %object%] [at %location%]",
         EffKind::PlaySound,
     ),
     ("stop all sounds [(for|from) %player%]", EffKind::StopAllSounds),
@@ -74,6 +78,19 @@ pub const SOUND_PATTERNS: &[(&str, EffKind)] = &[
         EffKind::StopSound,
     ),
 ];
+
+/// Bukkit enum names (`ENTITY_TNT_PRIMED`, `BLOCK_NOTE_BLOCK_PLING`) as
+/// Skript accepts them: the vanilla id that has the same letters with `.` as `_`.
+fn from_enum_name(id: String) -> String {
+    if id.contains('.') || id.contains(':') || !id.contains('_') {
+        return id;
+    }
+    let id = id.strip_prefix("minecraft_").unwrap_or(&id).to_string();
+    match vanilla_ids().iter().find(|v| v.replace('.', "_") == id) {
+        Some(v) => (*v).to_string(),
+        None => id,
+    }
+}
 
 /// A sound id is safe to put in a command: lowercase letters, digits and `_ . : / -`.
 /// Returns the cleaned id (trimmed, lowercased).
@@ -84,7 +101,7 @@ pub fn clean_id(raw: &str) -> Result<String, String> {
             c.is_ascii_lowercase() || c.is_ascii_digit() || matches!(c, '_' | '.' | ':' | '/' | '-')
         });
     if ok {
-        Ok(id)
+        Ok(from_enum_name(id))
     } else {
         Err(format!(
             "'{raw}' is not a valid sound id (try \"entity.experience_orb.pickup\")"

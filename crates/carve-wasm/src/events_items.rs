@@ -199,13 +199,13 @@ impl EventHandler<ProjectileHitEvent> for OnProjectileHit {
     }
 }
 
-pub fn register(context: &Context) {
-    register_event::<PlayerDropItemEvent>(context, EventKind::Drop);
-    register_event::<PlayerItemConsumeEvent>(context, EventKind::Consume);
-    register_event::<CraftItemEvent>(context, EventKind::Craft);
-    register_event::<PlayerGamemodeChangeEvent>(context, EventKind::GamemodeChange);
-    register_event::<PlayerLevelChangeEvent>(context, EventKind::LevelChange);
-    register_event::<CreatureSpawnEvent>(context, EventKind::MobSpawn);
+pub fn register(context: &Context, table: &carve_core::engine::ScriptTable) {
+    register_event::<PlayerDropItemEvent>(context, EventKind::Drop, table);
+    register_event::<PlayerItemConsumeEvent>(context, EventKind::Consume, table);
+    register_event::<CraftItemEvent>(context, EventKind::Craft, table);
+    register_event::<PlayerGamemodeChangeEvent>(context, EventKind::GamemodeChange, table);
+    register_event::<PlayerLevelChangeEvent>(context, EventKind::LevelChange, table);
+    register_event::<CreatureSpawnEvent>(context, EventKind::MobSpawn, table);
     if let Err(e) =
         context.register_event_handler::<EntityPickupItemEvent, _>(OnPickUp, EventPriority::Normal, true)
     {

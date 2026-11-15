@@ -126,7 +126,7 @@ pub fn split_filter(ev: &str) -> (&str, Option<(&'static str, String)>) {
         let right_base = match what {
             "entity" => base.ends_with("spawn"),
             "victim" => base == "damage" || base == "death",
-            "on" => matches!(base, "break" | "block break" | "mine"),
+            "on" => matches!(base, "break" | "block break" | "mine" | "place" | "block place"),
             _ => base.ends_with("change") && base.contains("game"),
         };
         if right_base && !rest.is_empty() {
@@ -142,7 +142,11 @@ pub fn filter_ok(k: EventKind, what: &str) -> bool {
         "with" => matches!(k, EventKind::Click | EventKind::RightClick | EventKind::LeftClick),
         "on" => matches!(
             k,
-            EventKind::Click | EventKind::RightClick | EventKind::LeftClick | EventKind::Break
+            EventKind::Click
+                | EventKind::RightClick
+                | EventKind::LeftClick
+                | EventKind::Break
+                | EventKind::Place
         ),
         "entity" => k == EventKind::MobSpawn,
         "victim" => matches!(k, EventKind::Damage | EventKind::Death),
@@ -198,6 +202,10 @@ pub fn parse_val(allowed: u16, first: &str, rest: &[Tok]) -> Option<(EventVal, u
     let w = |i: usize, s: &str| matches!(rest.get(i), Some(t) if t.is_lit(s));
     let (v, n) = match first {
         "event-item" => (EventVal::Item, 0),
+        // Plain `item` in the drop, pick up and consume events, like Skript.
+        "item" if !(w(0, "of") || w(0, "type") || w(0, "amount") || w(0, "named") || w(0, "with")) => {
+            (EventVal::Item, 0)
+        }
         "event-entity" => (EventVal::Entity, 0),
         "event-location" => (EventVal::Location, 0),
         "event-recipe" => (EventVal::Recipe, 0),

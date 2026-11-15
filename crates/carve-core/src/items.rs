@@ -1827,9 +1827,53 @@ pub fn is_known(id: &str) -> bool {
 /// Could a name start with `word` (as its first part), or is `word` a plural
 /// of a name? Cheap check before trying longer word runs.
 pub fn could_start(word: &str) -> bool {
+    if alias(word).is_some() {
+        return true;
+    }
     let i = NAMES.partition_point(|n| *n < word);
     if NAMES.get(i).is_some_and(|n| n.starts_with(word)) {
         return true;
     }
     word.strip_suffix('s').is_some_and(is_known) || word.strip_suffix("es").is_some_and(is_known)
+}
+
+/// Skript alias words that are not one item: a kind of item (`sword`,
+/// `armor`) or another name for an item (`zombie skull`). Kinds are written
+/// `#sword`; [`same_kind`] compares them.
+pub fn alias(joined: &str) -> Option<&'static str> {
+    Some(match joined {
+        "sword" | "swords" => "#sword",
+        "armor" | "armour" | "armors" | "armours" => "#armor",
+        "axe" | "axes" => "#axe",
+        "pickaxe" | "pickaxes" => "#pickaxe",
+        "shovel" | "shovels" => "#shovel",
+        "hoe" | "hoes" => "#hoe",
+        "helmet" | "helmets" => "#helmet",
+        "chestplate" | "chestplates" => "#chestplate",
+        "leggings" => "#leggings",
+        "boots" => "#boots",
+        "zombie_skull" => "zombie_head",
+        "creeper_skull" => "creeper_head",
+        "dragon_skull" => "dragon_head",
+        "player_skull" => "player_head",
+        "wither_skull" | "wither_skeleton_head" => "wither_skeleton_skull",
+        "skeleton_head" => "skeleton_skull",
+        "web" | "cobwebs" => "cobweb",
+        _ => return None,
+    })
+}
+
+fn in_kind(kind: &str, id: &str) -> bool {
+    match kind {
+        "#armor" => ["_helmet", "_chestplate", "_leggings", "_boots"]
+            .iter()
+            .any(|s| id.ends_with(s)),
+        k => id.ends_with(&format!("_{}", k.trim_start_matches('#'))),
+    }
+}
+
+/// Are two item ids the same kind of item? Ids equal, or one of them is a
+/// `#kind` that the other belongs to.
+pub fn same_kind(a: &str, b: &str) -> bool {
+    a == b || (a.starts_with('#') && in_kind(a, b)) || (b.starts_with('#') && in_kind(b, a))
 }

@@ -157,27 +157,33 @@ pub fn parse_blocks(file: &str, src: &str) -> (Vec<Line>, Vec<ScriptError>) {
             && opens(pt)
             && *level <= *pl
         {
-            errors.push(ScriptError::new(
-                file,
-                *pn,
-                "empty block: nothing is indented under this line",
-            ));
+            errors.push(empty_block(file, *pl, *pn));
             kept.pop();
         }
         kept.push(item);
     }
-    if let Some((_, pn, pt)) = kept.last()
+    if let Some((pl, pn, pt)) = kept.last()
         && opens(pt)
     {
-        errors.push(ScriptError::new(
-            file,
-            *pn,
-            "empty block: nothing is indented under this line",
-        ));
+        errors.push(empty_block(file, *pl, *pn));
         kept.pop();
     }
     let mut i = 0;
     (build(&kept, &mut i, 0), errors)
+}
+
+/// An empty trigger is an error; an empty `if`/`loop` inside one is only a
+/// warning (like Skript, a section with just a comment is skipped).
+fn empty_block(file: &str, level: usize, line: usize) -> ScriptError {
+    if level == 0 {
+        ScriptError::new(file, line, "empty block: nothing is indented under this line")
+    } else {
+        ScriptError::warning(
+            file,
+            line,
+            "empty section: nothing is indented under this line, it is left out",
+        )
+    }
 }
 
 /// A line that must have an indented block. `key: value:` (an option whose

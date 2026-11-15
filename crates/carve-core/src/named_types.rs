@@ -268,6 +268,7 @@ pub static ENUMS: &[EnumDef] = &[
             "magic",
             "melting",
             "poison",
+            "primed_tnt",
             "projectile",
             "sonic_boom",
             "starvation",
@@ -1327,6 +1328,13 @@ impl P<'_> {
         let paren = matches!(self.peek(), Some(t) if t.is_lit("("));
         if paren && self.has_function(lw) {
             return Ok(None);
+        }
+        // `light blue wool` is an item, `light blue` a color.
+        if matches!(lw, "light" | "dark")
+            && matches!(self.toks.get(self.pos), Some(Tok::Word(_)))
+            && let Some(item) = self.item_at_prev(lw)
+        {
+            return Ok(Some(item));
         }
         if lw == "light"
             && matches!(self.toks.get(self.pos), Some(Tok::Word(_) | Tok::Num(_)))

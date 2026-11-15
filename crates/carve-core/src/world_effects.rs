@@ -149,6 +149,7 @@ fn name_of(toks: &[Tok]) -> Option<String> {
 pub fn effect_id(words: &str) -> Option<&'static str> {
     let alias = match words {
         "regen" => "regeneration",
+        "swiftness" => "speed",
         "jump" => "jump_boost",
         "instant_heal" | "healing" => "instant_health",
         "harming" => "instant_damage",
@@ -407,9 +408,9 @@ fn apply(toks: &[Tok], env: &Env) -> Result<Option<WorldFx>, String> {
 
 /// `remove all potion effects from <player>`, `remove speed potion effect from <player>`.
 fn clear(toks: &[Tok], env: &Env) -> Result<Option<WorldFx>, String> {
-    if !toks.iter().any(|t| is(t, "potion")) {
-        return Ok(None);
-    }
+    // `remove levitation from the player` (no `potion effect` words) counts
+    // when what comes before `from` is a potion effect name.
+    let bare = !toks.iter().any(|t| is(t, "potion"));
     let Some(from_i) = find(toks, 1, &["from", "of"]) else {
         return Ok(None);
     };
@@ -428,12 +429,18 @@ fn clear(toks: &[Tok], env: &Env) -> Result<Option<WorldFx>, String> {
         .cloned()
         .collect();
     let effect = if words.is_empty() {
+        if bare {
+            return Ok(None);
+        }
         None
     } else {
         let Some(name) = name_of(&words) else {
             return Ok(None);
         };
         let Some(id) = effect_id(&name) else {
+            if bare {
+                return Ok(None);
+            }
             return Err(format!("unknown potion effect '{}'", name.replace('_', " ")));
         };
         Some(id.to_string())

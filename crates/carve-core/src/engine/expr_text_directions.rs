@@ -73,6 +73,33 @@ impl Engine {
                     None => Value::None,
                 }
             }
+            TextOp::Facing(fwd, side) => {
+                let (Some(n), Some(l)) = (arg(0), arg(1)) else {
+                    return Ok(Value::None);
+                };
+                let n = self.num(n, ex, host)?;
+                let l = self.eval(l, ex, host)?;
+                let Some((x, y, z, world)) = self.as_location(&l, ex, host) else {
+                    return Ok(Value::None);
+                };
+                // Players face where they look; other places face south (yaw 0).
+                let yaw = match online(&l, &mut ex.seen, host) {
+                    Some(p) => host
+                        .pstat(&p, crate::expr_player_state::PStat::Yaw)
+                        .unwrap_or(0.0)
+                        .to_radians(),
+                    None => 0.0,
+                };
+                let (fx, fz) = (-yaw.sin(), yaw.cos());
+                let (rx, rz) = (-yaw.cos(), -yaw.sin());
+                let (f, s) = (f64::from(fwd), f64::from(side));
+                Value::Location {
+                    x: x + n * (f * fx + s * rx),
+                    y,
+                    z: z + n * (f * fz + s * rz),
+                    world,
+                }
+            }
             TextOp::ChunkX | TextOp::ChunkZ => {
                 let Some(l) = arg(0) else { return Ok(Value::None) };
                 let l = self.eval(l, ex, host)?;

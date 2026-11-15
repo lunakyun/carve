@@ -1,4 +1,27 @@
+#![allow(clippy::missing_const_for_thread_local)]
+
+use std::cell::RefCell;
 use std::fmt;
+
+thread_local! {
+    static COMPILE_WARNS: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
+}
+
+/// Note a load-time warning for the line being compiled (syntax that parses
+/// but needs another plugin). The compiler turns it into a [`ScriptError`].
+pub(crate) fn compile_warn(msg: impl Into<String>) {
+    let m = msg.into();
+    COMPILE_WARNS.with(|w| {
+        let mut w = w.borrow_mut();
+        if !w.contains(&m) {
+            w.push(m);
+        }
+    });
+}
+
+pub(crate) fn take_compile_warns() -> Vec<String> {
+    COMPILE_WARNS.with(|w| std::mem::take(&mut *w.borrow_mut()))
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ScriptError {

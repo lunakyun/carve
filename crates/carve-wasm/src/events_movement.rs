@@ -52,6 +52,10 @@ trait MvAccess: FromIntoEvent {
     /// `None` skips the event (throttled).
     fn ctx(d: &EventData<Self>) -> Option<EventCtx>;
     fn cancel(_d: &mut EventData<Self>) {}
+    /// The player this event shows to be active (for `idle time of`).
+    fn active(_d: &EventData<Self>) -> Option<String> {
+        None
+    }
 }
 
 impl MvAccess for PlayerCommandSendEvent {
@@ -68,6 +72,9 @@ impl MvAccess for PlayerCommandSendEvent {
 
 impl MvAccess for PlayerMoveEvent {
     const KIND: MvEvent = MvEvent::Move;
+    fn active(d: &EventData<Self>) -> Option<String> {
+        (d.from_position != d.to_position).then(|| pumpkin_plugin_api::uuid::to_string(d.player.get_id()))
+    }
     fn ctx(d: &EventData<Self>) -> Option<EventCtx> {
         if !mv::moved_enough(d.from_position, d.to_position) {
             return None;
@@ -125,6 +132,9 @@ struct OnMv<E>(PhantomData<fn() -> E>);
 impl<E: MvAccess> EventHandler<E> for OnMv<E> {
     fn handle(&self, server: Server, mut data: EventData<E>) -> EventData<E> {
         let kind = EventKind::Mv(E::KIND);
+        if let Some(u) = E::active(&data) {
+            crate::expr_player_state::touch(&u);
+        }
         let cancelled = with_state(&server, None, |st, host| {
             if !st.engine.table().has_event(kind) {
                 return false;

@@ -2175,6 +2175,10 @@ trait EventAccess: FromIntoEvent {
     }
     /// Called for every event, even when no script listens.
     fn observe(_data: &EventData<Self>, _hs: &mut HostState) {}
+    /// The player this event shows to be active (for `idle time of`).
+    fn actor(_data: &EventData<Self>) -> Option<String> {
+        None
+    }
     /// A message a script set during the event (`set join message to`).
     fn set_message(_data: &mut EventData<Self>, _msg: &str) {}
     /// True when this server event is not the script event (no script runs).
@@ -2223,10 +2227,33 @@ impl EventAccess for PlayerLeaveEvent {
 }
 
 impl EventAccess for PlayerChatEvent {
+    fn actor(d: &EventData<Self>) -> Option<String> {
+        Some(uuid::to_string(d.player.get_id()))
+    }
     fn ctx(d: &EventData<Self>) -> EventCtx {
         let mut ctx = EventCtx::chat(player_ref(&d.player), d.message.clone());
         ctx.recipients = Some(d.recipients.iter().map(player_ref).collect());
         ctx
+    }
+    fn apply_out(d: &mut EventData<Self>, out: &[(u8, Value)]) {
+        use carve_core::skript_compat::{SLOT_CHAT_FORMAT, SLOT_CHAT_MESSAGE};
+        let mut format = None;
+        for (slot, v) in out {
+            match (*slot, v) {
+                (SLOT_CHAT_MESSAGE, Value::Text(t)) => d.message = t.clone(),
+                (SLOT_CHAT_FORMAT, Value::Text(t)) => format = Some(t.clone()),
+                _ => {}
+            }
+        }
+        // The event has no format field: send the formatted line to the
+        // recipients ourselves and cancel the original.
+        if let Some(f) = format {
+            d.cancelled = true;
+            for p in &d.recipients {
+                p.send_system_message(text(&f), false);
+            }
+            plog(ApiLevel::Info, &f);
+        }
     }
     fn set_cancelled(d: &mut EventData<Self>) {
         d.cancelled = true;
@@ -2234,12 +2261,21 @@ impl EventAccess for PlayerChatEvent {
 }
 
 impl EventAccess for BlockBreakEvent {
+    fn actor(d: &EventData<Self>) -> Option<String> {
+        d.player.as_ref().map(|p| uuid::to_string(p.get_id()))
+    }
     fn ctx(d: &EventData<Self>) -> EventCtx {
         let mut ctx = match &d.player {
             Some(p) => EventCtx::player(player_ref(p)),
             None => EventCtx::console(),
         };
         ctx.block = Some(d.block.strip_prefix("minecraft:").unwrap_or(&d.block).to_string());
+        ctx.block_at = Some((
+            f64::from(d.block_pos.x),
+            f64::from(d.block_pos.y),
+            f64::from(d.block_pos.z),
+            d.player.as_ref().map(|p| world_name(&p.get_world())),
+        ));
         ctx
     }
     fn apply_out(d: &mut EventData<Self>, out: &[(u8, Value)]) {
@@ -2258,8 +2294,24 @@ impl EventAccess for BlockBreakEvent {
 }
 
 impl EventAccess for BlockPlaceEvent {
+    fn actor(d: &EventData<Self>) -> Option<String> {
+        Some(uuid::to_string(d.player.get_id()))
+    }
     fn ctx(d: &EventData<Self>) -> EventCtx {
-        EventCtx::player(player_ref(&d.player))
+        let mut ctx = EventCtx::player(player_ref(&d.player));
+        ctx.block = Some(
+            d.block_placed
+                .strip_prefix("minecraft:")
+                .unwrap_or(&d.block_placed)
+                .to_string(),
+        );
+        ctx.block_at = Some((
+            f64::from(d.block_pos.x),
+            f64::from(d.block_pos.y),
+            f64::from(d.block_pos.z),
+            Some(world_name(&d.player.get_world())),
+        ));
+        ctx
     }
     fn set_cancelled(d: &mut EventData<Self>) {
         d.cancelled = true;
@@ -2358,6 +2410,8 @@ struct OnInvClose;
 impl EventHandler<InventoryCloseEvent> for OnInvClose {
     fn handle(&self, server: Server, data: EventData<InventoryCloseEvent>) -> EventData<InventoryCloseEvent> {
         let who = player_ref(&data.player);
+        // `event-inventory` of a menu the scripts opened.
+        let menu = inv::menu_info(&who.uuid);
         inv::forget(&who.uuid);
         with_state(&server, None, |st, host| {
             if !st.engine.table().has_event(EventKind::InventoryClose) {
@@ -2367,8 +2421,13 @@ impl EventHandler<InventoryCloseEvent> for OnInvClose {
                 inner: host,
                 hs: &mut st.hs,
             };
-            st.engine
-                .fire(EventKind::InventoryClose, EventCtx::player(who), &mut th);
+            let mut ctx = EventCtx::player(who);
+            ctx.inv = Some(Box::new(carve_core::inventories::InvClick {
+                slot: -1,
+                menu,
+                ..Default::default()
+            }));
+            st.engine.fire(EventKind::InventoryClose, ctx, &mut th);
         });
         data
     }
@@ -2418,6 +2477,7 @@ impl EventHandler<PlayerInteractEvent> for OnInteract {
         server: Server,
         mut data: EventData<PlayerInteractEvent>,
     ) -> EventData<PlayerInteractEvent> {
+        expr_player_state::touch(&uuid::to_string(data.player.get_id()));
         let specific = match data.action {
             InteractAction::RightClickAir | InteractAction::RightClickBlock => EventKind::RightClick,
             InteractAction::LeftClickAir | InteractAction::LeftClickBlock => EventKind::LeftClick,
@@ -2475,6 +2535,11 @@ impl State {
 impl<E: EventAccess> EventHandler<E> for OnEvent<E> {
     fn handle(&self, server: Server, mut data: EventData<E>) -> EventData<E> {
         let kind = self.0;
+        if matches!(kind, EventKind::Chat | EventKind::Place | EventKind::Break) {
+            if let Some(u) = E::actor(&data) {
+                expr_player_state::touch(&u);
+            }
+        }
         let left = E::left(&data);
         if let Some(u) = &left {
             sb::forget(u);
@@ -2511,9 +2576,25 @@ impl<E: EventAccess> EventHandler<E> for OnEvent<E> {
     }
 }
 
-fn register_event<E: EventAccess + Send + Sync + 'static>(ctx: &Context, kind: EventKind) {
+/// Pumpkin runs the highest priority first and the lowest last; Skript runs
+/// `lowest` first and `highest` / `monitor` last. So the order is turned around.
+fn server_priority(prio: Option<u8>) -> EventPriority {
+    match prio.unwrap_or(carve_core::compile::DEFAULT_PRIORITY) {
+        0 => EventPriority::Highest,
+        1 => EventPriority::High,
+        2 => EventPriority::Normal,
+        3 => EventPriority::Low,
+        _ => EventPriority::Lowest,
+    }
+}
+
+fn register_event<E: EventAccess + Send + Sync + 'static>(
+    ctx: &Context,
+    kind: EventKind,
+    table: &carve_core::engine::ScriptTable,
+) {
     let h = OnEvent::<E>(kind, std::marker::PhantomData);
-    if let Err(e) = ctx.register_event_handler::<E, _>(h, EventPriority::Normal, true) {
+    if let Err(e) = ctx.register_event_handler::<E, _>(h, server_priority(table.event_priority(kind)), true) {
         plog(
             ApiLevel::Error,
             &format!("could not listen to {} events: {e}", kind.name()),
@@ -3449,19 +3530,19 @@ impl Plugin for Carve {
             registered.insert(name.clone());
         }
 
-        register_event::<PlayerJoinEvent>(&context, EventKind::Join);
-        register_event::<PlayerLeaveEvent>(&context, EventKind::Quit);
-        register_event::<PlayerChatEvent>(&context, EventKind::Chat);
-        register_event::<BlockBreakEvent>(&context, EventKind::Break);
-        register_event::<BlockPlaceEvent>(&context, EventKind::Place);
-        register_event::<PlayerRespawnEvent>(&context, EventKind::Respawn);
-        register_event::<PlayerToggleSneakEvent>(&context, EventKind::SneakToggle);
-        register_event::<PlayerToggleSprintEvent>(&context, EventKind::SprintToggle);
-        register_event::<PlayerToggleFlightEvent>(&context, EventKind::FlightToggle);
-        events_items::register(&context);
-        register_event::<InventoryClickEvent>(&context, EventKind::InventoryClick);
-        register_event::<PlayerAdvancementDoneEvent>(&context, EventKind::AdvancementDone);
-        register_event::<PlayerRecipeDiscoverEvent>(&context, EventKind::RecipeDiscover);
+        register_event::<PlayerJoinEvent>(&context, EventKind::Join, engine.table());
+        register_event::<PlayerLeaveEvent>(&context, EventKind::Quit, engine.table());
+        register_event::<PlayerChatEvent>(&context, EventKind::Chat, engine.table());
+        register_event::<BlockBreakEvent>(&context, EventKind::Break, engine.table());
+        register_event::<BlockPlaceEvent>(&context, EventKind::Place, engine.table());
+        register_event::<PlayerRespawnEvent>(&context, EventKind::Respawn, engine.table());
+        register_event::<PlayerToggleSneakEvent>(&context, EventKind::SneakToggle, engine.table());
+        register_event::<PlayerToggleSprintEvent>(&context, EventKind::SprintToggle, engine.table());
+        register_event::<PlayerToggleFlightEvent>(&context, EventKind::FlightToggle, engine.table());
+        events_items::register(&context, engine.table());
+        register_event::<InventoryClickEvent>(&context, EventKind::InventoryClick, engine.table());
+        register_event::<PlayerAdvancementDoneEvent>(&context, EventKind::AdvancementDone, engine.table());
+        register_event::<PlayerRecipeDiscoverEvent>(&context, EventKind::RecipeDiscover, engine.table());
         events_game::register_all(&context);
         events_player_server::register_all(&context, &|ev| {
             engine.table().has_event(EventKind::PlayerServer(ev))
@@ -3493,19 +3574,20 @@ impl Plugin for Carve {
             &context,
             engine
                 .table()
-                .has_event(EventKind::Mv(carve_core::events_movement::MvEvent::Move)),
+                .has_event(EventKind::Mv(carve_core::events_movement::MvEvent::Move))
+                || carve_core::expr_player_state::idle_used(),
         );
         for r in [
             context.register_event_handler::<PlayerInteractEvent, _>(OnInteract, EventPriority::Normal, true),
             context.register_event_handler::<InventoryCloseEvent, _>(OnInvClose, EventPriority::Normal, true),
             context.register_event_handler::<EntityDamageEvent, _>(
                 combat::OnDamage,
-                EventPriority::Normal,
+                server_priority(engine.table().event_priority(EventKind::Damage)),
                 true,
             ),
             context.register_event_handler::<PlayerDeathEvent, _>(
                 combat::OnDeath,
-                EventPriority::Normal,
+                server_priority(engine.table().event_priority(EventKind::Death)),
                 true,
             ),
             context.register_event_handler::<pumpkin_plugin_api::events::EntityDeathEvent, _>(
@@ -3520,7 +3602,7 @@ impl Plugin for Carve {
             ),
             context.register_event_handler::<EntityDamageByEntityEvent, _>(
                 combat::OnDamageByEntity,
-                EventPriority::Normal,
+                server_priority(engine.table().event_priority(EventKind::Damage)),
                 true,
             ),
         ] {

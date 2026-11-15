@@ -255,6 +255,7 @@ pub fn compile_defaults(
                     file: file.clone(),
                     line: first.num,
                     kind: TriggerKind::Event(EventKind::Load),
+                    prio: crate::compile::DEFAULT_PRIORITY,
                     code: Arc::new(Code {
                         file,
                         line: first.num,

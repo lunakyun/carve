@@ -184,9 +184,9 @@ fn plural(n: usize, one: &str) -> String {
     }
 }
 
-/// Errors in Skript's layout; at most 10 in chat, the rest are in `/carve errors`.
+/// Errors in Skript's layout, every one of them (like Skript).
 fn show_errors(out: &mut AdminOut, errors: &[ScriptError]) {
-    for e in errors.iter().take(10) {
+    for e in errors {
         let mut lines = e.skript_lines().into_iter();
         if let Some(head) = lines.next() {
             out.say(head);
@@ -194,12 +194,6 @@ fn show_errors(out: &mut AdminOut, errors: &[ScriptError]) {
         for l in lines {
             out.raw(l);
         }
-    }
-    if errors.len() > 10 {
-        out.say(format!(
-            "&c... and {} more (see /carve errors or the server log)",
-            errors.len() - 10
-        ));
     }
 }
 

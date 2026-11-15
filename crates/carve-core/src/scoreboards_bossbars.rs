@@ -185,6 +185,8 @@ pub enum SbFx {
     BarStyle(Expr, Pick<BarStyle>),
     BarFlag(Expr, BarFlag, bool),
     BarShow(Expr, Who),
+    /// `set bossbar visibility of <id> to true|false`: shown to / hidden from everyone.
+    BarVisible(Expr, Expr),
     BarHide(Expr, Who),
     BarRemove(Expr),
 }
@@ -812,7 +814,13 @@ fn bar_set(toks: &[Tok], b: usize, env: &Env) -> Result<SbFx, String> {
     const USAGE: &str = "expected 'set progress|title|color|style of bossbar \"id\" to <value>'";
     let to_i = find(toks, b + 1, "to").ok_or(USAGE)?;
     let value = &toks[to_i + 1..];
-    let (prop, id_toks) = if b == 1 {
+    let (prop, id_toks) = if b == 1 && toks.get(3).is_some_and(|t| is(t, "of")) && lc(&toks[2]).is_some() {
+        // `set bossbar progress of <id> to 50`
+        if to_i < 5 {
+            return Err(USAGE.into());
+        }
+        (lc(&toks[2]).ok_or(USAGE)?, &toks[4..to_i])
+    } else if b == 1 {
         // `set bossbar "id"'s progress to 50`
         let s = find(toks, 2, "'s").ok_or(USAGE)?;
         if s + 2 != to_i {
@@ -828,6 +836,10 @@ fn bar_set(toks: &[Tok], b: usize, env: &Env) -> Result<SbFx, String> {
     };
     let id = text(id_toks, env).ok_or("expected a bossbar id like \"boss\"")?;
     Ok(match prop.as_str() {
+        "visibility" | "visible" | "visiblity" => SbFx::BarVisible(
+            id,
+            expr_of(value, env, &[Ty::Boolean]).ok_or("expected true or false")?,
+        ),
         "title" | "name" => SbFx::BarTitle(id, text(value, env).ok_or("expected a title text")?),
         "progress" | "health" | "value" | "percentage" => SbFx::BarProgress(
             id,
@@ -1026,6 +1038,21 @@ impl Engine {
                 let id = self.text(id, ex, host)?;
                 for p in self.sb_targets(to, ex, host)? {
                     host.bossbar_show(&id, &p);
+                }
+            }
+            SbFx::BarVisible(id, on) => {
+                let id = self.text(id, ex, host)?;
+                let on = match self.eval(on, ex, host)? {
+                    Value::Bool(b) => b,
+                    Value::Text(t) => t.eq_ignore_ascii_case("true"),
+                    _ => false,
+                };
+                for p in host.online_players() {
+                    if on {
+                        host.bossbar_show(&id, &p);
+                    } else {
+                        host.bossbar_hide(&id, &p);
+                    }
                 }
             }
             SbFx::BarHide(id, to) => {
