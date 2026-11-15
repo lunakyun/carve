@@ -125,13 +125,14 @@
     },
     {
       "category": "event",
-      "description": "A block is broken. Has `player` (`<none>` when no player broke it). Can be cancelled.",
-      "example": "on break:\n    if player does not have permission \"builder\":\n        cancel event",
+      "description": "A block is broken. `on break of stone or oak log` only runs for those blocks. Has `player` (`<none>` when no player broke it) and `event-block`, the broken block. Can be cancelled.",
+      "example": "on break of stone or oak log:\n    send \"You mined %event-block%.\" to player",
       "id": "break",
       "name": "Block break",
       "page": "syntax/triggers",
       "patterns": [
         "on break",
+        "on break of <block>",
         "on block break",
         "on mine"
       ],
@@ -2474,7 +2475,7 @@
       "category": "effect",
       "description": "In `on piglin barter`: change the drops list the script sees. Pumpkin 0.2.2 copies only `cancelled` back from the event, so the piglin still throws its own drops; cancel the event to stop them.",
       "example": "on piglin barter:\n    set barter drops to 3 diamonds",
-      "id": "w5c3_barter_drops",
+      "id": "mobitem_barter_drops",
       "name": "Change barter drops",
       "page": "syntax/conditions-mobs-items",
       "patterns": [
@@ -3117,9 +3118,9 @@
       "category": "effect",
       "description": "Keeps the elements of a list for which every condition below holds. `input` is the element and `input index` its index.",
       "example": "set {_l::*} to 1, 2, 3, 4\nfilter {_l::*} to match:\n    input > 2",
-      "id": "w4_filter",
+      "id": "builtin_filter",
       "name": "Filter section",
-      "page": "syntax/functions-builtin-sections",
+      "page": "syntax/functions-sections",
       "patterns": [
         "filter %list variable% to match:"
       ],
@@ -4457,9 +4458,9 @@
       "category": "effect",
       "description": "Spawns an entity and runs the body; `event-entity` is the new entity.",
       "example": "spawn a zombie at player:\n    set name of event-entity to \"Bob\"",
-      "id": "w4_spawn_section",
+      "id": "builtin_spawn_section",
       "name": "Spawn section",
-      "page": "syntax/functions-builtin-sections",
+      "page": "syntax/functions-sections",
       "patterns": [
         "spawn %entity% [at %location%]:"
       ],
@@ -5756,7 +5757,7 @@
       "category": "condition",
       "description": "Whether a mob is a baby. Read from the mob's age data (animals) or baby flag (zombies); any other living mob is an adult.",
       "example": "if {_cow} is a baby:\n    send \"cute\"",
-      "id": "w6c3_age",
+      "id": "mobstate_age",
       "name": "Is adult / Is baby",
       "page": "syntax/conditions-mob-block-state",
       "patterns": [
@@ -5802,7 +5803,7 @@
       "category": "condition",
       "description": "Whether a value equals one of the items of a list (negated: none of them).",
       "example": "if player is any of all operators:\n    send \"op\"",
-      "id": "w5c3_any_of",
+      "id": "mobitem_any_of",
       "name": "Is any of",
       "page": "syntax/conditions-mobs-items",
       "patterns": [
@@ -5832,7 +5833,7 @@
       "category": "condition",
       "description": "What the event player's respawn point is: a bed or a respawn anchor, read from the block at (or just under) the saved respawn location.",
       "example": "on respawn:\n    if the respawn location is a bed spawn:\n        send \"welcome back\"",
-      "id": "w6c3_spawn_point",
+      "id": "mobstate_spawn_point",
       "name": "Is bed spawn / anchor spawn",
       "page": "syntax/conditions-mob-block-state",
       "patterns": [
@@ -5890,7 +5891,7 @@
       "category": "condition",
       "description": "A creeper that was struck by lightning, or a player holding a loaded crossbow in the main hand.",
       "example": "if {_creeper} is charged:\n    send \"boom\"",
-      "id": "w6c3_charged",
+      "id": "mobstate_charged",
       "name": "Is charged",
       "page": "syntax/conditions-mob-block-state",
       "patterns": [
@@ -5904,7 +5905,7 @@
       "category": "condition",
       "description": "Approximation: the entity is off the ground and the block at its feet is a ladder, vine, scaffolding or cave, twisting or weeping vine. The v0.1 plugin API has no climbing state.",
       "example": "if player is climbing:\n    send \"up\"",
-      "id": "w6c3_climbing",
+      "id": "mobstate_climbing",
       "name": "Is climbing",
       "page": "syntax/conditions-mob-block-state",
       "patterns": [
@@ -5918,7 +5919,7 @@
       "category": "condition",
       "description": "Whether a command block is in conditional mode (the `conditional` property of its block state).",
       "example": "if location(1, 64, 1) is conditional:\n    send \"conditional\"",
-      "id": "w6c3_conditional",
+      "id": "mobstate_conditional",
       "name": "Is conditional",
       "page": "syntax/conditions-mob-block-state",
       "patterns": [
@@ -6046,7 +6047,7 @@
       "category": "condition",
       "description": "Whether a mob came out of a spawner block. Carve remembers the mobs the spawner events report, so mobs that spawned before Carve loaded count as not from a spawner.",
       "example": "if {_mob} is from a spawner:\n    send \"spawner mob\"",
-      "id": "w6c3_spawner",
+      "id": "mobstate_spawner",
       "name": "Is from a spawner",
       "page": "syntax/conditions-mob-block-state",
       "patterns": [
@@ -6118,7 +6119,7 @@
       "category": "condition",
       "description": "Whether a player or mob holds an item in either hand, or in the main or off hand.",
       "example": "if player is holding diamond sword in the off hand:\n    send \"dual\"",
-      "id": "w6c3_holding",
+      "id": "mobstate_holding",
       "name": "Is holding",
       "page": "syntax/conditions-mob-block-state",
       "patterns": [
@@ -6134,7 +6135,7 @@
       "category": "condition",
       "description": "Whether a creeper has lit its fuse. Primed TNT is not in the plugin API.",
       "example": "if {_creeper} is igniting:\n    send \"run\"",
-      "id": "w6c3_igniting",
+      "id": "mobstate_igniting",
       "name": "Is igniting",
       "page": "syntax/conditions-mob-block-state",
       "patterns": [
@@ -6192,7 +6193,7 @@
       "category": "condition",
       "description": "A potion effect value made with `infinite`, or a player's active effect. Pumpkin's plugin API reports an infinite effect with duration 0, and a real effect never lingers at 0.",
       "example": "set {_e} to potion effect of speed for 10 seconds\nif {_e} is infinite:\n    send \"forever\"",
-      "id": "w6c3_infinite",
+      "id": "mobstate_infinite",
       "name": "Is infinite",
       "page": "syntax/conditions-mob-block-state",
       "patterns": [
@@ -6248,7 +6249,7 @@
       "category": "condition",
       "description": "The main hand a Java player chose in their client settings. Mobs have no such data.",
       "example": "if player is left handed:\n    send \"lefty\"",
-      "id": "w6c3_handed",
+      "id": "mobstate_handed",
       "name": "Is left handed / right handed",
       "page": "syntax/conditions-mob-block-state",
       "patterns": [
@@ -6279,7 +6280,7 @@
       "category": "condition",
       "description": "Whether a container block still has a loot table (`LootTable` in its data). Entities are not supported: Pumpkin's plugin API cannot read them.",
       "example": "if location(1, 64, 1) is lootable:\n    send \"unopened\"",
-      "id": "w6c3_lootable",
+      "id": "mobstate_lootable",
       "name": "Is lootable",
       "page": "syntax/conditions-mob-block-state",
       "patterns": [
@@ -6293,7 +6294,7 @@
       "category": "condition",
       "description": "Whether a vector has length 1 (within 0.000001).",
       "example": "if vector(1, 0, 0) is normalized:\n    send \"unit\"",
-      "id": "w6c3_normalized",
+      "id": "mobstate_normalized",
       "name": "Is normalized",
       "page": "syntax/conditions-mob-block-state",
       "patterns": [
@@ -6307,7 +6308,7 @@
       "category": "condition",
       "description": "Whether the block at a location is a full cube that blocks all light (opacity 15).",
       "example": "if location(1, 64, 1) is occluding:\n    send \"stone-like\"",
-      "id": "w6c3_occluding",
+      "id": "mobstate_occluding",
       "name": "Is occluding",
       "page": "syntax/conditions-mob-block-state",
       "patterns": [
@@ -6316,6 +6317,20 @@
       ],
       "since": "unreleased",
       "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Compares types. An entity or player against an entity type word (`{_e} is of type pig`), a placed block against a block id (`{_block} is of type stone`), an item against an item id.",
+      "example": "if {_e} is of type pig:\n    send \"oink\"",
+      "id": "mobstate_of_type",
+      "name": "Is of type",
+      "page": "syntax/conditions-mob-block-state",
+      "patterns": [
+        "%object% (is|are) of type %object%",
+        "%object% (isn't|is not|aren't|are not) of type %object%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
     },
     {
       "category": "condition",
@@ -6330,20 +6345,6 @@
       ],
       "since": "unreleased",
       "source": "registry"
-    },
-    {
-      "category": "condition",
-      "description": "Compares types. An entity or player against an entity type word (`{_e} is of type pig`), a placed block against a block id (`{_block} is of type stone`), an item against an item id.",
-      "example": "if {_e} is of type pig:\n    send \"oink\"",
-      "id": "w6c3_of_type",
-      "name": "Is of type",
-      "page": "syntax/conditions-mob-block-state",
-      "patterns": [
-        "%object% (is|are) of type %object%",
-        "%object% (isn't|is not|aren't|are not) of type %object%"
-      ],
-      "since": "unreleased",
-      "source": "hand"
     },
     {
       "category": "condition",
@@ -6407,7 +6408,7 @@
       "category": "condition",
       "description": "Whether a mob's navigator has a route it is following.",
       "example": "if {_cow} is pathfinding:\n    send \"walking\"",
-      "id": "w6c3_pathfinding",
+      "id": "mobstate_pathfinding",
       "name": "Is pathfinding",
       "page": "syntax/conditions-mob-block-state",
       "patterns": [
@@ -6421,7 +6422,7 @@
       "category": "condition",
       "description": "Leaves: the `persistent` property (placed by a player, never decays). Entities: Pumpkin's plugin API has no persistence flag, so the check is false either way.",
       "example": "if location(1, 64, 1) is persistent:\n    send \"player placed\"",
-      "id": "w6c3_persistent",
+      "id": "mobstate_persistent",
       "name": "Is persistent",
       "page": "syntax/conditions-mob-block-state",
       "patterns": [
@@ -6435,7 +6436,7 @@
       "category": "condition",
       "description": "Whether a Pumpkin plugin with that name is loaded (probed through the plugin IPC call, which sends an empty message to it). Carve itself always counts as loaded.",
       "example": "if plugin \"carve\" is enabled:\n    send \"yes\"",
-      "id": "w6c3_plugin",
+      "id": "mobstate_plugin",
       "name": "Is plugin enabled",
       "page": "syntax/conditions-mob-block-state",
       "patterns": [
@@ -6463,7 +6464,7 @@
       "category": "condition",
       "description": "Reads the `powered`, `power` or `lit` property of the block at a location: levers, buttons, doors, lamps, repeaters and redstone dust. A solid block that is only powered through a neighbour has no such property, so it reads as not powered.",
       "example": "if location(1, 64, 1) is powered:\n    send \"on\"",
-      "id": "w6c3_powered",
+      "id": "mobstate_powered",
       "name": "Is powered",
       "page": "syntax/conditions-mob-block-state",
       "patterns": [
@@ -6495,7 +6496,7 @@
       "category": "condition",
       "description": "The keys a player holds, from the input packets the client sends when a key changes. Needs a restart the first time a script uses it, because Carve only listens to that event when a script asks for it.",
       "example": "if player is pressing the jump key:\n    send \"jumping\"",
-      "id": "w6c3_key",
+      "id": "mobstate_key",
       "name": "Is pressing key",
       "page": "syntax/conditions-mob-block-state",
       "patterns": [
@@ -6556,7 +6557,7 @@
       "category": "condition",
       "description": "Whether a player or mob is in the trident spin attack.",
       "example": "if player is riptiding:\n    send \"whee\"",
-      "id": "w5c3_riptiding",
+      "id": "mobitem_riptiding",
       "name": "Is riptiding",
       "page": "syntax/conditions-mobs-items",
       "patterns": [
@@ -6570,7 +6571,7 @@
       "category": "condition",
       "description": "Compares the server's Minecraft version with a version text. `running minecraft \"26\"` matches every 26.x. The v0.1 plugin API only reports Pumpkin's own version, so Carve maps the Pumpkin 0.2.x releases it was built for to their Minecraft version.",
       "example": "if running above minecraft \"1.21\":\n    send \"new\"",
-      "id": "w6c3_version",
+      "id": "mobstate_version",
       "name": "Is running Minecraft",
       "page": "syntax/conditions-mob-block-state",
       "patterns": [
@@ -6586,7 +6587,7 @@
       "category": "condition",
       "description": "Whether something sits in the saddle slot of a pig, strider, horse or camel.",
       "example": "command /sad:\n    trigger:\n        if nearest pig to player is saddled:\n            send \"saddled\"",
-      "id": "w5c3_saddled",
+      "id": "mobitem_saddled",
       "name": "Is saddled",
       "page": "syntax/conditions-mobs-items",
       "patterns": [
@@ -6600,7 +6601,7 @@
       "category": "condition",
       "description": "Whether an enderman is screaming. Goats have no data in the plugin API.",
       "example": "",
-      "id": "w5c3_screaming",
+      "id": "mobitem_screaming",
       "name": "Is screaming",
       "page": "syntax/conditions-mobs-items",
       "patterns": [
@@ -6684,7 +6685,7 @@
       "category": "condition",
       "description": "Work for players and other entities. `is riding a pig` compares the vehicle's type.",
       "example": "if player is riding a horse:\n    send \"giddy up\"",
-      "id": "w6c3_silent_riding",
+      "id": "mobstate_silent_riding",
       "name": "Is silent / Is riding",
       "page": "syntax/conditions-mob-block-state",
       "patterns": [
@@ -6743,7 +6744,7 @@
       "category": "condition",
       "description": "Whether an entity type can be spawned: a known type other than `player` and `fishing_bobber`.",
       "example": "if \"zombie\" is spawnable in player's world:\n    send \"yes\"",
-      "id": "w5c3_spawnable",
+      "id": "mobitem_spawnable",
       "name": "Is spawnable",
       "page": "syntax/conditions-mobs-items",
       "patterns": [
@@ -6771,7 +6772,7 @@
       "category": "condition",
       "description": "Whether an item stacks to more than 1.",
       "example": "if diamond sword is not stackable:\n    send \"one per slot\"",
-      "id": "w5c3_stackable",
+      "id": "mobitem_stackable",
       "name": "Is stackable",
       "page": "syntax/conditions-mobs-items",
       "patterns": [
@@ -6828,7 +6829,7 @@
       "category": "condition",
       "description": "Whether a mob (or entity type) can be tamed: wolves, cats, parrots, horses, donkeys, mules, llamas, camels and skeleton or zombie horses.",
       "example": "if \"wolf\" is tameable:\n    send \"yes\"",
-      "id": "w5c3_tameable",
+      "id": "mobitem_tameable",
       "name": "Is tameable",
       "page": "syntax/conditions-mobs-items",
       "patterns": [
@@ -6842,7 +6843,7 @@
       "category": "condition",
       "description": "Whether a wolf or cat has an owner. Other tameable mobs have no data in Pumpkin's plugin API, so the check is false either way.",
       "example": "command /tamed:\n    trigger:\n        set {_w} to nearest wolf to player\n        if {_w} is tamed:\n            send \"tamed\"",
-      "id": "w5c3_tamed",
+      "id": "mobitem_tamed",
       "name": "Is tamed",
       "page": "syntax/conditions-mobs-items",
       "patterns": [
@@ -6884,7 +6885,7 @@
       "category": "condition",
       "description": "Whether the main-hand item has the unbreakable component.",
       "example": "if player's tool is unbreakable:\n    send \"forever\"",
-      "id": "w6c3_unbreakable",
+      "id": "mobstate_unbreakable",
       "name": "Is unbreakable",
       "page": "syntax/conditions-mob-block-state",
       "patterns": [
@@ -6898,7 +6899,7 @@
       "category": "condition",
       "description": "Whether a feature flag (`trade_rebalance`, `minecart_improvements`, `redstone_experiments`, `bundle`) is on. Pumpkin turns them on through datapacks, so this reads the enabled datapacks. `vanilla` is always on.",
       "example": "if feature \"bundle\" is enabled:\n    send \"bundles\"",
-      "id": "w6c3_feature",
+      "id": "mobstate_feature",
       "name": "Is using experimental feature",
       "page": "syntax/conditions-mob-block-state",
       "patterns": [
@@ -6927,7 +6928,7 @@
       "category": "condition",
       "description": "Whether a player or mob wears an item in its head, chest, legs, feet, body or saddle slot. With a list, every item must be worn.",
       "example": "if player is wearing diamond helmet:\n    send \"shiny\"",
-      "id": "w5c3_wearing",
+      "id": "mobitem_wearing",
       "name": "Is wearing",
       "page": "syntax/conditions-mobs-items",
       "patterns": [
@@ -6983,7 +6984,7 @@
       "category": "condition",
       "description": "Whether the held item has the enchantment glint override component. Only the held item: item values in variables do not keep components.",
       "example": "if player's tool has enchantment glint overridden:\n    send \"glint\"",
-      "id": "w5c3_glint",
+      "id": "mobitem_glint",
       "name": "Item has enchantment glint override",
       "page": "syntax/conditions-mobs-items",
       "patterns": [
@@ -7017,7 +7018,7 @@
       "category": "condition",
       "description": "Whether a chest or trapped chest has viewers, or a barrel is open. Ender chests and shulker boxes (no viewer count in Pumpkin) and other blocks are neither open nor closed.",
       "example": "if lid of location(0, 64, 0, world \"world\") is open:\n    send \"someone is looking\"",
-      "id": "w5c3_lid",
+      "id": "mobitem_lid",
       "name": "Lid is open/closed",
       "page": "syntax/conditions-mobs-items",
       "patterns": [
@@ -7079,7 +7080,7 @@
       "category": "condition",
       "description": "Flags of a player's active potion effect. Players only. Without that effect the check is false either way.",
       "example": "if player's speed effect doesn't have particles:\n    send \"hidden speed\"",
-      "id": "w5c3_effect_flags",
+      "id": "mobitem_effect_flags",
       "name": "Potion effect has icon / particles / is ambient",
       "page": "syntax/conditions-mobs-items",
       "patterns": [
@@ -7119,7 +7120,7 @@
       "category": "condition",
       "description": "In `on resource pack response`: the state the player sent (`accepted`, `declined`, `downloaded`, `successfully loaded`, `failed download`, `invalid url`, `failed reload`, `discarded`).",
       "example": "on resource pack response:\n    if the resource pack was declined:\n        send \"Please accept the pack\" to player",
-      "id": "w5c3_resource_pack",
+      "id": "mobitem_resource_pack",
       "name": "Resource pack state",
       "page": "syntax/conditions-mobs-items",
       "patterns": [
@@ -7175,7 +7176,7 @@
       "category": "condition",
       "description": "Flags of a text display entity.",
       "example": "",
-      "id": "w5c3_text_display",
+      "id": "mobitem_text_display",
       "name": "Text display has drop shadow / is visible through blocks",
       "page": "syntax/conditions-mobs-items",
       "patterns": [
@@ -7252,7 +7253,7 @@
       "category": "expression",
       "description": "The age of a block that has one (crops, nether wart, ...), and its maximum. Can be set, added to, removed from and reset to 0, clamped to the maximum. Blocks only; entities are not supported yet.",
       "example": "add 1 to age of block at location(0, 64, 0)",
-      "id": "w6c4_age",
+      "id": "statelist_age",
       "name": "Age of a block",
       "page": "syntax/block-state-lists",
       "patterns": [
@@ -7281,7 +7282,7 @@
       "category": "expression",
       "description": "Banned players (online or not) or banned IP addresses as text.",
       "example": "loop all banned players:\n    send \"%loop-value%\"",
-      "id": "w5c3_banned",
+      "id": "mobitem_banned",
       "name": "All banned players/IPs",
       "page": "syntax/conditions-mobs-items",
       "patterns": [
@@ -7294,7 +7295,7 @@
       "category": "expression",
       "description": "Every operator in `ops.json`, online or not.",
       "example": "send \"%all operators%\"",
-      "id": "w5c3_operators",
+      "id": "mobitem_operators",
       "name": "All operators",
       "page": "syntax/conditions-mobs-items",
       "patterns": [
@@ -7320,7 +7321,7 @@
       "category": "expression",
       "description": "In `on anvil prepare`: the rename text and the repair cost (Pumpkin always sends 1).",
       "example": "on anvil prepare:\n    send \"%anvil text input%\" to player",
-      "id": "w5c3_anvil",
+      "id": "mobitem_anvil",
       "name": "Anvil text input / repair cost",
       "page": "syntax/conditions-mobs-items",
       "patterns": [
@@ -7334,7 +7335,7 @@
       "category": "expression",
       "description": "The items of a list. In `is` checks it means \"one of\".",
       "example": "set {_l::*} to 1, 2 and 3\nsend \"%any of {_l::*}%\"",
-      "id": "w5c3_any_of_expr",
+      "id": "mobitem_any_of_expr",
       "name": "Any of",
       "page": "syntax/conditions-mobs-items",
       "patterns": [
@@ -7347,7 +7348,7 @@
       "category": "expression",
       "description": "In `on enchant`: the enchantments the table adds, like `sharpness 3`. Read only.",
       "example": "on enchant:\n    send \"%applied enchantments%\" to player",
-      "id": "w5c3_applied",
+      "id": "mobitem_applied",
       "name": "Applied enchantments",
       "page": "syntax/conditions-mobs-items",
       "patterns": [
@@ -7389,7 +7390,7 @@
       "category": "expression",
       "description": "The loom item for a banner pattern type such as `creeper`, `flower`, `globe`, `mojang`, `piglin`, `skull`, `flow`, `guster`, `field_masoned` or `bordure_indented`. Gives none for patterns that have no item.",
       "example": "give 1 of banner pattern item of \"creeper\" to player",
-      "id": "w6c4_banner_item",
+      "id": "statelist_banner_item",
       "name": "Banner pattern item",
       "page": "syntax/block-state-lists",
       "patterns": [
@@ -7402,7 +7403,7 @@
       "category": "expression",
       "description": "In `on piglin barter`: the item the piglin took and the items it will throw.",
       "example": "on piglin barter:\n    broadcast \"%barter drops%\"",
-      "id": "w5c3_barter",
+      "id": "mobitem_barter",
       "name": "Barter input / drops",
       "page": "syntax/conditions-mobs-items",
       "patterns": [
@@ -7416,7 +7417,7 @@
       "category": "expression",
       "description": "The effect a beacon gives (`speed`), or `<none>`. Read only; Pumpkin 0.2.2 has no way to pick beacon effects in game.",
       "example": "send \"%primary beacon effect of location(0, 64, 0, world \"world\")%\"",
-      "id": "w5c3_beacon",
+      "id": "mobitem_beacon",
       "name": "Beacon effects",
       "page": "syntax/conditions-mobs-items",
       "patterns": [
@@ -7430,7 +7431,7 @@
       "category": "expression",
       "description": "Where the player respawns, the same as `respawn location`. Can be set.",
       "example": "set player's bed location to location(0, 70, 0)",
-      "id": "w5c3_bed",
+      "id": "mobitem_bed",
       "name": "Bed location",
       "page": "syntax/conditions-mobs-items",
       "patterns": [
@@ -7444,7 +7445,7 @@
       "category": "expression",
       "description": "The honey level (0 to 5) of a beehive or bee nest block; `max` gives 5. Can be set, added to, removed from and reset (to 0); results stay between 0 and 5.",
       "example": "set honey level of block at location(0, 64, 0) to 5",
-      "id": "w6c4_honey",
+      "id": "statelist_honey",
       "name": "Beehive honey level",
       "page": "syntax/block-state-lists",
       "patterns": [
@@ -7614,7 +7615,7 @@
       "category": "expression",
       "description": "How far a suspicious sand or gravel block has been brushed (0 to 3); `max` gives 3. Can be set, added to, removed from and reset.",
       "example": "send \"%brushing stage of block at location(0, 64, 0)%\"",
-      "id": "w6c4_brushing",
+      "id": "statelist_brushing",
       "name": "Brushing stage",
       "page": "syntax/block-state-lists",
       "patterns": [
@@ -7805,7 +7806,7 @@
       "category": "expression",
       "description": "Removes the first value (or the first N values) from a queue variable and gives them. The variable keeps the rest. An empty queue gives none.",
       "example": "set {_next} to dequeue {_queue}",
-      "id": "w6c4_dequeue",
+      "id": "statelist_dequeue",
       "name": "De-queue",
       "page": "syntax/block-state-lists",
       "patterns": [
@@ -8055,7 +8056,7 @@
       "category": "expression",
       "description": "Part of a list variable: the first or last N values, or the values from position N to M (1-based, inclusive). Asking for more than the list holds gives what there is.",
       "example": "send \"%first 3 elements of {top::*}%\"",
-      "id": "w6c4_elements",
+      "id": "statelist_elements",
       "name": "First, last and ranges of elements",
       "page": "syntax/block-state-lists",
       "patterns": [
@@ -8227,7 +8228,7 @@
       "category": "expression",
       "description": "An item value with a component set, for `give`.",
       "example": "give diamond sword with custom model data 7 to player",
-      "id": "w6c5_item_with",
+      "id": "parse_item_with",
       "name": "Item with component",
       "page": "syntax/expressions",
       "patterns": [
@@ -8364,7 +8365,7 @@
       "category": "expression",
       "description": "Plain records for loot data. Carve can't roll a loot table, so these only carry values around.",
       "example": "set {_c} to loot context at player's location with luck 2",
-      "id": "w6c5_loot",
+      "id": "parse_loot",
       "name": "Loot tables and loot contexts",
       "page": "syntax/expressions",
       "patterns": [
@@ -8562,7 +8563,7 @@
       "category": "expression",
       "description": "A whole number, true or false (`yes` and `on` count), or an online player from text. `<none>` if the text does not fit.",
       "example": "set {_b} to \"yes\" parsed as boolean",
-      "id": "w6c5_parsed",
+      "id": "parse_parsed",
       "name": "Parsed as integer, boolean or player",
       "page": "syntax/expressions",
       "patterns": [
@@ -8622,7 +8623,7 @@
       "category": "expression",
       "description": "The keys of the persistent data Carve scripts stored on a player, entity, block or item, sorted.",
       "example": "send \"%persistent data keys of player%\"",
-      "id": "w6c4_data_keys",
+      "id": "statelist_data_keys",
       "name": "Persistent data keys",
       "page": "syntax/block-state-lists",
       "patterns": [
@@ -9323,7 +9324,7 @@
       "category": "expression",
       "description": "A timespan as words, like `1 hour and 5 minutes`. Plain `formatted` gives `1:05:00`.",
       "example": "send \"%{_t} formatted human-readable%\"",
-      "id": "w6c5_human_time",
+      "id": "parse_human_time",
       "name": "Timespan, human readable",
       "page": "syntax/expressions",
       "patterns": [
@@ -9785,9 +9786,9 @@
       "category": "function",
       "description": "Keeps a number between two bounds; median and product take numbers or a list.",
       "example": "send \"%clamp(15, 0, 10)%\" to player",
-      "id": "w4_clamp",
+      "id": "builtin_clamp",
       "name": "clamp, median, product",
-      "page": "syntax/functions-builtin-sections",
+      "page": "syntax/functions-sections",
       "patterns": [
         "clamp(%number%, %min%, %max%)",
         "median(%numbers%)",
@@ -9800,9 +9801,9 @@
       "category": "function",
       "description": "Text helpers: join values, format a number with a pattern, convert between bases, build a hex colour, parse a UUID.",
       "example": "send \"%toBase(255, 16)%\" to player",
-      "id": "w4_text",
+      "id": "builtin_text",
       "name": "concat, formatNumber, toBase, fromBase, rgb, uuid",
-      "page": "syntax/functions-builtin-sections",
+      "page": "syntax/functions-sections",
       "patterns": [
         "concat(%objects%)",
         "formatNumber(%number%, %pattern%)",
@@ -9816,9 +9817,9 @@
       "category": "function",
       "description": "Exponent, logarithms, roots and counting functions. `log` is base 10 unless a base is given.",
       "example": "send \"%combinations(5, 2)%\" to player",
-      "id": "w4_math",
+      "id": "builtin_math",
       "name": "exp, ln, log, root, factorial, combinations, permutations, isNaN",
-      "page": "syntax/functions-builtin-sections",
+      "page": "syntax/functions-sections",
       "patterns": [
         "log(%number%[, %base%])",
         "root(%number%[, %n%])",
@@ -9888,9 +9889,9 @@
       "category": "function",
       "description": "Looks a player up by name or UUID, and gives the experience points a level needs.",
       "example": "send \"%calcExperience(10)%\" to player",
-      "id": "w4_player",
+      "id": "builtin_player",
       "name": "player, offlinePlayer, calcExperience",
-      "page": "syntax/functions-builtin-sections",
+      "page": "syntax/functions-sections",
       "patterns": [
         "player(%name or uuid%)",
         "offlinePlayer(%name or uuid%)",
@@ -9916,9 +9917,9 @@
       "category": "function",
       "description": "Trigonometry in degrees. The inverse functions return degrees.",
       "example": "send \"%sin(30)%\" to player",
-      "id": "w4_trig",
+      "id": "builtin_trig",
       "name": "sin, cos, tan, asin, acos, atan, atan2",
-      "page": "syntax/functions-builtin-sections",
+      "page": "syntax/functions-sections",
       "patterns": [
         "sin(%number%)",
         "atan2(%number%, %number%)"
@@ -9940,5 +9941,5 @@
       "source": "hand"
     }
   ],
-  "version": "0.2.0"
+  "version": "0.3.1"
 }

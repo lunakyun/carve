@@ -1167,48 +1167,48 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 ## Functions (45)
 
 - ✅ abs
-- ✅ acos — see syntax/functions-builtin-sections
-- ✅ asin — see syntax/functions-builtin-sections
-- ✅ atan — see syntax/functions-builtin-sections
-- ✅ atan2 — see syntax/functions-builtin-sections
+- ✅ acos — see syntax/functions-sections
+- ✅ asin — see syntax/functions-sections
+- ✅ atan — see syntax/functions-sections
+- ✅ atan2 — see syntax/functions-sections
 - ✅ axisAngle — `axisAngle(degrees, x, y, z)` and `axisAngle(degrees, vector)`; the axis is normalised, a zero axis is an error
-- ✅ calcExperience — see syntax/functions-builtin-sections
+- ✅ calcExperience — see syntax/functions-sections
 - ✅ ceil
 - ✅ ceiling
-- ✅ clamp — see syntax/functions-builtin-sections
-- ✅ combinations — see syntax/functions-builtin-sections
-- ✅ concat — see syntax/functions-builtin-sections
-- ✅ cos — see syntax/functions-builtin-sections
+- ✅ clamp — see syntax/functions-sections
+- ✅ combinations — see syntax/functions-sections
+- ✅ concat — see syntax/functions-sections
+- ✅ cos — see syntax/functions-sections
 - ✅ date
 - ✅ entity — `entity(uuid)` and `entity from uuid "..."`: an online player, or any live entity found by scanning the worlds; `<none>` when nothing has that UUID
-- ✅ exp — see syntax/functions-builtin-sections
-- ✅ factorial — see syntax/functions-builtin-sections
+- ✅ exp — see syntax/functions-sections
+- ✅ factorial — see syntax/functions-sections
 - ✅ floor
-- ✅ formatNumber — see syntax/functions-builtin-sections
-- ✅ fromBase — see syntax/functions-builtin-sections
-- ✅ isNaN — see syntax/functions-builtin-sections
-- ✅ ln — see syntax/functions-builtin-sections
+- ✅ formatNumber — see syntax/functions-sections
+- ✅ fromBase — see syntax/functions-sections
+- ✅ isNaN — see syntax/functions-sections
+- ✅ ln — see syntax/functions-sections
 - 🟡 location — `location(x, y, z[, world])`; no yaw/pitch arguments: Carve's location value holds only x, y, z and a world, so there is no field to keep a rotation in (the WIT calls for rotation exist: teleport options and set-rotation)
-- ✅ log — see syntax/functions-builtin-sections
+- ✅ log — see syntax/functions-sections
 - ✅ max — `max(a, b, c, ...)` with two or more numbers, or `max of {x::*}`
 - ✅ mean — `average of {x::*}`
-- ✅ median — see syntax/functions-builtin-sections
+- ✅ median — see syntax/functions-sections
 - ✅ min — `min(a, b, c, ...)` with two or more numbers, or `min of {x::*}`
 - ✅ mod
-- ✅ offlineplayer — see syntax/functions-builtin-sections
-- ✅ permutations — see syntax/functions-builtin-sections
-- ✅ player — see syntax/functions-builtin-sections
-- ✅ product — see syntax/functions-builtin-sections
+- ✅ offlineplayer — see syntax/functions-sections
+- ✅ permutations — see syntax/functions-sections
+- ✅ player — see syntax/functions-sections
+- ✅ product — see syntax/functions-sections
 - ✅ quaternion — `quaternion(w, x, y, z)`
-- ✅ rgb — see syntax/functions-builtin-sections
-- ✅ root — see syntax/functions-builtin-sections
+- ✅ rgb — see syntax/functions-sections
+- ✅ root — see syntax/functions-sections
 - ✅ round — `round(n)` and `round(n, places)`
-- ✅ sin — see syntax/functions-builtin-sections
+- ✅ sin — see syntax/functions-sections
 - ✅ sqrt
 - ✅ sum — `sum of {x::*}`
-- ✅ tan — see syntax/functions-builtin-sections
-- ✅ toBase — see syntax/functions-builtin-sections
-- ✅ uuid — see syntax/functions-builtin-sections
+- ✅ tan — see syntax/functions-sections
+- ✅ toBase — see syntax/functions-sections
+- ✅ uuid — see syntax/functions-sections
 - ✅ vector — `vector(x, y, z)`
 - ✅ world — `world("name")` and `world "name"`
 

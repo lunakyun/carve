@@ -25,7 +25,7 @@ send "%abs(-3)%" to player
 
 Since **unreleased** · Guide: [expressions](../syntax/expressions.md)
 
-## clamp, median, product {#w4_clamp}
+## clamp, median, product {#builtin_clamp}
 
 ```carve
 clamp(%number%, %min%, %max%)
@@ -39,9 +39,9 @@ Keeps a number between two bounds; median and product take numbers or a list.
 send "%clamp(15, 0, 10)%" to player
 ```
 
-Since **unreleased** · Guide: [functions-builtin-sections](../syntax/functions-builtin-sections.md)
+Since **unreleased** · Guide: [functions-sections](../syntax/functions-sections.md)
 
-## concat, formatNumber, toBase, fromBase, rgb, uuid {#w4_text}
+## concat, formatNumber, toBase, fromBase, rgb, uuid {#builtin_text}
 
 ```carve
 concat(%objects%)
@@ -56,9 +56,9 @@ Text helpers: join values, format a number with a pattern, convert between bases
 send "%toBase(255, 16)%" to player
 ```
 
-Since **unreleased** · Guide: [functions-builtin-sections](../syntax/functions-builtin-sections.md)
+Since **unreleased** · Guide: [functions-sections](../syntax/functions-sections.md)
 
-## exp, ln, log, root, factorial, combinations, permutations, isNaN {#w4_math}
+## exp, ln, log, root, factorial, combinations, permutations, isNaN {#builtin_math}
 
 ```carve
 log(%number%[, %base%])
@@ -72,7 +72,7 @@ Exponent, logarithms, roots and counting functions. `log` is base 10 unless a ba
 send "%combinations(5, 2)%" to player
 ```
 
-Since **unreleased** · Guide: [functions-builtin-sections](../syntax/functions-builtin-sections.md)
+Since **unreleased** · Guide: [functions-sections](../syntax/functions-sections.md)
 
 ## floor / ceil / round {#floor}
 
@@ -135,7 +135,7 @@ send "%mod(7, 3)%" to player
 
 Since **unreleased** · Guide: [expressions](../syntax/expressions.md)
 
-## player, offlinePlayer, calcExperience {#w4_player}
+## player, offlinePlayer, calcExperience {#builtin_player}
 
 ```carve
 player(%name or uuid%)
@@ -149,7 +149,7 @@ Looks a player up by name or UUID, and gives the experience points a level needs
 send "%calcExperience(10)%" to player
 ```
 
-Since **unreleased** · Guide: [functions-builtin-sections](../syntax/functions-builtin-sections.md)
+Since **unreleased** · Guide: [functions-sections](../syntax/functions-sections.md)
 
 ## Script functions {#script_function}
 
@@ -168,7 +168,7 @@ on join:
 
 Since **unreleased** · Guide: [functions](../syntax/functions.md)
 
-## sin, cos, tan, asin, acos, atan, atan2 {#w4_trig}
+## sin, cos, tan, asin, acos, atan, atan2 {#builtin_trig}
 
 ```carve
 sin(%number%)
@@ -181,7 +181,7 @@ Trigonometry in degrees. The inverse functions return degrees.
 send "%sin(30)%" to player
 ```
 
-Since **unreleased** · Guide: [functions-builtin-sections](../syntax/functions-builtin-sections.md)
+Since **unreleased** · Guide: [functions-sections](../syntax/functions-sections.md)
 
 ## sqrt {#sqrt}
 

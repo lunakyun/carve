@@ -96,9 +96,18 @@ on click:
     if {e::click} is true:
         send "e:click-any" to player
 
+on break of stone or dirt:
+    if {e::break} is true:
+        send "e:break-of %event-block%" to player
+
+on break of oak log:
+    if {e::break} is true:
+        send "e:break-oak %event-block%" to player
+
 on break:
     if {e::break} is true:
         send "e:break" to player
+        send "e:break-block %event-block%" to player
         if {e::cancel} is true:
             cancel event
             send "e:break-cancelled" to player

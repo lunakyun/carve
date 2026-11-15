@@ -90,16 +90,16 @@ Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
 
 ```carve
 on break
+on break of <block>
 on block break
 on mine
 ```
 
-A block is broken. Has `player` (`<none>` when no player broke it). Can be cancelled.
+A block is broken. `on break of stone or oak log` only runs for those blocks. Has `player` (`<none>` when no player broke it) and `event-block`, the broken block. Can be cancelled.
 
 ```carve
-on break:
-    if player does not have permission "builder":
-        cancel event
+on break of stone or oak log:
+    send "You mined %event-block%." to player
 ```
 
 Since **0.1.0** · Guide: [triggers](../syntax/triggers.md)

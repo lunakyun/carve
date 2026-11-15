@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig, type DefaultTheme } from 'vitepress'
@@ -139,10 +139,30 @@ const sidebar: DefaultTheme.SidebarItem[] = [
   },
 ]
 
+/** Syntax pages that were renamed: old page path -> new page path (see docs/redirects.json). */
+const redirects: Record<string, string> = JSON.parse(readFileSync(join(docsDir, 'redirects.json'), 'utf8'))
+
+/** Writes a small page at every old URL that sends the visitor to the new one. */
+function writeRedirects(outDir: string, base: string) {
+  for (const [from, to] of Object.entries(redirects)) {
+    const target = `${base}${to}`
+    const file = join(outDir, `${from}.html`)
+    mkdirSync(dirname(file), { recursive: true })
+    writeFileSync(
+      file,
+      `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Moved</title>` +
+        `<link rel="canonical" href="${target}"><meta http-equiv="refresh" content="0; url=${target}">` +
+        `<meta name="robots" content="noindex"></head><body><a href="${target}">This page moved.</a>` +
+        `<script>location.replace(${JSON.stringify(target)} + location.hash)</script></body></html>`,
+    )
+  }
+}
+
 export default defineConfig({
   title: 'Carve',
   description: 'Skript-style scripting for Pumpkin servers. Write commands, events and minigames in plain English, /carve reload and they go live.',
   base: '/carve/',
+  buildEnd: (config) => writeRedirects(config.outDir, '/carve/'),
   srcDir: '.',
   cleanUrls: true,
   lastUpdated: true,

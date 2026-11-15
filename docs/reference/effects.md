@@ -219,7 +219,7 @@ clear {_gui}
 
 Since **unreleased** · Guide: [inventories](../syntax/inventories.md)
 
-## Change barter drops {#w5c3_barter_drops}
+## Change barter drops {#mobitem_barter_drops}
 
 ```carve
 set [the] (barter|bartering) drops to %object%
@@ -870,7 +870,7 @@ feed player
 
 Since **unreleased** · Guide: [health-food](../syntax/health-food.md)
 
-## Filter section {#w4_filter}
+## Filter section {#builtin_filter}
 
 ```carve
 filter %list variable% to match:
@@ -884,7 +884,7 @@ filter {_l::*} to match:
     input > 2
 ```
 
-Since **unreleased** · Guide: [functions-builtin-sections](../syntax/functions-builtin-sections.md)
+Since **unreleased** · Guide: [functions-sections](../syntax/functions-sections.md)
 
 ## Flight {#flight}
 
@@ -2172,7 +2172,7 @@ spawn a zombie named "&cBob" at player
 
 Since **unreleased** · Guide: [entities](../syntax/entities.md)
 
-## Spawn section {#w4_spawn_section}
+## Spawn section {#builtin_spawn_section}
 
 ```carve
 spawn %entity% [at %location%]:
@@ -2185,7 +2185,7 @@ spawn a zombie at player:
     set name of event-entity to "Bob"
 ```
 
-Since **unreleased** · Guide: [functions-builtin-sections](../syntax/functions-builtin-sections.md)
+Since **unreleased** · Guide: [functions-sections](../syntax/functions-sections.md)
 
 ## Sprint {#sprint}
 

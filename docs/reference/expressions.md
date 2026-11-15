@@ -27,7 +27,7 @@ remove 30 from world border size
 
 Since **unreleased** · Guide: [quaternions-protocol](../syntax/quaternions-protocol.md)
 
-## Age of a block {#w6c4_age}
+## Age of a block {#statelist_age}
 
 ```carve
 [the] [max[imum]] age of %block%
@@ -59,7 +59,7 @@ if time since {last::%uuid of player%} < 30 seconds:
 
 Since **unreleased** · Guide: [timespans](../syntax/timespans.md)
 
-## All banned players/IPs {#w5c3_banned}
+## All banned players/IPs {#mobitem_banned}
 
 ```carve
 [all [[of] the]] banned (players|ips|ip addresses)
@@ -74,7 +74,7 @@ loop all banned players:
 
 Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
-## All operators {#w5c3_operators}
+## All operators {#mobitem_operators}
 
 ```carve
 [all [[of] the]] (ops|operators)
@@ -103,7 +103,7 @@ loop all difficulties:
 
 Since **unreleased** · Guide: [entity-block-properties](../syntax/entity-block-properties.md)
 
-## Anvil text input / repair cost {#w5c3_anvil}
+## Anvil text input / repair cost {#mobitem_anvil}
 
 ```carve
 anvil text input
@@ -119,7 +119,7 @@ on anvil prepare:
 
 Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
-## Any of {#w5c3_any_of_expr}
+## Any of {#mobitem_any_of_expr}
 
 ```carve
 (any [one]|one) of [the] %objects%
@@ -134,7 +134,7 @@ send "%any of {_l::*}%"
 
 Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
-## Applied enchantments {#w5c3_applied}
+## Applied enchantments {#mobitem_applied}
 
 ```carve
 applied (enchantments|enchants)
@@ -182,7 +182,7 @@ set {_half} to (5 + 3) / 2
 
 Since **0.1.0** · Guide: [expressions](../syntax/expressions.md)
 
-## Banner pattern item {#w6c4_banner_item}
+## Banner pattern item {#statelist_banner_item}
 
 ```carve
 [the] banner pattern item of %text%
@@ -196,7 +196,7 @@ give 1 of banner pattern item of "creeper" to player
 
 Since **unreleased** · Guide: [block-state-lists](../syntax/block-state-lists.md)
 
-## Barter input / drops {#w5c3_barter}
+## Barter input / drops {#mobitem_barter}
 
 ```carve
 (barter|bartering) input
@@ -212,7 +212,7 @@ on piglin barter:
 
 Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
-## Beacon effects {#w5c3_beacon}
+## Beacon effects {#mobitem_beacon}
 
 ```carve
 (primary|secondary) [beacon] effect of %location%
@@ -227,7 +227,7 @@ send "%primary beacon effect of location(0, 64, 0, world "world")%"
 
 Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
-## Bed location {#w5c3_bed}
+## Bed location {#mobitem_bed}
 
 ```carve
 bed location of %player%
@@ -242,7 +242,7 @@ set player's bed location to location(0, 70, 0)
 
 Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
-## Beehive honey level {#w6c4_honey}
+## Beehive honey level {#statelist_honey}
 
 ```carve
 [the] [max[imum]] [bee[ ]hive|bee nest] honey level of %block%
@@ -432,7 +432,7 @@ on broadcast:
 
 Since **unreleased** · Guide: [block-shapes-ai](../syntax/block-shapes-ai.md)
 
-## Brushing stage {#w6c4_brushing}
+## Brushing stage {#statelist_brushing}
 
 ```carve
 [the] [max[imum]] brushing (stage|progress) of %block%
@@ -652,7 +652,7 @@ give diamond sword with damage 500 to player
 
 Since **unreleased** · Guide: [block-shapes-ai](../syntax/block-shapes-ai.md)
 
-## De-queue {#w6c4_dequeue}
+## De-queue {#statelist_dequeue}
 
 ```carve
 (dequeue|de-queue) [[first] %number% element[s] of] %queue variable%
@@ -935,7 +935,7 @@ set {_big::*} to {_n::*} where [input > 2]
 
 Since **unreleased** · Guide: [list-ops](../syntax/list-ops.md)
 
-## First, last and ranges of elements {#w6c4_elements}
+## First, last and ranges of elements {#statelist_elements}
 
 ```carve
 [the] first %number% elements of %list%
@@ -1126,7 +1126,7 @@ give 16 oak logs to player
 
 Since **unreleased** · Guide: [types](../syntax/types.md)
 
-## Item with component {#w6c5_item_with}
+## Item with component {#parse_item_with}
 
 ```carve
 %item% with custom model data %number%
@@ -1275,7 +1275,7 @@ loop 3 times:
 
 Since **unreleased** · Guide: [loops](../syntax/loops.md)
 
-## Loot tables and loot contexts {#w6c5_loot}
+## Loot tables and loot contexts {#parse_loot}
 
 ```carve
 loot table from key %text%
@@ -1496,7 +1496,7 @@ send parse placeholders in "Hi %%player_name%%, %%server_online%% online" for pl
 
 Since **unreleased** · Guide: [placeholders](../syntax/placeholders.md)
 
-## Parsed as integer, boolean or player {#w6c5_parsed}
+## Parsed as integer, boolean or player {#parse_parsed}
 
 ```carve
 %text% parsed as integer
@@ -1563,7 +1563,7 @@ draw {_p} at player
 
 Since **unreleased** · Guide: [potions-particles-queues](../syntax/potions-particles-queues.md)
 
-## Persistent data keys {#w6c4_data_keys}
+## Persistent data keys {#statelist_data_keys}
 
 ```carve
 [all] [the] persistent data (keys|tags) of %object%
@@ -2341,7 +2341,7 @@ send "%total minutes of {_t}%" to player
 
 Since **unreleased** · Guide: [timespans](../syntax/timespans.md)
 
-## Timespan, human readable {#w6c5_human_time}
+## Timespan, human readable {#parse_human_time}
 
 ```carve
 %timespan% formatted human-readable

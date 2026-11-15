@@ -7,6 +7,15 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Added
+
+- `on break of <block>:` (also `on break of stone or oak log:`) runs only for those blocks.
+  `event-block` is now the broken block in every `on break`.
+
+### Changed
+
+- Docs pages under `docs/syntax` are named by topic. Old page URLs redirect to the new ones.
+
 ## [0.3.1] - 2026-11-15
 
 ### Fixed
@@ -66,7 +75,7 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   `on world border bounds change`, `on world border center change`,
   `on unload`, `on server stop`, `on entity break door`, and (not yet verified
   in-game) `on player pickup arrow`, `on riptide` and `on projectile collide`.
-  See [the wave 6 page](docs/syntax/w6-chunk1.md).
+  See [the wave 6 page](docs/syntax/events-step-jump.md).
 - Event values: `event-location` for leaves decay, lightning, pistons, portal
   create and redstone; `event-entity` for leash, unleash, love mode, combust and
   bucket catch; `event-items` for block drop and piglin barter; `event-item`

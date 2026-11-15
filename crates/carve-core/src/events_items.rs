@@ -114,13 +114,19 @@ pub const NAMES: &str =
 /// Splits `spawn of zombie` and `gamemode change to creative` into the event
 /// name and a filter `(what, text)`. Other names come back unchanged.
 pub fn split_filter(ev: &str) -> (&str, Option<(&'static str, String)>) {
-    for (what, marker) in [("entity", " of "), ("mode", " to "), ("victim", " of ")] {
+    for (what, marker) in [
+        ("entity", " of "),
+        ("mode", " to "),
+        ("victim", " of "),
+        ("on", " of "),
+    ] {
         let Some(i) = ev.find(marker) else { continue };
         let base = ev.get(..i).unwrap_or(ev).trim();
         let rest = ev.get(i + marker.len()..).unwrap_or("").trim();
         let right_base = match what {
             "entity" => base.ends_with("spawn"),
             "victim" => base == "damage" || base == "death",
+            "on" => matches!(base, "break" | "block break" | "mine"),
             _ => base.ends_with("change") && base.contains("game"),
         };
         if right_base && !rest.is_empty() {
@@ -133,7 +139,11 @@ pub fn split_filter(ev: &str) -> (&str, Option<(&'static str, String)>) {
 /// Whether `on <kind> <filter>` is allowed for this filter kind.
 pub fn filter_ok(k: EventKind, what: &str) -> bool {
     match what {
-        "with" | "on" => matches!(k, EventKind::Click | EventKind::RightClick | EventKind::LeftClick),
+        "with" => matches!(k, EventKind::Click | EventKind::RightClick | EventKind::LeftClick),
+        "on" => matches!(
+            k,
+            EventKind::Click | EventKind::RightClick | EventKind::LeftClick | EventKind::Break
+        ),
         "entity" => k == EventKind::MobSpawn,
         "victim" => matches!(k, EventKind::Damage | EventKind::Death),
         "mode" => k == EventKind::GamemodeChange,

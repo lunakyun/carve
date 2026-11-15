@@ -295,3 +295,43 @@ fn only_edible_items_count_as_consumed() {
     assert!(is_edible("bread") && is_edible("potion") && is_edible("milk_bucket"));
     assert!(!is_edible("stick") && !is_edible("air") && !is_edible("bow"));
 }
+
+fn break_calls(src: &str, blocks: &[&str]) -> Vec<String> {
+    let mut e = engine(src);
+    let mut h = Mock::default();
+    for b in blocks {
+        let mut ctx = EventCtx::player(steve());
+        ctx.block = Some((*b).into());
+        e.fire(EventKind::Break, ctx, &mut h);
+    }
+    h.calls
+}
+
+#[test]
+fn break_of_a_block_filters_by_block() {
+    let src = "on break of stone:\n    send \"stone\"\non break of oak log:\n    send \"log\"\non break:\n    send \"any %event-block%\"\n";
+    assert_eq!(
+        break_calls(src, &["stone", "oak_log", "dirt"]),
+        [
+            "send Steve stone",
+            "send Steve any stone",
+            "send Steve log",
+            "send Steve any oak log",
+            "send Steve any dirt"
+        ]
+    );
+}
+
+#[test]
+fn break_of_several_blocks_matches_any() {
+    let src = "on break of stone or oak log:\n    send \"hit %event-block%\"\n";
+    assert_eq!(
+        break_calls(src, &["stone", "dirt", "oak_log"]),
+        ["send Steve hit stone", "send Steve hit oak log"]
+    );
+}
+
+#[test]
+fn break_of_unknown_block_is_an_error() {
+    assert!(!load_errs("on break of stone or :\n    stop\n").is_empty());
+}

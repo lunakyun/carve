@@ -83,6 +83,15 @@ on break:
         send "You can't break blocks here." to player
 ```
 
+`on break of <block>:` only runs for that block, or any of several joined with
+`or`. In every `on break`, `event-block` (also `clicked block`) is the broken block
+as an item value.
+
+```
+on break of stone or oak log:
+    send "You mined %event-block%." to player
+```
+
 ### `on place:`
 
 ```

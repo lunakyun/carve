@@ -927,7 +927,7 @@ if sender is a player:
 
 Since **unreleased** · Guide: [senders](../syntax/senders.md)
 
-## Is adult / Is baby {#w6c3_age}
+## Is adult / Is baby {#mobstate_age}
 
 ```carve
 %object% (is|are) [an] adult
@@ -969,7 +969,7 @@ Whether a text has only letters and digits.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
-## Is any of {#w5c3_any_of}
+## Is any of {#mobitem_any_of}
 
 ```carve
 %object% (is|are|=) (any|any one|one) of %object%
@@ -1003,7 +1003,7 @@ if "Alex" is banned:
 
 Since **unreleased** · Guide: [op-kick-ban](../syntax/op-kick-ban.md)
 
-## Is bed spawn / anchor spawn {#w6c3_spawn_point}
+## Is bed spawn / anchor spawn {#mobstate_spawn_point}
 
 ```carve
 [the] respawn location (is|was) [a] bed spawn
@@ -1065,7 +1065,7 @@ Whether a player is on fire.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
-## Is charged {#w6c3_charged}
+## Is charged {#mobstate_charged}
 
 ```carve
 %object% (is|are) charged
@@ -1081,7 +1081,7 @@ if {_creeper} is charged:
 
 Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
-## Is climbing {#w6c3_climbing}
+## Is climbing {#mobstate_climbing}
 
 ```carve
 %object% (is|are) climbing
@@ -1097,7 +1097,7 @@ if player is climbing:
 
 Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
-## Is conditional {#w6c3_conditional}
+## Is conditional {#mobstate_conditional}
 
 ```carve
 %object% (is|are) conditional
@@ -1215,7 +1215,7 @@ if player is flying:
 
 Since **unreleased** · Guide: [player-flags](../syntax/player-flags.md)
 
-## Is from a spawner {#w6c3_spawner}
+## Is from a spawner {#mobstate_spawner}
 
 ```carve
 %object% (is|are) (from|spawned from|spawned by) [(a|the)] [(mob|trial|monster)] spawner
@@ -1277,7 +1277,7 @@ Whether a player has a glowing outline.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
-## Is holding {#w6c3_holding}
+## Is holding {#mobstate_holding}
 
 ```carve
 %object% (is|are) holding %object%
@@ -1295,7 +1295,7 @@ if player is holding diamond sword in the off hand:
 
 Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
-## Is igniting {#w6c3_igniting}
+## Is igniting {#mobstate_igniting}
 
 ```carve
 %object% (is|are) (igniting|ignited|in [the] ignition process)
@@ -1351,7 +1351,7 @@ Whether an entity or location is in a given world.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
-## Is infinite {#w6c3_infinite}
+## Is infinite {#mobstate_infinite}
 
 ```carve
 %object% (is|are) infinite
@@ -1401,7 +1401,7 @@ Whether a player takes no damage.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
-## Is left handed / right handed {#w6c3_handed}
+## Is left handed / right handed {#mobstate_handed}
 
 ```carve
 %object% (is|are) left( |-)handed
@@ -1431,7 +1431,7 @@ Whether a chunk or world is loaded.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
-## Is lootable {#w6c3_lootable}
+## Is lootable {#mobstate_lootable}
 
 ```carve
 %object% (is|are) lootable
@@ -1447,7 +1447,7 @@ if location(1, 64, 1) is lootable:
 
 Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
-## Is normalized {#w6c3_normalized}
+## Is normalized {#mobstate_normalized}
 
 ```carve
 %object% (is|are) normalized
@@ -1463,7 +1463,7 @@ if vector(1, 0, 0) is normalized:
 
 Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
-## Is occluding {#w6c3_occluding}
+## Is occluding {#mobstate_occluding}
 
 ```carve
 %object% (is|are) occluding
@@ -1479,18 +1479,7 @@ if location(1, 64, 1) is occluding:
 
 Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
-## Is of type {#of_type}
-
-```carve
-%object% is of type %object%
-%object% (is not|isn't) of type %object%
-```
-
-Whether a value is of a given type, like `entity type`.
-
-Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
-
-## Is of type {#w6c3_of_type}
+## Is of type {#mobstate_of_type}
 
 ```carve
 %object% (is|are) of type %object%
@@ -1505,6 +1494,17 @@ if {_e} is of type pig:
 ```
 
 Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
+
+## Is of type {#of_type}
+
+```carve
+%object% is of type %object%
+%object% (is not|isn't) of type %object%
+```
+
+Whether a value is of a given type, like `entity type`.
+
+Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
 ## Is on ground {#on_ground}
 
@@ -1562,7 +1562,7 @@ Whether a block type can be walked through, like tall grass.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
-## Is pathfinding {#w6c3_pathfinding}
+## Is pathfinding {#mobstate_pathfinding}
 
 ```carve
 %object% (is|are) pathfinding
@@ -1578,7 +1578,7 @@ if {_cow} is pathfinding:
 
 Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
-## Is persistent {#w6c3_persistent}
+## Is persistent {#mobstate_persistent}
 
 ```carve
 %object% (is|are) persistent
@@ -1594,7 +1594,7 @@ if location(1, 64, 1) is persistent:
 
 Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
-## Is plugin enabled {#w6c3_plugin}
+## Is plugin enabled {#mobstate_plugin}
 
 ```carve
 [the] plugin %object% (is|are) enabled
@@ -1621,7 +1621,7 @@ Whether a player has the poison effect.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
-## Is powered {#w6c3_powered}
+## Is powered {#mobstate_powered}
 
 ```carve
 %object% (is|are) [block] [redstone] powered
@@ -1657,7 +1657,7 @@ if diamond pickaxe is the preferred tool for obsidian:
 
 Since **unreleased** · Guide: [conditions-flags-metadata](../syntax/conditions-flags-metadata.md)
 
-## Is pressing key {#w6c3_key}
+## Is pressing key {#mobstate_key}
 
 ```carve
 %object% (is|are) pressing [the] forward [key]
@@ -1717,7 +1717,7 @@ Whether the bell at a location is ringing.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
-## Is riptiding {#w5c3_riptiding}
+## Is riptiding {#mobitem_riptiding}
 
 ```carve
 %object% (is|are) riptiding
@@ -1733,7 +1733,7 @@ if player is riptiding:
 
 Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
-## Is running Minecraft {#w6c3_version}
+## Is running Minecraft {#mobstate_version}
 
 ```carve
 running [(minecraft|mc)] [version] %object%
@@ -1751,7 +1751,7 @@ if running above minecraft "1.21":
 
 Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
-## Is saddled {#w5c3_saddled}
+## Is saddled {#mobitem_saddled}
 
 ```carve
 %object% (is|are) [properly] saddled
@@ -1769,7 +1769,7 @@ command /sad:
 
 Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
-## Is screaming {#w5c3_screaming}
+## Is screaming {#mobitem_screaming}
 
 ```carve
 %object% (is|are) screaming
@@ -1840,7 +1840,7 @@ Whether an entity makes no sounds.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
-## Is silent / Is riding {#w6c3_silent_riding}
+## Is silent / Is riding {#mobstate_silent_riding}
 
 ```carve
 %object% (is|are) silent
@@ -1902,7 +1902,7 @@ Whether a block type is solid.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
-## Is spawnable {#w5c3_spawnable}
+## Is spawnable {#mobitem_spawnable}
 
 ```carve
 %object% (is|are) spawnable [in %world%]
@@ -1934,7 +1934,7 @@ if player is sprinting:
 
 Since **unreleased** · Guide: [player-flags](../syntax/player-flags.md)
 
-## Is stackable {#w5c3_stackable}
+## Is stackable {#mobitem_stackable}
 
 ```carve
 %object% (is|are) stackable
@@ -1995,7 +1995,7 @@ Whether a block or item is in a Minecraft tag, like `minecraft:logs`.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
-## Is tameable {#w5c3_tameable}
+## Is tameable {#mobitem_tameable}
 
 ```carve
 %object% (is|are) tameable
@@ -2011,7 +2011,7 @@ if "wolf" is tameable:
 
 Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
-## Is tamed {#w5c3_tamed}
+## Is tamed {#mobitem_tamed}
 
 ```carve
 %object% (is|are) tamed
@@ -2057,7 +2057,7 @@ Whether a block type lets light through.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
-## Is unbreakable {#w6c3_unbreakable}
+## Is unbreakable {#mobstate_unbreakable}
 
 ```carve
 %player%'s (tool|held item) (is|are) unbreakable
@@ -2073,7 +2073,7 @@ if player's tool is unbreakable:
 
 Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
-## Is using experimental feature {#w6c3_feature}
+## Is using experimental feature {#mobstate_feature}
 
 ```carve
 [the] [experimental] feature %object% (is|are) enabled
@@ -2101,7 +2101,7 @@ Whether an entity still exists in the world.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
-## Is wearing {#w5c3_wearing}
+## Is wearing {#mobitem_wearing}
 
 ```carve
 %object% (is|are) wearing %object%
@@ -2150,7 +2150,7 @@ Whether a location or entity is within a distance of another.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
-## Item has enchantment glint override {#w5c3_glint}
+## Item has enchantment glint override {#mobitem_glint}
 
 ```carve
 %player%'s (tool|held item) (has|have) [an] (enchantment glint (overridden|override)|overridden enchantment glint)
@@ -2188,7 +2188,7 @@ if tooltip of diamond sword is shown:
 
 Since **unreleased** · Guide: [conditions-flags-metadata](../syntax/conditions-flags-metadata.md)
 
-## Lid is open/closed {#w5c3_lid}
+## Lid is open/closed {#mobitem_lid}
 
 ```carve
 [the] (lid|lids) of %object% (is|are) (open|opened)
@@ -2243,7 +2243,7 @@ _No description yet._
 
 Since **unreleased**
 
-## Potion effect has icon / particles / is ambient {#w5c3_effect_flags}
+## Potion effect has icon / particles / is ambient {#mobitem_effect_flags}
 
 ```carve
 [the] [potion] effect of %object% (of|on) %player% (has|have) [an] icon
@@ -2282,7 +2282,7 @@ Whether players can hurt each other, server-wide or in a world.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
-## Resource pack state {#w5c3_resource_pack}
+## Resource pack state {#mobitem_resource_pack}
 
 ```carve
 [the] resource pack (was|is|has) [been] %object%
@@ -2338,7 +2338,7 @@ on chat:
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
-## Text display has drop shadow / is visible through blocks {#w5c3_text_display}
+## Text display has drop shadow / is visible through blocks {#mobitem_text_display}
 
 ```carve
 [the] text of %object% (has|have) [a] (drop|text) shadow

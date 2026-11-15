@@ -2235,10 +2235,12 @@ impl EventAccess for PlayerChatEvent {
 
 impl EventAccess for BlockBreakEvent {
     fn ctx(d: &EventData<Self>) -> EventCtx {
-        match &d.player {
+        let mut ctx = match &d.player {
             Some(p) => EventCtx::player(player_ref(p)),
             None => EventCtx::console(),
-        }
+        };
+        ctx.block = Some(d.block.strip_prefix("minecraft:").unwrap_or(&d.block).to_string());
+        ctx
     }
     fn apply_out(d: &mut EventData<Self>, out: &[(u8, Value)]) {
         use carve_core::drops_border_leashes::{SLOT_NO_ITEM_DROPS, SLOT_NO_XP_DROPS};

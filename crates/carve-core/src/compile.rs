@@ -2834,7 +2834,10 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                 has_damage: k == EventKind::Damage
                     || matches!(k, EventKind::PlayerServer(e) if e.has_number()),
                 has_attacker: matches!(k, EventKind::Damage | EventKind::Death),
-                has_block: matches!(k, EventKind::Click | EventKind::RightClick | EventKind::LeftClick),
+                has_block: matches!(
+                    k,
+                    EventKind::Click | EventKind::RightClick | EventKind::LeftClick | EventKind::Break
+                ),
                 has_inv: k == EventKind::InventoryClick,
                 has_bound: matches!(k, EventKind::BoundEnter | EventKind::BoundExit),
                 ..Env::default()
@@ -3038,6 +3041,26 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                     top.num,
                 );
                 guards.push(at);
+                continue;
+            }
+            if what == "on" && matches!(kind, TriggerKind::Event(EventKind::Break)) {
+                // `on break of stone or oak log:` matches any of the blocks.
+                let mut alts = Vec::new();
+                for part in text.split(" or ") {
+                    match lex(part.trim()).and_then(|t| parse_expr(&t, &cx.env)) {
+                        Ok(e) if e.ty(&cx.env) == Ty::Item => {
+                            alts.push(Cond::Cmp(Expr::ClickedBlock, CmpOp::Eq, e));
+                        }
+                        _ => {
+                            cx.err(top.num, format!("'{}' is not a block name", part.trim()));
+                            header_ok = false;
+                        }
+                    }
+                }
+                if !alts.is_empty() {
+                    let at = cx.emit(Instr::JumpIfNot(Cond::Any(alts), usize::MAX), top.num);
+                    guards.push(at);
+                }
                 continue;
             }
             let item = if let Some(e) = crate::events_items::filter_rhs(what, &text) {
