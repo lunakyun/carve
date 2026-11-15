@@ -21,6 +21,63 @@ open chest with {_rows} rows titled "&aMenu" for player
 - Words that mean the same: `named`, `titled`, `called`, `with title`.
 - The menu starts empty. Fill it with `set slot`.
 
+## Inventory values
+
+Build a menu in a variable first, fill it, and open it later. This is how
+Skript shop scripts work.
+
+```
+set {_gui} to chest inventory with 3 rows named "Shop"
+set slot 4 of {_gui} to diamond named "&bBuy"
+set slot 5 of {_gui} to 2 emeralds
+open {_gui} to player
+
+send "%name of {_gui}%" to player
+send "%slot 4 of {_gui}%" to player
+loop items in {_gui}:
+    send "%loop-value%" to player
+if {_gui} contains diamond:
+    send "has a diamond" to player
+clear {_gui}
+```
+
+- `[a] [new] chest inventory [with N rows] [named "x"]`. `gui` or `menu`
+  work in place of `inventory`, and `titled`, `called`, `with name` in place
+  of `named`. Rows are 1 to 6 (3 when not given). A wrong number is a runtime
+  error. The default title is `Chest`.
+- Slots count from 0 (top left) to `rows * 9 - 1`. A slot outside the
+  inventory is a runtime error.
+- Items keep their names, lore and enchantments in the menu.
+- A copy of the value is the same inventory: `set {_b} to {_gui}` and then
+  `{_b} is {_gui}` is true. Changing a slot of a variable after `open` also
+  changes the menus that are open from it.
+- Inventory values can be kept in global variables. They are saved to
+  `variables.json` with their items.
+- `clear {_gui}` empties it. On a variable that holds something else, `clear`
+  deletes the variable (like Skript).
+- `items in player's inventory` (or `items in inventory of player`) lists the
+  player's items, armor and off hand included. `items in player's current
+  inventory` lists the open menu.
+
+### Telling menus apart in clicks
+
+```
+on inventory click:
+    if name of event-inventory is "Shop":
+        cancel event
+        if clicked slot is 4:
+            send "You bought a diamond." to player
+    if event-inventory is {shop}:
+        send "This is the stored shop." to player
+```
+
+- `event-inventory` is the menu Carve opened, with its name and its live
+  contents (`slot 4 of event-inventory`, `items in event-inventory`).
+  `set slot 4 of event-inventory to stone` changes the open menu.
+- `clicked inventory` is the same menu, but `<none>` when the player clicked
+  their own inventory below the menu.
+- Both are `<none>` for windows Carve did not open (a chest block, say).
+
 ## Slots
 
 ```
@@ -101,7 +158,6 @@ In `on inventory click`:
 ## Not done
 
 - Closing a window (see above).
-- A menu you build first and open later, `inventory type`, and drag, open,
-  item move and pickup events.
+- `inventory type`, `inventory holder`, `viewers of`, and slot ranges
+  (`slots 0 to 8 of {_gui}`).
 - Rows other than a chest (hopper, furnace, anvil and so on).
-- `first empty slot`, `size of inventory`, `inventory holder`.

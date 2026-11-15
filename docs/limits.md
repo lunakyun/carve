@@ -36,8 +36,9 @@ Carve itself. For the full feature-by-feature status, see the
   `attacker` `<none>`, but cancelling or changing the damage has no effect.
 - **Death:**
   - Pumpkin's death event doesn't say who did it, so `attacker` in `on death`
-    is the last entity that hit the player in the 5 seconds before.
-  - `on death` is for players only.
+    is the last entity that hit the victim in the 5 seconds before.
+  - A mob's death can't be cancelled and has no `death message` (Pumpkin's mob
+    death event has neither).
   - Cancelling a death leaves the player at 0 health. Pumpkin marks the player
     as dead before the event runs.
 - **Events Pumpkin doesn't fire yet:** `on swap hand items` is wired up, but
@@ -51,10 +52,10 @@ Carve itself. For the full feature-by-feature status, see the
 
 - **No closing windows.** `close player's inventory` compiles, but Pumpkin's
   plugin API v0.1 has no call to close a window, so it only logs a warning.
-- **No stored inventories.** You open a chest menu straight to a player
-  (`open chest with 3 rows named "Shop" to player`) and fill it with
-  `set slot`. You can't build an inventory in a variable first and open it
-  later, and there are no named inventory values yet.
+- **Chest menus only.** Inventory values (`chest inventory with 3 rows`) are
+  chests. Hoppers, furnaces and other window types can't be built.
+- **`event-inventory` only knows Carve's menus.** For a chest block or any
+  other window Carve did not open, `event-inventory` is `<none>`.
 
 ## Variables
 

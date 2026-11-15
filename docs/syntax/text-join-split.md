@@ -44,8 +44,22 @@ As an expression, giving a new text:
 - `{t} with all "a" replaced with "b"`
 - `{t} with first "a" replaced by "b"`
 
+### Regex replace
+
+```
+replace all regex "[0-9]+" in {_x} with "#"
+replace first regex "a+" with "b" in {_x}
+regex replace " +" in {_x} with " "
+send {_t} with all regex "[0-9]" replaced with "_"
+```
+
+- The pattern uses the same regex as `matches`: Java-like, no lookaround.
+- The replacement is plain text. Carve's regex has no groups, so `$1` stays
+  `$1`.
+- A broken pattern is a runtime error with the reason.
+
 ## Not supported yet
 
 - Matching is exact and case sensitive. Skript ignores case by default.
 - `replace` on a whole list (`{list::*}`) and on non-variable targets.
-- Regex replace.
+- Regex groups in the replacement (`$1`).

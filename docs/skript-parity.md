@@ -16,18 +16,18 @@ event needs an in-game check. ⛔ items depend on Bukkit plugins (WorldGuard, Va
 
 | Category | Total | ✅ | 🟡 | ⬜ | ⛔ |
 |---|--:|--:|--:|--:|--:|
-| Events | 186 | 107 | 41 | 1 | 37 |
-| Effects | 154 | 39 | 25 | 26 | 64 |
-| Conditions | 170 | 38 | 22 | 74 | 36 |
-| Expressions | 547 | 167 | 83 | 112 | 185 |
-| Sections | 11 | 6 | 2 | 3 | 0 |
+| Events | 186 | 108 | 40 | 1 | 37 |
+| Effects | 154 | 43 | 23 | 24 | 64 |
+| Conditions | 170 | 39 | 22 | 73 | 36 |
+| Expressions | 547 | 178 | 73 | 111 | 185 |
+| Sections | 11 | 7 | 2 | 2 | 0 |
 | Structures | 8 | 5 | 3 | 0 | 0 |
 | Functions | 45 | 37 | 5 | 0 | 3 |
-| Types | 126 | 78 | 26 | 6 | 16 |
-| **All** | **1247** | **477** | **207** | **222** | **341** |
+| Types | 126 | 79 | 25 | 6 | 16 |
+| **All** | **1247** | **496** | **193** | **217** | **341** |
 
-Counting 🟡 as half, Carve covers about **47%** of core Skript by entry count.
-Leaving out the ⛔ entries that Pumpkin does not allow, it covers about **64%** of what can be done on Pumpkin.
+Counting 🟡 as half, Carve covers about **48%** of core Skript by entry count.
+Leaving out the ⛔ entries that Pumpkin does not allow, it covers about **65%** of what can be done on Pumpkin.
 By real-world use the number is much higher: the common core (events, variables, loops, conditions,
 functions, commands) is mostly done, and most ⬜ entries are niche (pandas, brewing stands, loot tables).
 
@@ -115,7 +115,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 On Craft — recipe id only
 - ⛔ On Creeper Power — Pumpkin never fires it
 - ✅ On Damage — any living entity, `on damage of <type>`; `damage` (settable), `attacker`, `victim`
-- 🟡 On Death — players only (Carve has no mob death trigger yet); `attacker` from the last hit within 5 seconds, settable `death message`
+- ✅ On Death — players and mobs, `on death of zombie`; `victim`, `attacker` from the last hit within 5 seconds, settable `death message` (players)
 - 🟡 On Dispense — `event-location`, `event-item` (name); the item can't be changed
 - ✅ On Drop ⭐
 - ✅ On Egg Throw — `event-boolean` hatching, `event-number` hatches, `event-text` type
@@ -291,10 +291,10 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 Damage/Heal/Repair — `heal`, `heal by`, `damage player by`; no repair
 - ⛔ Dance (no parrot or allay dance state in the plugin API)
 - ⬜ Detonate Entities
-- ⬜ Do If ⭐
+- ✅ Do If ⭐ — `<effect> if <condition>`
 - ⬜ Drop
 - 🟡 Enable/Disable/Unload/Reload Script — through `/carve enable/disable/reload`, not as an effect
-- ⬜ Enchant/Disenchant
+- ✅ Enchant/Disenchant — `enchant player's tool with sharpness 5`, `disenchant player's tool` (held item)
 - ⛔ Enderman Teleport (enderman teleport is not exposed)
 - ⬜ Enforce Whitelist
 - ✅ Entity Despawn — `despawn`, `remove` or `delete` an entity
@@ -356,7 +356,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Message — `send ... [to ...]`
 - ✅ op/deop ⭐ — `op player`, `deop player`
 - 🟡 Open Book — opens the written book already in the player's main or off hand; cannot open an arbitrary item
-- 🟡 Open/Close Inventory ⭐ — `open chest with 3 rows named "x" to player` works; `close` compiles but Pumpkin's plugin API v0.1 cannot close a window (v0.2 can)
+- 🟡 Open/Close Inventory ⭐ — `open {_gui} to player` and `open chest with 3 rows named "x" to player` work; `close` compiles but Pumpkin's plugin API v0.1 cannot close a window (v0.2 can)
 - ⛔ Open/Close Lid — no chest or barrel lid API
 - ⬜ Pathfind
 - ⬜ Persistent
@@ -373,11 +373,11 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Potion Effect - Particles
 - 🟡 Potion Effects ⭐ — `remove all potion effects from player`, `remove speed potion effect from player`; players only
 - ⛔ Pull In Hooked Entity — no fishing hook API
-- 🟡 Push ⭐ — `push <entity or player> up/down/north/south/east/west [with speed N]`; no forward, backward or away-from
+- ✅ Push ⭐ — `push <entity or player> up/down/north/south/east/west/forward/backward [with speed N]`, `away from` / `towards <place>`
 - ⛔ PvP — no per-world PvP flag in the plugin API
 - ⛔ Register Tag — no tag registry in the plugin API
 - ⛔ Release From Entity Storage — no entity storage block API
-- 🟡 Replace ⭐
+- ✅ Replace ⭐ — `replace all "a" in {x} with "b"`, `replace all regex "[0-9]+" in {x} with "#"` (no `$1` groups)
 - ✅ Return
 - ⛔ Ring Bell — no way to ring a bell from a plugin
 - ⛔ Rotate — no block rotation API
@@ -390,7 +390,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Shoot — no projectile launch API; the section is refused with an error
 - ⛔ Silence Entity — no silent flag in the plugin API
 - ✅ Sort — `sort {x::*}`, `in descending order`; no `by`
-- 🟡 Spawn ⭐ — `spawn [N] <mob> [at <place>]`; no `named`, NBT or mob-specific data
+- 🟡 Spawn ⭐ — `spawn [N] <mob> [named "x"] [at <place>]`; no NBT or mob-specific data
 - ✅ Sprinting — `make %player% start/stop sprinting`
 - ✅ Stop Server — `stop [the] server`
 - 🟡 Stop Sound ⭐ (one sound or all, via `stopsound`; no categories)
@@ -455,7 +455,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Equippable Component - Can Equip On Entities
 - ⬜ Equippable Component - Can Swap Equipment
 - ⬜ Equippable Component - Will Lose Durability
-- ⬜ Event Cancelled ⭐
+- ✅ Event Cancelled ⭐ — `event is cancelled`, `event is not cancelled`
 - ✅ Exists/Is Set
 - ⬜ Fishing Lure Applied
 - ⬜ Goat Has Horns
@@ -673,8 +673,8 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Chat Recipients — `chat recipients` in `on chat`
 - ⛔ Choice Argument — command arguments only support text, number and player so far
 - 🟡 Chunk — `chunk x of loc`, `chunk z of loc` (numbers only, no chunk value)
-- 🟡 Clicked Block/Entity/Inventory/Slot — `clicked block`, `clicked slot`, `clicked item`; no clicked entity
-- 🟡 Color from Hex Code ⭐ — `<#rrggbb>`, `&#rrggbb` and `&x&r...` in text; no `rgb(...)` color value
+- 🟡 Clicked Block/Entity/Inventory/Slot — `clicked block`, `clicked slot`, `clicked item`, `clicked inventory` (Carve menus); no clicked entity
+- ✅ Color from Hex Code ⭐ — `<#rrggbb>`, `&#rrggbb` and `&x&r...` in text; `rgb(r, g, b)` colors (`"<%rgb(255, 0, 0)%>red"`, `with color rgb(0, 255, 0)` on particles)
 - ⛔ Color of — item and entity colours are not reachable (item-meta and entities topics)
 - ✅ Colored / Uncolored ⭐ — `colored`, `uncolored`
 - ✅ Colored/Formatted/Uncolored — `colored`, `formatted`, `uncolored`, `unformatted`
@@ -695,7 +695,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Created Potion Effect
 - ⬜ Creature/Entity/Player/Projectile/Villager/Powered Creeper/etc.
 - ⬜ Cursor Slot
-- 🟡 Custom Chest Inventory ⭐ — `open chest with N rows [named "x"] to player`, then `set slot`; no inventory value you can fill first and open later
+- ✅ Custom Chest Inventory ⭐ — `set {_gui} to chest inventory with 3 rows named "Shop"`, `set slot`, `open {_gui} to player`; saved in global variables
 - 🟡 Custom Model Data — get, set and reset on `player's tool` only
 - ✅ Damage — settable: `set damage to`, `add ... to damage`, `remove ... from damage`
 - ⬜ Damage Amount of World Border
@@ -826,7 +826,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Initiator Inventory — inventory move events are not in the plugin API
 - ⛔ Input — the API gives no player input (WASD, jump) state
 - ⛔ Interaction Height/Width — Pumpkin's API has no interaction entities
-- 🟡 Inventory ⭐ — `player's inventory` and `player's current inventory` in slot, contains, clear, add and remove; not a value you can store
+- ✅ Inventory ⭐ — `player's inventory`, `player's current inventory`, chest inventory values in variables, `event-inventory`
 - ⬜ Inventory Action
 - ⬜ Inventory Close Reason
 - ⬜ Inventory Holder/Viewers/Rows/Slots
@@ -850,7 +850,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Item With Model — the API only exposes raw component bytes, not typed access
 - ⛔ Item with Tooltip — the API only exposes raw component bytes, not typed access
 - ⛔ Items — needs item entities or inventories, which the API cannot read as lists here
-- ⬜ Items In ⭐
+- ✅ Items In ⭐ — `items in {_gui}`, `items in player's inventory`, `items in event-inventory`
 - ✅ Join & Split ⭐
 - ✅ Join Message ⭐ — `join message`, `set join message to "..."` in `on join`
 - ⬜ Key Of Boss Bar
@@ -888,7 +888,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Loot Table from Key — the API cannot roll or read loot tables
 - ⛔ Looted Entity of Loot Context — the API cannot roll or read loot tables
 - ⛔ Looter of Loot Context — the API cannot roll or read loot tables
-- 🟡 Lore ⭐ — `lore of x` reads it; setting lore of a held item is not done
+- ✅ Lore ⭐ — `lore of x`; `set lore of player's tool to "a" and "b"`, `add "c" to lore of player's tool`
 - ⛔ Love Time — the API has breed events but no love timer
 - 🟡 Lowest/Highest Solid Block — `highest|lowest [solid] block at <loc>`: gives a location; plants and liquids count as not solid
 - ⛔ Luck of Loot Context — the API cannot roll or read loot tables
@@ -921,7 +921,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Moved blocks — needs the piston events, which are not wired
 - 🟡 Name — `name of player`, `name of <entity>`, set name of an entity
 - ✅ Name / Display Name / Tab List Name
-- 🟡 Named Item/Inventory ⭐ — `x named "n"`, `name of x`; no named inventories
+- ✅ Named Item/Inventory ⭐ — `x named "n"`, `name of x`, `set name of player's tool to "n"`, `chest inventory named "Shop"`, `name of event-inventory`
 - ✅ NaN — `nan`
 - ✅ Nearest Entity — `nearest [type] to <place> [within N]`
 - ✅ Negative Infinity — `negative infinity`
@@ -982,7 +982,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Protocol Version — the plugin API does not give the client protocol version of Java players
 - ⬜ Queue (Experimental)
 - ⬜ Queue Start/End (Experimental)
-- 🟡 Quit Message ⭐ — `quit message` in `on quit`, read only
+- ✅ Quit Message ⭐ — `quit message` in `on quit`, `set quit message to "..."`
 - ⛔ Quit Reason — the leave event has no reason field
 - 🟡 Random — `random element of {list::*}`, `random N elements of {list::*}`
 - ✅ Random Character — `a random character`, `random alphanumeric character`, `random character between "a" and "z"`
@@ -1034,7 +1034,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Skull Owner — block entities only expose custom data, not skull data
 - ⛔ Skull Texture — block entities only expose custom data, not skull data
 - ⬜ Slot Index
-- 🟡 Sorted List ⭐ — `sorted {x::*}`; no `by` expression
+- ✅ Sorted List ⭐ — `sorted {x::*}`, `sorted {x::*} by <expression with input>`
 - ⬜ Source Block
 - 🟡 Spawn ⭐ — `spawn of world "x"` (a location); also `teleport player to spawn`; no setting it
 - ⬜ Spawn Egg Entity
@@ -1063,13 +1063,13 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Text Display Line Width
 - ⬜ Text Display Opacity
 - ⛔ Text Of — no text component values in Carve
-- 🟡 Text Replacement ⭐
+- ✅ Text Replacement ⭐ — `x with all "a" replaced with "b"`, `x with all regex "[0-9]" replaced with "_"`
 - ⛔ The Egg — needs entity values and an egg-throw trigger, which Carve does not have yet
 - ✅ Time ⭐ — `time in world "w"`, `set time to 6:00 pm`, `add 5 minutes to time`; time is a number of ticks
 - 🟡 Time Lived of Entity — `time lived of player` only (no entity values yet)
 - ✅ Time Played — `time played of player`
 - ✅ Time Since/Until ⭐ — `time since {d}`, `time until {d}`
-- 🟡 Timespan Details ⭐ — `minutes of {t}`, `total minutes of {t}`; no `{t}'s minutes` form
+- ✅ Timespan Details ⭐ — `minutes of {t}`, `total minutes of {t}`, `{t}'s minutes`
 - ⬜ Title
 - ✅ Tool — main hand
 - ✅ Total Experience — `total experience of player`
@@ -1109,7 +1109,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 Vectors - XYZ Component — `x of v`, `v's y`, `z component of v`; read only (rebuild with `vector(...)` to change one)
 - 🟡 Vectors - Yaw and Pitch — `yaw of v`, `pitch of v`; read only
 - ⛔ Vehicle — needs entity values, which Carve does not have yet
-- 🟡 Velocity ⭐ — `x/y/z velocity of <entity>`, set per axis; no vector type
+- ✅ Velocity ⭐ — `x/y/z velocity of <entity>`, set per axis, `set velocity of <entity> to vector(0, 1, 0)`
 - 🟡 Version — `server version`, `minecraft version`; the Minecraft version is fixed at build time
 - 🟡 Version String — `server version string`, `version string of server`; versions are plain text
 - 🟡 View Distance — `view distance of server`, `view distance of player`; read only
@@ -1144,7 +1144,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Catch Runtime Errors — `catch runtime errors:`, message in `last caught runtime error`
 - ✅ Conditionals — `if` / `else if` / `else`, inline `<effect> if <cond>` / `unless`, `parse if`
 - ✅ Delay — `wait N ticks/seconds`, `wait 1 minute and 30 seconds`, `wait {span}`
-- ⬜ Filter ⭐
+- ✅ Filter ⭐ — `filter {x::*} to match:` with `input`
 - 🟡 For Each Loop — `loop {list::*}` works; no `for each` wording
 - 🟡 Locally Suppress Warning — accepted and ignored; Carve has no such warnings
 - ✅ Loop — times, lists, all players, values
@@ -1272,7 +1272,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Header — Carve has no config file or node reading
 - ⛔ Heal Reason — needs the regain health event, which is not wired in Carve
 - ✅ Input Key — a named value: plain words or `"text" parsed as input key`; compares with text; usable as a function parameter type
-- 🟡 Inventory ⭐ — works as a function parameter type (no extra checks); no value of its own
+- ✅ Inventory ⭐ — chest inventory values (`chest inventory with 3 rows named "x"`), saved in variables
 - ✅ Inventory Action — a named value: plain words or `"text" parsed as inventory action`; compares with text; usable as a function parameter type
 - ✅ Inventory Close Reasons — a named value: plain words or `"text" parsed as inventory close reasons`; compares with text; usable as a function parameter type
 - ✅ Inventory Type — a named value: plain words or `"text" parsed as inventory type`; compares with text; usable as a function parameter type

@@ -17,7 +17,7 @@ on join:
 | `on chat:` | `on player chat:` | a player sends a chat message |
 | `on break:` | `on block break:`, `on mine:` | a block is broken |
 | `on place:` | `on block place:` | a player places a block |
-| `on death:` | `on death of player:`, `on player death:` | a player dies |
+| `on death:` | `on death of player:`, `on death of zombie:`, `on player death:` | a player or mob dies |
 | `on damage:` | `on damage of player:`, `on damage of zombie:`, `on player damage:` | a player or mob takes damage |
 | `on respawn:` | `on player respawn:` | a player respawns |
 | `on right click:` | `on rightclick:` | a player right-clicks (air or a block) |
@@ -61,6 +61,10 @@ Pumpkin fires this event after the player is already gone. Carve still knows
 the player's name until the first `wait`, so `%player%` works. Effects that
 target the player (like `send ... to player`) do nothing, because the player
 can't receive them anymore.
+
+`quit message` is the message everyone sees. Change it with
+`set quit message to "&e%player% left"` (before the first `wait`). In
+`on join`, `join message` works the same way.
 
 ### `on chat:`
 
@@ -156,7 +160,17 @@ type) work.
 The damage and death message reach the server only when set before the first
 `wait`, like `cancel event`.
 
-In `on death`, `attacker` is the last player or entity that hit the player in
+`on death` runs for players and mobs, like Skript. `on death of <type>`
+(`of player`, `of zombie`) runs only for that type. With a mob victim, `player`
+is `<none>`; use `victim`. `death message` is for players only.
+
+```
+on death of zombie:
+    if attacker is a player:
+        send "You killed %name of victim%" to attacker
+```
+
+In `on death`, `attacker` is the last player or entity that hit the victim in
 the 5 seconds before the death, else `<none>`.
 
 Cancelling `on death` stops Pumpkin's death handling, but the player keeps 0

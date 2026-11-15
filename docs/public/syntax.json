@@ -519,7 +519,7 @@
     },
     {
       "category": "event",
-      "description": "A player dies. Has `player`, `victim`, `death message` (settable) and `attacker`: the last player or entity that hit them in the 5 seconds before, else `<none>`. Cancelling stops Pumpkin's death handling but leaves 0 health.",
+      "description": "A player or a mob dies. Has `victim` (the one that died), `player` (unset for mobs), `death message` (settable, players only) and `attacker`: the last player or entity that hit them in the 5 seconds before, else `<none>`. Cancelling a player's death stops Pumpkin's death handling but leaves 0 health.",
       "example": "on death of player:\n    broadcast \"%player% died\"",
       "id": "death",
       "name": "Death",
@@ -528,6 +528,19 @@
         "on death",
         "on death of player",
         "on player death"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "A mob or player of that type dies (`on death of zombie`). Plain `on death` runs for mobs too, with `player` unset; use `victim` for the one that died. `attacker` is the last player or entity that hit it in the 5 seconds before.",
+      "example": "on death of zombie:\n    broadcast \"%victim% died\"",
+      "id": "mob_death",
+      "name": "Death of a mob",
+      "page": "syntax/triggers",
+      "patterns": [
+        "on death of %entity type%"
       ],
       "since": "unreleased",
       "source": "hand"
@@ -2160,6 +2173,21 @@
     },
     {
       "category": "effect",
+      "description": "Sets a slot, opens the inventory as a chest menu, or empties it. Changing a slot of a variable also changes the menus open from it. `clear` on a variable that holds no inventory deletes the variable.",
+      "example": "set {_gui} to chest inventory named \"Shop\"\nset slot 0 of {_gui} to stone\nopen {_gui} to player\nclear {_gui}",
+      "id": "inventory_value_effects",
+      "name": "Change an inventory value",
+      "page": "syntax/inventories",
+      "patterns": [
+        "set slot %number% of %inventory% to %item%",
+        "open %inventory% (to|for) %player%",
+        "clear %inventory%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
       "description": "Changes the damage of the hit in `on damage` (never below 0). Only a change before the first `wait` reaches the server.",
       "example": "on damage of player:\n    if damage > 6:\n        set damage to 6",
       "id": "damage_change",
@@ -2534,6 +2562,25 @@
       ],
       "since": "unreleased",
       "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Changes the name, lore or enchantments of the item in the player's main hand. `player's held item` and `tool of player` work too. An empty hand does nothing. `disenchant` removes every enchantment.",
+      "example": "set name of player's tool to \"&6Excalibur\"\nset lore of player's tool to \"&7Legendary\" and \"&7Sharp\"\nadd \"&8Line 3\" to lore of player's tool\nenchant player's tool with sharpness 5 and unbreaking 3",
+      "id": "held_item_meta",
+      "name": "Edit the held item",
+      "page": "syntax/item-meta",
+      "patterns": [
+        "set [the] name of %player%'s tool to %text%",
+        "(reset|clear|delete) [the] name of %player%'s tool",
+        "set [the] lore of %player%'s tool to %texts%",
+        "add %texts% to [the] lore of %player%'s tool",
+        "(reset|clear|delete) [the] lore of %player%'s tool",
+        "enchant %player%'s tool with %enchantments%",
+        "disenchant %player%'s tool"
+      ],
+      "since": "unreleased",
+      "source": "hand"
     },
     {
       "category": "effect",
@@ -3042,6 +3089,35 @@
     },
     {
       "category": "effect",
+      "description": "Adds to the velocity of players or entities: the way they look, the other way, away from a place or toward it. The default speed is 1.",
+      "example": "push player forward with speed 2\npush player away from location(0, 64, 0)",
+      "id": "push_facing",
+      "name": "Push forward, backward, away from",
+      "page": "syntax/entities",
+      "patterns": [
+        "push %entities% (forward|forwards|backward|backwards) [with speed %number%]",
+        "push %entities% (away from|towards) %location% [with speed %number%]"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
+      "description": "Replaces every (or the first) match of a regular expression in a variable. The replacement is plain text: Carve's regex has no groups, so `$1` is not filled in.",
+      "example": "set {_x} to \"a1b22\"\nreplace all regex \"[0-9]+\" in {_x} with \"#\"",
+      "id": "regex_replace",
+      "name": "Regex replace",
+      "page": "syntax/text-join-split",
+      "patterns": [
+        "replace [all|every|first] regex %text% in %variable% with %text%",
+        "replace [all|every|first] regex %text% with %text% in %variable%",
+        "regex replace %text% in %variable% with %text%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
       "description": "Changes how long a player can stay underwater before drowning.",
       "example": "",
       "id": "remaining_air",
@@ -3324,6 +3400,19 @@
     },
     {
       "category": "effect",
+      "description": "Changes the message everyone sees when the player leaves. Only in `on quit`. Color codes work.",
+      "example": "on quit:\n    set quit message to \"&e%player% left\"",
+      "id": "set_quit_message",
+      "name": "Set quit message",
+      "page": "syntax/triggers",
+      "patterns": [
+        "set [the] (quit|leave) message to %text%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
       "description": "Puts an item in a slot (counted from 0). `air` empties it. `player's current inventory` is the open Carve menu.",
       "example": "set slot 4 of player's current inventory to diamond",
       "id": "set_slot",
@@ -3337,6 +3426,19 @@
     },
     {
       "category": "effect",
+      "description": "Sets the whole velocity of players or entities. Each part is cut to -20 to 20.",
+      "example": "set velocity of player to vector(0, 1, 0)",
+      "id": "set_velocity",
+      "name": "Set velocity",
+      "page": "syntax/entities",
+      "patterns": [
+        "set [the] velocity of %entities% to %vector%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
       "description": "Sorts a list in place. Numbers sort by value, before text.",
       "example": "set {_n::*} to 3, 1 and 2\nsort {_n::*}",
       "id": "sort",
@@ -3344,6 +3446,19 @@
       "page": "syntax/list-ops",
       "patterns": [
         "sort %list% [in descending order]"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
+      "description": "Spawns mobs at a place (the event player when no place is given). `named` sets the name shown above them.",
+      "example": "spawn a zombie named \"&cBob\" at player",
+      "id": "spawn_named",
+      "name": "Spawn",
+      "page": "syntax/entities",
+      "patterns": [
+        "(spawn|summon) [%number%] %entity% [named %text%] [at %location%]"
       ],
       "since": "unreleased",
       "source": "hand"
@@ -3974,6 +4089,20 @@
       ],
       "since": "unreleased",
       "source": "registry+hand"
+    },
+    {
+      "category": "condition",
+      "description": "Does an inventory value or `event-inventory` hold at least that many of the item (all slots counted together)?",
+      "example": "set {_gui} to chest inventory\nif {_gui} contains 2 diamonds:\n    send \"yes\" to player",
+      "id": "inventory_value_contains",
+      "name": "Inventory value contains",
+      "page": "syntax/inventories",
+      "patterns": [
+        "%inventory% contains %item%",
+        "%inventory% (does not|doesn't) contain %item%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
     },
     {
       "category": "condition",
@@ -4921,6 +5050,19 @@
     },
     {
       "category": "expression",
+      "description": "A new, empty chest inventory value: 1 to 6 rows (3 when not given), titled `Chest` when not named. Keep it in a variable, fill it with `set slot`, then `open` it. Copies are the same inventory, so `event-inventory is {shop}` works.",
+      "example": "set {_gui} to chest inventory with 3 rows named \"Shop\"\nset slot 4 of {_gui} to diamond named \"&bBuy\"\nopen {_gui} to player",
+      "id": "chest_inventory",
+      "name": "Chest inventory",
+      "page": "syntax/inventories",
+      "patterns": [
+        "[a] [new] chest (inventory|gui|menu) [with %number% (row|rows)] [(named|titled|called|with name|with title) %text%]"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
       "description": "A chunk value, or the list of chunks in a square radius (at most 32).",
       "example": "on join:\n    set {_c::*} to chunks in radius 1 around player\n    send \"%size of {_c::*}%\"",
       "id": "chunk_at",
@@ -5042,6 +5184,21 @@
       "patterns": [
         "event-entity",
         "spawn reason"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "In `on inventory click`: the menu Carve opened, with its name and live contents. `clicked inventory` is `<none>` when the click was in the player's own inventory below the menu. Both are `<none>` for windows Carve did not open.",
+      "example": "on inventory click:\n    if name of event-inventory is \"Shop\":\n        cancel event",
+      "id": "event_inventory",
+      "name": "Event inventory",
+      "page": "syntax/inventories",
+      "patterns": [
+        "event-inventory",
+        "[the] event inventory",
+        "[the] clicked inventory"
       ],
       "since": "unreleased",
       "source": "hand"
@@ -5223,6 +5380,21 @@
       "page": "syntax/types",
       "patterns": [
         "[%number%] <item name>"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "Every item in an inventory value, `event-inventory` or a player's inventory (armor and off hand included), as a list. Empty slots are left out.",
+      "example": "loop items in player's inventory:\n    send \"%loop-value%\" to player",
+      "id": "items_in",
+      "name": "Items in",
+      "page": "syntax/inventories",
+      "patterns": [
+        "[all] [the] items (in|of|inside|within) %inventory%",
+        "[all] [the] items (in|of|inside|within) %player%'s [current] inventory",
+        "[all] [the] items (in|of|inside|within) [the] [current] inventory of %player%"
       ],
       "since": "unreleased",
       "source": "hand"
@@ -5559,6 +5731,19 @@
     },
     {
       "category": "expression",
+      "description": "The text with the matches of a regular expression replaced.",
+      "example": "send \"x1y2\" with all regex \"[0-9]\" replaced with \"_\" to player",
+      "id": "regex_replaced",
+      "name": "Regex replaced text",
+      "page": "syntax/text-join-split",
+      "patterns": [
+        "%text% with (all|first) regex %text% replaced with %text%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
       "description": "A new text with matches replaced.",
       "example": "set {_t} to \"a-b\" with all \"-\" replaced with \" \"",
       "id": "replaced",
@@ -5596,6 +5781,32 @@
       "page": "syntax/list-literals",
       "patterns": [
         "(size|amount|count|number) of %list%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "The item in a slot (0 is the top left) of an inventory value or `event-inventory`. Empty slots are `<none>`.",
+      "example": "set {_gui} to chest inventory\nsend \"%slot 0 of {_gui}%\" to player",
+      "id": "inventory_slot_value",
+      "name": "Slot of an inventory value",
+      "page": "syntax/inventories",
+      "patterns": [
+        "slot %number% of %inventory%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "A copy of the list sorted by a key. `input` is each item while the key is worked out. Numbers, timespans and dates sort by value, text alphabetically. Items whose key is `<none>` go last.",
+      "example": "set {_l::*} to \"ccc\", \"a\" and \"bb\"\nsend \"%sorted {_l::*} by length of input%\" to player",
+      "id": "sorted_by",
+      "name": "Sorted by",
+      "page": "syntax/list-ops",
+      "patterns": [
+        "sorted %list% by %object%"
       ],
       "since": "unreleased",
       "source": "hand"
@@ -5693,6 +5904,19 @@
       "page": "syntax/timespans",
       "patterns": [
         "%number% (tick|second|minute|hour|day|week|month|year)[s] [and ...]"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "One part of a timespan, the same as `minutes of {t}`.",
+      "example": "set {_t} to 2 minutes and 30 seconds\nsend \"%{_t}'s minutes%:%{_t}'s seconds%\" to player",
+      "id": "timespan_possessive",
+      "name": "Timespan part ('s form)",
+      "page": "syntax/timespans",
+      "patterns": [
+        "%timespan%'s (milliseconds|ticks|seconds|minutes|hours|days|weeks)"
       ],
       "since": "unreleased",
       "source": "hand"

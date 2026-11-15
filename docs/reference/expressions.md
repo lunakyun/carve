@@ -7,7 +7,7 @@ editLink: false
 
 # Expressions
 
-Expressions are values you put into effects and conditions. 67 entries. Search all of them on the [reference home](./index.md).
+Expressions are values you put into effects and conditions. 74 entries. Search all of them on the [reference home](./index.md).
 
 In a pattern, `%type%` is a value, `[...]` is optional and `(a|b)` means one of the words.
 
@@ -122,6 +122,22 @@ on chat:
 ```
 
 Since **0.1.0** · Guide: [expressions](../syntax/expressions.md)
+
+## Chest inventory {#chest_inventory}
+
+```carve
+[a] [new] chest (inventory|gui|menu) [with %number% (row|rows)] [(named|titled|called|with name|with title) %text%]
+```
+
+A new, empty chest inventory value: 1 to 6 rows (3 when not given), titled `Chest` when not named. Keep it in a variable, fill it with `set slot`, then `open` it. Copies are the same inventory, so `event-inventory is {shop}` works.
+
+```carve
+set {_gui} to chest inventory with 3 rows named "Shop"
+set slot 4 of {_gui} to diamond named "&bBuy"
+open {_gui} to player
+```
+
+Since **unreleased** · Guide: [inventories](../syntax/inventories.md)
 
 ## Chunk {#chunk_at}
 
@@ -266,6 +282,24 @@ on mob spawn:
 ```
 
 Since **unreleased** · Guide: [events-items](../syntax/events-items.md)
+
+## Event inventory {#event_inventory}
+
+```carve
+event-inventory
+[the] event inventory
+[the] clicked inventory
+```
+
+In `on inventory click`: the menu Carve opened, with its name and live contents. `clicked inventory` is `<none>` when the click was in the player's own inventory below the menu. Both are `<none>` for windows Carve did not open.
+
+```carve
+on inventory click:
+    if name of event-inventory is "Shop":
+        cancel event
+```
+
+Since **unreleased** · Guide: [inventories](../syntax/inventories.md)
 
 ## Event item {#event_item}
 
@@ -468,6 +502,23 @@ give 16 oak logs to player
 ```
 
 Since **unreleased** · Guide: [types](../syntax/types.md)
+
+## Items in {#items_in}
+
+```carve
+[all] [the] items (in|of|inside|within) %inventory%
+[all] [the] items (in|of|inside|within) %player%'s [current] inventory
+[all] [the] items (in|of|inside|within) [the] [current] inventory of %player%
+```
+
+Every item in an inventory value, `event-inventory` or a player's inventory (armor and off hand included), as a list. Empty slots are left out.
+
+```carve
+loop items in player's inventory:
+    send "%loop-value%" to player
+```
+
+Since **unreleased** · Guide: [inventories](../syntax/inventories.md)
 
 ## Join list {#join}
 
@@ -834,6 +885,20 @@ on join:
 
 Since **unreleased** · Guide: [w4-skbee-raytrace-world](../syntax/w4-skbee-raytrace-world.md)
 
+## Regex replaced text {#regex_replaced}
+
+```carve
+%text% with (all|first) regex %text% replaced with %text%
+```
+
+The text with the matches of a regular expression replaced.
+
+```carve
+send "x1y2" with all regex "[0-9]" replaced with "_" to player
+```
+
+Since **unreleased** · Guide: [text-join-split](../syntax/text-join-split.md)
+
 ## Replaced text {#replaced}
 
 ```carve
@@ -879,6 +944,36 @@ send "%size of {warps::*}% warps" to player
 ```
 
 Since **unreleased** · Guide: [list-literals](../syntax/list-literals.md)
+
+## Slot of an inventory value {#inventory_slot_value}
+
+```carve
+slot %number% of %inventory%
+```
+
+The item in a slot (0 is the top left) of an inventory value or `event-inventory`. Empty slots are `<none>`.
+
+```carve
+set {_gui} to chest inventory
+send "%slot 0 of {_gui}%" to player
+```
+
+Since **unreleased** · Guide: [inventories](../syntax/inventories.md)
+
+## Sorted by {#sorted_by}
+
+```carve
+sorted %list% by %object%
+```
+
+A copy of the list sorted by a key. `input` is each item while the key is worked out. Numbers, timespans and dates sort by value, text alphabetically. Items whose key is `<none>` go last.
+
+```carve
+set {_l::*} to "ccc", "a" and "bb"
+send "%sorted {_l::*} by length of input%" to player
+```
+
+Since **unreleased** · Guide: [list-ops](../syntax/list-ops.md)
 
 ## Sorted, reversed, shuffled {#list_order}
 
@@ -982,6 +1077,21 @@ A length of time, like `1 hour and 30 seconds`.
 
 ```carve
 set {delay} to 1 minute and 30 seconds
+```
+
+Since **unreleased** · Guide: [timespans](../syntax/timespans.md)
+
+## Timespan part ('s form) {#timespan_possessive}
+
+```carve
+%timespan%'s (milliseconds|ticks|seconds|minutes|hours|days|weeks)
+```
+
+One part of a timespan, the same as `minutes of {t}`.
+
+```carve
+set {_t} to 2 minutes and 30 seconds
+send "%{_t}'s minutes%:%{_t}'s seconds%" to player
 ```
 
 Since **unreleased** · Guide: [timespans](../syntax/timespans.md)

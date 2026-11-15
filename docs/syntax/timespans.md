@@ -80,6 +80,7 @@ Works with `milliseconds`, `ticks`, `seconds`, `minutes`, `hours`, `days`,
 set {t} to 1 hour and 30 minutes
 send "%minutes of {t}%"        # 30
 send "%total minutes of {t}%"  # 90
+send "%{t}'s minutes%"         # 30, the same as minutes of {t}
 ```
 
 ## Comparing
@@ -93,7 +94,7 @@ Timespans and dates saved in variables survive a restart.
 
 ## Not supported yet
 
-- `{t}'s minutes` (use `minutes of {t}`).
+- `{t}'s months` and `{t}'s years` (use `months of {t}`).
 - `add 5 minutes to {t}` (use `set {t} to {t} + 5 minutes`).
 - Timespans from text, like `"5 minutes" parsed as timespan`.
 - `a minute`, `an hour` without a number.

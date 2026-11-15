@@ -14,12 +14,14 @@ spawn a zombie at player
 spawn 3 pigs
 spawn 2 iron golems at location(10, 70, 10)
 summon a creeper at {_spot}
+spawn a zombie named "&cBob" at player
 ```
 
 - `at <place>` is a location, a player or an entity.
   Without it, the mob spawns at the event's player.
   Triggers with no player (`on load`, `every`) need `at`.
 - The count is cut to 100 per line.
+- `named "x"` (before or after `at`) sets the name shown above each mob.
 - You cannot spawn a player.
 - `spawn lightning at ...`, explosions and particles are world effects, see [effects](effects.md).
 
@@ -98,14 +100,23 @@ A player cannot be despawned. Use `kick` or `kill`.
 push player upwards with speed 2
 push last spawned entity north at speed 0.5
 push all pigs in radius 5 of player east
+push player forward with speed 2
+push player backwards
+push last spawned entity away from player with speed 3
+push all zombies in radius 10 of player towards player
 teleport last spawned entity to location(0, 70, 0)
 set y velocity of player to 1.5
+set velocity of player to vector(0, 1, 0)
 ```
 
 - Directions: `up`, `upwards`, `down`, `downwards`, `north` (-z), `south` (+z), `east` (+x), `west` (-x).
 - `push` adds to the current velocity. The default speed is 1. Speed is cut to 20.
-- `forward`, `backward` and push away from something are not supported yet.
-- Velocity is plain numbers per axis. Carve has no vector type.
+- `forward` is the way the player or entity looks (pitch included),
+  `backward` the other way.
+- `away from` / `towards` take a location, player or entity. Nothing happens
+  when both are at the same spot.
+- `set velocity of ... to <vector>` replaces the whole velocity. Each part is
+  cut to -20 to 20.
 - Pushing a player depends on Pumpkin sending the new velocity to the client.
   Check it in game.
 
@@ -120,9 +131,8 @@ On a player, this sets the display name.
 
 ## What does not work
 
-- Mob-specific data (profession, sheep color, ...), `named`, NBT on spawn.
+- Mob-specific data (profession, sheep color, ...), NBT on spawn.
 - `all entities in chunk`, `entity from uuid`.
-- Vectors, `push ... away from`, facing based directions.
 - On a server with only console commands, `last spawned entity`, `nearest`,
   `all ... in radius`, names and velocity do nothing. Spawn, kill and teleport still run
   as `/summon`, `/kill` and `/teleport`.

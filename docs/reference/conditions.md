@@ -7,7 +7,7 @@ editLink: false
 
 # Conditions
 
-Conditions go after `if`, `else if` and `while`, or on a line of their own. 87 entries. Search all of them on the [reference home](./index.md).
+Conditions go after `if`, `else if` and `while`, or on a line of their own. 88 entries. Search all of them on the [reference home](./index.md).
 
 In a pattern, `%type%` is a value, `[...]` is optional and `(a|b)` means one of the words.
 
@@ -374,6 +374,23 @@ Whether the player's inventory holds the item.
 ```carve
 if player's inventory contains 2 diamonds:
     send "ok" to player
+```
+
+Since **unreleased** · Guide: [inventories](../syntax/inventories.md)
+
+## Inventory value contains {#inventory_value_contains}
+
+```carve
+%inventory% contains %item%
+%inventory% (does not|doesn't) contain %item%
+```
+
+Does an inventory value or `event-inventory` hold at least that many of the item (all slots counted together)?
+
+```carve
+set {_gui} to chest inventory
+if {_gui} contains 2 diamonds:
+    send "yes" to player
 ```
 
 Since **unreleased** · Guide: [inventories](../syntax/inventories.md)

@@ -53,6 +53,26 @@ on join:
 
 Names and lore read from a held item come back as plain text. Colors are not kept.
 
+## Changing the held item
+
+```
+set name of player's tool to "&6Excalibur"
+reset name of player's tool
+set lore of player's tool to "&7Legendary" and "&7Sharp"
+add "&8Line 3" to lore of player's tool
+clear lore of player's tool
+enchant player's tool with sharpness 5 and unbreaking 3
+disenchant player's tool
+```
+
+- These change the real item in the player's main hand. `player's held item`
+  and `tool of player` work too.
+- An empty hand does nothing.
+- `enchant` keeps the other enchantments and replaces the level of one that is
+  already there. An enchantment without a level gets level 1.
+- `disenchant` removes every enchantment.
+- `set lore of ... to {_lines::*}` takes a list.
+
 ## Conditions
 
 ```
@@ -82,6 +102,6 @@ The same goes for `player has diamond sword named "x"`: it counts diamond swords
 
 ## Limits
 
-- You cannot change the meta of an item the player is already holding (no `set name of player's tool to ...` yet).
-- Reading the held item goes through the Pumpkin plugin API. This needs an in-game check.
+- Only the main-hand item can be edited in place. Other slots: build the item
+  with `named` / `with lore` and `set slot`.
 - Other item parts (flags, custom model data, tooltips, attributes) are not supported.

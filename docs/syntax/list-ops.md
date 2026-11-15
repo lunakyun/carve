@@ -22,6 +22,10 @@ loop shuffled {_n::*}:
 
 - Numbers sort by value, before text. Text sorts ignoring case.
 - None of these change the original list.
+- `sorted {x::*} by <expression>` sorts by a key. `input` is each item while
+  the key is worked out: `sorted {names::*} by length of input`,
+  `sorted {players::*} by {money::%input%}`. Numbers, timespans and dates sort
+  by value, text alphabetically. Items whose key is `<none>` go last.
 - `sort {x::*}` sorts the list itself. Add `in descending order` to flip it.
 
 ## Filter with `where`

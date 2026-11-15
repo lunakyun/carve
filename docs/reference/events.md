@@ -7,7 +7,7 @@ editLink: false
 
 # Events
 
-Events and other top-level lines: what starts a trigger. 150 entries. Search all of them on the [reference home](./index.md).
+Events and other top-level lines: what starts a trigger. 151 entries. Search all of them on the [reference home](./index.md).
 
 In a pattern, `%type%` is a value, `[...]` is optional and `(a|b)` means one of the words.
 
@@ -448,11 +448,26 @@ on death of player
 on player death
 ```
 
-A player dies. Has `player`, `victim`, `death message` (settable) and `attacker`: the last player or entity that hit them in the 5 seconds before, else `<none>`. Cancelling stops Pumpkin's death handling but leaves 0 health.
+A player or a mob dies. Has `victim` (the one that died), `player` (unset for mobs), `death message` (settable, players only) and `attacker`: the last player or entity that hit them in the 5 seconds before, else `<none>`. Cancelling a player's death stops Pumpkin's death handling but leaves 0 health.
 
 ```carve
 on death of player:
     broadcast "%player% died"
+```
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Death of a mob {#mob_death}
+
+```carve
+on death of %entity type%
+```
+
+A mob or player of that type dies (`on death of zombie`). Plain `on death` runs for mobs too, with `player` unset; use `victim` for the one that died. `attacker` is the last player or entity that hit it in the 5 seconds before.
+
+```carve
+on death of zombie:
+    broadcast "%victim% died"
 ```
 
 Since **unreleased** · Guide: [triggers](../syntax/triggers.md)

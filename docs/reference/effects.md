@@ -7,7 +7,7 @@ editLink: false
 
 # Effects
 
-Effects are lines that do something. 107 entries. Search all of them on the [reference home](./index.md).
+Effects are lines that do something. 114 entries. Search all of them on the [reference home](./index.md).
 
 In a pattern, `%type%` is a value, `[...]` is optional and `(a|b)` means one of the words.
 
@@ -122,6 +122,25 @@ on chat:
 ```
 
 Since **0.1.0** · Guide: [effects](../syntax/effects.md)
+
+## Change an inventory value {#inventory_value_effects}
+
+```carve
+set slot %number% of %inventory% to %item%
+open %inventory% (to|for) %player%
+clear %inventory%
+```
+
+Sets a slot, opens the inventory as a chest menu, or empties it. Changing a slot of a variable also changes the menus open from it. `clear` on a variable that holds no inventory deletes the variable.
+
+```carve
+set {_gui} to chest inventory named "Shop"
+set slot 0 of {_gui} to stone
+open {_gui} to player
+clear {_gui}
+```
+
+Since **unreleased** · Guide: [inventories](../syntax/inventories.md)
 
 ## Change damage {#damage_change}
 
@@ -496,6 +515,29 @@ set display name of player to "&6Boss"
 ```
 
 Since **unreleased** · Guide: [op-kick-ban](../syntax/op-kick-ban.md)
+
+## Edit the held item {#held_item_meta}
+
+```carve
+set [the] name of %player%'s tool to %text%
+(reset|clear|delete) [the] name of %player%'s tool
+set [the] lore of %player%'s tool to %texts%
+add %texts% to [the] lore of %player%'s tool
+(reset|clear|delete) [the] lore of %player%'s tool
+enchant %player%'s tool with %enchantments%
+disenchant %player%'s tool
+```
+
+Changes the name, lore or enchantments of the item in the player's main hand. `player's held item` and `tool of player` work too. An empty hand does nothing. `disenchant` removes every enchantment.
+
+```carve
+set name of player's tool to "&6Excalibur"
+set lore of player's tool to "&7Legendary" and "&7Sharp"
+add "&8Line 3" to lore of player's tool
+enchant player's tool with sharpness 5 and unbreaking 3
+```
+
+Since **unreleased** · Guide: [item-meta](../syntax/item-meta.md)
 
 ## Equip {#equip}
 
@@ -968,6 +1010,39 @@ Poisons a player, for 15 seconds unless a duration is given.
 
 Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
+## Push forward, backward, away from {#push_facing}
+
+```carve
+push %entities% (forward|forwards|backward|backwards) [with speed %number%]
+push %entities% (away from|towards) %location% [with speed %number%]
+```
+
+Adds to the velocity of players or entities: the way they look, the other way, away from a place or toward it. The default speed is 1.
+
+```carve
+push player forward with speed 2
+push player away from location(0, 64, 0)
+```
+
+Since **unreleased** · Guide: [entities](../syntax/entities.md)
+
+## Regex replace {#regex_replace}
+
+```carve
+replace [all|every|first] regex %text% in %variable% with %text%
+replace [all|every|first] regex %text% with %text% in %variable%
+regex replace %text% in %variable% with %text%
+```
+
+Replaces every (or the first) match of a regular expression in a variable. The replacement is plain text: Carve's regex has no groups, so `$1` is not filled in.
+
+```carve
+set {_x} to "a1b22"
+replace all regex "[0-9]+" in {_x} with "#"
+```
+
+Since **unreleased** · Guide: [text-join-split](../syntax/text-join-split.md)
+
 ## Remaining air {#remaining_air}
 
 ```carve
@@ -1232,6 +1307,21 @@ Stores a value on an entity, block or item that survives restarts.
 
 Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
+## Set quit message {#set_quit_message}
+
+```carve
+set [the] (quit|leave) message to %text%
+```
+
+Changes the message everyone sees when the player leaves. Only in `on quit`. Color codes work.
+
+```carve
+on quit:
+    set quit message to "&e%player% left"
+```
+
+Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
 ## Set slot {#set_slot}
 
 ```carve
@@ -1245,6 +1335,20 @@ set slot 4 of player's current inventory to diamond
 ```
 
 Since **unreleased** · Guide: [inventories](../syntax/inventories.md)
+
+## Set velocity {#set_velocity}
+
+```carve
+set [the] velocity of %entities% to %vector%
+```
+
+Sets the whole velocity of players or entities. Each part is cut to -20 to 20.
+
+```carve
+set velocity of player to vector(0, 1, 0)
+```
+
+Since **unreleased** · Guide: [entities](../syntax/entities.md)
 
 ## Sort list {#sort}
 
@@ -1260,6 +1364,20 @@ sort {_n::*}
 ```
 
 Since **unreleased** · Guide: [list-ops](../syntax/list-ops.md)
+
+## Spawn {#spawn_named}
+
+```carve
+(spawn|summon) [%number%] %entity% [named %text%] [at %location%]
+```
+
+Spawns mobs at a place (the event player when no place is given). `named` sets the name shown above them.
+
+```carve
+spawn a zombie named "&cBob" at player
+```
+
+Since **unreleased** · Guide: [entities](../syntax/entities.md)
 
 ## Spawn section {#w4_spawn_section}
 
