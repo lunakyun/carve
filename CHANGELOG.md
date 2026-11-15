@@ -7,6 +7,33 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Fixed
+
+- Scripts could freeze or crash the server. They are now stopped with an error
+  that names the script and line (see "Limits that keep the server safe" in
+  `docs/limits.md`):
+  - A command that ran itself (`make player execute command "/same"`, or
+    `execute console command` of a Carve command) nested until the plugin's
+    stack ran out. Queued commands now nest 6 levels deep at most, a run may
+    queue 256, and the events a run starts are capped at 64.
+  - Text that doubled in a loop (`set {_t} to "%{_t}%%{_t}%"`) ran the server
+    out of memory. Text built by interpolation, `replace`, `join` and
+    `repeated` is limited to 1 MiB.
+  - A regex over a long text (`"a" repeated 1000000 times matches "(a|aa)*b"`)
+    overflowed the stack. Repeated groups are limited to 300 rounds, patterns
+    to 2,000 characters.
+  - Huge lists (`numbers from 1 to 1000000` with `join`, `sorted` or
+    `shuffled`) held the server for seconds. Lists now take part of the
+    instruction budget by size.
+  - Loops that spawn entities, create explosions or run commands used 100,000
+    instructions of real server work. Those effects now cost more of the
+    budget, and a run slice that spends more than 200 ms in them stops.
+  - A run that waits can no longer be started without limit: 5,000 waiting
+    runs per script file, 20,000 in all, and a wait is at most a year.
+  - Brackets, `-` signs or calls nested thousands deep, very long lines and
+    sections nested hundreds deep overflowed the stack while the script
+    loaded. They are refused with a load error.
+
 ## [0.3.0] - 2026-11-15
 
 ### Changed (infrastructure)

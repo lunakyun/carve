@@ -1,0 +1,289 @@
+# Scripts that try to freeze the server. Each command is one attempt. The
+# area checks that the server answers afterwards and that an error is logged.
+
+command /fzping:
+    trigger:
+        send "fz:pong"
+
+# ---- endless loops
+command /fzwhile:
+    trigger:
+        while true is true:
+            set {_x} to 1
+
+command /fznested:
+    trigger:
+        loop 100000 times:
+            loop 100000 times:
+                set {_x} to 1
+
+command /fzloopmax:
+    trigger:
+        loop 2147483647 times:
+            set {_x} to 1
+
+command /fzloopbig:
+    trigger:
+        set {_n} to 1000000000000
+        loop {_n} times:
+            set {_x} to 1
+
+command /fzloopneg:
+    trigger:
+        set {_n} to -5
+        loop {_n} times:
+            send "fz:neg-ran"
+        send "fz:neg-done"
+
+command /fzloopnan:
+    trigger:
+        set {_n} to 0 / 0
+        loop {_n} times:
+            send "fz:nan-ran"
+        send "fz:nan-done"
+
+command /fzloopinf:
+    trigger:
+        set {_n} to 1 / 0
+        loop {_n} times:
+            set {_x} to 1
+        send "fz:inf-done"
+
+command /fzwhilewait0:
+    trigger:
+        while true is true:
+            wait 0 ticks
+            set {_x} to 1
+
+command /fzwhilewaits0:
+    trigger:
+        while true is true:
+            wait 0 seconds
+
+function fzdelayed():
+    wait 1 second
+
+command /fzwaitmany:
+    trigger:
+        loop 1000000 times:
+            fzdelayed()
+
+# ---- recursion
+function fzrec(n: number) :: number:
+    return fzrec({_n} + 1)
+
+command /fzrecurse:
+    trigger:
+        send "fz:rec=%fzrec(1)%"
+
+function fzmutA(n: number) :: number:
+    return fzmutB({_n})
+
+function fzmutB(n: number) :: number:
+    return fzmutA({_n})
+
+command /fzmutual:
+    trigger:
+        send "fz:mut=%fzmutA(1)%"
+
+function fzrecw(n: number):
+    wait 1 tick
+    fzrecw({_n} + 1)
+
+command /fzrecwait:
+    trigger:
+        fzrecw(1)
+
+function fzfork(n: number):
+    if {_n} > 0:
+        fzfork({_n} - 1)
+        fzfork({_n} - 1)
+
+command /fzfork:
+    trigger:
+        fzfork(60)
+
+command /fzcmdself:
+    trigger:
+        make player execute command "/fzcmdself"
+
+command /fzcmdconsole:
+    trigger:
+        execute console command "fzcmdconsole"
+
+command /fzcmdping:
+    trigger:
+        make player execute command "/fzcmdpong"
+
+command /fzcmdpong:
+    trigger:
+        make player execute command "/fzcmdping"
+
+on chat:
+    if message contains "fzsay":
+        make player say "fzsay again"
+
+on chat:
+    if message contains "fzbroadcast":
+        broadcast "fzbroadcast again"
+
+on teleport:
+    if player is op:
+        teleport player to location(0, 100, 0)
+
+on damage:
+    if victim is a player:
+        damage victim by 0.5
+
+command /fztp:
+    trigger:
+        teleport player to location(5, 100, 5)
+
+command /fzdamage:
+    trigger:
+        damage player by 1
+
+# ---- native work
+command /fzblocks:
+    trigger:
+        set {_b::*} to blocks in radius 100000 of player
+        send "fz:blocks=%size of {_b::*}%"
+
+command /fzblocksloop:
+    trigger:
+        loop blocks in radius 1000000 of player:
+            set {_x} to 1
+
+command /fzentities:
+    trigger:
+        loop all entities:
+            loop all entities:
+                loop all entities:
+                    set {_x} to 1
+
+command /fzrepeat:
+    trigger:
+        set {_t} to "abcdefghij" repeated 1000000000 times
+        send "fz:len=%length of {_t}%"
+
+command /fzrepeatnest:
+    trigger:
+        set {_t} to "abcdefghij" repeated 1000000 times
+        set {_t} to {_t} repeated 1000000 times
+        send "fz:len=%length of {_t}%"
+
+command /fzdoubling:
+    trigger:
+        set {_t} to "abcdefghijklmnop"
+        loop 60 times:
+            set {_t} to "%{_t}%%{_t}%"
+        send "fz:len=%length of {_t}%"
+
+command /fzjoin:
+    trigger:
+        set {_l::*} to numbers from 1 to 1000000
+        set {_t} to join {_l::*} with ", "
+        send "fz:len=%length of {_t}%"
+
+command /fzlistmillions:
+    trigger:
+        loop 100000000 times:
+            set {_l::%loop-number%} to loop-number
+        send "fz:size=%size of {_l::*}%"
+
+command /fzsorted:
+    trigger:
+        set {_l::*} to numbers from 1 to 1000000
+        set {_s::*} to sorted {_l::*}
+        set {_h::*} to shuffled {_s::*}
+        send "fz:size=%size of {_h::*}%"
+
+command /fzregex:
+    trigger:
+        if "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa!" matches "(a+)+$":
+            send "fz:regex=matched"
+        else:
+            send "fz:regex=no"
+
+command /fzregexlong:
+    trigger:
+        set {_t} to "a" repeated 1000000 times
+        if {_t} matches "(a|aa)*b":
+            send "fz:regex=matched"
+        else:
+            send "fz:regex=no"
+
+command /fzregexmany:
+    trigger:
+        set {_t} to "a" repeated 100000 times
+        replace all regex "(a*)*b" in {_t} with "c"
+        send "fz:len=%length of {_t}%"
+
+command /fzrange:
+    trigger:
+        set {_l::*} to integers from 1 to 1000000000000
+        send "fz:size=%size of {_l::*}%"
+
+command /fzrangeloop:
+    trigger:
+        loop integers from 1 to 1000000000000:
+            set {_x} to 1
+
+command /fzfill:
+    trigger:
+        loop blocks between location(0, 60, 0) and location(10000, 200, 10000):
+            set block at loop-value to stone
+
+command /fzspawn:
+    trigger:
+        spawn 1000000 pigs at player
+
+command /fzspawnloop:
+    trigger:
+        loop 100000 times:
+            spawn a pig at player
+
+command /fzparticles:
+    trigger:
+        show 100000000 happy villager particles at player
+
+command /fzparticleloop:
+    trigger:
+        loop 100000 times:
+            show 1000 happy villager particles at player with spread 5
+
+command /fzexplode:
+    trigger:
+        loop 100000 times:
+            create explosion of power 100 at player
+
+# ---- schedules
+every 1 tick:
+    if {fz::spin} is set:
+        loop 99999 times:
+            set {_x} to 1
+
+command /fzspin:
+    trigger:
+        set {fz::spin} to 1
+
+command /fzspinoff:
+    trigger:
+        delete {fz::spin}
+
+# ---- single heavy actions (timing)
+command /fzexplode1:
+    trigger:
+        create explosion of power 100 at player
+
+command /fzexplode20:
+    trigger:
+        create explosion of power 20 at player
+
+command /fzparticle1:
+    trigger:
+        show 1000 happy villager particles at player
+
+command /fzparticle100:
+    trigger:
+        show 100 happy villager particles at player
