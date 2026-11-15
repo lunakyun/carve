@@ -34,8 +34,8 @@ equip player with diamond helmet
 ```
 
 The item goes to the slot it belongs in: helmets, chestplates, leggings and boots to the armor
-slots, a shield to the off hand, anything else to the main hand. Uses the vanilla `item replace`
-command. One item per effect.
+slots, a shield to the off hand, anything else to the main hand. One item per effect. The item
+is there right away, so the next line can read it (`helmet of player`).
 
 ## Copy into variable
 

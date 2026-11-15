@@ -16,7 +16,7 @@ event needs an in-game check. ⛔ items depend on Bukkit plugins (WorldGuard, Va
 
 | Category | Total | ✅ | 🟡 | ⬜ | ⛔ |
 |---|--:|--:|--:|--:|--:|
-| Events | 186 | 108 | 40 | 1 | 37 |
+| Events | 186 | 107 | 41 | 1 | 37 |
 | Effects | 154 | 43 | 23 | 24 | 64 |
 | Conditions | 170 | 39 | 22 | 73 | 36 |
 | Expressions | 547 | 178 | 73 | 111 | 185 |
@@ -24,9 +24,9 @@ event needs an in-game check. ⛔ items depend on Bukkit plugins (WorldGuard, Va
 | Structures | 8 | 5 | 3 | 0 | 0 |
 | Functions | 45 | 37 | 5 | 0 | 3 |
 | Types | 126 | 79 | 25 | 6 | 16 |
-| **All** | **1247** | **496** | **193** | **217** | **341** |
+| **All** | **1247** | **495** | **194** | **217** | **341** |
 
-Counting 🟡 as half, Carve covers about **48%** of core Skript by entry count.
+Counting 🟡 as half, Carve covers about **47%** of core Skript by entry count.
 Leaving out the ⛔ entries that Pumpkin does not allow, it covers about **65%** of what can be done on Pumpkin.
 By real-world use the number is much higher: the common core (events, variables, loops, conditions,
 functions, commands) is mostly done, and most ⬜ entries are niche (pandas, brewing stands, loot tables).
@@ -111,7 +111,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 On Combust — `event-number` entity id, `event-timespan`; the entity is not a value yet
 - ✅ On Command ⭐ — `on command ["name"]`, `command`, `full command`; can be cancelled
 - ✅ On Connect — cancel refuses the login
-- ✅ On Consume ⭐
+- 🟡 On Consume ⭐ — runs when the player starts eating or drinking (Pumpkin fires it on use, not when the item is used up); cancel stops the use
 - 🟡 On Craft — recipe id only
 - ⛔ On Creeper Power — Pumpkin never fires it
 - ✅ On Damage — any living entity, `on damage of <type>`; `damage` (settable), `attacker`, `victim`
@@ -148,7 +148,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ On Gamemode Change ⭐
 - ✅ On Gliding State Change — `gliding state` is true when gliding starts
 - ✅ On Grow — `old block`, `new block`, `block x/y/z`
-- 🟡 On Hand Item Swap ⭐ — `on swap hand items`, can be cancelled; the Pumpkin server never fires this event yet
+- ✅ On Hand Item Swap ⭐ — `on swap hand items`, can be cancelled
 - ✅ On Harvest Block — `harvested count`, `block x/y/z`
 - ✅ On Heal — `heal amount`; `player` is set when a player heals
 - ✅ On Horse Jump — `jump power`
@@ -174,14 +174,14 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 On Leash / Unleash — `on leash` (player) and `on unleash` (`event-text` reason); the leashed entity is not exposed
 - 🟡 On Leaves Decay — `on leaves decay` — can be cancelled; no block position value yet
 - ✅ On Level Change
-- 🟡 On Lightning Strike — `on lightning strike` — can be cancelled; no position value yet
+- 🟡 On Lightning Strike — `on lightning strike` — can be cancelled; no position value yet; Pumpkin fires it only for plugin lightning (Carve's `strike lightning`, then after the script and not cancellable) and skeleton traps
 - 🟡 On Loot Generate — `on loot generate` — `event-text` is the loot table; loot items are not exposed
 - 🟡 On Love Mode Enter — `on love mode enter` — `player` (the feeder, if a player), `event-number` (ticks in love)
 - 🟡 On Move / Rotate ⭐ — `on move`, `event-location`, `past event-location`; only when the block changes, no rotate; a restart is needed after adding the first `on move`
 - ⛔ On Move On — no block-stepped-on event in Pumpkin; use `on move` plus a block check
 - ⛔ On Pathfind — Pumpkin has no pathfind event
 - ⛔ On Physics — Pumpkin's block physics event is too hot to bridge to scripts
-- ✅ On Pick Up ⭐
+- 🟡 On Pick Up ⭐ — no `event-item` (Pumpkin 0.2.2 sends the entity type id, not the item); cancelling has no effect, the item is already in the inventory
 - ⛔ On Pig Zap — Pumpkin never fires its pig zap event
 - 🟡 On Piglin Barter — `on piglin barter` — can be cancelled; barter items are not exposed
 - 🟡 On Piston Extend — `on piston extend` — `event-text` is the direction; no position value yet
@@ -196,7 +196,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ On Player Pick Item — Pumpkin has no pick item event
 - ⛔ On Player Pickup Arrow — Pumpkin has no arrow pickup event
 - ⛔ On Player Trade — Pumpkin only has trade select, not trade complete
-- ✅ On Player World Change — `on world change`, `event-world`, `past event-world`
+- ✅ On Player World Change — `on world change`, `event-world`, `past event-world`; the nether and end are named `minecraft:the_nether` and `minecraft:the_end`
 - ✅ On Portal — `on portal` — `player` when the entity is a player
 - 🟡 On Portal Create — `on portal create` — `event-text` is the portal type; no position value yet
 - ✅ On Portal Enter — `on portal enter` — `player` when the entity is a player
@@ -248,7 +248,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ On Vehicle Exit — `on vehicle exit:`
 - ✅ On Vehicle Move — `on vehicle move:`; `event-from`, `event-to`
 - 🟡 On Villager Career Change — wired, but Pumpkin does not fire this event yet
-- ✅ On Weather Change — `on weather change:` and `on weather change to rain:` / `to clear:`
+- ✅ On Weather Change — `on weather change:` and `on weather change to rain:` / `to clear:`; Pumpkin fires it only for plugin weather changes, so Carve fires it after `set weather` (not cancellable then)
 - ⛔ On World Border Bounds Change — the plugin API has no world border events
 - ⛔ On World Border Bounds Finish Change — the plugin API has no world border events
 - ⛔ On World Border Center Change — the plugin API has no world border events
@@ -716,7 +716,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Debug Info — Skript internals only, no meaning in Carve
 - ✅ Default Value — `a ? b`
 - ✅ Difference — `difference between 3 and 10`, also dates and timespans
-- ✅ Difficulty — `difficulty`, `difficulty of world "w"`, `set difficulty to hard`
+- ✅ Difficulty — `difficulty`, `difficulty of world "w"`, `set difficulty to hard`; one server-wide difficulty, set through the command
 - 🟡 Direction — `3 blocks above/below/north/south/east/west [of] loc`; no direction type
 - ⛔ Display Billboard — needs entity values, which Carve does not have yet
 - ⛔ Display Brightness — needs entity values, which Carve does not have yet

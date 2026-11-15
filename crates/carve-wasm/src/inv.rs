@@ -10,6 +10,7 @@ use std::collections::HashMap;
 
 use carve_core::Value;
 use carve_core::gaps::InvVal;
+use pumpkin_plugin_api::common::ClickType;
 use pumpkin_plugin_api::gui::Gui;
 use pumpkin_plugin_api::inventory::Inventory;
 use pumpkin_plugin_api::item_stack::ItemStack;
@@ -166,9 +167,24 @@ pub fn clear(player: &Player, uuid: &str, current: bool) {
     player.get_inventory().clear_all();
 }
 
+/// `click type` text: `left`, `shift left`, `double click`, ...
+pub fn click_name(c: ClickType) -> &'static str {
+    match c {
+        ClickType::Left => "left",
+        ClickType::Right => "right",
+        ClickType::ShiftLeft => "shift left",
+        ClickType::ShiftRight => "shift right",
+        ClickType::Middle => "middle",
+        ClickType::Drop => "drop",
+        ClickType::ControlDrop => "control drop",
+        ClickType::DoubleClick => "double click",
+        ClickType::NumberKey => "number key",
+        ClickType::Unknown => "unknown",
+    }
+}
+
 /// Take up to `count` of an item out of the 36 main slots.
 pub fn remove(player: &Player, id: &str, count: u32) -> u32 {
-    let key = format!("minecraft:{id}");
     let inv = player.get_inventory().as_inventory();
     let mut left = count;
     for slot in 0..inv.get_size() {
@@ -178,7 +194,9 @@ pub fn remove(player: &Player, id: &str, count: u32) -> u32 {
         let Some(stack) = inv.get_item(slot) else {
             continue;
         };
-        if stack.get_registry_key() != key {
+        // Pumpkin gives the bare key (`diamond`); accept a namespaced one too.
+        let key = stack.get_registry_key();
+        if key.strip_prefix("minecraft:").unwrap_or(&key) != id {
             continue;
         }
         let have = u32::from(stack.get_count());

@@ -6,7 +6,7 @@ use carve_core::world_effects::FxPos;
 use pumpkin_plugin_api::world::{Entity, World};
 use pumpkin_plugin_api::{DamageType, uuid};
 
-use super::{WasmHost, text};
+use super::{WasmHost, text, world_name};
 use crate::ents;
 
 fn uuid_of(e: &Entity) -> String {
@@ -79,7 +79,7 @@ impl WasmHost<'_> {
     pub(super) fn entity_location(&mut self, r: &EntityRef) -> Option<(f64, f64, f64, String)> {
         let e = self.find_entity(&r.uuid)?;
         let (x, y, z) = e.get_position();
-        Some((x, y, z, e.get_world().get_name()))
+        Some((x, y, z, world_name(&e.get_world())))
     }
 
     pub(super) fn entity_name(&mut self, r: &EntityRef) -> Option<String> {
@@ -89,6 +89,13 @@ impl WasmHost<'_> {
     pub(super) fn entity_health(&mut self, r: &EntityRef) -> Option<f64> {
         let l = self.find_entity(&r.uuid)?.as_living()?;
         Some(f64::from(l.get_health()))
+    }
+
+    pub(super) fn set_entity_health(&mut self, r: &EntityRef, health: f64) {
+        if let Some(l) = self.find_entity(&r.uuid).and_then(|e| e.as_living()) {
+            let max = f64::from(l.get_max_health());
+            l.set_health(health.min(max) as f32);
+        }
     }
 
     pub(super) fn set_entity_name(&mut self, r: &EntityRef, name: Option<&str>) {
@@ -126,6 +133,12 @@ impl WasmHost<'_> {
     }
 
     pub(super) fn set_entity_velocity(&mut self, r: &EntityRef, v: (f64, f64, f64)) {
+        // The entity call only stores the velocity, and the client moves its own
+        // player, so a player needs the player call that sends the packet.
+        if let Some(p) = self.get_by_uuid(&r.uuid) {
+            p.set_velocity(v);
+            return;
+        }
         if let Some(e) = self.find_entity(&r.uuid) {
             e.set_velocity(v);
         }

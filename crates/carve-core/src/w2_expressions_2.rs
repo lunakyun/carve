@@ -134,8 +134,10 @@ pub fn direction(word: &str) -> Option<(i8, i8, i8)> {
     })
 }
 
-/// Plain name of a damage type: `PlayerAttack` becomes `player_attack`.
+/// Plain name of a damage type: `PlayerAttack` (or the bindings' Debug form
+/// `DamageType::PlayerAttack`) becomes `player_attack`.
 pub fn snake_case(debug_name: &str) -> String {
+    let debug_name = debug_name.rsplit("::").next().unwrap_or(debug_name);
     let mut out = String::with_capacity(debug_name.len() + 4);
     for (i, c) in debug_name.chars().enumerate() {
         if c.is_ascii_uppercase() {
@@ -223,5 +225,7 @@ mod tests {
     fn snake() {
         assert_eq!(snake_case("PlayerAttack"), "player_attack");
         assert_eq!(snake_case("Fall"), "fall");
+        assert_eq!(snake_case("DamageType::Generic"), "generic");
+        assert_eq!(snake_case("DamageType::MobAttack"), "mob_attack");
     }
 }

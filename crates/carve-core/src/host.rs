@@ -704,6 +704,14 @@ pub trait Host {
         None
     }
 
+    /// Set the health of a living entity (clamped to its max health).
+    fn set_entity_health(&mut self, _e: &EntityRef, _health: f64) {
+        self.log(
+            LogLevel::Warn,
+            "setting entity health is not supported on this server",
+        );
+    }
+
     /// Set (or with `None`, clear) the custom name of an entity.
     fn set_entity_name(&mut self, _e: &EntityRef, _name: Option<&str>) {
         self.log(LogLevel::Warn, "naming entities is not supported on this server");

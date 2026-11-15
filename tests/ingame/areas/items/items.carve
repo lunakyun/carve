@@ -1,0 +1,214 @@
+# Items area: every command answers with a line starting "i:".
+
+command /igive:
+    trigger:
+        give 1 diamond to player
+
+command /igive5:
+    trigger:
+        give 5 emeralds to player
+
+command /iname:
+    trigger:
+        give player diamond sword named "&bBlade"
+
+command /ilore:
+    trigger:
+        give player golden sword with lore "first line" and "second line"
+
+command /iench:
+    trigger:
+        give player iron sword enchanted with sharpness 5 and unbreaking 3
+
+command /icombo:
+    trigger:
+        give 2 stone swords named "&6Twin" with lore "a pair" enchanted with sharpness 3 to player
+
+command /ivar:
+    trigger:
+        set {_b} to netherite sword named "Kept" with lore "in a var"
+        give player {_b}
+
+command /itool:
+    trigger:
+        send "i:tool %tool of player%" to player
+        send "i:held %held item of player%" to player
+        send "i:name %name of player's tool%" to player
+        send "i:lore %lore of player's tool%" to player
+        send "i:ench %enchantments of player's tool%" to player
+        if player's tool is enchanted with sharpness 5:
+            send "i:sharp5 yes" to player
+        else:
+            send "i:sharp5 no" to player
+        if player's tool is enchanted:
+            send "i:enchanted yes" to player
+        else:
+            send "i:enchanted no" to player
+        if player's tool is diamond sword:
+            send "i:is-dsword yes" to player
+        else:
+            send "i:is-dsword no" to player
+
+command /ihas:
+    trigger:
+        if player has 2 diamonds:
+            send "i:has2 yes" to player
+        else:
+            send "i:has2 no" to player
+        if player's inventory contains 10 diamonds:
+            send "i:has10 yes" to player
+        else:
+            send "i:has10 no" to player
+        send "i:amount %amount of diamonds in player's inventory%" to player
+
+command /iremove:
+    trigger:
+        remove 2 diamonds from player
+        send "i:removed" to player
+
+command /iadd:
+    trigger:
+        add 4 apples to player's inventory
+        send "i:added" to player
+
+command /islot:
+    trigger:
+        set slot 3 of player's inventory to 5 carrots
+        set slot 20 of player's inventory to bread
+        set {_s} to slot 3 of player's inventory
+        send "i:slot3 %{_s}%" to player
+        if slot 30 of player's inventory is not set:
+            send "i:slot30 empty" to player
+
+command /iclear:
+    trigger:
+        clear player's inventory
+        send "i:cleared" to player
+
+command /iempty:
+    trigger:
+        send "i:first %first empty slot of player%" to player
+
+command /iarmor:
+    trigger:
+        equip player with diamond helmet
+        set slot 36 of player's inventory to iron boots
+        set slot 38 of player's inventory to golden chestplate
+        set slot 40 of player's inventory to shield
+        send "i:armor0 %helmet of player%" to player
+
+command /iarmorread:
+    trigger:
+        send "i:armor %helmet of player% %boots of player% %chestplate of player%" to player
+
+command /imenu:
+    trigger:
+        open chest with 3 rows named "&aShop" to player
+        set slot 4 of player's current inventory to diamond
+        set slot 13 of player's current inventory to 3 emeralds
+        set {_c} to slot 4 of player's current inventory
+        send "i:menu %{_c}%" to player
+
+command /imenu1:
+    trigger:
+        open a chest with 1 row to player
+
+command /iclose:
+    trigger:
+        close player's inventory
+        send "i:close-ran" to player
+
+on inventory click:
+    send "i:click %clicked slot% %clicked item% %click type%" to player
+    if clicked slot is 4:
+        cancel event
+        send "i:cancelled" to player
+
+on inventory close:
+    send "i:closed" to player
+
+command /inbt:
+    trigger:
+        set int tag "power" of nbt of player's tool to 7
+        set string tag "id;name" of nbt of player's tool to "blade"
+        send "i:nbt %nbt of player's tool%" to player
+        send "i:power %int tag ""power"" of nbt of player's tool%" to player
+        if player's tool has int tag "power":
+            send "i:hastag yes" to player
+
+command /inbtdel:
+    trigger:
+        delete tag "power" of nbt of player's tool
+        send "i:nbt2 %nbt of player's tool%" to player
+
+command /icomp:
+    trigger:
+        set custom model data of player's tool to 42
+        set unbreakable of player's tool to true
+        set item model of player's tool to "minecraft:stick"
+        set rarity of player's tool to epic
+        set glint override of player's tool to true
+        set max stack size of player's tool to 16
+        send "i:comp %custom model data of player's tool% %unbreakable of player's tool% %item model of player's tool% %rarity of player's tool% %glint override of player's tool% %max stack size of player's tool%" to player
+
+command /icompreset:
+    trigger:
+        reset custom model data of player's tool
+        set unbreakable of player's tool to false
+        send "i:comp2 %custom model data of player's tool% %unbreakable of player's tool%" to player
+
+on load:
+    register shaped recipe "dirt_gem" for diamond with shape "d", "d" where d is dirt
+
+command /irecipe:
+    trigger:
+        discover recipe "carve:dirt_gem" for player
+        send "i:discovered" to player
+
+on recipe discover:
+    send "i:recipe %recipe id%" to player
+
+command /iadv:
+    trigger:
+        grant advancement "story/root" to player
+        send "i:granted" to player
+
+command /iadvhas:
+    trigger:
+        if player has advancement "story/root":
+            send "i:hasadv yes" to player
+        else:
+            send "i:hasadv no" to player
+
+command /iadvrevoke:
+    trigger:
+        revoke advancement "story/root" from player
+        send "i:revoked" to player
+
+on advancement done:
+    send "i:adv %advancement id%" to player
+
+command /imenu2:
+    trigger:
+        set {_r} to 2
+        open chest with {_r} rows titled "&cVar" for player
+        set slot 0 of player's current inventory to stone
+        set slot 1 of player's current inventory to dirt
+        set slot 0 of current inventory of player to air
+
+command /imenuclear:
+    trigger:
+        clear player's current inventory
+        send "i:menucleared" to player
+
+command /inotcontain:
+    trigger:
+        if player's inventory does not contain stone:
+            send "i:nostone yes" to player
+        remove 3 stone from player's inventory
+        send "i:item %item type of player's tool% %item amount of player's tool%" to player
+
+command /isetnbt:
+    trigger:
+        set nbt of player's tool to nbt from "{a:1,b:""x""}"
+        send "i:setnbt %nbt of player's tool%" to player

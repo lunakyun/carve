@@ -53,7 +53,7 @@ which cannot say what it made, so `last spawned entity` stays `<none>` there.
 | `size of all pigs in radius 20 of player` | a number |
 | `type of {_e}`, `entity type of {_e}` | text like `zombie` |
 | `name of {_e}`, `{_e}'s name` | the custom name, or `<none>` |
-| `health of {_e}` | a number |
+| `health of {_e}` | a number; `set health of {_e} to 8`, `add 2 to health of {_e}` and `remove 2 from health of {_e}` change it (0 kills) |
 | `location of {_e}`, `x of {_e}`, `y of {_e}`, `z of {_e}`, `world of {_e}` | as for players |
 | `x velocity of {_e}` (also `y`, `z`) | a number |
 

@@ -11,7 +11,7 @@ by the server yet, so check each one in game.
 | Event | Names that work | Event values | Can cancel |
 |---|---|---|---|
 | Drop | `on drop`, `on item drop` | `event-item`, `player` | yes |
-| Pick up | `on pick up`, `on pickup` | `event-item`, `player` | yes |
+| Pick up | `on pick up`, `on pickup` | `player` | no (see below) |
 | Consume | `on consume`, `on eat`, `on drink` | `event-item`, `player` | yes |
 | Projectile hit | `on projectile hit` | `event-location`, `hit player` | yes |
 | Mob spawn | `on mob spawn`, `on spawn` | `event-entity`, `event-location`, `spawn reason` | yes |
@@ -74,7 +74,11 @@ on mob spawn:
 - `player` does not exist in `on mob spawn` and `on projectile hit`. Nobody
   started them. Use `hit player` for projectiles.
 - `on pick up` only runs when a player picks the item up. Mobs picking up
-  items are ignored.
+  items are ignored. Pumpkin 0.2.2 doesn't say which item it was, so
+  `event-item` is not set, and the item is already in the inventory when the
+  event runs, so `cancel event` doesn't stop it.
+- `on consume` runs when the player starts eating or drinking (food, potions,
+  milk, honey), not when they finish. `cancel event` stops the eating.
 - `on projectile hit` has no projectile type, because the API only gives an id.
 - `on craft` only gets the recipe id. `event-item` is filled from that id,
   which is right for recipes named after their result (like `stick`) and

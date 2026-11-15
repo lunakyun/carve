@@ -19,6 +19,7 @@ struct Mock {
     online: HashMap<String, String>,
     ents: Vec<Ent>,
     vel: HashMap<String, (f64, f64, f64)>,
+    hp: HashMap<String, f64>,
     logs: Vec<(LogLevel, String)>,
     next: u32,
 }
@@ -155,6 +156,13 @@ impl Host for Mock {
     }
     fn entity_teleport(&mut self, e: &EntityRef, x: f64, y: f64, z: f64, _w: Option<&str>) {
         self.calls.push(format!("tp {} {x} {y} {z}", e.uuid));
+    }
+    fn entity_health(&mut self, e: &EntityRef) -> Option<f64> {
+        Some(*self.hp.get(&e.uuid).unwrap_or(&10.0))
+    }
+    fn set_entity_health(&mut self, e: &EntityRef, h: f64) {
+        self.calls.push(format!("hp {} {h}", e.uuid));
+        self.hp.insert(e.uuid.clone(), h);
     }
 }
 
@@ -543,6 +551,36 @@ fn set_and_read_velocity() {
 fn teleport_an_entity() {
     let h = run("spawn a pig at player\nteleport last spawned entity to location(5, 70, 5)");
     assert!(h.calls.contains(&"tp e1 5 70 5".to_string()), "{:?}", h.calls);
+}
+
+#[test]
+fn entity_in_a_variable_despawn_name_teleport() {
+    let h = run(concat!(
+        "spawn a pig at player\nset {_e} to last spawned entity\n",
+        "set name of {_e} to \"Bob\"\nsend \"%name of {_e}%\"\n",
+        "teleport {_e} to location(5, 70, 5)\ndespawn {_e}"
+    ));
+    assert_eq!(h.msgs, ["Bob"]);
+    assert!(h.calls.contains(&"tp e1 5 70 5".to_string()), "{:?}", h.calls);
+    assert!(h.calls.contains(&"remove e1".to_string()), "{:?}", h.calls);
+}
+
+#[test]
+fn entity_health_set_add_remove() {
+    let h = run(concat!(
+        "spawn a pig at player\nset {_e} to last spawned entity\n",
+        "set health of {_e} to 8\nremove 3 from health of {_e}\nadd 1 to health of {_e}\n",
+        "send \"%health of {_e}%\"\nset health of {_e} to 0"
+    ));
+    assert_eq!(h.msgs, ["6"]);
+    let tail: Vec<_> = h.calls.iter().skip(1).map(String::as_str).collect();
+    assert_eq!(tail, ["hp e1 8", "hp e1 5", "hp e1 6", "kill e1"]);
+}
+
+#[test]
+fn teleport_player_variable_to_xyz_still_works() {
+    let h = run("set {_p} to player\nteleport {_p} to 1, 2, 3");
+    assert!(h.logs.is_empty(), "{:?}", h.logs);
 }
 
 #[test]

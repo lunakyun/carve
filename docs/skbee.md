@@ -198,11 +198,11 @@ Syntax and examples: [skbee-recipes-advancements](syntax/skbee-recipes-advanceme
 | Stonecutting, brewing, and other recipe types | ⛔ | Same: the plugin API only has shaped, shapeless and cooking. |
 | Remove or replace a recipe | ⛔ | The plugin API can only register recipes, not remove them. |
 | Discover and undiscover a recipe for a player | ✅ | Uses the `recipe give` and `recipe take` console command. |
-| `on recipe discover` event | ✅ | `recipe id` is the recipe. Cancellable. |
+| `on recipe discover` event | 🟡 | Pumpkin 0.2.2 fires it only when the client marks a recipe as seen in its recipe book, not on unlock, and `recipe id` is then `display_<n>`. Cancellable. |
 | Recipe book click and recipe craft events | ⛔ | Not wired yet. The API has events, but no script syntax is added. |
 | Grant and revoke an advancement | ✅ | Whole advancement or one criterion. |
 | `player has advancement "x"` | ✅ | With negations. |
-| `on advancement done` event | ✅ | `advancement id` is the advancement. Cancellable. |
+| `on advancement done` event | ✅ | `advancement id` is the advancement. Cancellable. A grant from a script does not fire it (nested event, see limits). |
 | Create custom advancements | ⛔ | The plugin API can only read and award existing ones. Use a datapack. |
 | Advancement progress, criteria lists, display info | ⛔ | Not exposed to scripts yet. |
 | Get, set, add and remove a player statistic | 🟡 | Custom statistics (`custom:jump`, `custom:play_time`, ...) only. See below. |

@@ -16,7 +16,7 @@ use pumpkin_plugin_api::events::{
 };
 use pumpkin_plugin_api::logging::{LogLevel as ApiLevel, log};
 
-use super::{TickHost, player_ref, with_state};
+use super::{TickHost, player_ref, with_state, world_name};
 
 /// Players that have joined before, as uuids (file `first_join.txt`).
 static SEEN: Mutex<Option<HashSet<String>>> = Mutex::new(None);
@@ -51,7 +51,7 @@ impl MvAccess for PlayerMoveEvent {
         c.ev = mv::loc_vals(
             d.to_position,
             d.from_position,
-            Some(d.player.get_world().get_name()),
+            Some(world_name(&d.player.get_world())),
         );
         Some(c)
     }
@@ -67,7 +67,7 @@ impl MvAccess for PlayerTeleportEvent {
         c.ev = mv::loc_vals(
             d.to_position,
             d.from_position,
-            Some(d.player.get_world().get_name()),
+            Some(world_name(&d.player.get_world())),
         );
         Some(c)
     }
@@ -90,7 +90,7 @@ impl MvAccess for PlayerChangedWorldEvent {
     const KIND: MvEvent = MvEvent::WorldChange;
     fn ctx(d: &EventData<Self>) -> Option<EventCtx> {
         let mut c = EventCtx::player(player_ref(&d.player));
-        c.ev = mv::world_vals(d.to_world.get_name(), d.from_world.get_name());
+        c.ev = mv::world_vals(world_name(&d.to_world), world_name(&d.from_world));
         Some(c)
     }
 }
