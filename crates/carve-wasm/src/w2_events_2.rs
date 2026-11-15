@@ -84,27 +84,57 @@ macro_rules! reg {
 
 pub fn register_all(c: &Context) {
     // ---- player events ----
-    reg!(c, EnchantItemEvent, Ev::Enchant, cancel, |_s, _h, d| Some(
-        make_ctx(
+    reg!(c, EnchantItemEvent, Ev::Enchant, cancel, |_s, _h, d| {
+        let p = player_ref(&d.player);
+        // The offer the table showed; without a prepare listener, the first enchantment added.
+        let (hint, hint_level) = crate::w5_chunk4::hint(&p.uuid, d.option)
+            .or_else(|| {
+                d.enchantments_to_add.first().map(|e| {
+                    (
+                        crate::enchant_id(&format!("{:?}", e.enchantment)),
+                        i32::try_from(e.level).unwrap_or(0),
+                    )
+                })
+            })
+            .unwrap_or_default();
+        Some(make_ctx(
             Ev::Enchant,
-            Some(player_ref(&d.player)),
-            &[f(d.option), f(d.cost), d.enchantments_to_add.len() as f64],
-            &[id(&d.item.get_registry_key())],
+            Some(p),
+            &[
+                f(d.option),
+                f(d.cost),
+                d.enchantments_to_add.len() as f64,
+                f(hint_level),
+            ],
+            &[id(&d.item.get_registry_key()), &hint],
             &[],
-        )
-    ));
+        ))
+    });
     reg!(
         c,
         PrepareItemEnchantEvent,
         Ev::EnchantPrepare,
         cancel,
-        |_s, _h, d| Some(make_ctx(
-            Ev::EnchantPrepare,
-            Some(player_ref(&d.player)),
-            &[f(d.bookshelf_count), d.offers.len() as f64],
-            &[id(&d.item.get_registry_key())],
-            &[],
-        ))
+        |_s, _h, d| {
+            let p = player_ref(&d.player);
+            // Cost, enchantment id and level of each offer; id -1 is no offer.
+            let mut o = [0, -1, 0, 0, -1, 0, 0, -1, 0];
+            for (i, x) in d.offers.iter().take(3).enumerate() {
+                o[i * 3] = x.cost;
+                o[i * 3 + 1] = x.enchantment_id;
+                o[i * 3 + 2] = x.enchantment_level;
+            }
+            crate::w5_chunk4::remember_offers(&p.uuid, o);
+            let mut nums = vec![f(d.bookshelf_count), d.offers.len() as f64];
+            nums.extend(o.iter().map(|n| f(*n)));
+            Some(make_ctx(
+                Ev::EnchantPrepare,
+                Some(p),
+                &nums,
+                &[id(&d.item.get_registry_key())],
+                &[],
+            ))
+        }
     );
     reg!(c, PlayerExpChangeEvent, Ev::XpChange, plain, |_s, _h, d| Some(
         make_ctx(

@@ -66,6 +66,7 @@ mod w2_expressions_3;
 mod w4;
 mod w4_conditions_1;
 mod w4_events_movement;
+mod w5_chunk4;
 
 const SCRIPTS_DIR: &str = "scripts";
 const VARS_FILE: &str = "variables.json";
@@ -530,6 +531,7 @@ impl WasmHost<'_> {
                 .into_iter()
                 .map(|e| (enchant_id(&format!("{:?}", e.enchantment)), e.level))
                 .collect(),
+            damage: w5_chunk4::damage_of(&stack),
         };
         (!meta.is_empty()).then_some(meta)
     }
@@ -1467,6 +1469,10 @@ impl WasmHost<'_> {
         self.w4c1_check_impl(c, v)
     }
 
+    fn w5c4(&mut self, q: carve_core::w5_chunk4::Q<'_>) -> Option<Value> {
+        self.w5c4_impl(q)
+    }
+
     fn w2e7_query(&mut self, q: Query<'_>) -> Option<Value> {
         let num = |n: f64| Some(Value::Num(n));
         match q {
@@ -1789,6 +1795,10 @@ impl Host for TickHost<'_, '_> {
         self.inner.w4c1_check(c, v)
     }
 
+    fn w5c4(&mut self, q: carve_core::w5_chunk4::Q<'_>) -> Option<Value> {
+        self.inner.w5c4(q)
+    }
+
     sb::sb_host_methods!();
 
     fn schedule_wait(&mut self, ticks: u64, token: u64) {
@@ -2001,6 +2011,7 @@ impl EventAccess for InventoryClickEvent {
             item: d.clicked_item.as_ref().map(inv::pair),
             click: inv::click_name(d.click_type).to_string(),
             menu: inv::menu_info(&uuid::to_string(d.player.get_id())),
+            cursor: d.cursor.as_ref().map(inv::pair),
         }));
         c
     }

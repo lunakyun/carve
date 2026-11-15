@@ -215,6 +215,10 @@ impl WasmHost<'_> {
         }
     }
 
+    pub fn bar_exists(id: &str) -> bool {
+        SB.with(|s| s.borrow().bars.contains_key(id))
+    }
+
     fn with_bar(id: &str, f: impl FnOnce(&BossBar)) {
         let found = SB.with(|s| s.borrow().bars.get(id).map(f).is_some());
         if !found {
