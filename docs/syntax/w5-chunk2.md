@@ -101,7 +101,7 @@ on join:
     if player hasn't played on this server before:
 ```
 
-Carve remembers who joined in `first_join.txt` in its data folder. A player who joins for
+Carve remembers who joined in `carve.redb` in its data folder. A player who joins for
 the first time hasn't played before for the whole session; after they leave and come back,
 they have.
 

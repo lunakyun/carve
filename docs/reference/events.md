@@ -726,7 +726,7 @@ on first login
 on player first join
 ```
 
-A player joins the server for the first time. Carve remembers who has joined in `first_join.txt` in its data folder. Has `player`.
+A player joins the server for the first time. Carve remembers who has joined in its data file, `carve.redb`. Has `player`.
 
 ```carve
 on first join:

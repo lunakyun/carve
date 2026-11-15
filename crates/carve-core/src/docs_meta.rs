@@ -256,7 +256,7 @@ pub const DOCS: &[Doc] = &[
         NEXT,
         "syntax/w4-events-movement",
         &["on first join", "on first login", "on player first join"],
-        "A player joins the server for the first time. Carve remembers who has joined in `first_join.txt` in its data folder. Has `player`.",
+        "A player joins the server for the first time. Carve remembers who has joined in its data file, `carve.redb`. Has `player`.",
         "on first join:\n    broadcast \"Welcome %player% to the server!\"",
     ),
     doc(
@@ -4136,7 +4136,7 @@ pub const DOCS: &[Doc] = &[
             "%player% (has|did) [already] (play|played) [on (this|the) server] (before|already)",
             "%player% (hasn't|has not|didn't|did not) [(already|yet)] (play|played) [on (this|the) server] [(before|already|yet)]",
         ],
-        "Whether a player joined the server before this session. Carve remembers who joined in `first_join.txt`, so it is false for the whole first session.",
+        "Whether a player joined the server before this session. Carve remembers who joined in `carve.redb`, so it is false for the whole first session.",
         "on join:\n    if player hasn't played before:\n        send \"Welcome, new player!\" to player",
     ),
     doc(
@@ -5259,7 +5259,7 @@ send \"%{q}%\"",
         NEXT,
         "syntax/w4-types-1",
         &["queue(%objects%)"],
-        "A first-in-first-out collection made from values. Prints its items; not saved in variables.json.",
+        "A first-in-first-out collection made from values. Prints its items; not saved.",
         "send \"%queue(1, 2, 3)%\"",
     ),
     doc(

@@ -61,6 +61,7 @@ mod fx;
 mod gaps;
 mod inv;
 mod sb;
+mod store;
 
 mod w2_events_2;
 mod w2_expressions_3;
@@ -81,8 +82,6 @@ mod w6_chunk6;
 mod w6_chunk7;
 
 const SCRIPTS_DIR: &str = "scripts";
-const VARS_FILE: &str = "variables.json";
-const BOUNDS_FILE: &str = "bounds.json";
 const ADMIN_PERM: &str = "carve:admin";
 const COMMAND_PERM: &str = "carve:command";
 
@@ -2046,19 +2045,39 @@ impl State {
     fn scripts_dir(&self) -> String {
         format!("{}/{SCRIPTS_DIR}", self.data_dir)
     }
+}
 
-    fn save(&self, json: &str) {
-        self.save_to(VARS_FILE, json);
-    }
+/// The error the last store write gave, so a failure that repeats every tick is logged once.
+static STORE_ERROR: Mutex<String> = Mutex::new(String::new());
 
-    fn save_to(&self, file: &str, json: &str) {
-        let path = format!("{}/{file}", self.data_dir);
-        let tmp = format!("{path}.tmp");
-        let r = std::fs::write(&tmp, json).and_then(|()| std::fs::rename(&tmp, &path));
-        if let Err(e) = r {
-            plog(ApiLevel::Error, &format!("could not save {path}: {e}"));
+/// Queue what changed (if anything) and write everything queued in one transaction.
+/// A failed write stays queued and is tried again at the next flush.
+fn store_flush(changes: Option<carve_core::persist::Changes>) {
+    let r = store::with(|s| {
+        if let Some(c) = changes {
+            s.queue(c);
         }
+        s.flush()
+    });
+    let Ok(mut last) = STORE_ERROR.lock() else { return };
+    match r {
+        Some(Err(e)) => {
+            if *last != e {
+                plog(
+                    ApiLevel::Error,
+                    &format!("could not write {}: {e} (will try again)", store::FILE),
+                );
+                last.clone_from(&e);
+            }
+        }
+        _ => last.clear(),
     }
+}
+
+/// Save everything that changed now (reload, unload, stop).
+fn persist_now(st: &mut State) {
+    let c = st.engine.persist_now();
+    store_flush(c);
 }
 
 fn read_scripts(dir: &str) -> Result<Vec<(String, String)>, String> {
@@ -3042,6 +3061,8 @@ impl CommandHandler for AdminCommand {
             if self.sub == "reload"
                 && (sender.as_player().is_none() || allowed(ADMIN_PERM) || allowed("carve:reload"))
             {
+                // Write what changed before the scripts are replaced.
+                persist_now(st);
                 // The old scripts see `on unload` before they are replaced.
                 w6_chunk1::fire_unload_here(st, host, false);
             }
@@ -3117,12 +3138,8 @@ fn tick(server: Server) {
         }
         tick_at_time(&server, st, host);
         w6_chunk1::tick(&server, st, host, now);
-        if let Some(json) = st.engine.save_due(now * 50) {
-            st.save(&json);
-        }
-        if let Some(json) = st.engine.bounds.save_due(now * 50) {
-            st.save_to(BOUNDS_FILE, &json);
-        }
+        // One transaction per tick, and only when something changed.
+        store_flush(st.engine.persist_due(now * 50));
         if now % w6_chunk7::AUTO_RELOAD_TICKS == 0 {
             return w6_chunk7::auto_reload(st, host);
         }
@@ -3144,6 +3161,70 @@ fn fire_load(server: &Server) {
             st.engine.fire(EventKind::Load, EventCtx::console(), &mut th);
         }
     });
+}
+
+/// Open `carve.redb`, move the old files in on the first start, and read the saved state.
+/// A store that can't be opened is reported and the run goes on without saving.
+fn load_saved(data_dir: &str) -> (Variables, carve_core::skbee_bound::Bounds) {
+    let dir = std::path::Path::new(data_dir);
+    let mut vars = Variables::default();
+    let mut bounds = carve_core::skbee_bound::Bounds::default();
+    let mut seen = Vec::new();
+    match store::Store::open(&dir.join(store::FILE)) {
+        Err(e) => plog(
+            ApiLevel::Error,
+            &format!("{e}; variables, bounds and first joins will not be saved in this run"),
+        ),
+        Ok(mut s) => {
+            let now_ms = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map_or(0, |d| d.as_millis() as u64);
+            match store::import_legacy(&mut s, dir, now_ms) {
+                Ok(rep) => {
+                    for l in rep.lines {
+                        plog(ApiLevel::Info, &l);
+                    }
+                    for (file, why) in rep.broken {
+                        plog(
+                            ApiLevel::Error,
+                            &format!(
+                                "{why}; starting without {file}, the old file was moved to {file}.broken"
+                            ),
+                        );
+                    }
+                }
+                Err(e) => plog(
+                    ApiLevel::Error,
+                    &format!("could not import the old data files: {e}; they stay where they are"),
+                ),
+            }
+            match s.load() {
+                Ok(l) => {
+                    let (v, bad) = Variables::from_entries(l.vars);
+                    if !bad.is_empty() {
+                        plog(
+                            ApiLevel::Warn,
+                            &format!("{} saved variables could not be read and were skipped", bad.len()),
+                        );
+                    }
+                    vars = v;
+                    let (b, bad) = carve_core::skbee_bound::Bounds::from_entries(l.bounds);
+                    if !bad.is_empty() {
+                        plog(
+                            ApiLevel::Warn,
+                            &format!("{} saved bounds could not be read and were skipped", bad.len()),
+                        );
+                    }
+                    bounds = b;
+                    seen = l.seen;
+                }
+                Err(e) => plog(ApiLevel::Error, &format!("could not read {}: {e}", store::FILE)),
+            }
+            store::install(s);
+        }
+    }
+    w4_events_movement::init_seen(seen);
+    (vars, bounds)
 }
 
 struct Carve;
@@ -3174,34 +3255,9 @@ impl Plugin for Carve {
         if let Err(e) = std::fs::create_dir_all(&scripts) {
             plog(ApiLevel::Error, &format!("can't create {scripts}: {e}"));
         }
-        let vars_path = format!("{data_dir}/{VARS_FILE}");
-        let vars = match std::fs::read_to_string(&vars_path) {
-            Ok(s) => Variables::from_json(&s).unwrap_or_else(|e| {
-                let backup = format!("{vars_path}.broken");
-                let _ = std::fs::rename(&vars_path, &backup);
-                plog(
-                    ApiLevel::Error,
-                    &format!("{e}; starting with no variables, old file moved to {backup}"),
-                );
-                Variables::default()
-            }),
-            Err(_) => Variables::default(),
-        };
+        let (vars, bounds) = load_saved(&data_dir);
         let mut engine = Engine::new(vars);
-        let bounds_path = format!("{data_dir}/{BOUNDS_FILE}");
-        if let Ok(s) = std::fs::read_to_string(&bounds_path) {
-            match carve_core::skbee_bound::Bounds::from_json(&s) {
-                Ok(b) => engine.bounds = b,
-                Err(e) => {
-                    let backup = format!("{bounds_path}.broken");
-                    let _ = std::fs::rename(&bounds_path, &backup);
-                    plog(
-                        ApiLevel::Error,
-                        &format!("{e}; starting with no bounds, old file moved to {backup}"),
-                    );
-                }
-            }
-        }
+        engine.bounds = bounds;
         let files = read_scripts(&scripts).unwrap_or_else(|e| {
             plog(ApiLevel::Error, &e);
             Vec::new()
@@ -3462,15 +3518,8 @@ impl Plugin for Carve {
         });
         if let Ok(mut g) = STATE.try_lock()
             && let Some(st) = g.as_mut()
-            && let Some(json) = st.engine.save_now()
         {
-            st.save(&json);
-        }
-        if let Ok(mut g) = STATE.try_lock()
-            && let Some(st) = g.as_mut()
-            && let Some(json) = st.engine.bounds.save_now()
-        {
-            st.save_to(BOUNDS_FILE, &json);
+            persist_now(st);
         }
         Ok(())
     }

@@ -86,6 +86,8 @@ pub(crate) fn auto_reload(st: &mut State, host: &mut WasmHost<'_>) -> bool {
         if !wants_auto_reload(&src) {
             continue;
         }
+        // Write what changed before the scripts are replaced.
+        super::persist_now(st);
         let mut store = DirStore(dir.clone());
         let allowed = |_: &str| true;
         let env = carve_core::admin::AdminEnv {

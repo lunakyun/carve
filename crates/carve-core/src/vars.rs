@@ -1,15 +1,23 @@
-//! Global variables, kept in memory and saved as JSON.
+//! Global variables, kept in memory. They are saved one key at a time (see
+//! [`Variables::take_changes`]) or, for the old `variables.json`, as one JSON file.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::fmt::Write as _;
 
 use serde_json::{Map, Value as Json, json};
 
 use crate::value::{PlayerRef, Value};
 
+/// A variable as the store keeps it: the name and its value as JSON bytes.
+pub type Entry = (String, Vec<u8>);
+/// One variable to write (`Some`) or to delete (`None`).
+pub type Change = (String, Option<Vec<u8>>);
+
 #[derive(Debug, Default, Clone)]
 pub struct Variables {
     store: Store,
+    /// Keys set or deleted since the last [`Variables::take_changes`].
+    dirty: HashSet<String>,
 }
 
 impl Variables {
@@ -22,18 +30,28 @@ impl Variables {
         self.store.map.get(key)
     }
 
+    fn touch(&mut self, key: &str) {
+        if !self.dirty.contains(key) {
+            self.dirty.insert(key.to_string());
+        }
+    }
+
     pub fn set(&mut self, key: String, v: Value) {
+        self.touch(&key);
         self.store.set(key, v);
     }
 
     /// Like [`Variables::set`], but only allocates the key when it is new.
     pub fn set_str(&mut self, key: &str, v: Value) {
+        self.touch(key);
         self.store.set_str(key, v);
     }
 
     /// Delete `key`, or every key under `prefix::` when `key` ends with `::*`.
     pub fn delete(&mut self, key: &str) {
-        self.store.delete(key);
+        for k in self.store.delete(key) {
+            self.touch(&k);
+        }
     }
 
     pub fn len(&self) -> usize {
@@ -49,41 +67,60 @@ impl Variables {
         self.store.map.is_empty()
     }
 
+    /// What changed since the last call, in key order: the new value as JSON
+    /// bytes, or `None` for a variable that is gone (or that can't be saved,
+    /// like a list or an entity). The next call starts from here.
+    pub fn take_changes(&mut self) -> Vec<Change> {
+        let mut keys: Vec<String> = std::mem::take(&mut self.dirty).into_iter().collect();
+        keys.sort_unstable();
+        keys.into_iter()
+            .map(|k| {
+                let bytes = self.store.map.get(&k).and_then(encode);
+                (k, bytes)
+            })
+            .collect()
+    }
+
+    /// Forget what changed (the whole state was just saved another way).
+    pub fn clear_changes(&mut self) {
+        self.dirty.clear();
+    }
+
+    /// Every variable that can be saved, as the store keeps it.
+    pub fn entries(&self) -> Vec<Entry> {
+        self.store
+            .map
+            .iter()
+            .filter_map(|(k, v)| Some((k.clone(), encode(v)?)))
+            .collect()
+    }
+
+    /// Rebuild the variables from what the store holds. Entries that no
+    /// longer parse are left out and listed in the second part.
+    pub fn from_entries(items: impl IntoIterator<Item = Entry>) -> (Self, Vec<String>) {
+        let mut store = Store::default();
+        let mut bad = Vec::new();
+        for (k, bytes) in items {
+            match decode(&bytes) {
+                Some(v) => store.set(k, v),
+                None => bad.push(k),
+            }
+        }
+        (
+            Variables {
+                store,
+                dirty: HashSet::new(),
+            },
+            bad,
+        )
+    }
+
     pub fn to_json(&self) -> String {
         let mut obj = Map::new();
         for (k, v) in &self.store.map {
-            let j = match v {
-                Value::None
-                | Value::List(_)
-                | Value::Entity(_)
-                | Value::Queue(_)
-                | Value::Ray(_)
-                | Value::W5(_) => continue,
-                Value::Num(n) => json!(n),
-                Value::Text(t) => json!(t),
-                Value::Bool(b) => json!(b),
-                Value::Player(p) => json!({"player": {"uuid": p.uuid, "name": p.name}}),
-                Value::Item { id, count, meta } => match meta {
-                    Some(m) => json!({"item": {"id": id, "count": count, "meta": m.to_json()}}),
-                    None => json!({"item": {"id": id, "count": count}}),
-                },
-                Value::Location { x, y, z, world } => {
-                    json!({"location": {"x": x, "y": y, "z": z, "world": world}})
-                }
-                Value::World(w) => json!({"world": w}),
-                Value::Date(d) => json!({"date": d}),
-                Value::Console => json!({"console": true}),
-                Value::Timespan { millis } => json!({"timespan": millis}),
-                Value::Nbt(c) => json!({"nbt": c.to_snbt()}),
-                Value::Vector { x, y, z } => json!({"vector": {"x": x, "y": y, "z": z}}),
-                Value::Inventory(i) if i.viewer.is_none() => i.to_json(),
-                Value::Inventory(_) => continue,
-                other => match crate::types_1::to_json(other) {
-                    Some(j) => j,
-                    None => continue,
-                },
-            };
-            obj.insert(k.clone(), j);
+            if let Some(j) = value_json(v) {
+                obj.insert(k.clone(), j);
+            }
         }
         serde_json::to_string_pretty(&Json::Object(obj)).unwrap_or_else(|_| "{}".into())
     }
@@ -99,20 +136,65 @@ impl Variables {
         };
         let mut store = Store::default();
         for (k, v) in obj {
-            let val = match v {
-                Json::Number(n) => Value::Num(n.as_f64().unwrap_or(0.0)),
-                Json::String(s) => Value::Text(s),
-                Json::Bool(b) => Value::Bool(b),
-                Json::Object(o) => match object_value(&o) {
-                    Some(v) => v,
-                    None => continue,
-                },
-                _ => continue,
-            };
-            store.set(k, val);
+            if let Some(val) = json_value(v) {
+                store.set(k, val);
+            }
         }
-        Ok(Variables { store })
+        Ok(Variables {
+            store,
+            dirty: HashSet::new(),
+        })
     }
+}
+
+/// A variable's value as JSON bytes; `None` when it can't be saved.
+fn encode(v: &Value) -> Option<Vec<u8>> {
+    serde_json::to_vec(&value_json(v)?).ok()
+}
+
+fn decode(bytes: &[u8]) -> Option<Value> {
+    json_value(serde_json::from_slice(bytes).ok()?)
+}
+
+/// The JSON a value is saved as; `None` for values that can't be saved.
+fn value_json(v: &Value) -> Option<Json> {
+    Some(match v {
+        Value::None | Value::List(_) | Value::Entity(_) | Value::Queue(_) | Value::Ray(_) | Value::W5(_) => {
+            return None;
+        }
+        // NaN and infinity have no JSON form (they were saved as null and dropped on load).
+        Value::Num(n) if !n.is_finite() => return None,
+        Value::Num(n) => json!(n),
+        Value::Text(t) => json!(t),
+        Value::Bool(b) => json!(b),
+        Value::Player(p) => json!({"player": {"uuid": p.uuid, "name": p.name}}),
+        Value::Item { id, count, meta } => match meta {
+            Some(m) => json!({"item": {"id": id, "count": count, "meta": m.to_json()}}),
+            None => json!({"item": {"id": id, "count": count}}),
+        },
+        Value::Location { x, y, z, world } => {
+            json!({"location": {"x": x, "y": y, "z": z, "world": world}})
+        }
+        Value::World(w) => json!({"world": w}),
+        Value::Date(d) => json!({"date": d}),
+        Value::Console => json!({"console": true}),
+        Value::Timespan { millis } => json!({"timespan": millis}),
+        Value::Nbt(c) => json!({"nbt": c.to_snbt()}),
+        Value::Vector { x, y, z } => json!({"vector": {"x": x, "y": y, "z": z}}),
+        Value::Inventory(i) if i.viewer.is_none() => i.to_json(),
+        Value::Inventory(_) => return None,
+        other => crate::types_1::to_json(other)?,
+    })
+}
+
+fn json_value(v: Json) -> Option<Value> {
+    Some(match v {
+        Json::Number(n) => Value::Num(n.as_f64().unwrap_or(0.0)),
+        Json::String(s) => Value::Text(s),
+        Json::Bool(b) => Value::Bool(b),
+        Json::Object(o) => object_value(&o)?,
+        _ => return None,
+    })
 }
 
 /// A saved player, item, location or world (`{"player": {...}}` and so on).
@@ -312,14 +394,19 @@ impl Store {
             .take_while(move |(k, _)| k.starts_with(prefix))
     }
 
-    fn delete(&mut self, key: &str) {
+    /// Delete a key or a whole list; the keys that were there.
+    fn delete(&mut self, key: &str) -> Vec<String> {
         if let Some(prefix) = list_prefix(key) {
             let keys: Vec<String> = self.under(prefix).map(|(k, _)| k.clone()).collect();
-            for k in keys {
-                self.remove(&k);
+            for k in &keys {
+                self.remove(k);
             }
-        } else {
+            keys
+        } else if self.map.contains_key(key) {
             self.remove(key);
+            vec![key.to_string()]
+        } else {
+            Vec::new()
         }
     }
 
@@ -375,15 +462,17 @@ impl Store {
         self.map.insert(key, v);
     }
 
-    fn list_remove(&mut self, prefix: &str, v: &Value) {
+    /// Remove the items equal to `v`; their keys.
+    fn list_remove(&mut self, prefix: &str, v: &Value) -> Vec<String> {
         let gone: Vec<String> = self
             .under(prefix)
             .filter(|(k, item)| k.get(prefix.len()..).is_some_and(|r| !r.contains("::")) && item.loose_eq(v))
             .map(|(k, _)| k.clone())
             .collect();
-        for k in gone {
-            self.remove(&k);
+        for k in &gone {
+            self.remove(k);
         }
+        gone
     }
 }
 
@@ -403,11 +492,19 @@ impl Variables {
     }
 
     pub fn list_push(&mut self, prefix: &str, v: Value) {
-        self.store.list_push(prefix, v);
+        if matches!(v, Value::None) {
+            return;
+        }
+        let key = self.store.next_key(prefix);
+        self.dirty.insert(key.clone());
+        self.store.added(&key);
+        self.store.map.insert(key, v);
     }
 
     pub fn list_remove(&mut self, prefix: &str, v: &Value) {
-        self.store.list_remove(prefix, v);
+        for k in self.store.list_remove(prefix, v) {
+            self.touch(&k);
+        }
     }
 }
 

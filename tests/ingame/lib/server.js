@@ -77,7 +77,12 @@ async function startServer ({ dir, port, wasm = DEFAULT_WASM, scripts = {}, ops 
   // scripts: { 'name.carve': 'source' } or a list of .carve file paths
   if (Array.isArray(scripts)) for (const f of scripts) fs.copyFileSync(f, path.join(scriptDir, path.basename(f)))
   else for (const [name, src] of Object.entries(scripts)) fs.writeFileSync(path.join(scriptDir, name), src)
-  if (!keepVariables) fs.rmSync(path.join(carveData, 'variables.json'), { force: true })
+  // Carve's saved state: the store, and the files older versions wrote.
+  if (!keepVariables) {
+    for (const f of ['carve.redb', 'variables.json', 'bounds.json', 'first_join.txt']) {
+      for (const suffix of ['', '.old', '.broken']) fs.rmSync(path.join(carveData, f + suffix), { force: true })
+    }
+  }
 
   const lines = []
   const proc = spawn(path.join(dir, EXE_NAME), [], { cwd: dir, stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, ...env } })

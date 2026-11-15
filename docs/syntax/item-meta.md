@@ -30,7 +30,7 @@ set {_blade} to diamond sword named "&bBlade" with lore "sharp"
 give player {_blade}
 ```
 
-Variables saved to `variables.json` keep the name, lore and enchantments.
+Saved variables keep the name, lore and enchantments.
 
 ## Reading item meta
 

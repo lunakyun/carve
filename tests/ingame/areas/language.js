@@ -254,12 +254,10 @@ t.run(async () => {
   await sleep(1500) // let the save timer and the quit settle
   stopped = true
   t.check('server stops cleanly before restart', await srv.stop())
-  const varsFile = path.join(t.dir, 'plugins', 'data', 'carve', 'variables.json')
-  let saved = {}
-  try { saved = JSON.parse(fs.readFileSync(varsFile, 'utf8')) } catch (e) { saved = { error: e.message } }
-  t.check('variables.json holds the globals', saved.lang_g === 'keep' && saved.lang_n === 3 && 'lang_list::1' in saved,
-    Object.keys(saved).filter((k) => k.startsWith('lang')).join(','))
-  t.check('variables.json has no locals', !Object.keys(saved).some((k) => k.startsWith('_')))
+  // The globals live in carve.redb; the restart below reads them back.
+  const dataDir = path.join(t.dir, 'plugins', 'data', 'carve')
+  t.check('carve.redb written, no variables.json',
+    fs.existsSync(path.join(dataDir, 'carve.redb')) && !fs.existsSync(path.join(dataDir, 'variables.json')))
   srv = await startServer({ dir: t.dir, port: t.port, scripts: [SCRIPT], ops: ['Tester'], keepVariables: true })
   stopped = false
   bot = await joinBot('Tester', { port: t.port })

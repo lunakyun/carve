@@ -9,7 +9,7 @@
 //!   else (`left`, `full moon`, `shift left`),
 //! - can be made from text with `"left" parsed as click type`,
 //! - compares equal to text with the same name (`click type is "left"`),
-//! - prints as its name with spaces, and is saved in `variables.json`,
+//! - prints as its name with spaces, and is saved with the variables,
 //! - works as a function parameter or return type (`function f(c: click type)`).
 //!
 //! The other types are made with `rgb(r, g, b)`, `quaternion(w, x, y, z)`,
@@ -1084,7 +1084,7 @@ pub fn type_name(v: &Value) -> &'static str {
     }
 }
 
-/// JSON for variables.json.
+/// JSON for a saved variable.
 pub fn to_json(v: &Value) -> Option<serde_json::Value> {
     use serde_json::json;
     Some(match v {

@@ -66,7 +66,7 @@ pub struct C2Cond {
 /// A question only the game can answer.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Query<'a> {
-    /// Has this uuid joined before this session (Carve's `first_join.txt`)?
+    /// Has this uuid joined before this session (saved in Carve's `carve.redb`)?
     PlayedBefore(&'a str),
     /// Bees in the hive or nest at a block.
     BeeCount {

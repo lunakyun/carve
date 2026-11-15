@@ -838,7 +838,7 @@
     },
     {
       "category": "event",
-      "description": "A player joins the server for the first time. Carve remembers who has joined in `first_join.txt` in its data folder. Has `player`.",
+      "description": "A player joins the server for the first time. Carve remembers who has joined in its data file, `carve.redb`. Has `player`.",
       "example": "on first join:\n    broadcast \"Welcome %player% to the server!\"",
       "id": "first-join",
       "name": "First join",
@@ -5669,7 +5669,7 @@
     },
     {
       "category": "condition",
-      "description": "Whether a player joined the server before this session. Carve remembers who joined in `first_join.txt`, so it is false for the whole first session.",
+      "description": "Whether a player joined the server before this session. Carve remembers who joined in `carve.redb`, so it is false for the whole first session.",
       "example": "on join:\n    if player hasn't played before:\n        send \"Welcome, new player!\" to player",
       "id": "has_played_before",
       "name": "Has played before",
@@ -9677,7 +9677,7 @@
     },
     {
       "category": "type",
-      "description": "A first-in-first-out collection made from values. Prints its items; not saved in variables.json.",
+      "description": "A first-in-first-out collection made from values. Prints its items; not saved.",
       "example": "send \"%queue(1, 2, 3)%\"",
       "id": "queue",
       "name": "Queue",

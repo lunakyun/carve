@@ -49,7 +49,7 @@ A variable holds one of:
 - a number,
 - text,
 - a player,
-- a boolean (`true` / `false`). Scripts can't make one, but `variables.json`
+- a boolean (`true` / `false`). Scripts can't make one, but the saved data
   can hold one.
 
 A variable that was never set is `<none>`. Setting a variable to `<none>`
@@ -72,29 +72,29 @@ variable in text prints the stored name.
 
 ## Saving
 
-Global variables are saved in `variables.json` in the plugin's data folder:
+Carve keeps everything it has to remember in one file, `carve.redb`, in the
+plugin's data folder. Global variables are saved there:
 
-- about 5 seconds after a change (one save for many changes),
+- about 5 seconds after a change (one write for many changes),
+- when you run `/carve reload`,
 - and when the server stops.
 
-The file is written to `variables.json.tmp` first and then renamed, so a crash
-during the save does not leave a half-written file.
+Only the variables that changed are written, all in one transaction. A
+transaction either happens completely or not at all, so a crash (or a power
+cut) never leaves a half-written file: after it, the variables are as they
+were at the last write.
 
-The file is plain JSON, sorted by name:
+`carve.redb` is a binary database (made with [redb](https://www.redb.org)),
+not something to edit by hand. Stop the server and copy the file to back it
+up. Besides variables it holds the bounds and the players that have joined
+before (for `on first join`).
 
-```json
-{
-  "joins::steve": 3,
-  "last-joined": {
-    "player": {
-      "name": "Steve",
-      "uuid": "069a79f4-44e9-4726-a5be-fca90e38aaf5"
-    }
-  },
-  "motd": "Have fun!"
-}
-```
+### Files from older versions
 
-You can edit it while the server is stopped. If the file is not valid JSON,
-Carve moves it to `variables.json.broken`, logs an error and starts with no
-variables, so you can fix it by hand.
+Before 0.3 Carve wrote `variables.json`, `bounds.json` and `first_join.txt`.
+The first time a newer Carve starts and `carve.redb` is empty, it reads those
+files, writes everything into `carve.redb`, logs how much it imported and
+renames the files to `variables.json.old`, `bounds.json.old` and
+`first_join.txt.old`. A file that is not valid is renamed to `<name>.broken`
+and Carve logs an error and starts without it. If `carve.redb` already has
+data, the old files are left alone.

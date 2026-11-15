@@ -138,7 +138,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ On Explosion Prime — `explosion radius`, `explosion fire`
 - 🟡 On Fade — wired; Pumpkin never fires block fade yet
 - ✅ On Firework Explode — `event-entity`
-- ✅ On First Join ⭐ — `on first join`; Carve remembers players in `first_join.txt`
+- ✅ On First Join ⭐ — `on first join`; Carve remembers players in `carve.redb`
 - ✅ On Fishing — `fishing state`, `caught type`, `fishing xp`
 - ✅ On Flight Toggle
 - ✅ On Flow — liquid flow; `flow source x/y/z`, `flow target x/y/z`
@@ -472,7 +472,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Has Metadata — `player has metadata "key"`
 - ✅ Has Permission
 - ✅ Has Persistent Data Tag — `player has persistent data tag "key"`
-- ✅ Has Played Before — `player has played before` (from `first_join.txt`; false for the whole first session)
+- ✅ Has Played Before — `player has played before` (from `carve.redb`; false for the whole first session)
 - ✅ Has Potion Effect ⭐ — `player has potion effect speed`, `player doesn't have potion effect speed`
 - ✅ Has Resource Pack — `player has a resource pack` (set when the pack finishes loading)
 - ⛔ Has Scoreboard Tag — the v0.1 plugin API can only write entity tags (the `tag` command); reading needs the v0.2 `has-scoreboard-tag`
@@ -1305,7 +1305,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Potion Effect Type Category — a named value: plain words or `"text" parsed as potion effect type category`; compares with text; usable as a function parameter type
 - 🟡 Projectile — works as a function parameter type (no extra checks); no value of its own
 - ✅ Quaternion — `quaternion(w, x, y, z)`, `identity quaternion`; no rotation maths yet
-- ✅ Queue — `queue(a, b, ...)`; not saved in variables.json
+- ✅ Queue — `queue(a, b, ...)`; not saved
 - ✅ Quit Reason — a named value: plain words or `"text" parsed as quit reason`; compares with text; usable as a function parameter type
 - ⛔ Region — needs WorldGuard
 - ✅ Resource Pack State — a named value: plain words or `"text" parsed as resource pack state`; compares with text; usable as a function parameter type

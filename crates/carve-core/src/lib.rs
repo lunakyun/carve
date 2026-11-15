@@ -28,6 +28,7 @@ pub mod list_literals;
 pub mod list_ops;
 pub mod op_kick_ban;
 pub mod pattern;
+pub mod persist;
 pub mod placeholders;
 pub mod player_flags;
 pub mod scoreboards_bossbars;

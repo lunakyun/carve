@@ -51,8 +51,8 @@ clear {_gui}
 - A copy of the value is the same inventory: `set {_b} to {_gui}` and then
   `{_b} is {_gui}` is true. Changing a slot of a variable after `open` also
   changes the menus that are open from it.
-- Inventory values can be kept in global variables. They are saved to
-  `variables.json` with their items.
+- Inventory values can be kept in global variables. They are saved
+  with their items.
 - `clear {_gui}` empties it. On a variable that holds something else, `clear`
   deletes the variable (like Skript).
 - `items in player's inventory` (or `items in inventory of player`) lists the

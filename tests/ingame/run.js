@@ -93,7 +93,9 @@ function setup () {
     if (f.endsWith('.carve')) fs.copyFileSync(path.join(ROOT, 'examples', f), path.join(SCRIPTS, f))
   }
   fs.copyFileSync(path.join(__dirname, 'carve-test.carve'), path.join(SCRIPTS, 'carve-test.carve'))
-  fs.rmSync(path.join(DATA, 'variables.json'), { force: true })
+  for (const f of ['carve.redb', 'variables.json', 'bounds.json', 'first_join.txt']) {
+    for (const s of ['', '.old', '.broken']) fs.rmSync(path.join(DATA, f + s), { force: true })
+  }
 }
 
 async function reload (bot, expect) {
@@ -354,7 +356,7 @@ async function phase1 (srv) {
   check('on quit (player name still known)', !!await tester.waitFor(has('system', 't:quit Pleb'), 4000, t))
   check('gaps: set quit message', !!await tester.waitFor(has('system', 't:bye Pleb'), 4000, t))
 
-  await sleep(6000) // variables.json is saved ~5 s after a change
+  await sleep(6000) // the store is written ~5 s after a change
   lastCounter = Math.max(0, ...tester.log.filter(has('system', 't:counter')).map((e) => Number((e.text.match(/t:counter (\d+)/) || [])[1] || 0)))
   tester.quit()
   await sleep(500)
@@ -435,9 +437,9 @@ async function main () {
     const clean = await srv.stop()
     check('server stops cleanly', clean)
   }
-  const vars = path.join(DATA, 'variables.json')
-  const saved = fs.existsSync(vars) ? fs.readFileSync(vars, 'utf8') : ''
-  check('variables.json written', new RegExp(`"t_counter":\\s*${lastCounter}\\b`).test(saved), `t_counter ${lastCounter}`)
+  // The values themselves are checked after the restart (phase 2 reads t_counter back).
+  check('carve.redb written, no old files', fs.existsSync(path.join(DATA, 'carve.redb')) && !fs.existsSync(path.join(DATA, 'variables.json')),
+    `t_counter ${lastCounter}`)
 
   const srv2 = new Server()
   if (!await srv2.start()) throw new Error('server did not restart')

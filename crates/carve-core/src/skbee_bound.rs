@@ -81,6 +81,8 @@ pub struct Bounds {
     grid: HashMap<String, WorldGrid>,
     tracker: HashMap<String, Track>,
     dirty_since: Option<u64>,
+    /// What the store holds now: lower-case id to the JSON of that bound.
+    persisted: BTreeMap<String, String>,
 }
 
 impl Bounds {
@@ -181,26 +183,104 @@ impl Bounds {
 
     // ---- saving ----
 
-    fn to_json(&self) -> String {
+    fn bound_json(b: &Bound) -> serde_json::Value {
         use serde_json::{Value as J, json};
         let people = |v: &[PlayerRef]| -> J { v.iter().map(|p| json!([p.uuid, p.name])).collect() };
-        let items: Vec<J> = self
+        json!({
+            "id": b.id,
+            "world": b.world,
+            "min": b.min,
+            "max": b.max,
+            "owners": people(&b.owners),
+            "members": people(&b.members),
+            "flags": b.flags,
+        })
+    }
+
+    /// The whole list as the old `bounds.json` file.
+    fn to_json(&self) -> String {
+        let items: Vec<serde_json::Value> = self
             .list
             .iter()
             .filter(|b| !b.temporary)
-            .map(|b| {
-                json!({
-                    "id": b.id,
-                    "world": b.world,
-                    "min": b.min,
-                    "max": b.max,
-                    "owners": people(&b.owners),
-                    "members": people(&b.members),
-                    "flags": b.flags,
-                })
-            })
+            .map(Self::bound_json)
             .collect();
-        serde_json::to_string_pretty(&json!({ "bounds": items })).unwrap_or_default()
+        serde_json::to_string_pretty(&serde_json::json!({ "bounds": items })).unwrap_or_default()
+    }
+
+    /// The bounds that are saved now, as `(lower-case id, JSON)`. The `n` field keeps the creation order.
+    fn rows(&self) -> BTreeMap<String, String> {
+        self.list
+            .iter()
+            .filter(|b| !b.temporary)
+            .enumerate()
+            .map(|(n, b)| {
+                let mut j = Self::bound_json(b);
+                j["n"] = n.into();
+                (b.id.to_ascii_lowercase(), j.to_string())
+            })
+            .collect()
+    }
+
+    /// Bounds that were added, changed or deleted since the store was last
+    /// told, as `(lower-case id, JSON bytes or None for deleted)`.
+    pub fn take_changes(&mut self) -> Vec<(String, Option<Vec<u8>>)> {
+        self.dirty_since = None;
+        let now = self.rows();
+        let mut out: Vec<(String, Option<Vec<u8>>)> = Vec::new();
+        for (id, json) in &now {
+            if self.persisted.get(id) != Some(json) {
+                out.push((id.clone(), Some(json.clone().into_bytes())));
+            }
+        }
+        for id in self.persisted.keys() {
+            if !now.contains_key(id) {
+                out.push((id.clone(), None));
+            }
+        }
+        self.persisted = now;
+        out
+    }
+
+    /// Like [`Bounds::take_changes`], once bounds changed at least 5 seconds before `now_ms`.
+    pub fn changes_due(&mut self, now_ms: u64) -> Option<Vec<(String, Option<Vec<u8>>)>> {
+        let since = self.dirty_since?;
+        (now_ms.saturating_sub(since) >= SAVE_DEBOUNCE_MS).then(|| self.take_changes())
+    }
+
+    /// Every saved bound, for a first import into the store.
+    pub fn entries(&self) -> Vec<(String, Vec<u8>)> {
+        self.rows()
+            .into_iter()
+            .map(|(k, v)| (k, v.into_bytes()))
+            .collect()
+    }
+
+    /// Rebuild from the store's rows (any order). Rows that don't parse are
+    /// listed in the second part.
+    pub fn from_entries(rows: impl IntoIterator<Item = (String, Vec<u8>)>) -> (Bounds, Vec<String>) {
+        let mut items: Vec<(i64, Bound)> = Vec::new();
+        let mut bad = Vec::new();
+        for (id, bytes) in rows {
+            let parsed = serde_json::from_slice::<serde_json::Value>(&bytes)
+                .map_err(|e| e.to_string())
+                .and_then(|v| {
+                    let n = v.get("n").and_then(serde_json::Value::as_i64).unwrap_or(i64::MAX);
+                    Self::parse_bound(&v).map(|b| (n, b))
+                });
+            match parsed {
+                Ok(it) => items.push(it),
+                Err(_) => bad.push(id),
+            }
+        }
+        items.sort_by_key(|(n, _)| *n);
+        let mut out = Bounds {
+            list: items.into_iter().map(|(_, b)| b).collect(),
+            ..Bounds::default()
+        };
+        out.reindex();
+        out.persisted = out.rows();
+        (out, bad)
     }
 
     /// JSON to write if bounds changed at least 5 seconds before `now_ms`.
@@ -219,6 +299,65 @@ impl Bounds {
         self.dirty_since.take().map(|_| self.to_json())
     }
 
+    /// One bound from its JSON object (the old file's entries and the store's rows look alike).
+    fn parse_bound(it: &serde_json::Value) -> Result<Bound, String> {
+        let id = it
+            .get("id")
+            .and_then(|x| x.as_str())
+            .ok_or("bounds file: bound without id")?;
+        let corner = |k: &str| -> Result<[i32; 3], String> {
+            let a = it
+                .get(k)
+                .and_then(|x| x.as_array())
+                .ok_or(format!("bound '{id}': missing {k}"))?;
+            let n = |i: usize| a.get(i).and_then(serde_json::Value::as_i64).map(|n| n as i32);
+            match (n(0), n(1), n(2)) {
+                (Some(x), Some(y), Some(z)) => Ok([x, y, z]),
+                _ => Err(format!("bound '{id}': bad {k}")),
+            }
+        };
+        let people = |k: &str| -> Vec<PlayerRef> {
+            it.get(k)
+                .and_then(|x| x.as_array())
+                .map(|a| {
+                    a.iter()
+                        .filter_map(|p| {
+                            let p = p.as_array()?;
+                            Some(PlayerRef {
+                                uuid: p.first()?.as_str()?.to_string(),
+                                name: p.get(1)?.as_str()?.to_string(),
+                            })
+                        })
+                        .collect()
+                })
+                .unwrap_or_default()
+        };
+        let flags = it
+            .get("flags")
+            .and_then(|x| x.as_object())
+            .map(|o| {
+                o.iter()
+                    .filter_map(|(k, v)| Some((k.clone(), v.as_bool()?)))
+                    .collect()
+            })
+            .unwrap_or_default();
+        Ok(Bound {
+            id: id.to_string(),
+            world: it
+                .get("world")
+                .and_then(|x| x.as_str())
+                .unwrap_or(DEFAULT_WORLD)
+                .to_string(),
+            min: corner("min")?,
+            max: corner("max")?,
+            owners: people("owners"),
+            members: people("members"),
+            flags,
+            temporary: false,
+        })
+    }
+
+    /// Read the old `bounds.json` file.
     pub fn from_json(s: &str) -> Result<Bounds, String> {
         let v: serde_json::Value = serde_json::from_str(s).map_err(|e| format!("bounds file: {e}"))?;
         let items = v
@@ -227,60 +366,7 @@ impl Bounds {
             .ok_or("bounds file: missing 'bounds' list")?;
         let mut out = Bounds::default();
         for it in items {
-            let id = it
-                .get("id")
-                .and_then(|x| x.as_str())
-                .ok_or("bounds file: bound without id")?;
-            let corner = |k: &str| -> Result<[i32; 3], String> {
-                let a = it
-                    .get(k)
-                    .and_then(|x| x.as_array())
-                    .ok_or(format!("bound '{id}': missing {k}"))?;
-                let n = |i: usize| a.get(i).and_then(serde_json::Value::as_i64).map(|n| n as i32);
-                match (n(0), n(1), n(2)) {
-                    (Some(x), Some(y), Some(z)) => Ok([x, y, z]),
-                    _ => Err(format!("bound '{id}': bad {k}")),
-                }
-            };
-            let people = |k: &str| -> Vec<PlayerRef> {
-                it.get(k)
-                    .and_then(|x| x.as_array())
-                    .map(|a| {
-                        a.iter()
-                            .filter_map(|p| {
-                                let p = p.as_array()?;
-                                Some(PlayerRef {
-                                    uuid: p.first()?.as_str()?.to_string(),
-                                    name: p.get(1)?.as_str()?.to_string(),
-                                })
-                            })
-                            .collect()
-                    })
-                    .unwrap_or_default()
-            };
-            let flags = it
-                .get("flags")
-                .and_then(|x| x.as_object())
-                .map(|o| {
-                    o.iter()
-                        .filter_map(|(k, v)| Some((k.clone(), v.as_bool()?)))
-                        .collect()
-                })
-                .unwrap_or_default();
-            out.list.push(Bound {
-                id: id.to_string(),
-                world: it
-                    .get("world")
-                    .and_then(|x| x.as_str())
-                    .unwrap_or(DEFAULT_WORLD)
-                    .to_string(),
-                min: corner("min")?,
-                max: corner("max")?,
-                owners: people("owners"),
-                members: people("members"),
-                flags,
-                temporary: false,
-            });
+            out.list.push(Self::parse_bound(it)?);
         }
         out.reindex();
         Ok(out)

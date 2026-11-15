@@ -840,7 +840,7 @@ Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
 %player% (hasn't|has not|didn't|did not) [(already|yet)] (play|played) [on (this|the) server] [(before|already|yet)]
 ```
 
-Whether a player joined the server before this session. Carve remembers who joined in `first_join.txt`, so it is false for the whole first session.
+Whether a player joined the server before this session. Carve remembers who joined in `carve.redb`, so it is false for the whole first session.
 
 ```carve
 on join:

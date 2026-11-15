@@ -11,3 +11,4 @@ crate-type = ["cdylib"]
 [dependencies]
 carve-core = { path = "../carve-core" }
 pumpkin-plugin-api = { git = "https://github.com/Pumpkin-MC/Pumpkin", rev = "058f7ec6fde8a8f24e3d6bb92344df48a2f07ffc" }
+redb = "4.6.0"

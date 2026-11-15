@@ -96,8 +96,8 @@ uses `opt-level = 3`.
 
 - **Global variables stay in a sorted map.** Updates no longer copy the key,
   which was the real cost. The bench uses only a few globals, so it gives no
-  reason to switch to a hash map, and the sorted map keeps `variables.json`
-  sorted and stable for free.
+  reason to switch to a hash map, and the sorted map keeps the saved
+  variables in order for free.
 - **No bytecode for expressions.** In case (b), about 10 ns of the roughly
   25 ns per line is reading `{_x}`. The rest is running the instruction and
   storing the result. Expression trees do not dominate, so a bytecode VM would

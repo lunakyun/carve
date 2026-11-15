@@ -1,7 +1,7 @@
 //! Item meta: names, lore and enchantments on item values.
 //!
 //! An item value carries an optional [`ItemMeta`]. It is boxed, so plain items stay small and
-//! cheap. The meta is saved to `variables.json` as JSON.
+//! cheap. The meta is saved with the variable as JSON.
 
 use serde_json::{Map, Value as Json, json};
 

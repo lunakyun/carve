@@ -2823,20 +2823,49 @@ impl Engine {
         Ok(None)
     }
 
-    /// JSON to write if variables changed at least `SAVE_DEBOUNCE_MS` ago.
+    /// The variables as one JSON document if they changed at least
+    /// `SAVE_DEBOUNCE_MS` ago. The plugin saves with [`Engine::persist_due`]; this is the
+    /// whole-file form (the old `variables.json`).
     pub fn save_due(&mut self, now: u64) -> Option<String> {
         let since = self.dirty_since?;
         if now.saturating_sub(since) >= SAVE_DEBOUNCE_MS {
             self.dirty_since = None;
+            self.vars.clear_changes();
             Some(self.vars.to_json())
         } else {
             None
         }
     }
 
-    /// JSON to write now (unload), if anything changed.
+    /// The variables as one JSON document now, if anything changed.
     pub fn save_now(&mut self) -> Option<String> {
+        self.vars.clear_changes();
         self.dirty_since.take().map(|_| self.vars.to_json())
+    }
+
+    /// What the store has to write: variables (and bounds) that changed at
+    /// least `SAVE_DEBOUNCE_MS` before `now_ms` (any clock that fits `Host::now`).
+    pub fn persist_due(&mut self, now_ms: u64) -> Option<crate::persist::Changes> {
+        let vars = match self.dirty_since {
+            Some(since) if now_ms.saturating_sub(since) >= SAVE_DEBOUNCE_MS => {
+                self.dirty_since = None;
+                self.vars.take_changes()
+            }
+            _ => Vec::new(),
+        };
+        let bounds = self.bounds.changes_due(now_ms).unwrap_or_default();
+        let c = crate::persist::Changes { vars, bounds };
+        (!c.is_empty()).then_some(c)
+    }
+
+    /// Everything that changed, now (unload, reload, shutdown).
+    pub fn persist_now(&mut self) -> Option<crate::persist::Changes> {
+        self.dirty_since = None;
+        let c = crate::persist::Changes {
+            vars: self.vars.take_changes(),
+            bounds: self.bounds.take_changes(),
+        };
+        (!c.is_empty()).then_some(c)
     }
 }
 

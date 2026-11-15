@@ -26,7 +26,7 @@ on command:
 
 ## First join
 
-Carve stores the uuids of players it has seen in `first_join.txt` in its data
+Carve stores the uuids of players it has seen in `carve.redb` in its data
 folder. A player who joined before Carve was installed counts as new once.
 
 ## Move

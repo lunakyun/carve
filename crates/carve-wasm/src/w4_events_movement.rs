@@ -18,18 +18,16 @@ use pumpkin_plugin_api::logging::{LogLevel as ApiLevel, log};
 
 use super::{TickHost, player_ref, with_state, world_name};
 
-/// Players that have joined before, as uuids (file `first_join.txt`).
+/// Players that have joined before, as uuids (table `seen_players` of the store).
 static SEEN: Mutex<Option<HashSet<String>>> = Mutex::new(None);
-const SEEN_FILE: &str = "first_join.txt";
 /// Players whose first join is in this server run: they have not played before.
 static FRESH: Mutex<Vec<String>> = Mutex::new(Vec::new());
-/// Carve's data folder, for loading `SEEN` before the first join.
-static DATA_DIR: std::sync::OnceLock<String> = std::sync::OnceLock::new();
 
-fn load_seen(dir: &str) -> HashSet<String> {
-    std::fs::read_to_string(format!("{dir}/{SEEN_FILE}"))
-        .map(|s| s.lines().map(str::to_string).collect())
-        .unwrap_or_default()
+/// The players the store knows, read once at load.
+pub(crate) fn init_seen(uuids: Vec<String>) {
+    if let Ok(mut g) = SEEN.lock() {
+        *g = Some(uuids.into_iter().collect());
+    }
 }
 
 /// A player left: from their next join on, they have played before.
@@ -45,11 +43,8 @@ pub(crate) fn played_before(uuid: &str) -> Option<bool> {
     if FRESH.lock().ok()?.iter().any(|u| u == uuid) {
         return Some(false);
     }
-    let mut g = SEEN.lock().ok()?;
-    if g.is_none() {
-        *g = Some(load_seen(DATA_DIR.get()?));
-    }
-    Some(g.as_ref().is_some_and(|s| s.contains(uuid)))
+    let g = SEEN.lock().ok()?;
+    Some(g.as_ref()?.contains(uuid))
 }
 
 trait MvAccess: FromIntoEvent {
@@ -157,7 +152,7 @@ impl EventHandler<PlayerJoinEvent> for OnFirstJoin {
         with_state(&server, None, |st, host| {
             let first = {
                 let Ok(mut g) = SEEN.lock() else { return };
-                let seen = g.get_or_insert_with(|| load_seen(&st.data_dir));
+                let seen = g.get_or_insert_with(HashSet::new);
                 let first = seen.insert(who.uuid.clone());
                 if let Ok(mut fresh) = FRESH.lock() {
                     fresh.retain(|u| *u != who.uuid);
@@ -166,10 +161,11 @@ impl EventHandler<PlayerJoinEvent> for OnFirstJoin {
                     }
                 }
                 if first {
-                    let mut all: Vec<&String> = seen.iter().collect();
-                    all.sort();
-                    let text = all.iter().map(|u| u.as_str()).collect::<Vec<_>>().join("\n");
-                    st.save_to(SEEN_FILE, &text);
+                    // Written with the next transaction (the next tick).
+                    let now_ms = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .map_or(0, |d| d.as_millis() as u64);
+                    crate::store::with(|s| s.queue_seen(&who.uuid, now_ms));
                 }
                 first
             };
@@ -199,7 +195,6 @@ fn reg<E: MvAccess + Send + Sync + 'static>(ctx: &Context) {
 /// server only calls into the plugin when a script uses it at startup
 /// (adding the first `on move` script needs a restart).
 pub fn register_all(ctx: &Context, move_used: bool) {
-    let _ = DATA_DIR.set(ctx.get_data_folder());
     reg::<PlayerCommandSendEvent>(ctx);
     reg::<PlayerTeleportEvent>(ctx);
     reg::<PlayerSwapHandsEvent>(ctx);

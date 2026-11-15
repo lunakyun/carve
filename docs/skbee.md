@@ -28,7 +28,7 @@ region with an id. In Carve it is held as its id text.
 | Bound lesser / greater corner | ✅ | readable and settable |
 | Bound world | ✅ | read only |
 | Bound volume / size | 🟡 | `volume of bound` only |
-| Persistence in the data folder | ✅ | `bounds.json`, saved 5 seconds after a change and on unload |
+| Persistence in the data folder | ✅ | `carve.redb`, saved 5 seconds after a change, on reload and on unload (only the changed bounds are written) |
 | Bound bounding box | 🟡 | corners only, no box type |
 | Blocks in bound | ⛔ | needs a block iteration API that the Pumpkin plugin API does not have yet |
 | Entities in bound | ⛔ | no entity list API in the plugin API |

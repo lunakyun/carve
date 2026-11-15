@@ -6,7 +6,7 @@ compared with `is`, printed in text and used as a function parameter or return t
 ## Named values
 
 About sixty types are a fixed list of names. A value prints as its name with spaces (`shift left`) and
-is saved in `variables.json` with its type and name.
+is saved with its type and name.
 
 ```
 on inventory click:
@@ -82,7 +82,7 @@ quaternion(1, 0, 0, 0)           # w, x, y, z       also: identity quaternion
 timeperiod(0, 12000)             # 6:00 to 18:00    also: time period(a, b)
 chunk(2, -3)                     # chunk x, z       also: chunk(2, -3, world "w")
 chunk of player's location       # also: chunk at {loc}
-queue(1, 2, 3)                   # not saved in variables.json
+queue(1, 2, 3)                   # not saved
 world border of world "world"
 ```
 

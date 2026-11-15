@@ -14,7 +14,7 @@ function parameters check the type when the script loads.
 | location | `location(0, 64, 0)`, `location of player` | `x: 0, y: 64, z: 0 in 'world'` |
 | world | `world "world_nether"`, `world of player` | the world name |
 
-All of them can be stored in variables and are saved in `variables.json`.
+All of them can be stored in variables and are saved with the variables.
 
 ## Items
 

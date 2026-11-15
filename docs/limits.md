@@ -91,8 +91,9 @@ Carve itself. For the full feature-by-feature status, see the
   UUID (Skript uses the UUID by default). A player who changes their name
   starts over. Use `%uuid of player%` in the name if you want Skript's
   behavior.
-- If `variables.json` is broken, Carve moves it to `variables.json.broken` and
-  starts with no variables.
+- Carve keeps variables, bounds and first joins in one file, `carve.redb`. Old
+  `variables.json`, `bounds.json` and `first_join.txt` files are imported once and renamed to
+  `.old` (a broken one is renamed to `.broken` and skipped).
 
 ## Running scripts
 

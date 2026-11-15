@@ -1,7 +1,7 @@
 # Bounds (SkBee style)
 
 A bound is a named box in a world. It has owners, members and flags. Carve
-saves bounds to `bounds.json` in the plugin data folder, so they stay after a
+saves bounds in `carve.redb` in the plugin data folder, so they stay after a
 restart.
 
 A bound is held as its id (text). `set {_b} to bound at player's location`

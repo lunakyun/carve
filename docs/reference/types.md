@@ -183,7 +183,7 @@ Since **unreleased** · Guide: [w4-types-1](../syntax/w4-types-1.md)
 queue(%objects%)
 ```
 
-A first-in-first-out collection made from values. Prints its items; not saved in variables.json.
+A first-in-first-out collection made from values. Prints its items; not saved.
 
 ```carve
 send "%queue(1, 2, 3)%"

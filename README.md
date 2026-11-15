@@ -52,7 +52,7 @@ command /heal [<player>]:
   from every script. **Options** with `{@name}`.
 - **Types:** numbers, text, players, items (`2 diamonds`), locations,
   worlds, dates and time spans, colors, vectors and more, all saved in
-  `variables.json`.
+  `carve.redb`.
 - **The world:** blocks, entities, particles, sounds, potion effects,
   weather and time, game rules, scoreboards, boss bars, chest menus, item
   names and lore.

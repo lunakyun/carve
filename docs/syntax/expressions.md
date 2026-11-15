@@ -10,7 +10,7 @@ text, variables, the player, and so on.
 | number | `5`, `2.5` | `5`, `2.5` (at most 4 decimals) |
 | text | `"hello"` | `hello` |
 | player | `player` | the player's name |
-| boolean | only from `variables.json` | `true` / `false` |
+| boolean | only from saved data | `true` / `false` |
 | not set | an unset variable | `<none>` |
 
 ## Numbers

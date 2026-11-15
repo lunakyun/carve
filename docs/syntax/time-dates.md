@@ -57,7 +57,7 @@ if now > {ban-end}:
 
 ## Saving
 
-Dates in variables are saved in `variables.json` as `{"date": <millis>}`.
+Dates in variables are saved as `{"date": <millis>}`.
 They load back as dates.
 
 ## Not supported yet

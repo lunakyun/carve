@@ -42,7 +42,7 @@ pub struct InvVal {
 static NEXT_ID: AtomicU64 = AtomicU64::new(0);
 
 /// A fresh inventory id. Seeded from the clock, so ids saved in
-/// `variables.json` do not come back after a restart.
+/// the saved variables do not come back after a restart.
 pub fn next_id(clock_ms: i64) -> u64 {
     if NEXT_ID.load(Ordering::Relaxed) == 0 {
         let seed = (clock_ms.max(1) as u64).wrapping_mul(1024);
