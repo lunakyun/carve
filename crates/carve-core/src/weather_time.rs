@@ -624,6 +624,7 @@ impl Engine {
                         let next = if next < 0 { next.rem_euclid(DAY) } else { next };
                         host.set_world_time(world.as_deref(), next);
                     }
+                    // Only a host that can't read the time (no direct API) gets here.
                     None => host.execute_command(&format!("time add {delta}")),
                 }
             }

@@ -288,16 +288,19 @@ fn ride_swing_equip_any_entity() {
          equip {z} with diamond helmet and iron boots\nequip player with shield\nmake {z} wear stick",
     );
     let cmds = &h.commands;
+    // Riding goes through the host call (the plugin does it without a command).
+    let rides: Vec<&String> = h.ops.iter().filter(|o| o.starts_with("Ride(")).collect();
+    assert_eq!(rides.len(), 3, "{:?}", h.ops);
     assert!(
-        cmds[0].starts_with("ride 00000002-") && cmds[0].contains(" mount 00000001-"),
-        "{cmds:?}"
+        rides[0].contains("00000002-") && rides[0].contains("Some(") && rides[0].contains("00000001-"),
+        "{rides:?}"
     );
     assert!(
-        cmds[1].ends_with("dismount") && cmds[2].ends_with("dismount"),
-        "{cmds:?}"
+        rides[1].ends_with(", None)") && rides[2].ends_with(", None)"),
+        "{rides:?}"
     );
     assert!(
-        cmds[3].ends_with("mainhand") && cmds[4].ends_with("offhand"),
+        cmds[0].ends_with("mainhand") && cmds[1].ends_with("offhand"),
         "{cmds:?}"
     );
     assert!(cmds.contains(&"swing Steve mainhand".to_string()), "{cmds:?}");

@@ -52,6 +52,7 @@ use pumpkin_plugin_api::{
 
 mod combat;
 mod custom_stats;
+mod direct;
 mod displays;
 mod ent_host;
 mod ents;
@@ -245,6 +246,7 @@ fn with_state<R>(
         server,
         reply,
         deferred: Vec::new(),
+        failures: Vec::new(),
         players: Vec::new(),
         late: Vec::new(),
     };
@@ -259,6 +261,10 @@ fn with_state<R>(
         let state = guard.as_mut()?;
         f(state, &mut host)
     };
+    // A failure the engine did not pick up (an event with no script line) is still told.
+    for f in std::mem::take(&mut host.failures) {
+        plog(ApiLevel::Warn, &f);
+    }
     for (who, cmd) in std::mem::take(&mut host.deferred) {
         let sender = who
             .and_then(|u| uuid::parse(&u))
@@ -308,6 +314,8 @@ struct WasmHost<'a> {
     reply: Option<&'a CommandSender>,
     /// Queued commands: the player uuid to run as (None: console), and the command.
     deferred: Vec<(Option<String>, String)>,
+    /// Why calls could not be done, for the engine to log with the script line.
+    failures: Vec<String>,
     /// Player handles looked up during this `with_state` call, by UUID.
     /// Every lookup crosses the component boundary, so each UUID is looked
     /// up at most once per call. `None` means offline.
@@ -1733,6 +1741,23 @@ impl Host for TickHost<'_, '_> {
         strike_lightning(at: &FxPos, effect_only: bool);
         explode(at: &FxPos, power: f64, fire: bool);
         spawn_particle(p: &ParticleFx);
+        play_sound(p: &PlayerRef, sound: &str, volume: f64, pitch: f64, at: Option<(f64, f64, f64)>);
+        stop_sound(p: &PlayerRef, sound: Option<&str>);
+        kick(name: &str, reason: Option<&str>);
+        ban(name: &str, reason: Option<&str>, ip: bool);
+        unban(name: &str, ip: bool);
+        set_op(name: &str, op: bool);
+        give_item(p: &PlayerRef, id: &str, count: u32);
+        give_item_meta(p: &PlayerRef, id: &str, count: u32, meta: &carve_core::item_meta::ItemMeta);
+        xp_add(p: &PlayerRef, field: carve_core::xp_level::XpField, amount: f64);
+        poison(p: &PlayerRef, seconds: Option<u64>);
+        clear_title(p: &PlayerRef, reset: bool);
+        ride(rider: &PlayerRef, vehicle: &PlayerRef);
+        dismount(p: &PlayerRef);
+        launch_firework(at: &FxPos);
+        sb_edit(op: &carve_core::skbee_scoreboard_teams::SbEdit);
+        fail(msg: &str);
+        take_failures() -> Vec<String>;
         spawn_display(d: &carve_core::skbee_particles_display::DisplaySpec);
         add_effect(p: &PlayerRef, effect: &str, ticks: u32, amplifier: u8);
         clear_effects(p: &PlayerRef, effect: Option<&str>);

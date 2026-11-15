@@ -1,9 +1,66 @@
 //! Sounds: patterns and helpers for `play sound` and `stop sound`.
 //!
-//! Pumpkin's plugin API has no sound call, so the default host methods run
-//! the vanilla `playsound` and `stopsound` console commands.
+//! The plugin sends the sound packet itself. Hosts with no direct call (and
+//! the tests) fall back on the vanilla `playsound` and `stopsound` commands,
+//! which the default host methods build with [`play_command`] and [`stop_command`].
+
+use std::sync::OnceLock;
 
 use crate::compile::EffKind;
+
+/// Every vanilla sound id (`entity.experience_orb.pickup`), sorted, from Pumpkin's data.
+static VANILLA: &str = include_str!("sound_ids.txt");
+
+fn vanilla_ids() -> &'static [&'static str] {
+    static IDS: OnceLock<Vec<&'static str>> = OnceLock::new();
+    IDS.get_or_init(|| VANILLA.lines().collect())
+}
+
+/// What a cleaned sound id names.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SoundKind {
+    /// A vanilla sound, with or without the `minecraft:` prefix.
+    Vanilla,
+    /// A sound from another namespace (a resource pack). The server can't check it.
+    Custom,
+    /// No namespace or `minecraft:`, but not a vanilla sound: the client plays nothing.
+    Unknown,
+}
+
+/// Sort a cleaned sound id (see [`clean_id`]) into vanilla, resource pack or unknown.
+pub fn classify(id: &str) -> SoundKind {
+    let name = match id.split_once(':') {
+        Some((ns, _)) if ns != "minecraft" => return SoundKind::Custom,
+        Some((_, name)) => name,
+        None => id,
+    };
+    if vanilla_ids().binary_search(&name).is_ok() {
+        SoundKind::Vanilla
+    } else {
+        SoundKind::Unknown
+    }
+}
+
+/// The id with its namespace: `minecraft:` is added when there is none.
+pub fn namespaced(id: &str) -> String {
+    if id.contains(':') {
+        id.to_string()
+    } else {
+        format!("minecraft:{id}")
+    }
+}
+
+/// Volume and pitch the way the vanilla command takes them: no negative
+/// volume, pitch from 0 to 2.
+pub fn clamp_levels(volume: f64, pitch: f64) -> (f32, f32) {
+    let v = if volume.is_finite() { volume.max(0.0) } else { 0.0 };
+    let p = if pitch.is_finite() {
+        pitch.clamp(0.0, 2.0)
+    } else {
+        0.0
+    };
+    (v as f32, p as f32)
+}
 
 /// Registered next to the main effect patterns.
 pub const SOUND_PATTERNS: &[(&str, EffKind)] = &[

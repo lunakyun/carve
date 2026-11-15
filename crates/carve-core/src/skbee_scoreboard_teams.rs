@@ -1,13 +1,13 @@
 //! SkBee-style scoreboards: objectives, scores, teams and per-player sidebar
 //! boards (SkBee's "fastboard").
 //!
-//! Pumpkin's plugin API only gives each player a private scoreboard, and it
-//! cannot read the world scoreboard back. So Carve keeps its own copy of
-//! the objectives, scores and teams in the global variables (under keys that
-//! start with a control character, so scripts cannot reach them by accident)
-//! and mirrors every change to the server with `/scoreboard` and `/team`
-//! commands. Reads come from the copy. Because the copy lives in the
-//! variables file, it survives restarts, like the server's own scoreboard.
+//! Carve keeps its own copy of the objectives, scores and teams in the global
+//! variables (under keys that start with a control character, so scripts cannot
+//! reach them by accident) and applies every change to the server scoreboard
+//! with [`Host::sb_edit`]: the plugin uses the scoreboard calls of the plugin
+//! API, and a host without them runs the `/scoreboard` and `/team` commands
+//! ([`SbEdit::command`]). Reads come from the copy. Because the copy is saved
+//! with the global variables, it survives restarts, like the server's own scoreboard.
 //!
 //! Boards are per player and not saved. The host draws them (`Host::board_show`).
 //!
@@ -83,6 +83,95 @@ impl TeamProp {
             TeamProp::NametagVisibility => "nametag",
             TeamProp::CollisionRule => "collision",
             TeamProp::DeathMessageVisibility => "deathmessage",
+        }
+    }
+}
+
+/// One change to the server scoreboard or its teams, already checked. A host
+/// with a direct API applies it; the default turns it into a vanilla command
+/// ([`SbEdit::command`]).
+#[derive(Debug, Clone, PartialEq)]
+pub enum SbEdit {
+    AddObjective {
+        name: String,
+        criteria: String,
+        display: Option<String>,
+    },
+    RemoveObjective(String),
+    SetScore {
+        holder: String,
+        objective: String,
+        value: i32,
+    },
+    /// One objective, or all of them.
+    ResetScore {
+        holder: String,
+        objective: Option<String>,
+    },
+    AddTeam(String),
+    RemoveTeam(String),
+    EmptyTeam(String),
+    Join {
+        team: String,
+        holder: String,
+    },
+    Leave {
+        holder: String,
+    },
+    /// `arg` is the plain text (prefix, suffix, display name), the colour
+    /// (`red`, `reset`), `true` / `false`, or the vanilla word for the rule.
+    TeamModify {
+        team: String,
+        prop: TeamProp,
+        arg: String,
+    },
+}
+
+impl SbEdit {
+    /// The vanilla command that does the same.
+    pub fn command(&self) -> String {
+        match self {
+            SbEdit::AddObjective {
+                name,
+                criteria,
+                display,
+            } => match display {
+                Some(d) => format!("scoreboard objectives add {name} {criteria} {}", json_text(d)),
+                None => format!("scoreboard objectives add {name} {criteria}"),
+            },
+            SbEdit::RemoveObjective(name) => format!("scoreboard objectives remove {name}"),
+            SbEdit::SetScore {
+                holder,
+                objective,
+                value,
+            } => format!("scoreboard players set {holder} {objective} {value}"),
+            SbEdit::ResetScore {
+                holder,
+                objective: Some(o),
+            } => format!("scoreboard players reset {holder} {o}"),
+            SbEdit::ResetScore {
+                holder,
+                objective: None,
+            } => format!("scoreboard players reset {holder}"),
+            SbEdit::AddTeam(t) => format!("team add {t}"),
+            SbEdit::RemoveTeam(t) => format!("team remove {t}"),
+            SbEdit::EmptyTeam(t) => format!("team empty {t}"),
+            SbEdit::Join { team, holder } => format!("team join {team} {holder}"),
+            SbEdit::Leave { holder } => format!("team leave {holder}"),
+            SbEdit::TeamModify { team, prop, arg } => {
+                let rest = match prop {
+                    TeamProp::Prefix => format!("prefix {}", json_text(arg)),
+                    TeamProp::Suffix => format!("suffix {}", json_text(arg)),
+                    TeamProp::DisplayName => format!("displayName {}", json_text(arg)),
+                    TeamProp::Color => format!("color {arg}"),
+                    TeamProp::FriendlyFire => format!("friendlyFire {arg}"),
+                    TeamProp::SeeInvisibles => format!("seeFriendlyInvisibles {arg}"),
+                    TeamProp::NametagVisibility => format!("nametagVisibility {arg}"),
+                    TeamProp::DeathMessageVisibility => format!("deathMessageVisibility {arg}"),
+                    TeamProp::CollisionRule => format!("collisionRule {arg}"),
+                };
+                format!("team modify {team} {rest}")
+            }
         }
     }
 }
@@ -1080,12 +1169,11 @@ impl Engine {
                 if self.vars.get_ref(&k_obj(&name)).is_some() {
                     return Err(format!("objective '{name}' is already registered"));
                 }
-                let mut cmd = format!("scoreboard objectives add {name} {criteria}");
-                if let Some(s) = &shown {
-                    cmd.push(' ');
-                    cmd.push_str(&json_text(s));
-                }
-                host.execute_command(&cmd);
+                host.sb_edit(&SbEdit::AddObjective {
+                    name: name.clone(),
+                    criteria: criteria.clone(),
+                    display: shown.clone(),
+                });
                 self.vars
                     .set(k_obj(&name), Value::Text(shown.unwrap_or_else(|| name.clone())));
                 self.vars.set(k_obj_criteria(&name), Value::Text(criteria));
@@ -1094,7 +1182,7 @@ impl Engine {
             SbFx::UnregisterObjective(name) => {
                 let name = self.sb_text(name, ex, host)?;
                 valid_name("objective", &name)?;
-                host.execute_command(&format!("scoreboard objectives remove {name}"));
+                host.sb_edit(&SbEdit::RemoveObjective(name.clone()));
                 self.vars.delete(&k_obj(&name));
                 self.vars.delete(&k_obj_criteria(&name));
                 for k in self.vars.keys_with_prefix(&k_score_prefix(&name)) {
@@ -1131,7 +1219,11 @@ impl Engine {
                         ),
                     );
                 }
-                host.execute_command(&format!("scoreboard players set {who} {obj} {}", new as i32));
+                host.sb_edit(&SbEdit::SetScore {
+                    holder: who.clone(),
+                    objective: obj.clone(),
+                    value: new as i32,
+                });
                 self.vars.set(key, Value::Num(new));
                 self.mark_dirty(host);
             }
@@ -1141,11 +1233,17 @@ impl Engine {
                     Some(o) => {
                         let obj = self.sb_text(o, ex, host)?;
                         valid_name("objective", &obj)?;
-                        host.execute_command(&format!("scoreboard players reset {who} {obj}"));
+                        host.sb_edit(&SbEdit::ResetScore {
+                            holder: who.clone(),
+                            objective: Some(obj.clone()),
+                        });
                         self.vars.delete(&k_score(&obj, &who));
                     }
                     None => {
-                        host.execute_command(&format!("scoreboard players reset {who}"));
+                        host.sb_edit(&SbEdit::ResetScore {
+                            holder: who.clone(),
+                            objective: None,
+                        });
                         let objs: Vec<String> = self
                             .vars
                             .keys_with_prefix(&format!("{SEP}sb{SEP}o{SEP}"))
@@ -1165,14 +1263,14 @@ impl Engine {
                 if self.vars.get_ref(&k_team(&name)).is_some() {
                     return Err(format!("team '{name}' is already registered"));
                 }
-                host.execute_command(&format!("team add {name}"));
+                host.sb_edit(&SbEdit::AddTeam(name.clone()));
                 self.vars.set(k_team(&name), Value::Text(name.clone()));
                 self.mark_dirty(host);
             }
             SbFx::UnregisterTeam(name) => {
                 let name = self.sb_text(name, ex, host)?;
                 valid_name("team", &name)?;
-                host.execute_command(&format!("team remove {name}"));
+                host.sb_edit(&SbEdit::RemoveTeam(name.clone()));
                 self.team_forget(&name);
                 self.vars.delete(&k_team(&name));
                 self.mark_dirty(host);
@@ -1180,7 +1278,7 @@ impl Engine {
             SbFx::ClearTeam(name) => {
                 let name = self.sb_text(name, ex, host)?;
                 valid_name("team", &name)?;
-                host.execute_command(&format!("team empty {name}"));
+                host.sb_edit(&SbEdit::EmptyTeam(name.clone()));
                 self.team_clear_members(&name);
                 self.mark_dirty(host);
             }
@@ -1196,7 +1294,10 @@ impl Engine {
                 if let Some(old) = get_text(&self.vars, &k_member_of(&who)) {
                     self.vars.delete(&k_member(&old, &who));
                 }
-                host.execute_command(&format!("team join {team} {who}"));
+                host.sb_edit(&SbEdit::Join {
+                    team: team.clone(),
+                    holder: who.clone(),
+                });
                 self.vars.set(k_member(&team, &who), Value::Text(who.clone()));
                 self.vars.set(k_member_of(&who), Value::Text(team));
                 self.mark_dirty(host);
@@ -1211,7 +1312,7 @@ impl Engine {
                     }
                 }
                 if let Some(old) = current {
-                    host.execute_command(&format!("team leave {who}"));
+                    host.sb_edit(&SbEdit::Leave { holder: who.clone() });
                     self.vars.delete(&k_member(&old, &who));
                     self.vars.delete(&k_member_of(&who));
                     self.mark_dirty(host);
@@ -1224,30 +1325,17 @@ impl Engine {
                     return Err(format!("team '{team}' is not registered"));
                 }
                 let v = self.eval(value, ex, host)?;
-                let (cmd, stored) = match prop {
+                let (arg, stored) = match prop {
                     TeamProp::Prefix | TeamProp::Suffix | TeamProp::DisplayName => {
                         let t = match v {
                             Value::None => return Err("the value is not set".into()),
                             other => other.to_string(),
                         };
-                        let word = match prop {
-                            TeamProp::Prefix => "prefix",
-                            TeamProp::Suffix => "suffix",
-                            _ => "displayName",
-                        };
-                        (
-                            format!("team modify {team} {word} {}", json_text(&t)),
-                            Value::Text(t),
-                        )
+                        (t.clone(), Value::Text(t))
                     }
                     TeamProp::Color => {
                         let c = team_color(&v.to_string())?;
-                        let arg = if c == "reset" {
-                            "color reset".to_string()
-                        } else {
-                            format!("color {c}")
-                        };
-                        (format!("team modify {team} {arg}"), Value::Text(c))
+                        (c.clone(), Value::Text(c))
                     }
                     TeamProp::FriendlyFire | TeamProp::SeeInvisibles => {
                         let b = match v {
@@ -1256,36 +1344,22 @@ impl Engine {
                                 return Err(format!("expected true or false, got {}", other.type_name()));
                             }
                         };
-                        let word = if *prop == TeamProp::FriendlyFire {
-                            "friendlyFire"
-                        } else {
-                            "seeFriendlyInvisibles"
-                        };
-                        (format!("team modify {team} {word} {b}"), Value::Bool(b))
+                        (b.to_string(), Value::Bool(b))
                     }
-                    TeamProp::NametagVisibility => {
+                    TeamProp::NametagVisibility | TeamProp::DeathMessageVisibility => {
                         let s = visibility(&v.to_string())?;
-                        (
-                            format!("team modify {team} nametagVisibility {s}"),
-                            Value::Text(norm_word(&v.to_string())),
-                        )
-                    }
-                    TeamProp::DeathMessageVisibility => {
-                        let s = visibility(&v.to_string())?;
-                        (
-                            format!("team modify {team} deathMessageVisibility {s}"),
-                            Value::Text(norm_word(&v.to_string())),
-                        )
+                        (s.to_string(), Value::Text(norm_word(&v.to_string())))
                     }
                     TeamProp::CollisionRule => {
                         let s = collision(&v.to_string())?;
-                        (
-                            format!("team modify {team} collisionRule {s}"),
-                            Value::Text(norm_word(&v.to_string())),
-                        )
+                        (s.to_string(), Value::Text(norm_word(&v.to_string())))
                     }
                 };
-                host.execute_command(&cmd);
+                host.sb_edit(&SbEdit::TeamModify {
+                    team: team.clone(),
+                    prop: *prop,
+                    arg,
+                });
                 self.vars.set(k_team_prop(&team, prop.key()), stored);
                 self.mark_dirty(host);
             }

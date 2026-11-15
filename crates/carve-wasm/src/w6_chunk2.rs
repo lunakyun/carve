@@ -5,8 +5,6 @@ use carve_core::Value;
 use carve_core::w6_chunk2::{DisplayFlag, HostOp};
 use pumpkin_plugin_api::common::BlockPos as WitPos;
 use pumpkin_plugin_api::display::InteractionEntity;
-use pumpkin_plugin_api::player::BanPlayerOptions;
-use pumpkin_plugin_api::text::TextComponent;
 use pumpkin_plugin_api::wit::pumpkin::plugin::sounds::SoundCategory;
 use pumpkin_plugin_api::world::{Entity, MobData};
 use pumpkin_plugin_api::{EntityDisplayExt, uuid};
@@ -89,6 +87,7 @@ impl WasmHost<'_> {
                 pl.stop_custom_sound(name.as_deref(), category(cat));
                 Some(true)
             }
+            HostOp::Ride(rider, vehicle) => self.ride_op(rider, vehicle),
             HostOp::Tame(v, on, owner) => {
                 let e = self.w6_entity(v)?;
                 let mob = e.as_mob()?;
@@ -118,34 +117,5 @@ impl WasmHost<'_> {
                 }
             }
         }
-    }
-
-    /// A ban that ends by itself. Players that are online only (Pumpkin's ban
-    /// list takes a UUID, which an offline name does not give).
-    pub(super) fn ban_for_impl(&mut self, name: &str, reason: Option<&str>, ip: bool, seconds: u64) -> bool {
-        let Some(pl) = self.server.get_player_by_name(name) else {
-            return false;
-        };
-        let reason = reason.map(TextComponent::text);
-        if ip {
-            pl.ban_ip(pumpkin_plugin_api::player::BanIpOptions {
-                reason,
-                source: Some("Carve".to_string()),
-                expires_at_utc: None,
-                duration_seconds: Some(seconds),
-                kick_matching_players: true,
-                log_to_console: true,
-            });
-        } else {
-            pl.ban(BanPlayerOptions {
-                reason,
-                source: Some("Carve".to_string()),
-                expires_at_utc: None,
-                duration_seconds: Some(seconds),
-                kick_if_online: true,
-                log_to_console: true,
-            });
-        }
-        true
     }
 }

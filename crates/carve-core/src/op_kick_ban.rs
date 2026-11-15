@@ -117,9 +117,11 @@ pub fn run_effect(
         AdminEff::Op => host.set_op(name, true),
         AdminEff::Deop => host.set_op(name, false),
         AdminEff::Kick => {
-            // Kicking someone who is not here does nothing.
+            // Kicking someone who is not here does nothing, but say so.
             if online.is_some() {
                 host.kick(name, text);
+            } else {
+                host.fail(&format!("kick: {name} is not online"));
             }
         }
         AdminEff::Ban => host.ban(name, text, false),

@@ -997,6 +997,7 @@ impl Engine {
                         Value::Text(t) => (crate::w2_conditions_3::norm_id(t), 1),
                         _ => return Err(format!("can't drop {} ({v})", v.type_name())),
                     };
+                    // The plugin API v0.1 can't spawn an item entity with a stack, so the console summons it.
                     host.execute_command(&format!(
                         "summon minecraft:item {:.3} {:.3} {:.3} {{Item:{}{motion}}}",
                         pos.x,
@@ -1009,10 +1010,7 @@ impl Engine {
             Fx::Firework(at) => {
                 let v = self.eval(at, ex, host)?;
                 if let Some(pos) = self.w5c1_pos(&v, ex, host) {
-                    host.execute_command(&format!(
-                        "summon minecraft:firework_rocket {:.3} {:.3} {:.3}",
-                        pos.x, pos.y, pos.z
-                    ));
+                    host.launch_firework(&pos);
                 }
             }
             Fx::Enforce(on) => {
@@ -1075,6 +1073,7 @@ impl Engine {
                 };
                 for v in each(self.eval(who, ex, host)?) {
                     if let Value::Entity(e) = &v {
+                        // No leash call in the plugin API v0.1: entity NBT through the console.
                         host.execute_command(&format!(
                             "data merge entity {} {{leash:{{UUID:[I;{},{},{},{}]}}}}",
                             e.uuid, ints[0], ints[1], ints[2], ints[3]
@@ -1085,6 +1084,7 @@ impl Engine {
             Fx::Unleash(who) => {
                 for v in each(self.eval(who, ex, host)?) {
                     if let Value::Entity(e) = &v {
+                        // No leash call in the plugin API v0.1: entity NBT through the console.
                         host.execute_command(&format!("data merge entity {} {{leash:0b}}", e.uuid));
                     }
                 }
@@ -1107,7 +1107,8 @@ impl Engine {
                 }
             }
             Fx::Baby(who, baby) => {
-                // Through the NBT, so Pumpkin sends the baby flag to players.
+                // Through the NBT, so Pumpkin sends the baby flag to players
+                // (the plugin API v0.1 has no call that does both).
                 let nbt = if *baby {
                     "{Age:-24000,IsBaby:1b}"
                 } else {
@@ -1121,6 +1122,7 @@ impl Engine {
             }
             Fx::Breedable(who, on) => {
                 // Like Bukkit's `setBreed`: age 0 can breed, 6000 is the cooldown.
+                // The plugin API v0.1 has no breeding age call, so this is entity NBT through the console.
                 for v in each(self.eval(who, ex, host)?) {
                     if let Value::Entity(e) = &v {
                         let age = if *on { 0 } else { 6000 };
@@ -1173,6 +1175,7 @@ impl Engine {
             Fx::Persist(who, on) => {
                 for v in each(self.eval(who, ex, host)?) {
                     match &v {
+                        // No persistence flag in the plugin API v0.1: entity NBT through the console.
                         Value::Entity(e) => host.execute_command(&format!(
                             "data merge entity {} {{PersistenceRequired:{}b}}",
                             e.uuid,
@@ -1209,6 +1212,7 @@ impl Engine {
         if !id.ends_with("_leaves") {
             return;
         }
+        // `set_block` takes an id only; block states need the console command.
         host.execute_command(&format!(
             "setblock {} {} {} minecraft:{id}[persistent={on}]",
             at.x, at.y, at.z

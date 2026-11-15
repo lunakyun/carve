@@ -225,12 +225,12 @@ pub fn run(op: W2Op, a: &Args, host: &mut dyn Host) {
         Poison => {
             if let Some(p) = p0 {
                 let secs = a.span_ms.map_or(1, |ms| ((ms.max(0) + 999) / 1000).max(1));
-                host.execute_command(&format!("effect give {} minecraft:poison {secs} 0 true", p.name));
+                host.poison(p, Some(secs as u64));
             }
         }
         Cure => {
             if let Some(p) = p0 {
-                host.execute_command(&format!("effect clear {} minecraft:poison", p.name));
+                host.poison(p, None);
             }
         }
         Hide | Reveal => {

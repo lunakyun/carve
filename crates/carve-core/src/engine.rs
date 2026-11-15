@@ -445,6 +445,27 @@ fn resolve<'c>(
     seen.get(i).and_then(|(_, n)| n.as_deref())
 }
 
+/// Can this effect report a failed host call (`Host::fail`)? Only the effects that
+/// reach the actions moved to the plugin API do; asking after the others costs time
+/// on every effect. A new `Host::fail` caller needs its effect listed here.
+#[inline]
+fn may_fail(e: &Effect) -> bool {
+    matches!(
+        e,
+        Effect::Give(..)
+            | Effect::PlaySound(_)
+            | Effect::StopSound(..)
+            | Effect::Admin(..)
+            | Effect::Xp(..)
+            | Effect::W2e3(_)
+            | Effect::W6c2(_)
+            | Effect::W5c1(_)
+            | Effect::Sb(_)
+            | Effect::Sbt(_)
+            | Effect::Inv(_)
+    )
+}
+
 /// Resolve a value to an online player, or None.
 pub(crate) fn online(
     v: &Value,
@@ -1828,6 +1849,14 @@ impl Engine {
         }
     }
 
+    /// Log what the host could not do for the effect at `file:line`.
+    #[inline(never)]
+    fn report_failures(&self, file: &str, line: usize, host: &mut dyn Host) {
+        for f in host.take_failures() {
+            host.log(LogLevel::Warn, &format!("{file}:{line}: {f}"));
+        }
+    }
+
     pub(crate) fn mark_dirty(&mut self, host: &mut dyn Host) {
         if self.dirty_since.is_none() {
             self.dirty_since = Some(host.now());
@@ -2334,7 +2363,13 @@ impl Engine {
             self.store(v.local, &k, val, ex, host);
             return Ok(None);
         }
-        self.effect_rare(e, ex, host, line)
+        let r = self.effect_rare(e, ex, host, line);
+        // A call the host could not do says why, with this line. Variable and text
+        // effects can't fail, so they skip the question.
+        if may_fail(e) {
+            self.report_failures(&ex.code.file, line, host);
+        }
+        r
     }
 
     #[inline(never)]

@@ -36,6 +36,25 @@ pub trait Host {
     fn now(&mut self) -> u64;
     fn log(&mut self, level: LogLevel, msg: &str);
 
+    /// Report that a call could not do what the script asked (unknown sound,
+    /// player not online, ...). A host that knows the script line collects these and hands
+    /// them back through [`Host::take_failures`], so the warning can name the line. The
+    /// default logs the message as it is.
+    fn fail(&mut self, msg: &str) {
+        self.log(LogLevel::Warn, msg);
+    }
+
+    /// The messages given to [`Host::fail`] since the last call.
+    fn take_failures(&mut self) -> Vec<String> {
+        Vec::new()
+    }
+
+    /// A scoreboard or team change. The default runs the vanilla `/scoreboard`
+    /// or `/team` command as the console; a host with a direct API overrides it.
+    fn sb_edit(&mut self, op: &crate::skbee_scoreboard_teams::SbEdit) {
+        self.execute_command(&op.command());
+    }
+
     /// Wall-clock time in milliseconds since 1970-01-01 UTC (for `now`).
     fn wall_clock_millis(&mut self) -> i64 {
         std::time::SystemTime::now()
@@ -451,6 +470,18 @@ pub trait Host {
         ));
     }
 
+    /// Poison for `seconds` with hidden particles, or cure the poison (`None`).
+    /// The default runs `/effect`.
+    fn poison(&mut self, player: &PlayerRef, seconds: Option<u64>) {
+        match seconds {
+            Some(secs) => self.execute_command(&format!(
+                "effect give {} minecraft:poison {secs} 0 true",
+                player.name
+            )),
+            None => self.execute_command(&format!("effect clear {} minecraft:poison", player.name)),
+        }
+    }
+
     /// Remove one potion effect, or all of them. The default runs `/effect clear`.
     fn clear_effects(&mut self, player: &PlayerRef, effect: Option<&str>) {
         match effect {
@@ -556,7 +587,8 @@ pub trait Host {
     }
 
     /// Unlock (`true`) or lock a recipe in the recipe book. The default runs
-    /// the `recipe give` / `recipe take` console command.
+    /// the `recipe give` / `recipe take` console command. The plugin API v0.1
+    /// has no call to unlock a recipe for a player, so Carve keeps the command.
     fn discover_recipe(&mut self, player: &PlayerRef, id: &str, discover: bool) {
         let verb = if discover { "give" } else { "take" };
         self.execute_command(&format!("recipe {verb} {} {id}", player.name));
@@ -706,6 +738,14 @@ pub trait Host {
     fn spawn_entity(&mut self, kind: &str, at: &FxPos) -> Option<EntityRef> {
         self.execute_command(&format!("summon minecraft:{kind} {} {} {}", at.x, at.y, at.z));
         None
+    }
+
+    /// Launch a firework rocket. The default runs `/summon`.
+    fn launch_firework(&mut self, at: &FxPos) {
+        self.execute_command(&format!(
+            "summon minecraft:firework_rocket {:.3} {:.3} {:.3}",
+            at.x, at.y, at.z
+        ));
     }
 
     /// Kill an entity. The default runs `/kill <uuid>`.
@@ -1029,14 +1069,16 @@ pub trait Host {
         self.execute_command("save-all");
     }
 
-    /// Stop the server. The default runs the vanilla `stop` command.
+    /// Stop the server. The default runs the vanilla `stop` command. The plugin API v0.1
+    /// has no shutdown call, so Carve keeps the command.
     fn stop_server(&mut self) {
         self.execute_command("stop");
     }
 
     fn set_sprinting(&mut self, _player: &PlayerRef, _on: bool) {}
 
-    /// Play the arm swing. The default runs the vanilla `swing` command.
+    /// Play the arm swing. The default runs the vanilla `swing` command. The plugin API v0.1
+    /// can send entity animations but not the swing packet 26.3 clients read, so Carve keeps the command.
     fn swing_hand(&mut self, player: &PlayerRef, main: bool) {
         let cmd = crate::w2_effects_3::swing_command(&player.name, main);
         self.execute_command(&cmd);

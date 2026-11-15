@@ -801,6 +801,7 @@ impl Engine {
                 if host.default_world().is_some_and(|d| d != w) {
                     return Err("only the spawn of the main world can be set".into());
                 }
+                // The plugin API v0.1 can read the world spawn but not set it.
                 host.execute_command(&format!(
                     "setworldspawn {} {} {}",
                     x.floor() as i64,

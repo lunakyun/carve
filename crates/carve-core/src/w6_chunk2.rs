@@ -53,6 +53,8 @@ pub enum HostOp<'a> {
     StopSound(&'a PlayerRef, Option<&'a str>, &'a str),
     /// Tame (true) or untame a wolf or cat.
     Tame(&'a Value, bool, Option<&'a PlayerRef>),
+    /// Put the first value on the vehicle (second), or take it off whatever it rides (`None`).
+    Ride(&'a Value, Option<&'a Value>),
 }
 
 /// A rotation axis for [`rotate`].
@@ -603,7 +605,8 @@ impl Engine {
         Ok(out)
     }
 
-    /// Run `data merge entity` for every entity the expression names.
+    /// Run `data merge entity` for every entity the expression names. The plugin
+    /// API v0.1 has no calls for these flags, so entity NBT goes through the console.
     fn w6c2_merge(
         &mut self,
         who: &Expr,
@@ -649,6 +652,7 @@ impl Engine {
             Fx::Tree(feature, at) => {
                 let v = self.eval(at, ex, host)?;
                 if let Some((x, y, z, _)) = self.as_location(&v, ex, host) {
+                    // No world generation feature call in the plugin API v0.1.
                     host.execute_command(&format!(
                         "place feature minecraft:{feature} {} {} {}",
                         x.floor() as i64,
@@ -682,7 +686,8 @@ impl Engine {
                     };
                     if let Some(z) = host.spawn_entity(to, &pos) {
                         // The new entity is only findable on the next tick, so name and health go
-                        // through a console command that runs then.
+                        // through a console command that runs then (the queued command is the only
+                        // call that runs after the entity exists).
                         let mut nbt = String::new();
                         if let Some(n) = name.as_deref().filter(|n| *n != "Villager" && !n.is_empty()) {
                             let n = n.replace('\\', "\\\\").replace('"', "\\\"");
@@ -714,7 +719,8 @@ impl Engine {
                         world: Some(world),
                     };
                     if let Some(copy) = host.spawn_entity("allay", &pos) {
-                        // Both allays wait before they can duplicate again.
+                        // Both allays wait before they can duplicate again. The plugin API v0.1
+                        // has no allay cooldown call, so this is entity NBT through the console.
                         for t in [e, &copy] {
                             if uuid_ok(&t.uuid) {
                                 host.execute_command(&format!(
@@ -736,6 +742,7 @@ impl Engine {
                     ScriptOp::Disable => "disable",
                     ScriptOp::Reload => "reload",
                 };
+                // Carve's own admin command (not a vanilla one); it needs the plugin's state.
                 host.execute_command(&format!("carve {verb} {n}"));
             }
             Fx::Reset(v) => {
@@ -888,15 +895,26 @@ impl Engine {
                     if target.as_ref() == Some(&rider) {
                         continue;
                     }
-                    match &target {
-                        Some(t) => host.execute_command(&format!("ride {rider} mount {t}")),
-                        None => host.execute_command(&format!("ride {rider} dismount")),
+                    match host.w6c2(HostOp::Ride(&v, vehicle.as_ref())) {
+                        Some(true) => {}
+                        Some(false) => host.fail(&match &target {
+                            Some(_) => {
+                                format!("ride: {rider} can't get on that vehicle (not online or not loaded)")
+                            }
+                            None => format!("ride: {rider} is not online or not loaded"),
+                        }),
+                        // A host with no direct call runs the vanilla command.
+                        None => match &target {
+                            Some(t) => host.execute_command(&format!("ride {rider} mount {t}")),
+                            None => host.execute_command(&format!("ride {rider} dismount")),
+                        },
                     }
                 }
             }
             Fx::Swing(who, main) => {
                 for v in each(self.eval(who, ex, host)?) {
                     if let Some(s) = selector(&v) {
+                        // The plugin API v0.1 has no swing call (see `Host::swing_hand`).
                         host.execute_command(&crate::w2_effects_3::swing_command(&s, *main));
                     }
                 }
@@ -928,6 +946,7 @@ impl Engine {
                             host.equip(p, slot, &id);
                             continue;
                         }
+                        // Mobs and other non-players: no equipment call by uuid in the plugin API v0.1.
                         host.execute_command(&format!(
                             "item replace entity {sel} {slot} with minecraft:{id}"
                         ));
@@ -973,6 +992,7 @@ impl Engine {
             Fx::Shear(who, on) => {
                 // Through the NBT: a sheep that was spawned a moment ago is only
                 // findable by the game on the next tick, the console command runs then.
+                // The plugin API v0.1 has no shear flag either.
                 for v in each(self.eval(who, ex, host)?) {
                     if let Value::Entity(e) = &v
                         && e.kind == "sheep"
