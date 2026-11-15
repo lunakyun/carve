@@ -1,0 +1,125 @@
+# Combat area: entity values. Every result goes to chat as e:<key> <value>.
+
+# The bot does not fall, so it finds the ground with a dropped armor stand.
+command /eprobe:
+    trigger:
+        spawn an armor stand at player
+        set {probe} to last spawned entity
+        send "e:probe" to player
+
+command /eprobey:
+    trigger:
+        send "e:probey %y of {probe}%" to player
+
+command /eprobegone:
+    trigger:
+        despawn {probe}
+        send "e:probegone" to player
+
+command /espawn <text>:
+    trigger:
+        spawn 3 pigs at player
+        set {e} to last spawned entity
+        set name of {e} to arg-1
+        send "e:spawned type=%type of {e}% name=%name of {e}% count=%size of all pigs in radius 10 of player%" to player
+        send "e:last %last spawned entity%" to player
+        if {e} is a pig:
+            send "e:isapig yes" to player
+        if {e} is not a zombie:
+            send "e:notzombie yes" to player
+
+command /einfo:
+    trigger:
+        send "e:info type=%type of {e}% name=%name of {e}% health=%health of {e}% x=%x of {e}% y=%y of {e}% z=%z of {e}% world=%world of {e}%" to player
+        send "e:vel x=%x velocity of {e}% y=%y velocity of {e}% z=%z velocity of {e}%" to player
+
+command /enear:
+    trigger:
+        set {_n} to nearest entity to player
+        send "e:nearest %type of {_n}%" to player
+        set {_p} to nearest pig to player within 30 blocks
+        send "e:nearestpig %type of {_p}%" to player
+        set {_z} to nearest zombie to player within 30 blocks
+        send "e:nearestzombie %{_z}%" to player
+        send "e:radius pigs=%size of all pigs in radius 30 of player% ents=%size of all entities in radius 30 of player%" to player
+        set {_c} to 0
+        loop all entities in radius 30 of player:
+            if loop-entity is a pig:
+                add 1 to {_c}
+        send "e:looped %{_c}%" to player
+
+command /evel:
+    trigger:
+        set y velocity of {e} to 1.5
+        send "e:setvel %y velocity of {e}%" to player
+
+command /epush <text>:
+    trigger:
+        if arg-1 is "up":
+            push {e} upwards with speed 2
+        if arg-1 is "north":
+            push {e} north at speed 0.5
+        if arg-1 is "east":
+            push {e} east
+        if arg-1 is "player":
+            push player upwards with speed 1
+        send "e:pushed %arg-1%" to player
+
+command /etp:
+    trigger:
+        teleport {e} to location(x of player, y of player + 1, z of player + 1)
+        send "e:tp done" to player
+
+command /efresh:
+    trigger:
+        spawn a pig at player
+        set {e} to last spawned entity
+        send "e:fresh" to player
+
+command /ehere:
+    trigger:
+        teleport {e} to player
+        send "e:here" to player
+
+command /ehp:
+    trigger:
+        set health of {e} to 8
+        send "e:hp %health of {e}%" to player
+        remove 3 from health of {e}
+        add 1 to health of {e}
+        send "e:hp2 %health of {e}%" to player
+
+command /ekill:
+    trigger:
+        kill {e}
+        send "e:killed" to player
+
+command /eremove:
+    trigger:
+        spawn a cow at player
+        set {c} to last spawned entity
+        send "e:cow %type of {c}%" to player
+        wait 1 second
+        despawn {c}
+        send "e:despawned" to player
+
+command /ekillall:
+    trigger:
+        kill all pigs in radius 30 of player
+        send "e:killall" to player
+
+command /ezhere:
+    trigger:
+        teleport {z} to player
+        send "e:zhere" to player
+
+command /ezkill:
+    trigger:
+        kill all zombies in radius 50 of player
+        send "e:zkill" to player
+
+command /ezombie:
+    trigger:
+        spawn a zombie at player
+        set {z} to last spawned entity
+        send "e:zombie %type of {z}%" to player
