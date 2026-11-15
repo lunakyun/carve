@@ -371,6 +371,8 @@ pub enum Effect {
     W5c3(Box<crate::w5_chunk3::W5Effect>),
     /// Changes of `w5_chunk6` expressions (scale, target, sea pickles, ...).
     C6(Box<crate::w5_chunk6::C6Effect>),
+    /// Changes of `w6_chunk4` block properties.
+    W6C4(Box<crate::w6_chunk4::W6Eff>),
     /// Effects of `w5_chunk1` (cooldowns, drops, creepers, leashes, ...).
     W5c1(Box<crate::w5_chunk1::Fx>),
     SetHealth(Expr, Expr),
@@ -1639,6 +1641,17 @@ impl Cx<'_> {
                 self.err(num, msg);
                 return;
             }
+        }
+        match crate::w6_chunk4::parse_effect(&toks, &self.env) {
+            Some(Ok(eff)) => {
+                self.emit(Instr::Eff(eff), num);
+                return;
+            }
+            Some(Err(msg)) => {
+                self.err(num, msg);
+                return;
+            }
+            None => {}
         }
         match crate::w5_chunk6::parse_effect(&toks, &self.env) {
             Some(Ok(eff)) => {
