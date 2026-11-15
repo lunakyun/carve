@@ -220,6 +220,40 @@ fn patterns() -> &'static [Pattern<K>] {
     })
 }
 
+/// The words a pattern source can start with: `(a|b) ...` or `word ...`.
+/// `None` when the start is not a plain word (always tried).
+fn first_words(src: &str) -> Option<Vec<String>> {
+    if let Some(rest) = src.strip_prefix('(') {
+        let group = &rest[..rest.find(')')?];
+        if group.contains(['(', '[', ' ', '%']) {
+            return None;
+        }
+        return Some(group.split('|').map(str::to_string).collect());
+    }
+    let w = src.split(' ').next()?;
+    (!w.is_empty() && w.chars().all(|c| c.is_ascii_alphabetic() || c == '-')).then(|| vec![w.to_string()])
+}
+
+/// Pattern indexes by first word (lowercase), plus the ones always tried.
+fn by_head() -> &'static (HashMap<String, Vec<usize>>, Vec<usize>) {
+    static I: OnceLock<(HashMap<String, Vec<usize>>, Vec<usize>)> = OnceLock::new();
+    I.get_or_init(|| {
+        let mut map: HashMap<String, Vec<usize>> = HashMap::new();
+        let mut any = Vec::new();
+        for (i, p) in patterns().iter().enumerate() {
+            match first_words(p.src) {
+                Some(ws) => {
+                    for w in ws {
+                        map.entry(w).or_default().push(i);
+                    }
+                }
+                None => any.push(i),
+            }
+        }
+        (map, any)
+    })
+}
+
 /// Checks every pattern of this module compiles. Used by tests.
 pub fn check_patterns() -> Result<usize, String> {
     let r = raw();
@@ -482,8 +516,20 @@ pub fn parse_effect(toks: &[Tok], env: &Env, is_command: bool) -> Result<Option<
     if !head_matches(toks) {
         return Ok(None);
     }
+    let Some(Tok::Word(first)) = toks.first() else {
+        return Ok(None);
+    };
+    let (map, any) = by_head();
+    let ps = patterns();
+    let mut idx: Vec<usize> = map
+        .get(first.to_ascii_lowercase().as_str())
+        .map_or_else(Vec::new, Clone::clone);
+    idx.extend_from_slice(any);
+    // Keep the longest-first order of `patterns()`.
+    idx.sort_unstable();
     let mut hit = None;
-    for p in patterns() {
+    for i in idx {
+        let p = &ps[i];
         if let Ok(c) = p.matches(toks, env) {
             hit = Some((p.kind, c));
             break;
