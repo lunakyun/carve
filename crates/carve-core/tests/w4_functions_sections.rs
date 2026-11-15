@@ -325,9 +325,10 @@ fn suppress_type_hints_runs_body() {
 }
 
 #[test]
-fn shoot_section_is_refused_with_a_reason() {
+fn shoot_section_compiles() {
+    // The section works since wave 5 (see tests/w5_chunk6.rs).
     let e = errors_of("on join:\n\tshoot an arrow from player:\n\t\tbroadcast \"x\"\n");
-    assert!(e.iter().any(|m| m.contains("Pumpkin")), "{e:?}");
+    assert!(e.is_empty(), "{e:?}");
 }
 
 #[test]

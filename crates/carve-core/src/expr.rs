@@ -234,6 +234,8 @@ pub enum Expr {
     Rtw(Box<crate::w4_skbee_raytrace_world::Node>),
     /// Inventory values, `items in`, regex replace (see `gaps`).
     Gap(Box<crate::gaps::GapExpr>),
+    /// Scale, targets, text displays, sea pickles, borders, ... (see `w5_chunk6`).
+    C6(Box<crate::w5_chunk6::Node>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -467,6 +469,7 @@ impl Expr {
             Expr::W4F(n) => n.f.ty(),
             Expr::T1(n) => n.ty,
             Expr::Rtw(n) => n.ty,
+            Expr::C6(n) => n.ty,
             Expr::Gap(g) => g.ty(),
             Expr::Items(_) => Ty::List,
             Expr::Bound(b) => b.ty(),
@@ -843,6 +846,11 @@ impl P<'_> {
                 continue;
             }
             if let Some((ne, np)) = crate::w2_expressions_5::possessive(self.toks, self.pos + 1, &e) {
+                e = ne;
+                self.pos = np;
+                continue;
+            }
+            if let Some((ne, np)) = crate::w5_chunk6::possessive(self.toks, self.pos + 1, &e) {
                 e = ne;
                 self.pos = np;
                 continue;
@@ -1677,6 +1685,9 @@ impl P<'_> {
                     return Ok(e);
                 }
                 if let Some(e) = self.rtw_head(&lw)? {
+                    return Ok(e);
+                }
+                if let Some(e) = self.c6_head(&lw)? {
                     return Ok(e);
                 }
                 if let Some(e) = self.t1_head(&lw)? {

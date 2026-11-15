@@ -777,6 +777,13 @@ const LOOSE: &[&str] = &[
     "inventory",
     "gamerule value",
     "offline player",
+    // wave 5 (see `w5_chunk6`): values that are texts, lists or plain words in Carve
+    "block data",
+    "enchantment type",
+    "entity type with amount",
+    "executable",
+    "potion effect",
+    "type",
 ];
 
 /// Words that are too general to mean a named value on their own.

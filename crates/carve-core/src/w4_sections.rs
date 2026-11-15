@@ -43,7 +43,7 @@ fn rewrite(text: &str, from: &str, to: &str) -> String {
     out
 }
 
-fn rewrite_lines(lines: &[Line], pairs: &[(&str, &str)]) -> Vec<Line> {
+pub(crate) fn rewrite_lines(lines: &[Line], pairs: &[(&str, &str)]) -> Vec<Line> {
     lines
         .iter()
         .map(|l| {
@@ -85,10 +85,7 @@ pub(crate) fn section(cx: &mut Cx, l: &Line, lower: &str) -> bool {
         return true;
     }
     if head.starts_with("shoot ") {
-        cx.err(
-            l.num,
-            "the 'shoot' section is not available: Pumpkin has no way for plugins to launch projectiles",
-        );
+        crate::w5_chunk6::shoot_section(cx, l);
         return true;
     }
     if head.starts_with("filter ") && head.ends_with(" to match") {
