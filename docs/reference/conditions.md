@@ -7,9 +7,89 @@ editLink: false
 
 # Conditions
 
-Conditions go after `if`, `else if` and `while`, or on a line of their own. 173 entries. Search all of them on the [reference home](./index.md).
+Conditions go after `if`, `else if` and `while`, or on a line of their own. 182 entries. Search all of them on the [reference home](./index.md).
 
 In a pattern, `%type%` is a value, `[...]` is optional and `(a|b)` means one of the words.
+
+## %number% (isn't|is not|aren't|are not) (greater|more|larger|bigger|higher) than %number% {#number_isn_t_is_not_aren_t_are_not_greater_more_larger_bigger_higher_than_number}
+
+```carve
+%number% (isn't|is not|aren't|are not) (greater|more|larger|bigger|higher) than %number%
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %number% (isn't|is not|aren't|are not) (less|smaller|fewer|lower) than %number% {#number_isn_t_is_not_aren_t_are_not_less_smaller_fewer_lower_than_number}
+
+```carve
+%number% (isn't|is not|aren't|are not) (less|smaller|fewer|lower) than %number%
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %number% (is|are) (greater|more|larger|bigger|higher) than %number% {#number_is_are_greater_more_larger_bigger_higher_than_number}
+
+```carve
+%number% (is|are) (greater|more|larger|bigger|higher) than %number%
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %number% (is|are) (greater|more|larger|bigger|higher) than or equal to %number% {#number_is_are_greater_more_larger_bigger_higher_than_or_equal_to_number}
+
+```carve
+%number% (is|are) (greater|more|larger|bigger|higher) than or equal to %number%
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %number% (is|are) (less|smaller|fewer|lower) than %number% {#number_is_are_less_smaller_fewer_lower_than_number}
+
+```carve
+%number% (is|are) (less|smaller|fewer|lower) than %number%
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %number% (is|are) (less|smaller|fewer|lower) than or equal to %number% {#number_is_are_less_smaller_fewer_lower_than_or_equal_to_number}
+
+```carve
+%number% (is|are) (less|smaller|fewer|lower) than or equal to %number%
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %number% (is|are) at least %number% {#number_is_are_at_least_number}
+
+```carve
+%number% (is|are) at least %number%
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %number% (is|are) at most %number% {#number_is_are_at_most_number}
+
+```carve
+%number% (is|are) at most %number%
+```
+
+_No description yet._
+
+Since **unreleased**
 
 ## %object% (is not|isn't) passable {#object_is_not_isn_t_passable}
 
@@ -518,6 +598,28 @@ if chance of 10%:
 ```
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Compare in words {#number_words}
+
+```carve
+%number% is (greater|more|larger|bigger|higher) than %number%
+%number% is (less|smaller|fewer|lower) than %number%
+%number% is at least %number%
+%number% is at most %number%
+%number% is (greater|more|larger|bigger|higher) than or equal to %number%
+%number% is (less|smaller|fewer|lower) than or equal to %number%
+%number% is not (greater|more|larger|bigger|higher) than %number%
+%number% is not (less|smaller|fewer|lower) than %number%
+```
+
+The word forms of `>`, `<`, `>=` and `<=`. `are` and `isn't` work too.
+
+```carve
+if player count is greater than 3:
+    broadcast "busy"
+```
+
+Since **unreleased** · Guide: [skript-compat](../syntax/skript-compat.md)
 
 ## Compare numbers {#compare}
 

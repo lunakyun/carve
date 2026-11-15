@@ -1,0 +1,635 @@
+on load:
+  loop all players:
+    if {humans::*} contains loop-player:
+      if {zombies::*} contains loop-player:
+        remove loop-player from {zombies::*}
+
+on place:
+    if event-block is emerald:
+        cancel event
+    if player's gamemode is not creative:
+        if "%region at player%" contains "none":
+            cancel event
+        if "%region at player%" contains "afk":
+            cancel event
+on break:
+    if player's gamemode is not creative:
+        if "%region at player%" contains "none":
+            cancel event
+        if "%region at player%" contains "afk":
+            cancel event
+command /regiontest:
+  trigger:
+    send "%region at player%" to player
+on tab complete:
+  if tab arg-1 contains "nbt=":
+    cancel event
+    queueAudit("BAN", "%player%", "Temporary ban: `10 minutes`%nl%Reason: `Malicious command completion payload`")
+    make console execute "tempban %player% 10m nononono"
+on join:
+  set size of world border of player to 140
+
+on drop:
+  player's gamemode is survival
+  if item is emerald block or zombie skull or sword or cobweb or blaze rod or armor or zombie head or honey bottle or armor or bow or arrow or leather helmet or leather chestplate or leather leggings or leather boots or chainmail helmet or chainmail chestplate or chainmail leggings or chainmail boots or iron helmet or iron chestplate or iron leggings or iron boots or diamond boots or diamond chestplate or diamond leggings or diamond helmet:
+    cancel event
+on damage:
+  if {part::*} doesn't contain attacker:
+    add attacker to {part::*}
+
+command /die:
+  trigger:
+    if {game} is true:
+
+      # Check if player is human
+      if {humans::*} contains player:
+
+        # Check health (8 hearts = 16 health in Skript)
+        if player's health > 16:
+          send "&cYou cannot die while below 8 hearts!"
+          stop
+
+        # Check team size (make sure > 4 humans)
+        if size of {humans::*} <= 4:
+          send "&cYou cannot die while there are 4 or fewer humans left!"
+          stop
+
+      # Continue with turning into zombie
+      remove player from {chose::*}
+      delete {zombie.kit.selected::%player's uuid%}
+      remove player from {zombies::*}
+      heal player
+      set size of world border of player to 140
+      remove levitation from the player
+      remove jump boost from the player
+      remove regeneration from the player
+      clear player's inventory
+      add player to {zombies::*}
+      remove player from {humans::*}
+      force teleport player to {zombie}
+
+      if {humans::*} is not set:
+        stopGame()
+        stop
+
+      wait 2 ticks
+      if {game} is true:
+        if {zombies::*} contains player:
+          zombGui(player)
+
+on respawn:
+  clear player's inventory
+on respawn:
+  if {game} is true:
+    if {zombies::*} contains player:
+      delete {zombie.kit.selected::%player's uuid%}
+      clearZombieClassLock(player)
+      wait 3 ticks
+      push player forwards with speed 0.3
+      clear player's inventory
+      force teleport player to {zombie}
+      wait 2 ticks
+      zombGui(player)
+
+on hunger meter change:
+  set player's hunger meter to 18
+on item damage:
+  cancel event
+
+on death:
+  if {game} is not true:
+    stop
+
+  set {_vic} to victim
+  set {_att} to recentCombatAttacker(victim)
+  remove {_vic} from {chose::*}
+  delete {zombie.kit.selected::%{_vic}'s uuid%}
+  clearZombieClassLock({_vic})
+  add 1 to {deaths::%{_vic}'s uuid%}
+  delete {zombiesC::*}
+  set {zombiesC::*} to {zombies::*}
+
+  if {_att} is a player:
+    add 1 to {kills::%{_att}'s uuid%}
+    add {_att} to {didkill::*}
+    if {lastKill::%{_att}'s uuid%} is {_vic}:
+      send "&7No XP or Gold for defeating the same player twice in a row." to {_att}
+    else:
+      set {_xpBonus} to {prestigeshopowned::%{_att}'s uuid%::2}
+      if {_xpBonus} is not set:
+        set {_xpBonus} to 0
+      set {_goldBonus} to {prestigeshopowned::%{_att}'s uuid%::1}
+      if {_goldBonus} is not set:
+        set {_goldBonus} to 0
+      set {_xpTier} to {upgradeTier::%{_att}'s uuid%::exp}
+      if {_xpTier} is not set:
+        set {_xpTier} to 0
+      set {_goldTier} to {upgradeTier::%{_att}'s uuid%::gold}
+      if {_goldTier} is not set:
+        set {_goldTier} to 0
+      set {_xp} to random number between 3 * (1 + 0.05 * {_xpBonus}) * (1 + 0.10 * {_xpTier}) and 6 * (1 + 0.05 * {_xpBonus}) * (1 + 0.10 * {_xpTier})
+      set {_gold} to random number between 3 * (1 + 0.05 * {_goldBonus}) * (1 + 0.10 * {_goldTier}) and 6 * (1 + 0.05 * {_goldBonus}) * (1 + 0.10 * {_goldTier})
+      if {starttime} - {time} < 45:
+        set {_xp} to {_xp} * 0.5
+      set {_xp} to vipReward({_att}, {_xp})
+      set {_gold} to vipReward({_att}, {_gold})
+      set {lastKill::%{_att}'s uuid%} to {_vic}
+      add {_xp} to {_att}'s experience
+      add {_gold} to {gold::%{_att}'s uuid%}
+      add {_xp} to {round.xpearned::%{_att}'s uuid%}
+      add {_gold} to {round.goldearned::%{_att}'s uuid%}
+      if {settings.rewards::%{_att}'s uuid%} is not false:
+        send "&c&lKILL &8> &7%{_vic}% &6+%{_gold}%G &b+%{_xp}%XP" to {_att}
+    if {settings.rewards::%victim's uuid%} is not false:
+      send "&c&lDEATH &8> &7%{_att}%" to victim
+  else:
+    if {settings.rewards::%victim's uuid%} is not false:
+      send "&c&lDEATH" to victim
+
+  clear victim's inventory
+  if {humans::*} contains victim:
+    if {starttime} - {time} < 45:
+      send "&e&lTIP &8> &7Build up before taking an early fight." to victim
+    if {_att} is a player:
+      if {zombies::*} contains {_att}:
+        add 1 to {zombkill::%{_att}'s uuid%}
+        if {prestigeshopowned::%{_att}'s uuid%::3} is 1:
+          add 1 to {killed::%{_att}'s uuid%}
+          if {killed::%{_att}'s uuid%} = 4:
+            if size of {humans::*} > 1:
+              set {_resurrectAttacker} to true
+    remove victim from {humans::*}
+    add victim to {zombies::*}
+    force teleport victim to {zombie}
+    if {_resurrectAttacker} is true:
+      set {_resurrectionSpawn} to a random element out of {humans::*}
+      remove {_att} from {zombies::*}
+      remove {_att} from {zombiesC::*}
+      remove {_att} from {ogZombie::*}
+      remove {_att}'s uuid from {alpha.current::*}
+      delete {alpha.freeclass::%{_att}'s uuid%}
+      remove {_att} from {chose::*}
+      delete {zombie.kit.selected::%{_att}'s uuid%}
+      add {_att} to {humans::*}
+      clearZombieClassLock({_att})
+      delete {zombie.selector.pending::%{_att}'s uuid%}
+      delete {zombie.classgui.open::%{_att}'s uuid%}
+      delete {zombie.selector.started::%{_att}'s uuid%}
+      remove jump boost from {_att}
+      remove slowness from {_att}
+      force teleport {_att} to {_resurrectionSpawn}
+      clear {_att}'s inventory
+      giveItems({_att})
+      set {_att}'s health to 10
+      delete {killed::%{_att}'s uuid%}
+      add 30 to {time}
+      broadcast "&6&lGAME! &8> &7%{_att}% has killed 4 humans and has been resurrected! &e+30s"
+    loop all players:
+      if {humans::*} contains loop-player:
+        set {_xp} to vipReward(loop-player, 0.5)
+        set {_gold} to vipReward(loop-player, 0.5)
+        add {_xp} to loop-player's experience
+        add {_gold} to {gold::%loop-player's uuid%}
+        if {settings.rewards::%loop-player's uuid%} is not false:
+          send "&6&lSURVIVAL BONUS! &8> &6+%{_gold}%G &b+%{_xp}%XP" to loop-player
+
+  if {humans::*} is not set:
+    if {game} is true:
+      set {game} to false
+      set {playercount} to online player count
+      set {expamount} to 5+{playercount}
+      loop {ogZombie::*}:
+        set {_reward} to vipReward(loop-value, {expamount})
+        broadcast "%loop-value% got %{_reward}% xp and %{_reward}% gold"
+        add {_reward} to loop-value's experience
+        add {_reward} to {gold::%loop-value's uuid%}
+      stopGame()
+
+  if {zombies::*} is not set:
+    wait 2 ticks
+    stopGame()
+  wait 1 tick
+  delete {lastAttacker::%{_vic}'s uuid%}
+  delete {lastAttackTime::%{_vic}'s uuid%}
+  delete {combat.attackteam::%{_vic}'s uuid%}
+  delete {combat.victimteam::%{_vic}'s uuid%}
+  delete {combat.lastloc::%{_vic}'s uuid%}
+every 1.5 seconds:
+  if {pregame} is set:
+    add 1 to {failedStart}
+  if {failedStart} > 15:
+    broadcast "&6&lSERVER! &8> &6A critical error occured whilst starting the game."
+    delete {pregame}
+    stopGame()
+    broadcast "&6&lEVENT! &8> &7Skripts Reloaded"
+    loop all players:
+      if "%region at loop-player%" doesn't contain "afk":
+        force teleport loop-player to {spawn}
+    loop all players:
+      set size of world border of loop-value to 140
+    set {failedStart} to 0
+  if {pregame} is not set:
+    set {failedStart} to 0
+  if {game} is true:
+    add -1.5 to {time}
+    if {time} > 0:
+      if {starttime} is not set:
+        set {starttime} to {time}
+      set {_progress} to round(({time} / {starttime}) * 100)
+      if {gamebar.object} is not set:
+        createBossbar()
+      if {gamebar.last.progress} is not {_progress}:
+        set bossbar progress of {gamebar.object} to {_progress}
+        set {gamebar.last.progress} to {_progress}
+      set {_displayTime} to round({time})
+      set {_title} to "&bTime Left: &e%{_displayTime}% &7Seconds"
+      if {gamebar.last.title} is not {_title}:
+        set bossbar title of {gamebar.object} to {_title}
+        set {gamebar.last.title} to {_title}
+      if {gamebar.visible} is not true:
+        set bossbar visibility of {gamebar.object} to true
+        set {gamebar.visible} to true
+    else:
+      if {gamebar.object} is set:
+        set bossbar visibility of {gamebar.object} to false
+      set {gamebar.visible} to false
+  if {game} is false:
+    if {gamebar.visible} is true:
+      if {gamebar.object} is set:
+        set bossbar visibility of {gamebar.object} to false
+      set {gamebar.visible} to false
+  if {time} <= 0:
+    if {game} is true:
+      set {_roundSize} to size of {round.participants::*}
+      if {_roundSize} < 1:
+        set {_roundSize} to size of all players
+      set {_baseReward} to 12 + ({_roundSize} * 1.5)
+      set {_pressureBonus} to size of {zombies::*} - size of {humans::*}
+      if {_pressureBonus} < 0:
+        set {_pressureBonus} to 0
+      if {_pressureBonus} > 16:
+        set {_pressureBonus} to 16
+      loop {humans::*}:
+        set {_kills} to {round.kills::%loop-value's uuid%}
+        set {_assists} to {round.assists::%loop-value's uuid%}
+        set {_damage} to {round.damage::%loop-value's uuid%}
+        set {_blocks} to {round.blocksplaced::%loop-value's uuid%}
+        set {_contribution} to round({_kills} + ({_assists} * 1.5) + ({_damage} / 100) + ({_blocks} / 75))
+        if {_contribution} > 15:
+          set {_contribution} to 15
+        set {_reward} to vipReward(loop-value, {_baseReward} + {_pressureBonus} + {_contribution})
+        broadcast "%loop-value% got %{_reward}% xp and %{_reward}% gold for surviving."
+        add {_reward} to loop-value's experience
+        add {_reward} to {gold::%loop-value's uuid%}
+        add {_reward} to {round.xpearned::%loop-value's uuid%}
+        add {_reward} to {round.goldearned::%loop-value's uuid%}
+      wait 5 ticks
+      stopGame()
+  if {time} <= 30:
+    if {game} is true:
+      loop {humans::*}:
+        apply glowing to loop-value for 30 seconds
+        if {30seconds} is false:
+          set {30seconds} to true
+          broadcast "&6&lGAME! &8> &730 seconds remain."
+          play sound "BLOCK_NOTE_BLOCK_PLING" with volume 1 and pitch 2 to all players
+  if {humans::*} is not set:
+    if {game} is true:
+      set {game} to false
+      set {playercount} to online player count
+      set {expamount} to 5+{playercount}
+      if player count > 6:
+        loop {ogZombie::*}:
+          set {_reward} to vipReward(loop-value, {expamount})
+          broadcast "%loop-value% got %{_reward}% xp and %{_reward}% gold"
+          add {_reward} to loop-value's experience
+          add {_reward} to {gold::%loop-value's uuid%}
+      stopGame()
+every 7 minutes:
+  if player count is greater than 3:
+    loop all players:
+      if "%region at loop-player%" contains "afk":
+        add 1 to {nil}
+      else:
+        set {_xpa} to a random number between 3 and 5
+        set {_xpa} to vipReward(loop-player, {_xpa})
+        set {_xp} to vipReward(loop-player, 2)
+        give {_xpa} to {gold::%loop-player's uuid%}
+        add {_xp} to loop-player's experience
+        broadcast "&6&lGAME! &8> &7%loop-player% got %{_xp}% participation experience and +%{_xpa}% gold"
+every 10 minutes:
+  broadcast "&6&lDISCORD &8> &7join the discord if u want news about updates n shit, theres also an antibot there for any minefort creators &b/discord"
+on quit:
+  clearZombieClassLock(player)
+  remove player from {humans::*}
+  remove player from {zombies::*}
+  if {ogZombie::*} contains player:
+    set {_alphaUuid} to player's uuid
+    remove player from {ogZombie::*}
+    remove {_alphaUuid} from {alpha.current::*}
+    delete {alpha.freeclass::%{_alphaUuid}%}
+    if {game} is true:
+      if {didkill::*} doesn't contain player:
+        make console execute "warn %player% Leaving the game As Alpha Zombie"
+        replaceAlphaZombie()
+
+every 15 seconds:
+  if {game} is true:
+    if {zombies::*} is not set:
+      findZombie()
+    delete {_idleAlphas::*}
+    loop {ogZombie::*}:
+      if loop-value is online:
+        if idle time of loop-value > 1 minute:
+          if {didkill::*} doesn't contain loop-value:
+            add loop-value to {_idleAlphas::*}
+    loop {_idleAlphas::*}:
+      set {_idleAlpha} to loop-value
+      set {_alphaUuid} to {_idleAlpha}'s uuid
+      remove {_idleAlpha} from {ogZombie::*}
+      remove {_alphaUuid} from {alpha.current::*}
+      delete {alpha.freeclass::%{_alphaUuid}%}
+      broadcast "&6&lGAME! &8> &7%{_idleAlpha}% lost Alpha Zombie for being AFK."
+      replaceAlphaZombie()
+
+every 5 seconds:
+  if {game} is true:
+    delete {_afkHumans::*}
+    loop {humans::*}:
+      if loop-value is online:
+        if loop-value's gamemode is survival:
+          if idle time of loop-value >= 75 seconds:
+            add loop-value to {_afkHumans::*}
+          else if idle time of loop-value >= 45 seconds:
+            if {round.afk.warned::%loop-value's uuid%} is not true:
+              set {round.afk.warned::%loop-value's uuid%} to true
+              send "&c&lAFK WARNING &8> &7Move within 30 seconds or you will return as a Walker." to loop-value
+              play sound "BLOCK_NOTE_BLOCK_PLING" with volume 0.7 and pitch 0.6 to loop-value
+          else:
+            delete {round.afk.warned::%loop-value's uuid%}
+    loop {_afkHumans::*}:
+      set {_afkHuman} to loop-value
+      delete {round.afk.warned::%{_afkHuman}'s uuid%}
+      remove {_afkHuman} from {humans::*}
+      add {_afkHuman} to {zombies::*} if {zombies::*} doesn't contain {_afkHuman}
+      remove {_afkHuman} from {chose::*}
+      delete {zombie.kit.selected::%{_afkHuman}'s uuid%}
+      clearZombieClassLock({_afkHuman})
+      heal {_afkHuman}
+      clear {_afkHuman}'s inventory
+      force teleport {_afkHuman} to {zombie}
+      giveWalkerKit({_afkHuman})
+      broadcast "&6&lGAME! &8> &7%{_afkHuman}% became a Walker after being AFK."
+    if {humans::*} is not set:
+      stopGame()
+command /test2:
+  permission: test.test2
+  trigger:
+    giveItems(player)
+command /gameon:
+  permission: op
+  trigger:
+    set {time} to 300
+    set {game} to true
+command /gameoff:
+  permission: op
+  trigger:
+    stopGame()
+on damage:
+  if "%region at victim%" contains "zombiee":
+    if {zombies::*} contains victim:
+      cancel event
+
+on inventory open:
+  set {inventoryopen.%player%} to true
+  if name of event-inventory contains "Zombie Classes":
+    set {zombie.classgui.open::%player's uuid%} to true
+on inventory close:
+  set {inventoryopen.%player%} to false
+on join:
+  remove slowness from the player
+  remove swiftness from the player
+  remove levitation from the player
+  remove jump boost from the player
+  remove regeneration from the player
+  if {prestigelevel::%player's uuid%} is not set:
+    set {prestigelevel::%player's uuid%} to 0
+  remove player from {chose::*}
+  delete {zombie.kit.selected::%player's uuid%}
+  if player's name is "Kixae":
+    set player's gamemode to spectator
+    clear player's inventory
+    remove player from {humans::*}
+    remove player from {zombies::*}
+    stop
+  if {game} is true:
+    set player's gamemode to survival
+    clear player's inventory
+    remove player from {humans::*}
+    remove player from {zombies::*}
+    add player to {zombies::*}
+    force teleport player to {zombie}
+    wait 3 ticks
+    zombGui(player)
+    force teleport player to {zombie}
+  else:
+    force teleport player to {spawn}
+    giveLobbyGravel(player)
+  set {afktimer::%player's uuid%} to 300
+
+on inventory close:
+  if name of event-inventory contains "Zombie Classes":
+    delete {zombie.classgui.open::%player's uuid%}
+    wait 2 ticks
+    if {game} is true:
+      if {zombies::*} contains player:
+        if {zombie.kit.selected::%player's uuid%} is not true:
+          giveWalkerKit(player)
+          send action bar "&7Menu closed — Walker selected." to player
+
+every 2 seconds:
+  if {game} is true:
+    reconcileZombieClassLocks()
+
+every 1 second:
+  if {game} is true:
+    loop all players:
+      if {zombie.selector.pending::%loop-player's uuid%} is true:
+        if {zombie.kit.selected::%loop-player's uuid%} is true:
+          delete {zombie.selector.pending::%loop-player's uuid%}
+          delete {zombie.classgui.open::%loop-player's uuid%}
+          delete {zombie.selector.started::%loop-player's uuid%}
+        else:
+          remove loop-player from {humans::*}
+          if {zombies::*} does not contain loop-player:
+            add loop-player to {zombies::*}
+          if {zombie.selector.started::%loop-player's uuid%} is set:
+            if difference between now and {zombie.selector.started::%loop-player's uuid%} >= 8 seconds:
+              giveWalkerKit(loop-player)
+
+on place of chest:
+  cancel event
+  if {shopenabled} is true:
+    shopGui(player)
+    set item cooldown of player's tool for player to 1 seconds
+  else:
+    send "&6&lWARNING &8>&7 The shop is disabled!" to player
+    set item cooldown of player's tool for player to 10 seconds
+on load:
+  set {prestigeroman::1} to "I"
+  set {prestigeroman::2} to "II"
+  set {prestigeroman::30} to "XXX"
+
+command /emojis:
+  trigger:
+    send "&8&m----------------------------------------" to player
+    send "&6&lCHAT SYMBOLS &8• &7Type a code in chat" to player
+
+on chat:
+  replace all "<3" in message with "&c<3&r"
+  replace all ":plane:" in message with "✈"
+  replace all "ez" in message with "im a fatherless father figure"
+  replace all "@" in message with " "
+  set {_canColorChat} to false
+  if player has permission "group.vip":
+    set {_canColorChat} to true
+  if player is op:
+    set {_canColorChat} to true
+  set {_canFormatChat} to false
+  if player has permission "group.vipplus":
+    set {_canFormatChat} to true
+  if {_canColorChat} is true:
+    set {_canFormatChat} to true
+  if {_canFormatChat} is true:
+    set message to formatted message
+
+  set {_prestige} to {prestigelevel::%player's uuid%}
+  if {_prestige} > 0:
+    set {_prestigestring} to "&8[&e%{prestigeroman::%{_prestige}%}%-%player's level%&8]&r"
+  else:
+    set {_prestigestring} to "&8[&e%player's level%&8]&r"
+
+  set {_customprefix} to ""
+  if {settings.prefix::%player's uuid%} is "OG":
+    set {_customprefix} to "&8[✦] &r"
+    if player has permission "group.vip":
+      set {_customprefix} to "&6[✦] &r"
+    if player is op:
+      set {_customprefix} to "&6[✦] &r"
+
+  set {_namecolour} to "&7"
+  set {_aftername} to "&7"
+  if player has permission "group.vip":
+    set {_namecolour} to "&f"
+    set {_aftername} to "&f"
+  if player is op:
+    set {_namecolour} to "&f"
+    set {_aftername} to "&f"
+
+  if {game} is false:
+    set chat format to "%{_customprefix}%%{_prestigestring}%%player's prefix% %{_namecolour}%%player%%{_aftername}%: %message%"
+  if {game} is true:
+    if {zombies::*} contains player:
+      set chat format to "&2&lZOMBIE &r%{_customprefix}%%{_prestigestring}%%player's prefix% %{_namecolour}%%player%%{_aftername}%: %message%"
+    if {humans::*} contains player:
+      set chat format to "&6&lHUMAN &r%{_customprefix}%%{_prestigestring}%%player's prefix% %{_namecolour}%%player%%{_aftername}%: %message%"
+    else:
+      set chat format to "%{_customprefix}%%{_prestigestring}%%player's prefix% %{_namecolour}%%player%%{_aftername}%: %message%"
+
+command /setzombies:
+  permission: op
+  trigger:
+    set {zombie} to player's location
+command /sethuman:
+  permission: op
+  trigger:
+    set {human} to player's location
+
+every 15 seconds:
+    set {players} to 0
+    loop all players:
+        if loop-player's gamemode is survival:
+            if "%region at loop-player%" doesn't contain "afk":
+                add 1 to {players}
+
+    if {players} > 2:
+        if {game} is false:
+            restartGame()
+    if {players} <= 2:
+        if {game} is false:
+            if {pregame} is not set:
+                loop all players:
+                    send "&6&lWARNING &8>&7 Not enough players to start the game!" to loop-player
+                    play sound "entity.villager.no" with volume 1 and pitch 1 to loop-player
+
+# Directional warning follows the TNT instead of playing globally from nowhere.
+function warnThrownTnt(t: entity):
+  set {_soundLocation} to location of {_t}
+  play sound "ENTITY_TNT_PRIMED" with volume 0.7 and pitch 1 at {_soundLocation} to all players
+  loop 6 times:
+    wait 10 ticks
+    if {_t} is alive:
+      set {_soundLocation} to location of {_t}
+      play sound "ENTITY_TNT_PRIMED" with volume 0.55 and pitch 1.1 at {_soundLocation} to all players
+  wait 10 ticks
+  if {_t} is alive:
+    set {_soundLocation} to location of {_t}
+    play sound "ENTITY_CREEPER_PRIMED" with volume 1 and pitch 1.35 at {_soundLocation} to all players
+
+# --- PLACE TNT AS PRIMED ---
+on place of tnt:
+    if {tnt.cooldown::%player's uuid%} is set:
+        if difference between now and {tnt.cooldown::%player's uuid%} < 0.75 seconds:
+            cancel event
+            stop
+    set {tnt.cooldown::%player's uuid%} to now
+    set item cooldown of player's tool for player to 0.75 seconds
+    if player's offhand tool is tnt:
+        set item cooldown of player's offhand tool for player to 0.75 seconds
+    cancel event
+    remove 1 tnt from player's inventory
+    set {_loc} to event-block's location
+    add 1 to y-coordinate of {_loc}
+    spawn primed tnt at {_loc}
+    set {_tnt} to last spawned tnt
+    set metadata value "attacker" of {_tnt} to player
+    play sound "ENTITY_TNT_PRIMED" with volume 0.7 and pitch 1 at {_tnt}'s location to all players
+
+# --- NUDGE A PRIMED TNT WITH A LEFT-CLICK ---
+on arm swing:
+  set {_tnt} to target entity of player
+  if {_tnt} is primed tnt:
+    if distance between player and {_tnt} <= 3.5:
+      push {_tnt} in direction of player with force 0.2
+
+# --- THROW TNT WHEN LEFT-CLICKING (air or entity) ---
+on left click:
+  if player is holding fire charge:
+    shoot fireball from player with speed 0.2
+    set explosive yield of last spawned entity to 15
+    remove 1 fire charge from player
+  if player is holding emerald block:
+    clear player's inventory
+    remove player from {humans::*}
+    add player to {zombies::*}
+    zombGui(player)
+    force teleport player to {zombie}
+  if player is holding tnt:
+    if clicked block is not set: # prevents overlap with block place
+      if {tnt.cooldown::%player's uuid%} is set:
+        if difference between now and {tnt.cooldown::%player's uuid%} < 0.75 seconds:
+          cancel event
+          stop
+      set {tnt.cooldown::%player's uuid%} to now
+      set item cooldown of player's tool for player to 0.75 seconds
+      if player's offhand tool is tnt:
+        set item cooldown of player's offhand tool for player to 0.75 seconds
+      cancel event
+      remove 1 tnt from player's inventory
+      if player is sneaking:
+        shoot primed tnt from player at speed 1.6
+      else:
+        shoot primed tnt from player at speed 2.4
+      set {_tnt} to last shot primed tnt
+      set metadata value "attacker" of {_tnt} to player
+      warnThrownTnt({_tnt})

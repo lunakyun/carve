@@ -1,0 +1,126 @@
+function recentCombatAttacker(v: player) :: player:
+  if {lastAttacker::%{_v}'s uuid%} is a player:
+    if {lastAttackTime::%{_v}'s uuid%} is set:
+      if difference between now and {lastAttackTime::%{_v}'s uuid%} <= 12 seconds:
+        return {lastAttacker::%{_v}'s uuid%}
+
+on damage:
+  set {_cancelled} to false
+  set {_source} to attacker
+  set {_infectedzTnt} to false
+
+  # Resolve TNT ownership before team checks and stat tracking.
+  if damage cause is entity explosion or block explosion or primed tnt:
+    set {_owner} to metadata value "attacker" of attacker
+    if {_owner} is a player:
+      set {_source} to {_owner}
+      set {_infectedzTnt} to true
+
+  # Friendly hits never become kill or assist credit.
+  if {_source} is a player:
+    if victim is a player:
+      if {humans::*} contains {_source}:
+        if {humans::*} contains victim:
+          cancel event
+          set {_cancelled} to true
+          if projectile is not set:
+            send "&6&lWARNING &8>&7 You are on the same team!" to {_source}
+            play sound "ENTITY_VILLAGER_NO" with volume 1 and pitch 1 to {_source}
+      if {zombies::*} contains {_source}:
+        if {zombies::*} contains victim:
+          cancel event
+          set {_cancelled} to true
+          if projectile is not set:
+            send "&6&lWARNING &8>&7 You are on the same team!" to {_source}
+            play sound "ENTITY_VILLAGER_NO" with volume 1 and pitch 1 to {_source}
+
+  if {_cancelled} is false:
+    if {_source} is a player:
+      if victim is a player:
+        set {_enemyHit} to false
+        if {humans::*} contains {_source}:
+          if {zombies::*} contains victim:
+            set {_enemyHit} to true
+            set {_sourceTeam} to "human"
+            set {_victimTeam} to "zombie"
+        if {zombies::*} contains {_source}:
+          if {humans::*} contains victim:
+            set {_enemyHit} to true
+            set {_sourceTeam} to "zombie"
+            set {_victimTeam} to "human"
+        if {_enemyHit} is true:
+          set {lastAttacker::%victim's uuid%} to {_source}
+          set {lastAttackTime::%victim's uuid%} to now
+          set {combat.attackteam::%victim's uuid%} to {_sourceTeam}
+          set {combat.victimteam::%victim's uuid%} to {_victimTeam}
+          set {combat.lastloc::%victim's uuid%} to victim's location
+
+  if {_source} is a player:
+    if {_source} is holding blaze rod:
+      if {_cancelled} is false:
+        set victim on fire for 4 seconds
+
+  set {_damageMultiplier} to 0.8
+  if {_source} is a player:
+    set {_dmgTier} to {upgradeTier::%{_source}'s uuid%::damage}
+    if {_dmgTier} is set:
+      add {_dmgTier} * 0.02 to {_damageMultiplier}
+  if victim is a player:
+    set {_defTier} to {upgradeTier::%victim's uuid%::defense}
+    if {_defTier} is set:
+      set {_damageMultiplier} to {_damageMultiplier} - ({_defTier} * 0.02)
+  if {_damageMultiplier} < 0:
+    set {_damageMultiplier} to 0
+  if damage cause is fall:
+    set {_damageMultiplier} to 0.30
+  if projectile is arrow:
+    set {_damageMultiplier} to 0.30
+  if victim is a player:
+    if {ogZombie::*} contains victim:
+      set {_damageMultiplier} to {_damageMultiplier} * 0.85
+  if {_infectedzTnt} is true:
+    set {_damageMultiplier} to {_damageMultiplier} * 0.5
+  set damage to damage * {_damageMultiplier}
+
+  # Last Stand: one defensive trigger per round below two hearts.
+  if victim is a player:
+    if {game} is true:
+      if {prestige.laststand.used::%victim's uuid%} is not true:
+        set {_lastStandTier} to {prestigeshopowned::%victim's uuid%::7}
+        if {_lastStandTier} is set:
+          set {_afterDamage} to victim's health - damage
+          if {_afterDamage} > 0:
+            if {_afterDamage} <= 4:
+              set {_lastStandSeconds} to 1.5
+              if {_lastStandTier} is 2:
+                set {_lastStandSeconds} to 2.5
+              if {_lastStandTier} is 3:
+                set {_lastStandSeconds} to 3.5
+              set {prestige.laststand.used::%victim's uuid%} to true
+              apply resistance 1 to victim for {_lastStandSeconds} seconds
+              send action bar "&e&lLAST STAND &8> &7Resistance activated." to victim
+              play sound "ITEM_TOTEM_USE" with volume 0.7 and pitch 1.4 to victim
+
+  if victim is a player:
+    add damage to {damagedtaken::%victim's uuid%}
+  if {_cancelled} is false:
+    if {_source} is a player:
+      if victim is a player:
+        if {_enemyHit} is true:
+          add damage to {damagedealt::%{_source}'s uuid%}
+          if {game} is true:
+            set {_assistDamage} to final damage
+            if {_assistDamage} > victim's health:
+              set {_assistDamage} to victim's health
+            if {_assistDamage} < 0:
+              set {_assistDamage} to 0
+            add {_assistDamage} to {assist.damage::%victim's uuid%::%{_source}'s uuid%}
+            set {assist.team::%victim's uuid%::%{_source}'s uuid%} to {_sourceTeam}
+            add {_source} to {assist.attackers::%victim's uuid%::*} if {assist.attackers::%victim's uuid%::*} doesn't contain {_source}
+            add damage to {round.damage::%{_source}'s uuid%}
+            add damage to {contract.progress::%{_source}'s uuid%::damage}
+            if {ogZombie::*} contains {_source}:
+              add damage to {round.alphascore::%{_source}'s uuid%}
+            if {round.alphaTarget} is victim:
+              if {_sourceTeam} is "zombie":
+                add damage to {round.targetdamage::%{_source}'s uuid%}

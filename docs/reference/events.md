@@ -7,7 +7,7 @@ editLink: false
 
 # Events
 
-Events and other top-level lines: what starts a trigger. 167 entries. Search all of them on the [reference home](./index.md).
+Events and other top-level lines: what starts a trigger. 168 entries. Search all of them on the [reference home](./index.md).
 
 In a pattern, `%type%` is a value, `[...]` is optional and `(a|b)` means one of the words.
 
@@ -158,6 +158,7 @@ Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
 
 ```carve
 on place
+on place of <block>
 on block place
 ```
 
@@ -1766,6 +1767,22 @@ on swim toggle
 An entity starts or stops swimming. Can be cancelled.
 
 Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Tab complete {#tab_complete}
+
+```carve
+on tab complete
+```
+
+Never runs on this server: the plugin API has no tab completion event. The script loads with a warning and `tab arg-1` still parses.
+
+```carve
+on tab complete:
+    if tab arg-1 contains "nbt=":
+        cancel event
+```
+
+Since **unreleased** · Guide: [skript-compat](../syntax/skript-compat.md)
 
 ## Tame {#tame}
 

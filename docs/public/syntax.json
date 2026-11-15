@@ -213,6 +213,7 @@
       "page": "syntax/triggers",
       "patterns": [
         "on place",
+        "on place of <block>",
         "on block place"
       ],
       "since": "0.1.0",
@@ -1977,6 +1978,19 @@
     },
     {
       "category": "event",
+      "description": "Never runs on this server: the plugin API has no tab completion event. The script loads with a warning and `tab arg-1` still parses.",
+      "example": "on tab complete:\n    if tab arg-1 contains \"nbt=\":\n        cancel event",
+      "id": "tab_complete",
+      "name": "Tab complete",
+      "page": "syntax/skript-compat",
+      "patterns": [
+        "on tab complete"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
       "description": "A player tames an animal. Has `player`. Can be cancelled.",
       "example": "",
       "id": "tame",
@@ -2281,6 +2295,32 @@
     },
     {
       "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "force_forcibly_teleport_player_to_location",
+      "name": "[(force|forcibly)] teleport %player% to %location%",
+      "page": "",
+      "patterns": [
+        "[(force|forcibly)] teleport %player% to %location%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "force_forcibly_teleport_player_to_number_number_number",
+      "name": "[(force|forcibly)] teleport %player% to %number%, %number%, %number%",
+      "page": "",
+      "patterns": [
+        "[(force|forcibly)] teleport %player% to %number%, %number%, %number%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
       "description": "Adds to a number variable, or appends to a list (`add \"x\" and \"y\" to {list::*}`).",
       "example": "add 1 to {joins::%uuid of player%}",
       "id": "add",
@@ -2458,6 +2498,21 @@
     },
     {
       "category": "effect",
+      "description": "Changes one axis of a location kept in a variable (`subtract` works too).",
+      "example": "set {_l} to location of player\nadd 1 to y-coordinate of {_l}",
+      "id": "coordinate_effects",
+      "name": "Change a coordinate",
+      "page": "syntax/skript-compat",
+      "patterns": [
+        "add %number% to (x|y|z)-coordinate of {<location variable>}",
+        "remove %number% from (x|y|z)-coordinate of {<location variable>}",
+        "set (x|y|z)-coordinate of {<location variable>} to %number%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
       "description": "Sets a slot, opens the inventory as a chest menu, or empties it. Changing a slot of a variable also changes the menus open from it. `clear` on a variable that holds no inventory deletes the variable.",
       "example": "set {_gui} to chest inventory named \"Shop\"\nset slot 0 of {_gui} to stone\nopen {_gui} to player\nclear {_gui}",
       "id": "inventory_value_effects",
@@ -2532,12 +2587,12 @@
       "name": "Change food level",
       "page": "syntax/health-food",
       "patterns": [
-        "set (food level|hunger) of %player% to %number%",
-        "set %player%'s (food level|hunger) to %number%",
-        "add %number% to (food level|hunger) of %player%",
-        "add %number% to %player%'s (food level|hunger)",
-        "remove %number% from (food level|hunger) of %player%",
-        "remove %number% from %player%'s (food level|hunger)"
+        "set (food level|hunger meter|hunger) of %player% to %number%",
+        "set %player%'s (food level|hunger meter|hunger) to %number%",
+        "add %number% to (food level|hunger meter|hunger) of %player%",
+        "add %number% to %player%'s (food level|hunger meter|hunger)",
+        "remove %number% from (food level|hunger meter|hunger) of %player%",
+        "remove %number% from %player%'s (food level|hunger meter|hunger)"
       ],
       "since": "unreleased",
       "source": "registry"
@@ -2658,6 +2713,20 @@
       "page": "syntax/inventories",
       "patterns": [
         "close %player%'s inventory"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
+      "description": "A `suggestions:` section of a command is checked like a trigger but never runs: the plugin API can't change command completions. It loads with a warning. `current input` reads as empty text there.",
+      "example": "command /bots [<text>]:\n    suggestions:\n        set arg-1's suggestions to \"auto\", \"alone\" and \"roles\"\n    trigger:\n        send \"ok\"",
+      "id": "suggestions",
+      "name": "Command suggestions",
+      "page": "syntax/skript-compat",
+      "patterns": [
+        "suggestions:",
+        "set arg-1's suggestions to <list>"
       ],
       "since": "unreleased",
       "source": "hand"
@@ -3061,6 +3130,19 @@
       ],
       "since": "unreleased",
       "source": "hand"
+    },
+    {
+      "category": "effect",
+      "description": "Does nothing on this server (Pumpkin has no explosion power setting for entities). Loads with a warning.",
+      "example": "set explosive yield of last spawned entity to 15",
+      "id": "explosive_yield",
+      "name": "Explosive yield",
+      "page": "syntax/skript-compat",
+      "patterns": [
+        "set [the] explosive yield of %object% to %number%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
     },
     {
       "category": "effect",
@@ -3564,6 +3646,19 @@
     },
     {
       "category": "effect",
+      "description": "Runs a command as the console, like `execute console command`.",
+      "example": "make console execute \"say hi\"",
+      "id": "make_console_execute",
+      "name": "Make console execute",
+      "page": "syntax/skript-compat",
+      "patterns": [
+        "make console (execute|run) [command] %text%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
       "description": "Switches the screaming goat voice. Goats only.",
       "example": "spawn a goat at player\nmake last spawned entity scream",
       "id": "make_scream",
@@ -3747,6 +3842,32 @@
     },
     {
       "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "play_the_sound_sounds_text_at_with_volume_number_and_and_at_and_with_at_with_pitch_number_to_for_object_at_location",
+      "name": "play [the] (sound|sounds) %text% [(at|with) volume %number%] [(and|and at|and with|at|with) pitch %number%] [(to|for) %object%] [at %location%]",
+      "page": "",
+      "patterns": [
+        "play [the] (sound|sounds) %text% [(at|with) volume %number%] [(and|and at|and with|at|with) pitch %number%] [(to|for) %object%] [at %location%]"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "",
+      "example": "",
+      "id": "play_the_sound_sounds_text_at_with_volume_number_and_and_at_and_with_at_with_pitch_number_at_location_to_for_object",
+      "name": "play [the] (sound|sounds) %text% [(at|with) volume %number%] [(and|and at|and with|at|with) pitch %number%] at %location% (to|for) %object%",
+      "page": "",
+      "patterns": [
+        "play [the] (sound|sounds) %text% [(at|with) volume %number%] [(and|and at|and with|at|with) pitch %number%] at %location% (to|for) %object%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
       "description": "Plays a sound id to a player, or at a location for everyone. Volume 0 or more, pitch 0 to 2.",
       "example": "play sound \"block.note_block.pling\" with volume 0.5 and pitch 2 to player",
       "id": "play_sound",
@@ -3756,7 +3877,7 @@
         "play [the] (sound|sounds) %text% [(at|with) volume %number%] [(and|and at|and with|at|with) pitch %number%] [(to|for) %player%] [at %location%]"
       ],
       "since": "unreleased",
-      "source": "registry"
+      "source": "hand"
     },
     {
       "category": "effect",
@@ -4361,6 +4482,33 @@
     },
     {
       "category": "effect",
+      "description": "In `on chat`: the line is built from your text and sent to the recipients, and the original message is cancelled (the plugin API has no format field).",
+      "example": "on chat:\n    set chat format to \"&7%player%&8: &f%message%\"",
+      "id": "set_chat_format",
+      "name": "Set the chat format",
+      "page": "syntax/skript-compat",
+      "patterns": [
+        "set [the] chat format to %text%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "In `on chat`: changes the message that is sent. `replace all \"a\" in message with \"b\"` is the same with a replace.",
+      "example": "on chat:\n    replace all \"ez\" in message with \"gg\"\n    set message to formatted message",
+      "id": "set_message",
+      "name": "Set the chat message",
+      "page": "syntax/skript-compat",
+      "patterns": [
+        "set [the] message to %text%",
+        "replace [all] %text% in [the] message with %text%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
       "description": "Sets the whole velocity of players or entities. Each part is cut to -20 to 20.",
       "example": "set velocity of player to vector(0, 1, 0)",
       "id": "set_velocity",
@@ -4554,6 +4702,19 @@
     },
     {
       "category": "effect",
+      "description": "Takes a number from a variable, or a time span from a time span or a date. The same as `remove ... from`.",
+      "example": "set {_x} to 10\nsubtract 3 from {_x}\nsubtract 1 minute from {_t}",
+      "id": "subtract",
+      "name": "Subtract",
+      "page": "syntax/skript-compat",
+      "patterns": [
+        "subtract %object% from %variable%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
       "description": "Turns off a kind of compiler warning for the script, or for the next lines with `locally`.",
       "example": "",
       "id": "suppress_warnings",
@@ -4654,7 +4815,7 @@
         "teleport %player% to %number%, %number%, %number%"
       ],
       "since": "0.1.0",
-      "source": "registry"
+      "source": "hand"
     },
     {
       "category": "effect",
@@ -4667,7 +4828,7 @@
         "teleport %player% to %location%"
       ],
       "since": "unreleased",
-      "source": "registry"
+      "source": "hand"
     },
     {
       "category": "effect",
@@ -4753,6 +4914,110 @@
       ],
       "since": "unreleased",
       "source": "hand"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "number_isn_t_is_not_aren_t_are_not_greater_more_larger_bigger_higher_than_number",
+      "name": "%number% (isn't|is not|aren't|are not) (greater|more|larger|bigger|higher) than %number%",
+      "page": "",
+      "patterns": [
+        "%number% (isn't|is not|aren't|are not) (greater|more|larger|bigger|higher) than %number%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "number_isn_t_is_not_aren_t_are_not_less_smaller_fewer_lower_than_number",
+      "name": "%number% (isn't|is not|aren't|are not) (less|smaller|fewer|lower) than %number%",
+      "page": "",
+      "patterns": [
+        "%number% (isn't|is not|aren't|are not) (less|smaller|fewer|lower) than %number%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "number_is_are_greater_more_larger_bigger_higher_than_number",
+      "name": "%number% (is|are) (greater|more|larger|bigger|higher) than %number%",
+      "page": "",
+      "patterns": [
+        "%number% (is|are) (greater|more|larger|bigger|higher) than %number%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "number_is_are_greater_more_larger_bigger_higher_than_or_equal_to_number",
+      "name": "%number% (is|are) (greater|more|larger|bigger|higher) than or equal to %number%",
+      "page": "",
+      "patterns": [
+        "%number% (is|are) (greater|more|larger|bigger|higher) than or equal to %number%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "number_is_are_less_smaller_fewer_lower_than_number",
+      "name": "%number% (is|are) (less|smaller|fewer|lower) than %number%",
+      "page": "",
+      "patterns": [
+        "%number% (is|are) (less|smaller|fewer|lower) than %number%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "number_is_are_less_smaller_fewer_lower_than_or_equal_to_number",
+      "name": "%number% (is|are) (less|smaller|fewer|lower) than or equal to %number%",
+      "page": "",
+      "patterns": [
+        "%number% (is|are) (less|smaller|fewer|lower) than or equal to %number%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "number_is_are_at_least_number",
+      "name": "%number% (is|are) at least %number%",
+      "page": "",
+      "patterns": [
+        "%number% (is|are) at least %number%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "number_is_are_at_most_number",
+      "name": "%number% (is|are) at most %number%",
+      "page": "",
+      "patterns": [
+        "%number% (is|are) at most %number%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
     },
     {
       "category": "condition",
@@ -5344,6 +5609,26 @@
       "page": "syntax/conditions",
       "patterns": [
         "chance of %number%%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "condition",
+      "description": "The word forms of `>`, `<`, `>=` and `<=`. `are` and `isn't` work too.",
+      "example": "if player count is greater than 3:\n    broadcast \"busy\"",
+      "id": "number_words",
+      "name": "Compare in words",
+      "page": "syntax/skript-compat",
+      "patterns": [
+        "%number% is (greater|more|larger|bigger|higher) than %number%",
+        "%number% is (less|smaller|fewer|lower) than %number%",
+        "%number% is at least %number%",
+        "%number% is at most %number%",
+        "%number% is (greater|more|larger|bigger|higher) than or equal to %number%",
+        "%number% is (less|smaller|fewer|lower) than or equal to %number%",
+        "%number% is not (greater|more|larger|bigger|higher) than %number%",
+        "%number% is not (less|smaller|fewer|lower) than %number%"
       ],
       "since": "unreleased",
       "source": "hand"
@@ -8075,8 +8360,8 @@
       "name": "Food and saturation",
       "page": "syntax/health-food",
       "patterns": [
-        "(food level|hunger) of %player%",
-        "%player%'s (food level|hunger)",
+        "(food level|hunger meter|hunger) of %player%",
+        "%player%'s (food level|hunger meter|hunger)",
         "saturation of %player%",
         "%player%'s saturation"
       ],
@@ -8093,6 +8378,19 @@
       "patterns": [
         "%date% formatted [as %text%]",
         "formatted %date% [as %text%]"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "The same as `colored`: turns `&` codes into colors.",
+      "example": "send formatted \"&aHello\" to player",
+      "id": "formatted",
+      "name": "Formatted text",
+      "page": "syntax/skript-compat",
+      "patterns": [
+        "formatted %text%"
       ],
       "since": "unreleased",
       "source": "hand"
@@ -8136,6 +8434,34 @@
       "page": "syntax/events-items",
       "patterns": [
         "hit player"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "How long the player has not moved, clicked, placed, broken or chatted, as a time span. Counted by the plugin since it saw the player first.",
+      "example": "if idle time of player > 1 minute:\n    kick player due to \"AFK\"",
+      "id": "idle_time",
+      "name": "Idle time",
+      "page": "syntax/skript-compat",
+      "patterns": [
+        "idle time of %player%",
+        "idle duration of %player%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "A place that many blocks ahead of a player (the way they look), or of a location (facing south).",
+      "example": "set {_at} to location 3 meters in front of player",
+      "id": "in_front_of",
+      "name": "In front of",
+      "page": "syntax/skript-compat",
+      "patterns": [
+        "[location] %number% (meters|blocks) in front of %location%",
+        "%number% (meters|blocks) (behind|to the left of|to the right of) %location%"
       ],
       "since": "unreleased",
       "source": "hand"
@@ -8494,6 +8820,20 @@
     },
     {
       "category": "expression",
+      "description": "The item in the off hand (`air` when it is empty).",
+      "example": "if player's offhand tool is tnt:\n    broadcast \"tnt in the off hand\"",
+      "id": "offhand_tool",
+      "name": "Offhand tool",
+      "page": "syntax/skript-compat",
+      "patterns": [
+        "%player%'s offhand (tool|item)",
+        "offhand (tool|item) of %player%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
       "description": "In `on gamemode change`: the mode before and after.",
       "example": "on gamemode change:\n    send \"%old gamemode% to %new gamemode%\" to player",
       "id": "gamemode_values",
@@ -8786,6 +9126,20 @@
     },
     {
       "category": "expression",
+      "description": "Needs a chat or permission plugin, so it is always empty text on this server (the script loads with a warning).",
+      "example": "send \"%player's prefix%%player%\"",
+      "id": "prefix",
+      "name": "Prefix and suffix",
+      "page": "syntax/skript-compat",
+      "patterns": [
+        "%player%'s (prefix|suffix)",
+        "(prefix|suffix) of %player%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
       "description": "The force of the shot in `on entity shoot bow`. Pumpkin fires that event only for mobs.",
       "example": "on entity shoot bow:\n    broadcast \"force %projectile force%\"",
       "id": "projectile_force",
@@ -8820,6 +9174,19 @@
       "patterns": [
         "[a] [new] queue [(of|with) %objects%]",
         "[the] (start|end) of %queue%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "One random item of a list written out, like `\"finn\" and \"soviet\"`, or of a list variable.",
+      "example": "set {_t} to random element out of \"finn\" and \"soviet\"",
+      "id": "random_element_out_of",
+      "name": "Random element out of",
+      "page": "syntax/skript-compat",
+      "patterns": [
+        "random element out of %objects%"
       ],
       "since": "unreleased",
       "source": "hand"
@@ -8887,6 +9254,19 @@
       "page": "syntax/text-join-split",
       "patterns": [
         "%text% with (all|first) regex %text% replaced with %text%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "Needs WorldGuard, so it is always `<none>` on this server (the script loads with a warning). `\"%region at player%\" contains \"none\"` is true everywhere.",
+      "example": "if \"%region at player%\" contains \"spawn\":\n    broadcast \"in spawn\"",
+      "id": "region_at",
+      "name": "Region at",
+      "page": "syntax/skript-compat",
+      "patterns": [
+        "region at %location%"
       ],
       "since": "unreleased",
       "source": "hand"
@@ -9165,6 +9545,19 @@
       "page": "syntax/text-join-split",
       "patterns": [
         "split %text% (at|by) %text%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "Cuts text at a separator, like `split \"a,b\" at \",\"`.",
+      "example": "set {_w::*} to \"a b c\" split at \" \"",
+      "id": "text_split_postfix",
+      "name": "Split text",
+      "page": "syntax/skript-compat",
+      "patterns": [
+        "%text% split (at|by) %text%"
       ],
       "since": "unreleased",
       "source": "hand"

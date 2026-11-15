@@ -31,6 +31,19 @@ on join:
 
 Notes:
 
+- `on break of stone or oak log:` and `on place of tnt:` only run for those
+  blocks. In both, `event-block` is the block and `event-block's location`
+  (or `location of event-block`) is where it is.
+- **Priority.** Any event can end with `with priority lowest`, `low`,
+  `normal` (the default), `high`, `highest` or `monitor`, for example
+  `on damage of player with priority highest:`. Triggers of one event run from
+  the lowest priority to the highest, `monitor` last. On the server, Carve
+  listens to each of these events once, at the highest priority any of your
+  triggers asks for (Pumpkin runs `highest` last, as Skript does), so other
+  plugins' changes made before it are already in. Within Carve the order is
+  exact. Carve can't run one trigger early and another one late around a
+  different plugin in the same event.
+
 - Every event has `player`. A block break that no player caused has no
   `player` (it is `<none>`).
 - `on chat:` also has `message`, the chat text. Using `message` in any other

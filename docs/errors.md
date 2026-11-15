@@ -29,7 +29,7 @@ Like Skript, an error only skips what is broken: the line, the section
 (`if`, `loop`, ...) or the trigger whose first line it is. Everything else
 loads, at server start and on `/carve reload` (the new version replaces the
 old one). See [reloading](admin.md#reloading). At server start the errors go to
-the server log only; on a reload the first 10 are also sent to whoever ran it.
+the server log only; on a reload every error is also sent to whoever ran it (no cap, like Skript), and `/carve errors` lists them all.
 
 ## Did you mean
 

@@ -1,0 +1,48 @@
+# In-game checks for lines from real servers (tests/ingame/areas/user-scripts.js).
+# Every message starts with "us:" so the test can match it.
+
+command /us_sound:
+    trigger:
+        play sound "ENTITY_TNT_PRIMED" with volume 0.7 and pitch 1 at location(10, 70, 20, world "world") to all players
+
+command /us_sound_one:
+    trigger:
+        play sound "BLOCK_NOTE_BLOCK_PLING" with volume 1 and pitch 2 to all players
+
+on place of tnt:
+    send "us:place-tnt %event-block% %x-coordinate of event-block's location% %y-coordinate of event-block's location% %z-coordinate of event-block's location%" to player
+
+on place of chest or barrel:
+    send "us:place-box %event-block%" to player
+
+on place:
+    send "us:place-any %event-block%" to player
+
+on join with priority highest:
+    send "us:prio-highest" to player
+
+on join with priority monitor:
+    send "us:prio-monitor" to player
+
+on join:
+    send "us:prio-normal" to player
+
+on join with priority lowest:
+    send "us:prio-lowest" to player
+
+on damage of player with priority high:
+    if damage cause is fall or entity explosion or block explosion or primed tnt:
+        send "us:cause-hit" to victim
+
+command /us_compare:
+    trigger:
+        if player count is greater than 1:
+            send "us:count-gt-1"
+        set {_x} to 10
+        subtract 3 from {_x}
+        send "us:subtract %{_x}%"
+        set {_r} to a random element out of "finn" and "soviet"
+        if {_r} is "finn" or "soviet":
+            send "us:random-ok"
+        if "%region at player%" contains "none":
+            send "us:region-none"

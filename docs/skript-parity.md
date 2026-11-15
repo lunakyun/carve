@@ -336,6 +336,13 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Locally Suppress Warning — accepted; Carve prints none of those warnings, so there is nothing to silence
 - ✅ Log — `log "x" [to file "name"]` appends to `logs/<name>`
 - ✅ Look At — `make player look at <location>` (players)
+- ✅ Idle Time — `idle time of <player>` (a time span; counted by the plugin from movement, clicks, placing, breaking and chat)
+- ✅ Offhand Tool — `player's offhand tool`, `offhand tool of player`
+- ✅ Subtract — `subtract 1 from {x}`, `subtract 1 minute from {time}`
+- ✅ Number Comparison Words — `is greater than`, `is less than`, `is at least`, `is at most`, `isn't greater than` and friends
+- ✅ On Place of / On Break of — `on place of tnt:`, `on place of chest or barrel:`, with `event-block` and `event-block's location`
+- ✅ Event Priority — `on <event> with priority lowest|low|normal|high|highest|monitor`; see docs/syntax/triggers.md for the limit
+- 🟡 On Tab Complete — `on tab complete:` loads with a warning and never runs: the plugin API has no such event
 - ✅ Make Adult/Baby
 - ✅ Make Allay Duplicate — `make <allay> duplicate`: a second allay appears, both wait 6000 ticks
 - ✅ Make Breedable — breedable clears the breeding cooldown, unbreedable sets 5 minutes (Pumpkin has no age lock)
@@ -668,8 +675,8 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Character Codepoint — `codepoint of "a"`, `unicode of x`, `code point of x`
 - ✅ Character from Codepoint — `character from codepoint 65`, `char from unicode n`
 - ✅ Characters Between — `characters between "a" and "e"`, `alphanumeric characters between ...`, `loop` works
-- ⛔ Chat Format — the chat event has no format field in the plugin API
-- ✅ Chat Message — `message`
+- 🟡 Chat Format — `set chat format to "..."` in `on chat` (docs/syntax/skript-compat.md): the chat event has no format field in the plugin API, so Carve cancels the chat and sends the formatted line to the recipients itself; other plugins' chat handling is skipped
+- ✅ Chat Message — `message`, `set message to ...`, `replace all "a" in message with "b"`
 - ✅ Chat Recipients — `chat recipients` in `on chat`
 - ⛔ Choice Argument — command arguments only support text, number and player so far
 - 🟡 Chunk — `chunk x of loc`, `chunk z of loc` (numbers only, no chunk value)
@@ -770,7 +777,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Exploded Blocks — needs the explosion event, which is not wired in Carve
 - 🟡 Explosion Block Yield — wired: `explosion yield` in `on explode` (BlockExplodeEvent.yield-rate); not re-checked in-game yet
 - 🟡 Explosion Yield — wired: `explosion yield` in `on explode` (EntityExplodeEvent.yield-rate); not re-checked in-game yet
-- 🟡 Explosive Yield — `explosion radius` in `on explosion prime` (TNT only); creeper radius via mob data is not wired
+- 🟡 Explosive Yield — `explosion radius` in `on explosion prime` (TNT only); creeper radius via mob data is not wired; `set explosive yield of <entity> to n` loads with a warning and does nothing (the plugin API has no explosion power on entities)
 - 🟡 Facing — `facing of player` as north, south, east, west, up or down; players only (not done yet: Entities have get-yaw/get-pitch (v0.1 world.wit), so facing can work for any entity, not just players)
 - ✅ Fall Distance — `fall distance of player`; set, add, remove; players only
 - ⛔ Fertilized Blocks — needs the fertilize event, which is not in the plugin API
@@ -975,7 +982,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Potion Effect Tier
 - ✅ Potion Effect Type Category — beneficial, harmful or neutral
 - 🟡 Potion Effects of Entity/Item — players only: the API has no effects for other entities, and item values carry no potion contents
-- ⛔ Prefix/Suffix — needs a chat plugin (Vault)
+- 🟡 Prefix/Suffix — `player's prefix`, `prefix of player` load with a warning and are always empty text: they need a chat or permission plugin (Vault, LuckPerms) and Pumpkin's plugin API has none
 - ✅ Progress — `progress of bossbar "id"` (0 to 100)
 - ⛔ Projectile Critical State — the API has no arrow state, and `/data` cannot report back to a plugin
 - ✅ Projectile Force — in `on entity shoot bow`; Pumpkin fires that event only for mobs
@@ -996,7 +1003,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 Redstone Block Power — read from the block state (wire, plates, targets, detectors, redstone blocks, powered levers, buttons, torches, repeaters); power from neighbours is not seen
 - ✅ Reduce — `reduce {x::*} with [reduced value + input]`; starts from the first element
 - ✅ Reduced Value — `reduced value` inside `reduce`; the current item is `input`
-- ⛔ Region — needs WorldGuard
+- ⛔ Region — needs WorldGuard; `region at <location>` still loads, with a warning, and is always `<none>`, so `"%region at player%" contains "none"` is true everywhere
 - 🟡 Region Members & Owners — `owners of bound`, `members of bound` (Carve bounds, not WorldGuard)
 - 🟡 Regions At — `bounds at <location>` (Carve bounds, not WorldGuard)
 - ✅ Remaining Air — `remaining air of player`, set / add / remove with a timespan
@@ -1018,7 +1025,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 Script — through `/carve`
 - 🟡 Script Command Cooldown Information — no cooldowns yet
 - ⛔ Script Command Suggestion Input — same Pumpkin crash
-- ⛔ Script Command Suggestions — Pumpkin 0.2.2 crashes on plugin tab completion
+- 🟡 Script Command Suggestions — a command's `suggestions:` section (with `current input` and `set arg-1's suggestions to ...`) loads and is checked, with a warning, but never runs: Pumpkin 0.2.2 crashes on plugin tab completion
 - ✅ Sea Level — `sea level of world "x"`, read only (Skript's is read only too)
 - ✅ Sea Pickles — `[min|max] [sea] pickles of <block>`; set, add, remove, reset (clamped 1 to 4)
 - 🟡 Seed of Loot Table — `loot table seed of <chest-like block>` reads `LootTableSeed` from the block entity data (blocks only, not entities); an unset chest checked in game
@@ -1148,7 +1155,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ For Each Loop — `for each {_x} in {list::*}:` (sets `{_x}` every round) and `for each <type> in ...:` as `loop`
 - ✅ Locally Suppress Warning — accepted; Carve prints none of those warnings, so there is nothing to silence
 - ✅ Loop — times, lists, all players, values
-- 🟡 Shoot — `shoot <projectile> [from <entity>] [at speed <n>]:` spawns and launches it and runs the body with it; the plugin API cannot set the owner, so hits are not credited and `on shoot` does not fire
+- 🟡 Shoot — `shoot <projectile> [from <entity>] [at speed <n>]:` spawns and launches it and runs the body with it; the plugin API cannot set the owner, so hits are not credited and `on shoot` does not fire; the one-line forms `shoot <kind> from <entity> [at speed n]` and `make <entity> shoot <kind> [at speed n]` spawn the projectile at the shooter's eyes with that speed and set `last shot <kind>` (players only)
 - ✅ Spawn ⭐ — `spawn <mob> at <place>:` with `event-entity` in the body
 - ✅ Suppress Type Hints (Experimental) — runs its body; Carve has no type hints to hide
 - ✅ While Loop

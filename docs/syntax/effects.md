@@ -86,7 +86,7 @@ health becomes the maximum. A full health bar is 20.
 kill player
 ```
 
-### `teleport %player% to %number%, %number%, %number%`
+### `[(force|forcibly)] teleport %player% to %number%, %number%, %number%`
 
 ```
 teleport player to 0, 64, 0
@@ -98,7 +98,9 @@ pick another world yet.
 
 ## Server
 
-### `teleport %player% to %location%`
+`force teleport` and `forcibly teleport` are the same as `teleport`.
+
+### `[(force|forcibly)] teleport %player% to %location%`
 
 ```
 teleport player to {spawn}

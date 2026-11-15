@@ -9,11 +9,30 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### Added
 
-- `on break of <block>:` (also `on break of stone or oak log:`) runs only for those blocks.
-  `event-block` is now the broken block in every `on break`.
+- Syntax from real Skript servers: `play sound ... at <location> to all players`
+  (also Bukkit sound names like `ENTITY_TNT_PRIMED`), `on place of <block>`,
+  `event-block's location`, `damage cause is a or b or primed tnt`, `is greater
+  than` and the other comparison words, `subtract`, `make console execute`,
+  `set message to`, `set chat format to`, `replace all x in message with y`,
+  `formatted`, `idle time of`, `player's offhand tool`, `x meters in front of`,
+  `shoot <kind> from <entity>`, `last shot <kind>`, `push x in direction of y`,
+  `set size of world border of <player>`, `force teleport`, `hunger meter`,
+  `remove <effect> from <player>`, `random element out of a and b`,
+  `set bossbar progress of <id> to`, `a`/`an` before an item, item kinds like
+  `sword` and `armor`, colored item names like `light blue wool`, and
+  `location(x, y, z, world, yaw, pitch)`.
+- `on <event> with priority <p>` on every event.
+- Lines that need another plugin or something Pumpkin can't do now load with a
+  load-time warning instead of an error: `region at`, `player's prefix`,
+  `explosive yield`, `on tab complete` and a command's `suggestions:`.
+- An empty section (only a comment) is a warning, not an error.
 
 ### Changed
 
+- `/carve reload` and `/carve errors` print every error, not the first ten.
+- A call of a function that does not exist now says `unknown function 'name'`.
+- `on break of <block>:` (also `on break of stone or oak log:`) runs only for those blocks.
+  `event-block` is now the broken block in every `on break`.
 - Docs pages under `docs/syntax` are named by topic. Old page URLs redirect to the new ones.
 
 ## [0.3.1] - 2026-11-15

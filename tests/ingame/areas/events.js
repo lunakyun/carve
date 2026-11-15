@@ -246,12 +246,14 @@ t.run(async () => {
   t.check('on place cancel: script runs', !!await bot.waitText('e:place-cancelled', { since }))
   const pc = await bot.waitPacket('block_update', (d) => d.x === 3 && d.y === 65 && d.z === 1, 2000, since)
   t.check('on place cancel: no block placed', !pc || pc.block === 'air', pc ? pc.block : 'no update')
+  await flag('cancel', false)
   since = now()
   bot.place(3, 65, 1)
   t.check('on place', !!await bot.waitText('e:place', { since }))
   const pl = await bot.waitPacket('block_update', (d) => d.x === 3 && d.y === 65 && d.z === 1 && d.block === 'stone', 2000, since)
   t.check('uncancelled place puts the block', !!pl)
   await flag('place', false)
+  await flag('cancel')
 
   // ---- drop / pick up / consume ----
   srv.console('gamemode survival Tester')

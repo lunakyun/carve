@@ -7,9 +7,29 @@ editLink: false
 
 # Effects
 
-Effects are lines that do something. 175 entries. Search all of them on the [reference home](./index.md).
+Effects are lines that do something. 186 entries. Search all of them on the [reference home](./index.md).
 
 In a pattern, `%type%` is a value, `[...]` is optional and `(a|b)` means one of the words.
+
+## [(force|forcibly)] teleport %player% to %location% {#force_forcibly_teleport_player_to_location}
+
+```carve
+[(force|forcibly)] teleport %player% to %location%
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## [(force|forcibly)] teleport %player% to %number%, %number%, %number% {#force_forcibly_teleport_player_to_number_number_number}
+
+```carve
+[(force|forcibly)] teleport %player% to %number%, %number%, %number%
+```
+
+_No description yet._
+
+Since **unreleased**
 
 ## Add {#add}
 
@@ -200,6 +220,23 @@ on chat:
 
 Since **0.1.0** · Guide: [effects](../syntax/effects.md)
 
+## Change a coordinate {#coordinate_effects}
+
+```carve
+add %number% to (x|y|z)-coordinate of {<location variable>}
+remove %number% from (x|y|z)-coordinate of {<location variable>}
+set (x|y|z)-coordinate of {<location variable>} to %number%
+```
+
+Changes one axis of a location kept in a variable (`subtract` works too).
+
+```carve
+set {_l} to location of player
+add 1 to y-coordinate of {_l}
+```
+
+Since **unreleased** · Guide: [skript-compat](../syntax/skript-compat.md)
+
 ## Change an inventory value {#inventory_value_effects}
 
 ```carve
@@ -281,12 +318,12 @@ Since **unreleased** · Guide: [xp-level](../syntax/xp-level.md)
 ## Change food level {#food}
 
 ```carve
-set (food level|hunger) of %player% to %number%
-set %player%'s (food level|hunger) to %number%
-add %number% to (food level|hunger) of %player%
-add %number% to %player%'s (food level|hunger)
-remove %number% from (food level|hunger) of %player%
-remove %number% from %player%'s (food level|hunger)
+set (food level|hunger meter|hunger) of %player% to %number%
+set %player%'s (food level|hunger meter|hunger) to %number%
+add %number% to (food level|hunger meter|hunger) of %player%
+add %number% to %player%'s (food level|hunger meter|hunger)
+remove %number% from (food level|hunger meter|hunger) of %player%
+remove %number% from %player%'s (food level|hunger meter|hunger)
 ```
 
 Changes the food level, 0 to 20.
@@ -423,6 +460,25 @@ close player's inventory
 ```
 
 Since **unreleased** · Guide: [inventories](../syntax/inventories.md)
+
+## Command suggestions {#suggestions}
+
+```carve
+suggestions:
+set arg-1's suggestions to <list>
+```
+
+A `suggestions:` section of a command is checked like a trigger but never runs: the plugin API can't change command completions. It loads with a warning. `current input` reads as empty text there.
+
+```carve
+command /bots [<text>]:
+    suggestions:
+        set arg-1's suggestions to "auto", "alone" and "roles"
+    trigger:
+        send "ok"
+```
+
+Since **unreleased** · Guide: [skript-compat](../syntax/skript-compat.md)
 
 ## Compass target {#compass_target}
 
@@ -818,6 +874,20 @@ ignite creeper last spawned entity
 ```
 
 Since **unreleased** · Guide: [drops-border-leashes](../syntax/drops-border-leashes.md)
+
+## Explosive yield {#explosive_yield}
+
+```carve
+set [the] explosive yield of %object% to %number%
+```
+
+Does nothing on this server (Pumpkin has no explosion power setting for entities). Loads with a warning.
+
+```carve
+set explosive yield of last spawned entity to 15
+```
+
+Since **unreleased** · Guide: [skript-compat](../syntax/skript-compat.md)
 
 ## Extinguish {#extinguish}
 
@@ -1313,6 +1383,20 @@ make last spawned entity breedable
 
 Since **unreleased** · Guide: [drops-border-leashes](../syntax/drops-border-leashes.md)
 
+## Make console execute {#make_console_execute}
+
+```carve
+make console (execute|run) [command] %text%
+```
+
+Runs a command as the console, like `execute console command`.
+
+```carve
+make console execute "say hi"
+```
+
+Since **unreleased** · Guide: [skript-compat](../syntax/skript-compat.md)
+
 ## Make entity scream {#make_scream}
 
 ```carve
@@ -1496,6 +1580,26 @@ Since **unreleased** · Guide: [drops-border-leashes](../syntax/drops-border-lea
 
 ```carve
 play %object% at %object%
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## play [the] (sound|sounds) %text% [(at|with) volume %number%] [(and|and at|and with|at|with) pitch %number%] [(to|for) %object%] [at %location%] {#play_the_sound_sounds_text_at_with_volume_number_and_and_at_and_with_at_with_pitch_number_to_for_object_at_location}
+
+```carve
+play [the] (sound|sounds) %text% [(at|with) volume %number%] [(and|and at|and with|at|with) pitch %number%] [(to|for) %object%] [at %location%]
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## play [the] (sound|sounds) %text% [(at|with) volume %number%] [(and|and at|and with|at|with) pitch %number%] at %location% (to|for) %object% {#play_the_sound_sounds_text_at_with_volume_number_and_and_at_and_with_at_with_pitch_number_at_location_to_for_object}
+
+```carve
+play [the] (sound|sounds) %text% [(at|with) volume %number%] [(and|and at|and with|at|with) pitch %number%] at %location% (to|for) %object%
 ```
 
 _No description yet._
@@ -2070,6 +2174,38 @@ set slot 4 of player's current inventory to diamond
 
 Since **unreleased** · Guide: [inventories](../syntax/inventories.md)
 
+## Set the chat format {#set_chat_format}
+
+```carve
+set [the] chat format to %text%
+```
+
+In `on chat`: the line is built from your text and sent to the recipients, and the original message is cancelled (the plugin API has no format field).
+
+```carve
+on chat:
+    set chat format to "&7%player%&8: &f%message%"
+```
+
+Since **unreleased** · Guide: [skript-compat](../syntax/skript-compat.md)
+
+## Set the chat message {#set_message}
+
+```carve
+set [the] message to %text%
+replace [all] %text% in [the] message with %text%
+```
+
+In `on chat`: changes the message that is sent. `replace all "a" in message with "b"` is the same with a replace.
+
+```carve
+on chat:
+    replace all "ez" in message with "gg"
+    set message to formatted message
+```
+
+Since **unreleased** · Guide: [skript-compat](../syntax/skript-compat.md)
+
 ## Set velocity {#set_velocity}
 
 ```carve
@@ -2271,6 +2407,22 @@ strike lightning effect at player
 ```
 
 Since **unreleased** · Guide: [world-effects](../syntax/world-effects.md)
+
+## Subtract {#subtract}
+
+```carve
+subtract %object% from %variable%
+```
+
+Takes a number from a variable, or a time span from a time span or a date. The same as `remove ... from`.
+
+```carve
+set {_x} to 10
+subtract 3 from {_x}
+subtract 1 minute from {_t}
+```
+
+Since **unreleased** · Guide: [skript-compat](../syntax/skript-compat.md)
 
 ## Suppress warnings {#suppress_warnings}
 

@@ -7,7 +7,7 @@ editLink: false
 
 # Expressions
 
-Expressions are values you put into effects and conditions. 161 entries. Search all of them on the [reference home](./index.md).
+Expressions are values you put into effects and conditions. 169 entries. Search all of them on the [reference home](./index.md).
 
 In a pattern, `%type%` is a value, `[...]` is optional and `(a|b)` means one of the words.
 
@@ -954,8 +954,8 @@ Since **unreleased** · Guide: [block-state-lists](../syntax/block-state-lists.m
 ## Food and saturation {#food}
 
 ```carve
-(food level|hunger) of %player%
-%player%'s (food level|hunger)
+(food level|hunger meter|hunger) of %player%
+%player%'s (food level|hunger meter|hunger)
 saturation of %player%
 %player%'s saturation
 ```
@@ -983,6 +983,20 @@ send "It is %now formatted as "yyyy-MM-dd HH:mm"%" to player
 ```
 
 Since **unreleased** · Guide: [time-dates](../syntax/time-dates.md)
+
+## Formatted text {#formatted}
+
+```carve
+formatted %text%
+```
+
+The same as `colored`: turns `&` codes into colors.
+
+```carve
+send formatted "&aHello" to player
+```
+
+Since **unreleased** · Guide: [skript-compat](../syntax/skript-compat.md)
 
 ## Gamemode {#gamemode}
 
@@ -1031,6 +1045,37 @@ on projectile hit:
 ```
 
 Since **unreleased** · Guide: [events-items](../syntax/events-items.md)
+
+## Idle time {#idle_time}
+
+```carve
+idle time of %player%
+idle duration of %player%
+```
+
+How long the player has not moved, clicked, placed, broken or chatted, as a time span. Counted by the plugin since it saw the player first.
+
+```carve
+if idle time of player > 1 minute:
+    kick player due to "AFK"
+```
+
+Since **unreleased** · Guide: [skript-compat](../syntax/skript-compat.md)
+
+## In front of {#in_front_of}
+
+```carve
+[location] %number% (meters|blocks) in front of %location%
+%number% (meters|blocks) (behind|to the left of|to the right of) %location%
+```
+
+A place that many blocks ahead of a player (the way they look), or of a location (facing south).
+
+```carve
+set {_at} to location 3 meters in front of player
+```
+
+Since **unreleased** · Guide: [skript-compat](../syntax/skript-compat.md)
 
 ## Index of {#index_of}
 
@@ -1418,6 +1463,22 @@ set {_a} to 10
 
 Since **0.1.0** · Guide: [expressions](../syntax/expressions.md)
 
+## Offhand tool {#offhand_tool}
+
+```carve
+%player%'s offhand (tool|item)
+offhand (tool|item) of %player%
+```
+
+The item in the off hand (`air` when it is empty).
+
+```carve
+if player's offhand tool is tnt:
+    broadcast "tnt in the off hand"
+```
+
+Since **unreleased** · Guide: [skript-compat](../syntax/skript-compat.md)
+
 ## Old and new gamemode {#gamemode_values}
 
 ```carve
@@ -1745,6 +1806,21 @@ give splash potion of poison to player
 
 Since **unreleased** · Guide: [potions-particles-queues](../syntax/potions-particles-queues.md)
 
+## Prefix and suffix {#prefix}
+
+```carve
+%player%'s (prefix|suffix)
+(prefix|suffix) of %player%
+```
+
+Needs a chat or permission plugin, so it is always empty text on this server (the script loads with a warning).
+
+```carve
+send "%player's prefix%%player%"
+```
+
+Since **unreleased** · Guide: [skript-compat](../syntax/skript-compat.md)
+
 ## Projectile force {#projectile_force}
 
 ```carve
@@ -1789,6 +1865,20 @@ send "%start of {_q}%"
 ```
 
 Since **unreleased** · Guide: [potions-particles-queues](../syntax/potions-particles-queues.md)
+
+## Random element out of {#random_element_out_of}
+
+```carve
+random element out of %objects%
+```
+
+One random item of a list written out, like `"finn" and "soviet"`, or of a list variable.
+
+```carve
+set {_t} to random element out of "finn" and "soviet"
+```
+
+Since **unreleased** · Guide: [skript-compat](../syntax/skript-compat.md)
 
 ## Random number {#random_number}
 
@@ -1863,6 +1953,21 @@ send "x1y2" with all regex "[0-9]" replaced with "_" to player
 ```
 
 Since **unreleased** · Guide: [text-join-split](../syntax/text-join-split.md)
+
+## Region at {#region_at}
+
+```carve
+region at %location%
+```
+
+Needs WorldGuard, so it is always `<none>` on this server (the script loads with a warning). `"%region at player%" contains "none"` is true everywhere.
+
+```carve
+if "%region at player%" contains "spawn":
+    broadcast "in spawn"
+```
+
+Since **unreleased** · Guide: [skript-compat](../syntax/skript-compat.md)
 
 ## Replaced text {#replaced}
 
@@ -2174,6 +2279,20 @@ set {_parts::*} to split "a,b,c" at ","
 ```
 
 Since **unreleased** · Guide: [text-join-split](../syntax/text-join-split.md)
+
+## Split text {#text_split_postfix}
+
+```carve
+%text% split (at|by) %text%
+```
+
+Cuts text at a separator, like `split "a,b" at ","`.
+
+```carve
+set {_w::*} to "a b c" split at " "
+```
+
+Since **unreleased** · Guide: [skript-compat](../syntax/skript-compat.md)
 
 ## Stored enchantments {#c6_stored_enchantments}
 

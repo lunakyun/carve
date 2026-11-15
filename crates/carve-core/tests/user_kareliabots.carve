@@ -1,0 +1,688 @@
+# Bots fill the game up to a set number of players, every one a rifleman. PvpBot runs them as real players, so karelia.sk
+# teams, kits, tickets and XP all apply. The KareliaBots plugin handles their aiming and firing; this script gives orders.
+# They only run while a human is online, and one leaves for each human who joins.
+
+options:
+	fill: 10
+	wait: 10
+	batch: 20
+
+# Every map has its own soldiers. Spawning fresh ones keeps nothing from the last map, such as a guard post in another world.
+function kbName(i: number, t: text) :: text:
+	if {-kb::finnfirst::1} is not set:
+		set {-kb::finnfirst::*} to "aleksi", "mikko", "timo", "juhani", "kalle", "eero", "ville", "lauri", "pekka", "oiva", "tauno", "reino", "aimo", "yrjo", "veikko", "arvo", "urho", "eino", "toivo", "onni", "matti", "heikki", "antti", "jussi", "paavo", "sulo", "vaino", "olavi", "tapio", "risto", "pentti", "ahti", "ensio", "kaarle", "niilo", "simo", "tuomas", "veijo", "aulis" and "eelis"
+		set {-kb::finnlast::*} to "snow", "frost", "pine", "ice", "birch", "wolf", "crow", "lake", "north", "sisu", "rifle", "trench", "korpi", "taiga", "winter", "ember", "ash", "iron", "smoke", "hill", "mire", "bear", "lynx", "raven", "storm", "sleet", "flint", "elk", "marsh", "ridge", "coal", "spruce", "drift", "hollow", "stone", "gale", "shore", "dusk", "moss", "oak", "fern", "heath", "slate", "tundra", "snowfall", "northwind", "pinewood", "dewfall", "bushcraft" and "wilds"
+		set {-kb::sovfirst::*} to "kolya", "grisha", "pavel", "anton", "yuri", "maksim", "oleg", "timur", "vanya", "sasha", "dima", "misha", "petya", "sergei", "alyosha", "boris", "stepan", "fedor", "lev", "gleb", "nikita", "roman", "ivan", "fyodor", "kostya", "zhenya", "andrei", "vasya", "tolya", "ilya", "egor", "gennady", "arkady", "victor", "mikhail", "nikolai", "aleksei", "igor", "semyon" and "makar"
+		set {-kb::sovlast::*} to "volkov", "sokolov", "morozov", "medvedev", "ivanov", "petrov", "kuznetsov", "smirnov", "popov", "sidorov", "kozlova", "nikitin", "orlov", "zaitsev", "fedorov", "snegov", "borisov", "stepanov", "nikolaev", "mikhailov", "alekseev", "sergeev", "andreev", "ilyin", "egorov", "makarov", "gavrilov", "romanov", "vasiliev", "pavlov", "volk", "sneg", "led", "buran", "moroz", "grad", "tuman", "veter", "grom", "ogon", "luna", "zvezda", "sosna", "elka", "bereza", "reka", "gora", "les", "pole" and "put"
+	set {_off} to 0
+	set {_ml::*} to kMapList()
+	loop {_ml::*}:
+		if loop-value is {karelia::map}:
+			set {_off} to ((loop-index parsed as integer) - 1) * 211
+	set {_n} to {_i} + {_off}
+	if {_t} is "finn":
+		set {_a} to mod({_n} - 1, 40) + 1
+		set {_b} to mod(floor(({_n} - 1) / 40), 50) + 1
+		set {_f} to {-kb::finnfirst::%{_a}%}
+		set {_l} to {-kb::finnlast::%{_b}%}
+	else:
+		set {_a} to mod({_n} - 1, 40) + 1
+		set {_b} to mod(floor(({_n} - 1) / 40), 50) + 1
+		set {_f} to {-kb::sovfirst::%{_a}%}
+		set {_l} to {-kb::sovlast::%{_b}%}
+	set {_style} to mod({_n}, 6)
+	if {_style} is 0:
+		set {_name} to "%{_f}%_%{_l}%"
+	else if {_style} is 1:
+		set {_name} to "%{_f}%%{_l}%"
+	else if {_style} is 2:
+		set {_name} to "%{_l}%_%{_f}%"
+	else if {_style} is 3:
+		set {_name} to "x%{_f}%%{_l}%"
+	else if {_style} is 4:
+		set {_name} to "%{_f}%__%{_l}%"
+	else:
+		set {_name} to "%{_l}%%{_f}%"
+	return first 16 characters of {_name}
+
+function kbMatch():
+	set {_f} to 0
+	set {_s} to 0
+	loop all players:
+		if {-kb::is::%name of loop-player%} is set:
+			set {_on::%name of loop-player%} to true
+			if {-k::team::%uuid of loop-player%} is "finn":
+				add 1 to {_f}
+				add name of loop-player to {_fl::*}
+			else if {-k::team::%uuid of loop-player%} is "soviet":
+				add 1 to {_s}
+				add name of loop-player to {_sl::*}
+	loop {-kb::down::*}:
+		set {_on::%loop-index%} to true
+		if {-kb::downt::%loop-index%} is "finn":
+			add 1 to {_f}
+		else if {-kb::downt::%loop-index%} is "soviet":
+			add 1 to {_s}
+	set {_wf} to {karelia::botwant::finn}
+	set {_ws} to {karelia::botwant::soviet}
+	if ({karelia::tickets::finn} ? 0) <= 0:
+		set {_wf} to 0
+	if ({karelia::tickets::soviet} ? 0) <= 0:
+		set {_ws} to 0
+	if {-kb::spawning} is set:
+		set {_i} to 0
+		loop {@batch} times:
+			delete {_t}
+			set {_gapf} to {_wf} - {_f}
+			set {_gaps} to {_ws} - {_s}
+			if {_gapf} > 0:
+				if {_gapf} >= {_gaps}:
+					set {_t} to "finn"
+					add 1 to {_f}
+			if {_t} is not set:
+				if {_gaps} > 0:
+					set {_t} to "soviet"
+					add 1 to {_s}
+			if {_t} is set:
+				delete {_pick}
+				while {_pick} is not set:
+					add 1 to {_i}
+					set {_try} to kbName({_i}, {_t})
+					if {_on::%{_try}%} is not set:
+						set {_pick} to {_try}
+				set {-kb::is::%{_pick}%} to true
+				set {-kb::want::%{_pick}%} to {_t}
+				set {_at} to kSpawnFor({_t})
+				execute console command "kspawnbot %{_pick}% %world of {_at}% %x-coordinate of {_at}% %y-coordinate of {_at}% %z-coordinate of {_at}%"
+				wait 1 tick
+		if {_f} >= {karelia::botwant::finn}:
+			if {_s} >= {karelia::botwant::soviet}:
+				delete {-kb::spawning}
+	set {_cut} to {@batch}
+	set {_x} to {_f} - {karelia::botwant::finn}
+	loop {_fl::*}:
+		if {_x} > 0:
+			if {_cut} > 0:
+				execute console command "pvpbot remove %loop-value%"
+				delete {-kb::is::%loop-value%}
+				subtract 1 from {_x}
+				subtract 1 from {_cut}
+
+command /bots [<text>] [<text>]:
+	description: Choose how many bots each side has.
+	usage: /bots <finns> <soviets>, /bots auto, /bots
+	permission: karelia.admin
+	suggestions:
+		set {_cur} to current input
+		set {_w::*} to {_cur} split at " "
+		if size of {_w::*} <= 1:
+			set arg-1's suggestions to "auto", "alone", "where", "roles", "6", "12" and "24"
+			stop
+		set {_a} to {_w::1}
+		if {_a} is "alone":
+			set {_o::*} to "on" and "off"
+		else if {_a} parsed as integer is set:
+			set {_o::*} to "6", "12" and "24"
+		loop {_o::*}:
+			add "%{_a}% %loop-value%" to {_full::*}
+		set arg-1's suggestions to {_full::*}
+	trigger:
+		if arg-1 is not set:
+			if {karelia::botwant::finn} is set:
+				send "&6Bots: &bFinns %{karelia::botwant::finn}%  &cSoviets %{karelia::botwant::soviet}%" to sender
+			else:
+				send "&6Bots: &fautomatic" to sender
+			stop
+		if arg-1 is "alone":
+			if arg-2 is "on":
+				set {karelia::botsalone} to true
+				set {-kb::spawning} to true
+			else:
+				send "&7Bots play alone: &f%{karelia::botsalone} ? false%&7. /bots alone on|off" to sender
+			stop
+		if arg-1 is "roles":
+			loop all players:
+				if {-kb::is::%name of loop-player%} is set:
+					set {_u} to "%uuid of loop-player%"
+					set {_k} to "%{-k::team::%{_u}%}% %kbRole({-kb::roll::%{_u}%} ? 1, {-k::team::%{_u}%} ? "finn")%"
+					add 1 to {_c::%{_k}%}
+			send "&7Since the last reload: &f%{-kb::stat::cover} ? 0% &7took cover" to sender
+			stop
+		set {_f} to arg-1 parsed as integer
+		set {_s} to arg-2 parsed as integer
+		if {_f} is not set:
+			stop
+		set {karelia::botwant::finn} to {_f}
+		set {karelia::botwant::soviet} to {_s}
+		broadcast "&8[&fHQ&8] &fBots set to &b%{_f}% Finns &fand &c%{_s}% Soviets&f."
+
+function kbObjName() :: text:
+	set {_m} to kMode()
+	if {_m} is "breakthrough":
+		return kFlagName(kBreakFlag())
+	if {_m} is "sabotage":
+		loop {karelia::flag::*}:
+			if kSiteActive(loop-index) is true:
+				return kFlagName(loop-index)
+	set {_all::*} to indices of {karelia::flag::*}
+	return kFlagName(random element out of {_all::*})
+
+function kbAnyBot(t: text) :: player:
+	loop all players:
+		if {-kb::is::%name of loop-player%} is set:
+			if {-k::team::%uuid of loop-player%} is {_t}:
+				if gamemode of loop-player is adventure:
+					add loop-player to {_l::*}
+	return random element out of {_l::*}
+
+function kbAnyHuman() :: text:
+	loop all players:
+		if {-kb::is::%name of loop-player%} is not set:
+			add name of loop-player to {_l::*}
+	return random element out of {_l::*}
+
+function kbLine(kind: text, name: text, t: text) :: text:
+	set {_k} to {_kind}
+	if {_k} is "idle":
+		if chance of 45%:
+			set {_k} to "banter"
+		else if chance of 25%:
+			set {_k} to "idle_%{_t}%"
+	set {_line} to random element out of {-kb::lines::%{_k}%::*}
+	if {_line} is not set:
+		return "stay sharp"
+	replace all "@" in {_line} with {_name}
+	if {_line} contains "#":
+		if {_line} contains "#obj":
+			replace all "#obj" in {_line} with kbObjName()
+		if {_line} contains "#map":
+			replace all "#map" in {_line} with ({karelia::map} ? "Kannas")
+		if {_line} contains "#human":
+			replace all "#human" in {_line} with (kbAnyHuman() ? "someone")
+	if chance of 20%:
+		set {_tail::*} to " lol", " lmao", " bro", " man", " wtf", " ngl" and " tbh"
+		set {_line} to "%{_line}%%random element out of {_tail::*}%"
+	return {_line}
+
+function kbHoloGone(u: text):
+	if {-kb::holo::%{_u}%} is set:
+		execute console command "kill %{-kb::holo::%{_u}%}%"
+		delete {-kb::holo::%{_u}%}
+
+function kbSay(p: player, kind: text, name: text = "someone", want: text = ""):
+	{-kb::is::%name of {_p}%} is set
+	set {_u} to "%uuid of {_p}%"
+	set {_force} to false
+	if {_kind} is "start" or "win" or "lose" or "reply" or "q" or "taken" or "lost" or "low" or "hero":
+		set {_force} to true
+	if {_force} is false:
+		if {-kb::said::%{_u}%} is set:
+			time since {-kb::said::%{_u}%} >= 20 seconds
+	set {_h} to false
+	set {_at} to location of {_p}
+	loop all players:
+		if {-kb::is::%name of loop-player%} is not set:
+			if kDist(location of loop-player, {_at}) <= 45:
+				set {_h} to true
+	if {_h} is false:
+		if {_force} is false:
+			chance of 10%
+	if {_want} is "":
+		set {_line} to kbLine({_kind}, {_name}, {-k::team::%{_u}%} ? "finn")
+	else:
+		set {_line} to {_want}
+	set {-kb::said::%{_u}%} to now
+	if {_h} is true:
+		kbHoloGone({_u})
+		spawn a text display at {_at}
+		set {_d} to last spawned entity
+		set {-kb::holo::%{_u}%} to "%uuid of {_d}%"
+		execute console command "data merge entity %uuid of {_d}% {text:{text:'%{_line}%',color:'white'},billboard:'center',Tags:['kbsay']}"
+		make {_d} ride {_p}
+	if {_h} is true:
+		set {_mine} to "%uuid of {_d}%"
+		wait 4 seconds
+		if {-kb::holo::%{_u}%} is {_mine}:
+			kbHoloGone({_u})
+
+function kbHumans() :: number:
+	set {_n} to 0
+	loop all players:
+		if {-kb::is::%name of loop-player%} is not set:
+			add 1 to {_n}
+	return {_n}
+
+on damage of player:
+	attacker is a player
+	if {-kb::is::%name of victim%} is set:
+		set {-kb::shotby::%uuid of victim%} to attacker
+		set {-kb::shotat::%uuid of victim%} to now
+		set {-kb::seen::%uuid of attacker%} to location of attacker
+		set {_sq} to {-kb::squad::%uuid of victim%} ? "none"
+		if {-kb::hitfirst::%uuid of attacker%::%{_sq}%} is not set:
+			set {-kb::hitfirst::%uuid of attacker%::%{_sq}%} to now
+		if time since {-kb::hitfirst::%uuid of attacker%::%{_sq}%} > 60 seconds:
+			set {-kb::hitme::%uuid of attacker%::%{_sq}%} to 0
+		add 1 to {-kb::hitme::%uuid of attacker%::%{_sq}%}
+		if {-kb::hitme::%uuid of attacker%::%{_sq}%} >= 3:
+			set {_spot} to {-kb::seen::%uuid of attacker%}
+			if {_spot} is set:
+				set {_go} to kGroundAt(x-coordinate of {_spot}, y-coordinate of {_spot}, z-coordinate of {_spot}, world of {_spot})
+				if {_go} is set:
+					loop all players:
+						if {-kb::squad::%uuid of loop-player%} is {_sq}:
+							if loop-player is not victim:
+								if gamemode of loop-player is adventure:
+									kbSendTo(loop-player, {_go}, 6)
+									exit loop
+		if chance of 25%:
+			kbSay(victim, "hurt")
+
+on death of player:
+	kbHoloGone("%uuid of victim%")
+	if attacker is a player:
+		if chance of 50%:
+			kbSay(attacker, "kill", name of victim)
+	if {-kb::is::%name of victim%} is set:
+		set {-kb::down::%name of victim%} to now
+		set {-kb::downt::%name of victim%} to {-k::team::%uuid of victim%}
+		set {_ft} to {-k::team::%uuid of victim%}
+		add 1 to {-kb::falln::%{_ft}%}
+		set {-kb::fallx::%{_ft}%::%{-kb::falln::%{_ft}%}%} to location of victim
+
+on join:
+	if {-kb::is::%name of player%} is set:
+		execute console command "tag %name of player% add kbot"
+		wait 2 seconds
+		player is online
+		gamemode of player is not spectator
+		kKit(player)
+		teleport player to kSpawnFor({-k::team::%uuid of player%})
+
+on quit:
+	kbHoloGone("%uuid of player%")
+	delete {-kb::slot::%uuid of player%}
+	if {-kb::is::%name of player%} is set:
+		delete {-k::class::%uuid of player%}
+
+on load:
+	execute console command "kill @e[type=text_display,tag=kbsay]"
+	delete {-kb::holo::*}
+	set {-kb::roundseen} to {-k::roundid}
+	execute console command "pvpbot faction create finn"
+
+every 2 seconds:
+	set {_map} to {karelia::map} ? "Kannas"
+	if {-kb::map} is not {_map}:
+		set {-kb::map} to {_map}
+		delete {-kb::is::*}
+		stop
+	loop all players:
+		add 1 to {_yield}
+		if mod({_yield}, 150) is 0:
+			wait 1 tick
+		if loop-player is not online:
+			continue
+		if {-kb::is::%name of loop-player%} is set:
+			if gamemode of loop-player is survival:
+				set gamemode of loop-player to adventure
+			make loop-player vulnerable
+			if world of loop-player is not world of {karelia::flag::3}:
+				execute console command "pvpbot remove %name of loop-player%"
+	set {_h} to kbHumans()
+	set {_want} to {@fill} - {_h}
+	if kMode() is not "conquest":
+		add 1 to {_want}
+	set {_bots} to size of all players - {_h}
+	loop {-kb::down::*}:
+		set {_late} to false
+		if time since loop-value >= {@wait} seconds:
+			set {_late} to true
+		if {_late} is true:
+			delete {-kb::down::%loop-index%}
+		else:
+			add 1 to {_bots}
+	if {_bots} < {_want}:
+		{-kb::spawning} is set
+		set {_i} to 0
+		while {_bots} < {_want}:
+			add 1 to {_i}
+			set {_f} to kCount("finn")
+			set {_s} to kCount("soviet")
+			if {_f} < {_s}:
+				set {_t} to "finn"
+			else:
+				set {_t} to random element out of "finn" and "soviet"
+			if ({karelia::tickets::%{_t}%} ? 0) <= 0:
+				stop
+			set {_try} to kbName({_i}, {_t})
+			set {_at} to kSpawnFor({_t})
+			add 1 to {_bots}
+	else if {_bots} > {_want}:
+		loop all players:
+			if {_gone} is not set:
+				if {-kb::is::%name of loop-player%} is set:
+					set {_gone} to name of loop-player
+		{_gone} is set
+		execute console command "pvpbot remove %{_gone}%"
+
+function kbRoll(u: text, t: text) :: number:
+	if {-kb::roll::%{_u}%} is not set:
+		set {_want} to {karelia::botwant::%{_t}%} ? 5
+		set {_size} to 1
+		if {_want} >= 40:
+			set {_size} to 4
+		set {_c} to {-kb::rollc::%{_t}%} ? 0
+		set {_squad} to floor({_c} / {_size})
+		add 1 to {-kb::rollc::%{_t}%}
+		set {_order::*} to 1, 6, 9, 2, 7, 10, 3, 8, 4 and 5
+		set {_pos} to mod({_squad}, 10) + 1
+		set {-kb::roll::%{_u}%} to {_order::%{_pos}%}
+		set {_id} to "%{_t}%%{_squad}%"
+		set {-kb::squad::%{_u}%} to {_id}
+	return {-kb::roll::%{_u}%}
+
+function kbRole(r: number, t: text) :: text:
+	set {_plan} to {-kb::plan::%{_t}%}
+	if {_plan} is set:
+		if {_plan} is "rush":
+			return "assault"
+		if mod({_r}, 2) is 0:
+			if {_plan} is "half":
+				return "assault"
+	if kMode() is "conquest":
+		if {_r} <= 3:
+			return "assault"
+		return "ambush"
+	if kAttacker({_t}) is true:
+		if {_r} <= 4:
+			return "assault"
+		return "marksman"
+	return "marksman"
+
+function kbHidden(at: location, from: location) :: boolean:
+	set {_x} to x-coordinate of {_at}
+	set {_y} to y-coordinate of {_at}
+	add 1.5 to {_y}
+	set {_z} to z-coordinate of {_at}
+	set {_dx} to x-coordinate of {_from} - {_x}
+	set {_dz} to z-coordinate of {_from} - {_z}
+	set {_len} to sqrt({_dx} * {_dx} + {_dz} * {_dz})
+	if {_len} < 2:
+		return false
+	set {_w} to world of {_at}
+	set {_i} to 0
+	while {_i} < 10:
+		add 1 to {_i}
+		set {_b} to block at location({_x}, {_y}, {_z}, {_w})
+		if {_b} is not air or snow or spruce leaves or cobweb or water:
+			return true
+	return false
+
+function kbClear(at: location, from: location) :: boolean:
+	if world of {_at} is not world of {_from}:
+		return true
+	set {_x} to x-coordinate of {_at}
+	set {_y} to floor(y-coordinate of {_at})
+	set {_z} to z-coordinate of {_at}
+	set {_w} to world of {_at}
+	set {_b} to block at location({_x}, {_y}, {_z}, {_w})
+	set {_up} to {_y} + 1
+	set {_b2} to block at location({_x}, {_up}, {_z}, {_w})
+	if {_b} is spruce fence or dark oak fence or stone brick wall or glass pane or iron bars or cobweb or water:
+		return false
+	return true
+
+function kbFloor(x: number, y: number, z: number, w: world) :: location:
+	set {_i} to 3
+	while {_i} >= -3:
+		set {_fy} to {_y} + {_i}
+		set {_b} to block at location({_x}, {_fy}, {_z}, {_w})
+		if {_b} is not air or snow or spruce leaves or cobweb or water:
+			set {_up} to {_fy} + 1
+			return location({_x}, {_up}, {_z}, {_w})
+		subtract 1 from {_i}
+
+function kbCover(b: player, s: player) :: location:
+	set {_from} to location of {_s}
+	set {_here} to location of {_b}
+	set {_d} to kDist({_here}, {_from})
+	subtract 1 from {_d}
+	set {_r} to 4
+	while {_r} <= 9:
+		set {_a} to 0
+		while {_a} < 360:
+			set {_ox} to cos({_a})
+			set {_oz} to sin({_a})
+			add 45 to {_a}
+		add 5 to {_r}
+
+function kbSlot(base: location, u: text, role: text, from: location) :: location:
+	if {-kb::slot::%{_u}%} is not set:
+		set {-kb::slot::%{_u}%} to random integer between 0 and 359
+	set {_a} to {-kb::slot::%{_u}%}
+	set {_r} to 4
+	set {_best} to -1
+	loop 0, 25, -25, 60 and -60:
+		set {_ang} to {_a} + loop-value
+		set {_px} to x-coordinate of {_base} + cos({_ang}) * {_r}
+		set {_pz} to z-coordinate of {_base} + sin({_ang}) * {_r}
+		set {_at} to kGroundAt({_px}, y-coordinate of {_base}, {_pz}, world of {_base})
+		if {_at} is set:
+			set {_c} to 0
+			if {_role} is "mg":
+				if kbRest({_at}, {karelia::spawn::%kOther({-k::team::%{_u}%} ? "finn")%}) is true:
+					add 15 to {_c}
+			if {_c} > {_best}:
+				set {_best} to {_c}
+				set {_pick} to {_at}
+	return {_pick} ? {_base}
+
+function kbSendTo(b: player, at: location, rad: number):
+	set {-kb::busy::%uuid of {_b}%} to now
+	execute console command "kpath %name of {_b}% %floor(x-coordinate of {_at})% %floor(y-coordinate of {_at})% %floor(z-coordinate of {_at})% %{_rad}%"
+
+command /kbflank <text> <text>:
+	executable by: console
+	trigger:
+		set {_b} to arg-1 parsed as player
+		set {_s} to arg-2 parsed as player
+		{_b} is set
+		{_s} is set
+
+command /kbgo <text> <number> <number> <number> <number>:
+	executable by: console
+	trigger:
+		set {_b} to arg-1 parsed as player
+		{_b} is set
+		kbSendTo({_b}, location(arg-2, arg-3, arg-4, world of {_b}), arg-5)
+
+function kbSatchel(b: player, u: text, t: text):
+	{_b} has an egg
+	if {-kb::sat::%{_u}%} is set:
+		time since {-kb::sat::%{_u}%} >= 15 seconds
+	set {_here} to location of {_b}
+	set {_best} to 15
+	loop all players:
+		if gamemode of loop-player is adventure:
+			if {-k::team::%uuid of loop-player%} is not {_t}:
+				set {_d} to kDist(location of loop-player, {_here})
+				if {_d} >= 6:
+					if {_d} < {_best}:
+						set {_best} to {_d}
+						set {_e} to loop-player
+	{_e} is set
+	set {-kb::sat::%{_u}%} to now
+	make {_b} look at {_e}
+	make {_b} shoot an egg at speed 1
+	remove 1 of egg from inventory of {_b}
+
+function kbRest(at: location, toward: location) :: boolean:
+	set {_y} to y-coordinate of {_at}
+	set {_w} to world of {_at}
+	set {_y1} to {_y} + 1
+	set {_low} to location(x-coordinate of {_at}, {_y}, z-coordinate of {_at}, {_w})
+	set {_high} to location(x-coordinate of {_at}, {_y1}, z-coordinate of {_at}, {_w})
+	if block at {_low} is solid:
+		if block at {_high} is not solid:
+			return true
+	return false
+
+function kbRestUp(b: player, u: text, t: text):
+	set {_here} to location of {_b}
+	set {_low} to location of {_b}
+	set {-kb::stat::mglast} to "%type of block at {_low}%"
+	kPlaceAt({_low}, "sandbags")
+	play sound "block.gravel.place" at {_low}
+
+function kbBuild(b: player, u: text, g: text, role: text):
+	{_role} is "defend" or "support" or "overwatch" or "ambush" or "marksman"
+	size of {karelia::built::*} < 100
+	set {_kind} to "sandbags"
+	({-k::sup::%{_u}%} ? 0) >= kBuildCost({_kind})
+	set {_at} to location 3 meters in front of {_b}
+	set {_base} to kGround(block below {_at})
+	set {_n} to kPlace({_b}, {_base}, {_kind})
+	{_n} > 0
+	remove kBuildCost({_kind}) from {-k::sup::%{_u}%}
+	play sound "block.gravel.place" at {_base}
+
+function kbClassBot(p: player, c: text):
+	if {_c} is "rifleman":
+		delete {-k::class::%uuid of {_p}%}
+	else:
+		set {-k::class::%uuid of {_p}%} to {_c}
+	if gamemode of {_p} is adventure:
+		kKit({_p})
+
+every 3 seconds:
+	loop all players:
+		set {_t} to {-k::team::%uuid of loop-player%}
+		if {_t} is set:
+			set {_c} to {-k::class::%uuid of loop-player%} ? "rifleman"
+			if {-kb::is::%name of loop-player%} is set:
+				add loop-player to {_bots::%{_t}%::%{_c}%::*}
+	loop "finn" and "soviet":
+		set {_t} to loop-value
+		set {_room} to kClassLimit("sapper") - 1
+		set {_have} to size of {_bots::%{_t}%::sapper::*}
+		if {_have} > {_room}:
+			set {_x} to {_have} - {_room}
+			loop {_bots::%{_t}%::sapper::*}:
+				if {_x} > 0:
+					kbClassBot(loop-value-2, "rifleman")
+					subtract 1 from {_x}
+
+every 1 second:
+	loop all players:
+		set {_who} to loop-player
+		if {-kb::is::%name of {_who}%} is set:
+			set {_u} to "%uuid of {_who}%"
+			if {-k::bleed::%{_u}%} is set:
+				if {_who} has paper:
+					delete {-k::bleed::%{_u}%}
+					remove 1 of paper from inventory of {_who}
+					play sound "item.armor.equip_leather" at location of {_who}
+					add 1 to {-kb::stat::bandage}
+
+function kbPlan(t: text):
+	subtract 1 from {-kb::planleft::%{_t}%}
+	if ({-kb::planleft::%{_t}%} ? 0) > 0:
+		stop
+	set {-kb::planleft::%{_t}%} to random integer between 8 and 16
+	set {_roll} to random integer between 1 and 100
+	if {_roll} <= 55:
+		set {_plan} to "rush"
+	else:
+		set {_plan} to "hold"
+	set {-kb::plan::%{_t}%} to {_plan}
+
+function kbCrowd(t: text, kind: text):
+	loop 3 times:
+		set {_b} to kbAnyBot({_t})
+		if {_b} is set:
+			kbSay({_b}, {_kind})
+		wait 2 seconds
+
+on chat:
+	set {_who} to name of player
+	{-kb::is::%{_who}%} is not set
+	set {_m} to "%message%"
+	if {_m} contains "?":
+		set {_kind} to "q"
+		loop "where", "who", "flag", "enemy", "finn" and "soviet":
+			if {_m} contains loop-value:
+				set {_kind} to "where"
+				exit loop
+	else:
+		set {_kind} to ""
+		if {_kind} is "":
+			if chance of 40%:
+				set {_kind} to "reply"
+			else:
+				stop
+	set {_t} to {-k::team::%uuid of player%} ? "finn"
+	wait 2 seconds
+	set {_b} to kbAnyBot({_t})
+	if {_b} is not set:
+		set {_b} to kbAnyBot(random element out of "finn" and "soviet")
+	if {_b} is set:
+		kbSay({_b}, {_kind}, {_who})
+
+every 5 seconds:
+	kbPlan("finn")
+	kbPlan("soviet")
+	loop all players:
+		if {-kb::is::%name of loop-player%} is set:
+			if gamemode of loop-player is adventure:
+				set {_id} to {-kb::squad::%uuid of loop-player%}
+				if {_id} is set:
+					add 1 to {_count::%{_id}%}
+	loop {_count::*}:
+		if loop-value >= 2:
+			if loop-value <= 3:
+				set {_open::%loop-index%} to loop-index
+	loop all players:
+		set {_who} to loop-player
+		if {-kb::is::%name of {_who}%} is set:
+			set {_u} to "%uuid of {_who}%"
+			if {-kb::busy::%{_u}%} is set:
+				if time since {-kb::busy::%{_u}%} < 7 seconds:
+					continue
+				delete {-kb::busy::%{_u}%}
+			if {-kb::fstart::%{_u}%} is set:
+				subtract 1 minute from {-kb::fstart::%{_u}%}
+			set {_give} to 30 seconds
+			if time since ({-kb::fstart::%{_u}%} ? now) >= {_give}:
+				delete {-kb::fstart::%{_u}%}
+
+every 5 seconds:
+	loop all players:
+		if {-kb::is::%name of loop-player%} is set:
+			if gamemode of loop-player is adventure:
+				add loop-player to {_alive::*}
+				set {_sid} to {-kb::squad::%uuid of loop-player%}
+				if {_sid} is set:
+					add loop-player to {_sqm::%{_sid}%::*}
+					set {_sids::%{_sid}%} to {_sid}
+	loop {_sids::*}:
+		set {_sid} to loop-value
+		if size of {_sqm::%{_sid}%::*} is 1:
+			set {_one} to first element of {_sqm::%{_sid}%::*}
+			set {_sp} to {karelia::spawn::%{-k::team::%uuid of {_one}%}%}
+	loop {-k::contest::*}:
+		set {_fg} to {karelia::flag::%loop-index%}
+		if {_fg} is set:
+			loop {_alive::*}:
+				set {_cap} to loop-value-2
+				if kDist(location of {_cap}, {_fg}) <= 3:
+					set {_csq} to {-kb::squad::%uuid of {_cap}%} ? "none"
+					loop {_sqm::%{_csq}%::*}:
+						set {_mate} to loop-value-3
+						if {_mate} is not {_cap}:
+							exit loop
+	loop all players:
+		if {-kb::is::%name of loop-player%} is set:
+			set {_t} to {-k::team::%uuid of loop-player%}
+			if kbRole(kbRoll("%uuid of loop-player%", {_t}), {_t}) is "marksman":
+				execute console command "wm give %name of loop-player% Mosin_M91"
