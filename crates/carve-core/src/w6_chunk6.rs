@@ -501,6 +501,12 @@ impl P<'_> {
         if !self.z6_lit(0, "times") {
             return None;
         }
+        // Only where a list can start: `to 3 times`, `(3 times)`, `, 3 times`, a line start.
+        // Not `"ab" repeated 3 times` or `x + 1 times`.
+        let before = self.pos.checked_sub(2).and_then(|i| self.toks.get(i));
+        if !before.is_none_or(|t| t.is_lit("to") || t.is_lit("in") || t.is_lit("(") || t.is_lit(",")) {
+            return None;
+        }
         // Only a bare `N times`: anything that continues like an operand is left alone.
         if let Some(Tok::Num(_) | Tok::Var(_) | Tok::Str(_)) = self.toks.get(self.pos + 1) {
             return None;
