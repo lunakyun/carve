@@ -27,7 +27,7 @@ unload world "hell"
 if world "arena" is loaded:
 ```
 
-Names use letters, digits, `_`, `-` and `.`. A server that cannot do it (Pumpkin 0.1) makes the line a script error with the reason; the rest of the script keeps loading.
+Names use letters, digits, `_`, `-` and `.`. Pumpkin creates the world (or loads it when the folder exists). Unloading the main world, or a world with players in it, is a script error with the reason; the rest of the script keeps loading.
 
 ## Chunks
 

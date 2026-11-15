@@ -1,0 +1,5 @@
+# The script w6c2 switches on and off.
+
+command /w2b:
+    trigger:
+        send "w2:b here" to player

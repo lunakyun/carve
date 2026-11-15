@@ -268,38 +268,38 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Apply Bone Meal (no bone meal call in the plugin API)
 - ⛔ Apply Fishing Lure (no fishing lure control in the plugin API)
 - ✅ Apply Potion Effect ⭐ — `apply [potion of] speed 2 to player for 10 seconds`
-- 🟡 Ban ⭐ — name, with reason, by IP; works on offline names
-- 🟡 Boss Bar Flags — `add darken sky flag to bossbar "id"`, fog, dragon bar; set only, no reading
+- 🟡 Ban — name, with reason, by IP; works on offline names; `for <timespan>` makes a ban that ends by itself, but only for players that are online (Pumpkin's ban list needs a UUID)
+- ✅ Boss Bar Flags — `add darken sky flag to bossbar "id"`, fog, dragon bar; read back with `bossbar "id" has darken sky flag`
 - ✅ Break Block ⭐ — `break block at <loc>`
 - ✅ Broadcast — also `broadcast "x" to world "name"`
 - ⛔ Cancel Active Item (no way to stop item use in the plugin API)
 - ✅ Cancel Command Cooldown — with `cooldown:`, `cooldown message:` and `cooldown bypass:` (in memory; `cooldown storage:` is an error)
 - ✅ Cancel Drops — `on break` and `on death`; items, xp or both
 - ✅ Cancel Event — before the first wait
-- 🟡 Change: Set/Add/Remove/Remove All/Delete/Reset ⭐ — set/add/remove/delete on variables and lists, including list literals like `set {x::*} to 1, 2 and 3`; no `remove all`, `reset`, or changing other expressions (health is separate)
+- 🟡 Change: Set/Add/Remove/Remove All/Delete/Reset — set/add/remove/remove all/delete/reset on variables and lists, including list literals like `set {x::*} to 1, 2 and 3`; `reset` of other expressions only where they have a reset of their own (display name, tab list name, spectator target, ...)
 - ⛔ Charge Creeper (creeper state is not exposed)
 - ⛔ Charge Entity (creeper state is not exposed)
 - ⛔ Clear Entity Storage (no bee or entity storage in Pumpkin)
 - ✅ Color Items — the held item (`dye player's tool red`)
 - ✅ Command — `execute console command`, `execute command "x" [by player]`, `make player execute command "x"`
-- 🟡 Conditional / Unconditional — conditions on their own line stop the trigger
+- 🟡 Conditional / Unconditional — a condition on its own line stops the trigger; Skript's `make command block conditional` is not built yet (the block state has a `conditional` property the API can set)
 - ✅ Connect (`connect player to server "host" [on port n]`)
 - ⛔ Consume Boosting Firework (no elytra firework boost control)
 - ⛔ Consume Brewing Fuel (brewing fuel use is not controllable)
 - ✅ Continue
 - ✅ Copy Into Variable (`copy {a::*} into {b::*}`)
-- 🟡 Damage/Heal/Repair — `heal`, `heal by`, `damage player by`; no repair
+- 🟡 Damage/Heal/Repair — `heal`, `heal by`, `damage player by`; no repair; not built yet: Repair: item data component `damage` set to 0 through item-stack.set-component (Carve already writes components via skbee_nbt ItemComp)
 - ⛔ Dance (no parrot or allay dance state in the plugin API)
 - ✅ Detonate Entities — creepers, primed TNT and TNT minecarts
 - ✅ Do If ⭐ — `<effect> if <condition>`
 - ✅ Drop — items at a location or the event player, `without velocity`
-- 🟡 Enable/Disable/Unload/Reload Script — through `/carve enable/disable/reload`, not as an effect
+- ✅ Enable/Disable/Unload/Reload Script — `enable|load script "x"`, `reload script "x"`, `disable|unload script "x"` run `/carve enable|reload|disable`; `unload` disables the file
 - ✅ Enchant/Disenchant — `enchant player's tool with sharpness 5`, `disenchant player's tool` (held item)
 - ⛔ Enderman Teleport (enderman teleport is not exposed)
 - ✅ Enforce Whitelist — kicks online players who are not whitelisted or op
 - ✅ Entity Despawn — `despawn`, `remove` or `delete` an entity
 - 🟡 Entity Visibility (players only: `hide p from q`, `reveal p to q`)
-- 🟡 Equip (players, one item: `equip player with diamond helmet`)
+- 🟡 Equip — `equip <entity> with <up to 4 items>`, `make <entity> wear ...` for players and mobs; no `unequip`
 - ⛔ Equippable Component - Dispense (no equippable component events)
 - ⛔ Equippable Component - Equip On Entities (no equippable component events)
 - ⛔ Equippable Component - Lose Durability (no equippable component events)
@@ -316,13 +316,13 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Force Enchantment Glint — held item; on, off or reset
 - ⛔ Force Panda On Back (panda state is not exposed)
 - ✅ Force Respawn
-- ⛔ Generate Loot — the plugin API has a loot event but no call to roll a loot table into items
-- ⛔ Goat Horns — no goat or instrument API
-- ⛔ Handedness — the plugin API cannot read or change a player's main hand
-- ⛔ Hide Player from Server List — the server list ping event has no player sample to edit
+- ⛔ Generate Loot — not built yet; the API can do it: Pumpkin implements /loot (loot.rs: give, spawn, insert, replace with loot/kill/mine/fish sources)
+- ✅ Goat Horns — `remove the left|right|both horns of <goat>`, `regrow ...`
+- ⛔ Handedness — checked in game on Pumpkin 0.2.2: `data merge entity <zombie> {LeftHanded:1b}` is accepted but the zombie still reads back 0b, and neither the plugin API nor the NBT it reads can set a mob's main hand (players can't change theirs at all)
+- ⛔ Hide Player from Server List — not built yet; the API can do it: server-list-ping-event-data has num-players/max-players (no sample), and Pumpkin status.rs sends an empty sample (never lists names)
 - ✅ Ignite/Extinguish — `ignite player for 5 seconds`, `set player on fire`, `extinguish player` (players only)
-- ⛔ Insert Entity Storage — no bee hive or entity storage API
-- ⛔ Item Despawn — no item-entity despawn timer in the plugin API
+- ⛔ Insert Entity Storage — not built yet; the API can do it: Add a bee compound ({entity_data:{id:"minecraft:bee"},ticks_in_hive,min_ticks_in_hive}) to the beehive block-entity `bees` NBT list via world.set-block-entity-nbt or `data merge block`
+- ⛔ Item Despawn — not built yet; the API can do it: Despawn now: entity_remove. Set despawn age: item.rs reads NBT Age (line 872), use `data merge entity <uuid> {Age:5999s}`
 - ⛔ Item Tooltips — Pumpkin's tooltip_display component keeps no data, so hidden tooltips never reach the client
 - ✅ Keep Inventory / Experience — `on death`; Carve turns keep_inventory on for that death only (inventory checked in game, experience in unit tests)
 - ✅ Kick ⭐ — `kick player due to "x"`
@@ -332,89 +332,89 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 Leash entities — the mob's leash NBT is written, but Pumpkin 0.2.2 does not attach it while loaded (no lead is sent)
 - ✅ Lightning ⭐ — `strike lightning [effect] at ...`
 - ✅ Load Server Icon — a PNG from Carve's data folder; `set the server icon to the last loaded server icon` in `on server list ping`
-- 🟡 Load World — `create world "x" [with environment nether]`, `load world "x"`, `unload world "x"`; works only on hosts that can create worlds (Pumpkin 0.1 cannot, the script gets an error)
-- 🟡 Locally Suppress Warning — accepted and ignored; Carve has no such warnings
+- ✅ Load World — `create world "x" [with environment nether]`, `load world "x"`, `unload world "x"`
+- ✅ Locally Suppress Warning — accepted and ignored; Carve has no such warnings
 - ✅ Log — `log "x" [to file "name"]` appends to `logs/<name>`
 - ✅ Look At — `make player look at <location>` (players)
 - ✅ Make Adult/Baby
-- ⛔ Make Allay Duplicate — no allay API
+- ✅ Make Allay Duplicate — `make <allay> duplicate`: a second allay appears, both wait 6000 ticks
 - ✅ Make Breedable — breedable clears the breeding cooldown, unbreedable sets 5 minutes (Pumpkin has no age lock)
 - ⛔ Make Disturbance — the plugin API cannot emit game events
-- ⛔ Make Egg Hatch — no egg hatch API
-- ⛔ Make Entity Scream — no goat scream API
-- ⛔ Make Fire Resistant — item fire resistance is a data component scripts cannot set through the plugin API
+- ⛔ Make Egg Hatch — not built yet; the API can do it: player-egg-throw-event-data has hatching, num-hatches, hatching-type
+- ✅ Make Entity Scream — `make <goat> scream`, `stop screaming`
+- ⛔ Make Fire Resistant — not built yet; the API can do it: The `damage-resistant` data component is settable (data-components.wit
 - ✅ Make Fly ⭐ — `make player fly` / `stop flying` (allow flight and flying)
 - ⛔ Make Goat Ram — no goat API
 - ⛔ Make Incendiary — no fireball or explosion API
-- ⛔ Make Interaction Responsive — no interaction entity API
+- ✅ Make Interaction Responsive — `make <interaction> responsive` / `unresponsive`
 - ✅ Make Invisible — players only; sets the entity flag
 - ✅ Make Invulnerable — players only
 - ⛔ Make Panda Roll — no panda API
 - ⛔ Make Panda Sneeze — no panda API
-- 🟡 Make Say — runs the vanilla `say` command as the player, so it shows as a say message, not normal chat
+- 🟡 Make Say — runs the vanilla `say` command as the player, so it shows as a say message, not normal chat; not built yet: v0.1 can broadcast the vanilla chat format `<name> message` with server.broadcast/send-system-message (unsigned, no chat events)
 - ✅ Make Sign Glow — front text of the sign at a location
 - ✅ Message — `send ... [to ...]`
 - ✅ op/deop ⭐ — `op player`, `deop player`
-- 🟡 Open Book — opens the written book already in the player's main or off hand; cannot open an arbitrary item
-- 🟡 Open/Close Inventory ⭐ — `open {_gui} to player` and `open chest with 3 rows named "x" to player` work; `close` compiles but Pumpkin's plugin API v0.1 cannot close a window (v0.2 can)
-- ⛔ Open/Close Lid — no chest or barrel lid API
+- 🟡 Open Book — opens the written book already in the player's main or off hand; cannot open an arbitrary item; not built yet: open-book(hand) only opens what is in the hand, so use the standard swap trick: set-item-in-hand(book), open-book, restore the old stack one tick later via scheduler
+- 🟡 Open/Close Inventory — `open {_gui} to player` and `open chest with 3 rows named "x" to player` work; `close` compiles but Pumpkin's plugin API v0.1 cannot close a window (v0.2 can); not built yet: v0.2 player.wit adds close-inventory and has-open-inventory
+- ⛔ Open/Close Lid — not built yet; the API can do it: player.as-java().send-packet with c-block-event (java-packets.wit:768): action-id 1, parameter 1/0, block-type from world.get-block-id, sent to nearby players
 - ✅ Pathfind — to a location or entity, `at speed`; Carve keeps steering for up to a minute; `stop pathfinding`
 - ✅ Persistent — mobs, through PersistenceRequired
-- ⛔ Play Dead — no death animation call in the plugin API
-- 🟡 Play Effect — particles only: `play 5 flame particles at player` (more options: syntax/skbee-particles-display.md)
-- 🟡 Play or Draw an Effect ⭐ — particles with `spread`, `offset x, y, z`, `speed`, `extra`, `force`; dust color, block and item data parse but the server cannot send them (see syntax/skbee-particles-display.md)
+- ⛔ Play Dead — not built yet; the API can do it: player.as-java().send-entity-status(entity-id, death) (player.wit:1384, entity-status enum has death) to each viewer shows the death animation without killing
+- 🟡 Play Effect — particles only: `play 5 flame particles at player` (more options: syntax/skbee-particles-display.md); not built yet: Non-particle visual effects (smoke, ender signal, record, bone meal particles, potion break, click sounds) are world events: send-packet c-level-event (java-packets.wit:1436) or c-world-event
+- 🟡 Play or Draw an Effect — particles with `spread`, `offset x, y, z`, `speed`, `extra`, `force`; dust color, block and item data parse but the server cannot send them (see syntax/skbee-particles-display.md); not built yet: Particle data (dust colour, block, item) can be sent with player.as-java().send-packet c-particle which has a `data: list<u8>` field (java-packets.wit:1613)
 - 🟡 Play Sound ⭐ (volume, pitch, location, via `playsound`; no categories)
-- ⛔ Player Info Visibility — no tab-list visibility API in the plugin API
+- ⛔ Player Info Visibility — Skript hides the player names and count in the server list; Pumpkin 0.2.2 never sends names in the ping (empty sample) and the ping event only edits the counts, so there is nothing to hide (hiding a player in the tab list is another thing: `set-tab-list-listed`, not built)
 - ✅ Player Visibility — `hide %player% [from %player%]`, `reveal %player% [to %player%]`
-- 🟡 Poison/Cure — `poison %player% [for %timespan%]`, `cure %player%`; via the `effect` command
+- 🟡 Poison/Cure — `poison %player% [for %timespan%]`, `cure %player%`; via the `effect` command; not built yet: Players already work. For other living entities run `effect give|clear <uuid> poison ...` through execute_command (Pumpkin has effect.rs), or use the v0.2 world entity add-effect/remove-effect
 - ✅ Potion Effect - Ambient — the player's active effects
 - ✅ Potion Effect - Icon — the player's active effects
 - ✅ Potion Effect - Infinite — the player's active effects
 - ✅ Potion Effect - Particles — the player's active effects
-- 🟡 Potion Effects ⭐ — `remove all potion effects from player`, `remove speed potion effect from player`; players only
+- 🟡 Potion Effects — `remove all potion effects from player`, `remove speed potion effect from player`; players only; not built yet: Players are fully covered on v0.1 (player add/remove/clear-effects)
 - ⛔ Pull In Hooked Entity — no fishing hook API
 - ✅ Push ⭐ — `push <entity or player> up/down/north/south/east/west/forward/backward [with speed N]`, `away from` / `towards <place>`
-- ⛔ PvP — no per-world PvP flag in the plugin API
-- ⛔ Register Tag — no tag registry in the plugin API
-- ⛔ Release From Entity Storage — no entity storage block API
+- ⛔ PvP — not built yet; the API can do it: Pure Carve logic: keep a per-world pvp flag and cancel entity-damage-by-entity (v0.1 event.wit:586, cancelled honored at living.rs:3667-3686) when both sides are players
+- ⛔ Register Tag — not built yet; the API can do it: Pumpkin's tag registry is read-only (v0.2 get-blocks-in-tag etc., datapack.wit only enables or disables packs)
+- ⛔ Release From Entity Storage — not built yet; the API can do it: Emulate it. Read the beehive bees list with get-block-entity-nbt (Carve already has block_entity_nbt), spawn that many bees with spawn-entity, then clear the list with set-block-entity-nbt or `data merge block` (beehive.rs reads and writes the "bees" NBT)
 - ✅ Replace ⭐ — `replace all "a" in {x} with "b"`, `replace all regex "[0-9]+" in {x} with "#"` (no `$1` groups)
 - ✅ Return
-- ⛔ Ring Bell — no way to ring a bell from a plugin
-- ⛔ Rotate — no block rotation API
-- ⛔ Run — needs section values, which Carve does not have
+- ⛔ Ring Bell — not built yet; the API can do it: Send the c-block-event java packet (v0.1 java-packets.wit:768, serialized in host generated_packets.rs:168) with the bell action id and direction to nearby java players through java-player.send-packet
+- ⛔ Rotate — not built yet; the API can do it: Blocks: get-block-properties(state-id), change facing or rotation, resolve-block-state, then set-block-state (all v0.1 world.wit)
+- ⛔ Run — not built yet; the API can do it: Language feature only: it needs a section-valued type in the Carve engine
 - ✅ Save World — `save [the] world`
 - ⛔ Script Command Suggestion Filtering Mode — Pumpkin 0.2.2 crashes on plugin tab completion
-- ⛔ Send Block Change — no fake block packet API
+- ✅ Send Block Change — `make <player> see <location> as <block>`, `... as original block`
 - ✅ Send Resource Pack — `send resource pack "url" [with hash "sha1"] to %player%` (Java players)
-- ⛔ Shear — no shear API
-- ⛔ Shoot — only the `shoot ...:` section form exists (see Sections); the plugin API cannot set a projectile owner
-- ⛔ Silence Entity — no silent flag in the plugin API
+- 🟡 Shear — `shear <sheep>`, `unshear <sheep>` (sheep only; mooshrooms and snow golems have no state in the API; no wool drop)
+- ⛔ Shoot — not built yet; the API can do it: Player.launch-projectile exists but is a stub that returns None in both hosts (v0_1 player.rs:2292, v0_2 player.rs:2313)
+- ✅ Silence Entity — `silence <entity>`, `unsilence`, `make <entity> silent`
 - ✅ Sort — `sort {x::*}`, `in descending order`; no `by`
-- 🟡 Spawn ⭐ — `spawn [N] <mob> [named "x"] [at <place>]`; no NBT or mob-specific data
+- 🟡 Spawn — `spawn [N] <mob> [named "x"] [at <place>]`; no NBT or mob-specific data; not built yet: Extend it. After spawn-entity, use as-mob and set-mob-data (baby, tamed, sheep colour, villager profession, creeper powered, slime size) and living-entity set-equipment, set-attribute-base, set-max-health
 - ✅ Sprinting — `make %player% start/stop sprinting`
 - ✅ Stop Server — `stop [the] server`
-- 🟡 Stop Sound ⭐ (one sound or all, via `stopsound`; no categories)
+- ✅ Stop Sound — `stop sound "x" [for player]`, `stop all sounds`, and `... in <category>` (master, music, record, weather, block, hostile, neutral, player, ambient, voice)
 - ⛔ Strider Shivering — no strider API
-- 🟡 Suppress Type Hints (Experimental) — runs its body; Carve has no type hints
-- 🟡 Swing Hand — `make %player% swing [main|off] hand`; via the `swing` command
-- ⛔ Tame / Untame — no tame API
+- ✅ Suppress Type Hints (Experimental) — runs its body; Carve has no type hints
+- ✅ Swing Hand — `make <living entity> swing [main|off] hand`
+- 🟡 Tame / Untame — `tame <wolf or cat>` (the player who ran the trigger becomes the owner), `untame`; horses and parrots have no state in the API
 - ✅ Teleport — to x, y, z or a location; entities too
-- ⛔ Text Display Drop Shadow — no text display API
-- ⛔ Text Display See Through Blocks — no text display API
+- ✅ Text Display Drop Shadow — `apply drop shadow to <text display>`, `remove drop shadow from ...`
+- ✅ Text Display See Through Blocks — `make <text display> visible through blocks`, `prevent ... from being visible through blocks`
 - ✅ Title - Clear/Reset — `clear title of player`, `reset title of player`
 - ✅ Title - Send — title + subtitle, `for 3 seconds`, fade in and out, `to all players`
 - ✅ Toggle — `toggle {flag}` flips a boolean; unset becomes true
 - ✅ Toggle Custom Name Visibility — `show/hide custom name of %player%`
-- ⛔ Toggle Flight (no flight ability in the plugin API)
-- ⛔ Toggle Picking Up Items — no pickup flag in the plugin API
+- ✅ Toggle Flight — `allow flight for <player>`, `disallow flight for <player>`
+- ⛔ Toggle Picking Up Items — not built yet; the API can do it: Keep a per-entity no-pickup set in Carve and cancel entity-pickup-item-event (v0.1 event.wit:491, cancelled honored in living.rs:847-860 via LivingEntity::pickup)
 - ✅ Transform List — `transform {list::*} with (input * 2)`
-- ⛔ Tree — no tree growth API
-- ⛔ Update Block — no block update API
-- ⛔ Vectors - Rotate Around Vector — Carve has no vector type
-- ⛔ Vectors - Rotate around XYZ — Carve has no vector type
-- 🟡 Vehicle — `dismount`, `eject`, `make %player% ride %player%`; via the `ride` command
+- ✅ Tree — `grow oak|birch|jungle|acacia|dark oak|spruce|cherry|mangrove|big tree at <location>` (needs the ground a sapling needs)
+- ⛔ Update Block — not built yet; the API can do it: world.set-block-state with the same state id and block-flags notify-neighbors | force-state (v0.1 world.wit:242-249) forces a neighbor update
+- ✅ Vectors - Rotate Around Vector — `rotate {v} around vector(0, 1, 0) by 45` (variables and list variables)
+- ✅ Vectors - Rotate around XYZ — `rotate {v} around the x|y|z-axis by 90` (variables and list variables)
+- 🟡 Vehicle — `make <entity> ride <entity>`, `make <entity> dismount` for any entity; `eject` of passengers works for players only
 - ⛔ Wake And Sleep — no sleep API
-- ⛔ Zombify Villager — no villager API
+- 🟡 Zombify Villager — `zombify <villager>` swaps it for a zombie villager at the same spot with its name and health (Pumpkin has no conversion call); no `unzombify ... in <timespan>`
 
 ## Conditions (170)
 
@@ -1146,7 +1146,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Delay — `wait N ticks/seconds`, `wait 1 minute and 30 seconds`, `wait {span}`
 - ✅ Filter ⭐ — `filter {x::*} to match:` with `input`
 - 🟡 For Each Loop — `loop {list::*}` works; no `for each` wording
-- 🟡 Locally Suppress Warning — accepted and ignored; Carve has no such warnings
+- ✅ Locally Suppress Warning — accepted and ignored; Carve has no such warnings
 - ✅ Loop — times, lists, all players, values
 - 🟡 Shoot — `shoot <projectile> [from <entity>] [at speed <n>]:` spawns and launches it and runs the body with it; the plugin API cannot set the owner, so hits are not credited and `on shoot` does not fire
 - ✅ Spawn ⭐ — `spawn <mob> at <place>:` with `event-entity` in the body
