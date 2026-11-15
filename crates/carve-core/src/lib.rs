@@ -80,6 +80,7 @@ pub mod w5_chunk5;
 pub mod w5_chunk6;
 pub mod w5_chunk6_blockdata;
 pub mod w6_chunk4;
+pub mod w6_chunk5;
 pub mod weather_time;
 pub mod world_effects;
 pub mod xp_level;

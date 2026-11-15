@@ -100,12 +100,12 @@ impl P<'_> {
             }
             "cooldown" if self.words(&["of"]) => self.cooldown(),
             "key" if self.words(&["of"]) => {
-                let e = self.of_arg(Ty::Item, "key")?;
+                let e = self.of_arg(Ty::Object, "key")?;
                 mk(W4Op::Key, vec![e])
             }
             "namespaced" if self.words(&["key", "of"]) => {
                 self.pos += 1;
-                let e = self.of_arg(Ty::Item, "namespaced key")?;
+                let e = self.of_arg(Ty::Object, "namespaced key")?;
                 mk(W4Op::Key, vec![e])
             }
             "language" | "locale" if self.words(&["of"]) => {

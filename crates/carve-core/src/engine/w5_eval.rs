@@ -83,7 +83,7 @@ impl Engine {
                 }
             }
             W5::MaxStack(i) => match self.eval(i, ex, host)? {
-                Value::Item { id, .. } => Value::Num(f64::from(w5::default_stack_size(&id))),
+                Value::Item { id, .. } => Value::Num(f64::from(crate::w6_chunk5::max_stack(&id, host))),
                 _ => Value::None,
             },
             W5::MoonPhase(w) => {

@@ -193,10 +193,7 @@ pub fn apply(op: W4Op, args: &[Value], host: &mut dyn Host) -> Value {
         MaxUseTime => item_id(a0)
             .and_then(|id| max_use_ticks(&id))
             .map_or(Value::None, |t| span_ticks(i64::from(t))),
-        Key => match a0 {
-            Value::Item { id, .. } => Value::Text(format!("minecraft:{id}")),
-            _ => Value::None,
-        },
+        Key => crate::w6_chunk5::key_of(a0),
         MaxFreeze => match a0 {
             Value::None => Value::None,
             _ => span_ticks(140),
