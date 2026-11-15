@@ -690,7 +690,9 @@ impl Engine {
             }
             Op::Applied => {
                 let texts = ex.ctx.ext.as_deref().map(|v| v.texts.as_slice()).unwrap_or(&[]);
-                Value::List(texts.iter().skip(1).map(|t| Value::Text(t.clone())).collect())
+                // After the event's own texts (the item, the offered enchantment).
+                let own = usize::from(crate::w2_events_2::spec(crate::w2_events_2::Ev::Enchant).counts.1);
+                Value::List(texts.iter().skip(own).map(|t| Value::Text(t.clone())).collect())
             }
         })
     }

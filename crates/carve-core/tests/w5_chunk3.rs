@@ -356,8 +356,8 @@ fn applied_enchantments() {
     let mut ctx = carve_core::w2_events_2::make_ctx(
         Ev::Enchant,
         Some(steve()),
-        &[0.0, 30.0, 2.0],
-        &["diamond_sword"],
+        &[0.0, 30.0, 2.0, 3.0],
+        &["diamond_sword", "sharpness"],
         &[],
     );
     if let Some(x) = ctx.ext.as_mut() {

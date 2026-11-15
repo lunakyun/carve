@@ -646,25 +646,25 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Block Data — `block data of <block>` as text like `oak_log[axis=z]`; set it to change the block state
 - ⛔ Block Hardness — no block hardness data in the plugin API
 - ⛔ Block Sound — no block sound data in the plugin API
-- ⬜ Block Sphere
-- ⬜ Blocks
+- ✅ Block Sphere — `blocks in radius 3 of loc`, `all blocks around loc in radius 2` (up to radius 32)
+- ✅ Blocks — `blocks between a and b`, `blocks from a to b` (a line), `blocks above/below/north/... loc` (100 blocks)
 - ⛔ Blocks in Region — needs WorldGuard
-- ⬜ Book Author — not done yet (item component API)
-- ⬜ Book Pages — not done yet (item component API)
-- ⬜ Book Title — not done yet (item component API)
-- ⬜ Boss Bar From Boss
-- ⬜ Boss Bar From Key
+- ✅ Book Author — `book author of player's tool` (get and set; held item only)
+- ✅ Book Pages — `book pages of player's tool`, `page 2 of player's tool` (get and set; plain text; held item only)
+- ✅ Book Title — `book title of player's tool` (get and set; held item only)
+- ⛔ Boss Bar From Boss — the plugin API does not expose the boss bars of withers or the ender dragon
+- ✅ Boss Bar From Key — `boss bar with id "x"` gives the bar, none for an unknown id
 - ⛔ Breeding Family — no breeding data in the plugin API
-- ⬜ Brewing Results — needs the brew event wired; not done yet
+- ⛔ Brewing Results — the brew event fires before the potions are made and carries no result items
 - ✅ Brewing Stand Fuel Level — `brewing stand fuel level of {loc}`
-- ⬜ Brewing Stand Slot
+- ✅ Brewing Stand Slot — `first/second/third bottle slot`, `ingredient slot`, `fuel slot of block at loc` (get and set)
 - ✅ Brewing Time — `brewing time of {loc}`: a time span
-- ⬜ Broadcast Message — needs the server-broadcast event wired; not done yet
+- ✅ Broadcast Message — `broadcast message` in `on broadcast` (read only)
 - ⛔ Brushing Stage — the plugin API has no brushable block state
 - ⛔ Buried Item — the decorated pot API has no item access
 - ✅ Burn/Cook Time — `burn time of {loc}`, `cook time of {loc}`, `total cook time of {loc}`: time spans
 - ✅ Case Text ⭐ — `uppercase of x`, `x in lower case`, `capitalized x`, `x in proper case`
-- ⬜ Center of World Border
+- ✅ Center of World Border — `world border center of <border or world>` (get, set, reset; y is 0)
 - ✅ Character Codepoint — `codepoint of "a"`, `unicode of x`, `code point of x`
 - ✅ Character from Codepoint — `character from codepoint 65`, `char from unicode n`
 - ✅ Characters Between — `characters between "a" and "e"`, `alphanumeric characters between ...`, `loop` works
@@ -686,20 +686,20 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Compass Target — `compass target of player`, `player's compass target`, `set compass target of player to loc`, `reset compass target of player`
 - ⛔ Config — Skript's config.sk does not exist in Carve
 - ✅ Console ⭐ — `console`, `send ... to console`, `sender is console`
-- ⬜ Consumed Item
+- ✅ Consumed Item — `consumed item` in `on consume` (read only)
 - ✅ Coordinate — `x/y/z of`, `x-coordinate of`
 - ✅ Create Boss Bar — id, title, color, style, progress; scoreboards and boss bars are in [their own page](syntax/scoreboards-bossbars.md)
 - ⛔ Create Loot Context — no loot table API in the plugin API
-- ⬜ Create WorldBorder
+- ⬜ Create WorldBorder — needs per-player (virtual) borders, the World Border row; Pumpkin's border is per world
 - ⛔ Created Damage Source — the plugin API has damage types but no damage source object
-- ⬜ Created Potion Effect
-- ⬜ Creature/Entity/Player/Projectile/Villager/Powered Creeper/etc.
-- ⬜ Cursor Slot
+- ✅ Created Potion Effect — `potion effect of speed of tier 2 for 10 seconds`, `ambient`, `without particles`; `apply {_e} to player`
+- 🟡 Creature/Entity/Player/Projectile/Villager/Powered Creeper/etc. — `the zombie`, `the creature`, `event-<type>` in `on damage` and `on death` only
+- ✅ Cursor Slot — `cursor slot of player` in `on inventory click` (the cursor before the click, read only)
 - ✅ Custom Chest Inventory ⭐ — `set {_gui} to chest inventory with 3 rows named "Shop"`, `set slot`, `open {_gui} to player`; saved in global variables
 - 🟡 Custom Model Data — get, set and reset on `player's tool` only
 - ✅ Damage — settable: `set damage to`, `add ... to damage`, `remove ... from damage`
-- ⬜ Damage Amount of World Border
-- ⬜ Damage Buffer of World Border
+- ✅ Damage Amount of World Border — get, set, add, remove, reset
+- ✅ Damage Buffer of World Border — get, set, add, remove, reset
 - 🟡 Damage Cause — `damage cause` in `on damage` (read only, like `fall`, `player_attack`)
 - ⛔ Damage Source — the plugin API has damage types but no damage source object
 - ⛔ Damage Source - Causing Entity — the plugin API has damage types but no damage source object
@@ -708,8 +708,8 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Damage Source - Direct Entity — the plugin API has damage types but no damage source object
 - ⛔ Damage Source - Food Exhaustion — the plugin API has damage types but no damage source object
 - ⛔ Damage Source - Source Location — the plugin API has damage types but no damage source object
-- ⬜ Damage Value/Durability
-- ⬜ Damaged Item
+- ✅ Damage Value/Durability — `damage of`, `durability of` item values; set, add and remove on the held item
+- ✅ Damaged Item — `diamond sword with damage 10`, `iron pickaxe damaged by 10`
 - ✅ Date Ago/Later ⭐ — `5 minutes ago`, `2 hours later`
 - ⛔ De-queue Queue (Experimental) — Carve has no queue type
 - ✅ Death Message ⭐ — `death message` in `on death`; `set death message to "..."` with colors
@@ -730,23 +730,23 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Display Transformation Scale/Translation — needs entity values, which Carve does not have yet
 - ⛔ Display View Range — needs entity values, which Carve does not have yet
 - ✅ Distance
-- ⬜ Dropped Item Owner
-- ⬜ Dropped Item Thrower
-- ⬜ Drops
-- ⬜ Drops Of Block
+- ⛔ Dropped Item Owner — the plugin API has no item entity owner
+- ⛔ Dropped Item Thrower — the plugin API has no item entity thrower
+- ⛔ Drops — the death events in the plugin API carry no drop list
+- ⛔ Drops Of Block — the plugin API has no block loot or drop lookup
 - 🟡 Elements — `first element of`, `last element of`, `element N of {list::*}`; no `first N elements`
-- ⬜ Enchant Item
-- ⬜ Enchanting Experience Cost
-- ⬜ Enchantment Bonus
-- ⬜ Enchantment Hint
-- ⬜ Enchantment Level
-- ⬜ Enchantment Offer
-- ⬜ Enchantment Offer Cost
-- ⬜ Ender Chest
-- ⬜ Enderman Carrying BlockData
+- ✅ Enchant Item — `enchant item` in `on enchant prepare` and `on enchant` (read only)
+- ✅ Enchanting Experience Cost — `exp cost` in `on enchant` (read only)
+- ✅ Enchantment Bonus — `enchantment bonus` in `on enchant prepare` (read only)
+- ✅ Enchantment Hint — `enchantment hint`, `enchantment hint level` in `on enchant` (read only)
+- ✅ Enchantment Level — `enchantment level of <offer>` or of text like `"sharpness IV"`
+- ✅ Enchantment Offer — `enchantment offers`, `enchantment offer 1` in `on enchant prepare` (read only)
+- ✅ Enchantment Offer Cost — `cost of enchantment offer 1` (read only)
+- ✅ Ender Chest — `ender chest of player`, `slot N of ender chest of player` (get, set), `clear ender chest of`, `open player's ender chest`
+- ✅ Enderman Carrying BlockData — `carried block of <enderman>` (get, set to a block or block data text)
 - 🟡 Entities — `all zombies in radius 10 of player`, `all entities`; no `all entities in chunk` or world filters
-- ⬜ Entity AI
-- ⬜ Entity Attribute
+- ✅ Entity AI — `ai of <mob>` (get, set)
+- ✅ Entity Attribute — `movement speed attribute of player`, `total` value, set, add, remove, reset
 - 🟡 Entity Fire Burn Duration — `burn duration of player` (read, set, add, remove); no combust-event value
 - ⛔ Entity Owner — scripts have no entity values, so there is no tamed-owner lookup
 - ⛔ Entity Size — slime and phantom size is not in the plugin API
@@ -827,7 +827,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Input — the API gives no player input (WASD, jump) state
 - ⛔ Interaction Height/Width — Pumpkin's API has no interaction entities
 - ✅ Inventory ⭐ — `player's inventory`, `player's current inventory`, chest inventory values in variables, `event-inventory`
-- ⬜ Inventory Action
+- ✅ Inventory Action — `inventory action` in `on inventory click`, Bukkit's names worked out from the click
 - ⛔ Inventory Close Reason — Pumpkin's inventory close event carries no reason
 - ✅ Inventory Holder/Viewers/Rows/Slots — `rows of`, `amount of slots of`, `viewers of` and `holder of` chest menus made by scripts (holder is always none, as in Skript)
 - ✅ Inventory Slot ⭐ — `slot 3 of player's inventory`, `set slot 3 of player's current inventory to diamond`

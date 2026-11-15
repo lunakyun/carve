@@ -1945,6 +1945,7 @@ impl Engine {
             },
             Expr::Inv(i) => self.inv_expr(i, ex, host)?,
             Expr::Gap(g) => self.gap_expr(g, ex, host)?,
+            Expr::C4(n) => self.c4_expr(n, ex, host)?,
             Expr::ExtVal(i) => ex.ctx.ev.get(usize::from(*i)).cloned().unwrap_or(Value::None),
             Expr::ClickedBlock => match &ex.ctx.block {
                 Some(b) => Value::Item {
@@ -2678,6 +2679,7 @@ impl Engine {
             Effect::Inv(i) => self.inv_effect(i, ex, host)?,
             Effect::Gap(g) => self.gap_effect(g, ex, host)?,
             Effect::C6(c) => self.exec_c6(c, ex, host)?,
+            Effect::C4(c) => self.c4_effect(c, ex, host)?,
             Effect::Bound(b) => self.bound_effect(b, ex, host)?,
             Effect::Wt(w) => self.wt_effect(w, ex, host)?,
             Effect::Sb(s) => self.sb_effect(s, ex, host)?,

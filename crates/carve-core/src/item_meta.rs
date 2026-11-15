@@ -20,11 +20,17 @@ pub struct ItemMeta {
     /// Other item components, as name and SNBT value (`profile`, `"Notch"`).
     /// They go into the `give` command.
     pub comps: Vec<(String, String)>,
+    /// Used-up durability (the `damage` component), when the item has any.
+    pub damage: Option<u32>,
 }
 
 impl ItemMeta {
     pub fn is_empty(&self) -> bool {
-        self.name.is_none() && self.lore.is_empty() && self.enchants.is_empty() && self.comps.is_empty()
+        self.name.is_none()
+            && self.lore.is_empty()
+            && self.enchants.is_empty()
+            && self.comps.is_empty()
+            && self.damage.is_none()
     }
 
     /// Add an enchantment, replacing the level when it is already there.
@@ -56,6 +62,9 @@ impl ItemMeta {
             let c: Map<String, Json> = self.comps.iter().map(|(k, v)| (k.clone(), json!(v))).collect();
             o.insert("comps".into(), Json::Object(c));
         }
+        if let Some(d) = self.damage {
+            o.insert("damage".into(), json!(d));
+        }
         Json::Object(o)
     }
 
@@ -83,6 +92,10 @@ impl ItemMeta {
                 }
             }
         }
+        m.damage = o
+            .get("damage")
+            .and_then(Json::as_u64)
+            .and_then(|n| u32::try_from(n).ok());
         (!m.is_empty()).then(|| Box::new(m))
     }
 }
@@ -313,6 +326,9 @@ pub fn give_command(player: &str, id: &str, count: u32, meta: &ItemMeta) -> Stri
     }
     for (k, v) in &meta.comps {
         parts.push(format!("{k}={v}"));
+    }
+    if let Some(d) = meta.damage {
+        parts.push(format!("damage={d}"));
     }
     if parts.is_empty() {
         format!("give {player} minecraft:{id} {count}")

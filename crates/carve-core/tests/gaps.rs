@@ -316,6 +316,7 @@ fn click(slot: i32, menu: Option<(u64, &str, u8)>) -> EventCtx {
         item: None,
         click: "left".into(),
         menu: menu.map(|(i, t, r)| (i, t.to_string(), r)),
+        cursor: None,
     }));
     c
 }

@@ -75,6 +75,7 @@ pub mod w4_tags_data;
 pub mod w5_chunk1;
 pub mod w5_chunk2;
 pub mod w5_chunk3;
+pub mod w5_chunk4;
 pub mod w5_chunk5;
 pub mod w5_chunk6;
 pub mod w5_chunk6_blockdata;

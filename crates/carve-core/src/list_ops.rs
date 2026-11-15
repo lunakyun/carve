@@ -115,6 +115,7 @@ pub fn looks_like_list_op(toks: &[Tok], env: &Env) -> bool {
         || crate::w5_chunk3::is_list_expr(toks)
         || crate::w5_chunk6::is_list_expr(toks)
         || crate::w2_expressions_5::is_numbers_loop(toks)
+        || crate::w5_chunk4::is_list_expr(toks, env)
         || toks.iter().any(|t| t.is_lit("where") || t.is_lit("except"))
 }
 
