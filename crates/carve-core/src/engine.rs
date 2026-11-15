@@ -2116,6 +2116,13 @@ impl Engine {
                 Value::Timespan { millis } => Value::Num(crate::timespans::span_part(millis, *unit, *total)),
                 _ => Value::None,
             },
+            Expr::W5c5(n) => {
+                let mut vals = Vec::with_capacity(n.args.len());
+                for a in &n.args {
+                    vals.push(self.eval(a, ex, host)?);
+                }
+                crate::w5_chunk5::apply(n.op, &vals, host)?
+            }
             Expr::Rtw(n) => {
                 let mut vals = Vec::with_capacity(n.args.len());
                 for a in &n.args {
@@ -2499,6 +2506,13 @@ impl Engine {
     ) -> Result<Option<u64>, String> {
         match e {
             Effect::W2b(w) => self.run_w2b(w, ex, host)?,
+            Effect::W5c5(w) => {
+                let mut vals = Vec::with_capacity(w.args.len());
+                for a in &w.args {
+                    vals.push(self.eval(a, ex, host)?);
+                }
+                crate::w5_chunk5::run_effect(w.op, &vals, host)?;
+            }
             Effect::Rtw(w) => {
                 let name = self.eval(&w.name, ex, host)?;
                 crate::w4_skbee_raytrace_world::run_effect(w, &name, host)?;

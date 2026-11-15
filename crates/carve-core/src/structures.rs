@@ -577,7 +577,11 @@ fn const_term(toks: &[Tok], env: &Env) -> Result<bool, String> {
 
 // ---- the caught error ----
 
-const PHRASES: [&[&str]; 9] = [
+const PHRASES: [&[&str]; 13] = [
+    &["last", "caught", "runtime", "errors"],
+    &["last", "caught", "run", "time", "errors"],
+    &["last", "caught", "errors"],
+    &["last", "caught", "run", "time", "error"],
     &["last", "caught", "runtime", "error"],
     &["last", "caught", "error"],
     &["last", "runtime", "error"],
@@ -603,7 +607,7 @@ fn phrase_words(first: &str, rest: &[Tok], max: usize) -> Option<Vec<String>> {
 /// `last caught runtime error` and its shorter forms. `first` is the word
 /// just read, `rest` what follows it. Gives how many tokens of `rest` belong.
 pub fn error_phrase(first: &str, rest: &[Tok]) -> Option<usize> {
-    let words = phrase_words(first, rest, 3)?;
+    let words = phrase_words(first, rest, 4)?;
     (2..=words.len()).rev().find_map(|n| {
         let cand: Vec<&str> = words.iter().take(n).map(String::as_str).collect();
         PHRASES.iter().any(|p| **p == *cand).then_some(n - 1)
@@ -613,10 +617,10 @@ pub fn error_phrase(first: &str, rest: &[Tok]) -> Option<usize> {
 /// Are the tokens up to the end the start of such a phrase? Then a longer
 /// span can still match, which the pattern matcher needs to know.
 pub fn error_phrase_start(first: &str, rest: &[Tok]) -> bool {
-    if rest.len() > 2 || rest.iter().any(|t| !matches!(t, Tok::Word(_))) {
+    if rest.len() > 3 || rest.iter().any(|t| !matches!(t, Tok::Word(_))) {
         return false;
     }
-    let Some(words) = phrase_words(first, rest, 2) else {
+    let Some(words) = phrase_words(first, rest, 3) else {
         return false;
     };
     PHRASES

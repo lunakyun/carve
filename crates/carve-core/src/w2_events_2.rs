@@ -226,6 +226,7 @@ pub const SPECS: &[Spec] = &[
         vals: &[
             ("bow item", T(0)),
             ("bow force", N(0)),
+            ("projectile force", N(0)),
             ("event-entity", N(1)),
             ("entity id", N(1)),
         ],

@@ -234,6 +234,8 @@ pub enum Expr {
     Rtw(Box<crate::w4_skbee_raytrace_world::Node>),
     /// Inventory values, `items in`, regex replace (see `gaps`).
     Gap(Box<crate::gaps::GapExpr>),
+    /// Potion effects, particles, queues and more (see `w5_chunk5`).
+    W5c5(Box<crate::w5_chunk5::Node>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -467,6 +469,7 @@ impl Expr {
             Expr::W4F(n) => n.f.ty(),
             Expr::T1(n) => n.ty,
             Expr::Rtw(n) => n.ty,
+            Expr::W5c5(n) => n.ty,
             Expr::Gap(g) => g.ty(),
             Expr::Items(_) => Ty::List,
             Expr::Bound(b) => b.ty(),
@@ -712,6 +715,7 @@ impl P<'_> {
     pub(crate) fn primary(&mut self) -> Result<Expr, String> {
         let mut e = self.primary_base()?;
         e = self.w2e7_post(e)?;
+        e = self.w5c5_post(e)?;
         // `5 minutes ago`, `2 hours later`
         if let Some(Tok::Word(w)) = self.toks.get(self.pos)
             && (w.eq_ignore_ascii_case("ago") || w.eq_ignore_ascii_case("later"))
@@ -1680,6 +1684,9 @@ impl P<'_> {
                     return Ok(e);
                 }
                 if let Some(e) = self.t1_head(&lw)? {
+                    return Ok(e);
+                }
+                if let Some(e) = self.w5c5_head(&lw)? {
                     return Ok(e);
                 }
                 if let Some((e, end)) =

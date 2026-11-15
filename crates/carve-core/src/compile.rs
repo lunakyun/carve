@@ -357,6 +357,8 @@ pub enum Effect {
     W6(Box<crate::w2_expressions_6::W6Effect>),
     /// `create world`, `unload world` (`w4_skbee_raytrace_world`).
     Rtw(Box<crate::w4_skbee_raytrace_world::RtwEffect>),
+    /// Potion effect, particle and weather effects (`w5_chunk5`).
+    W5c5(Box<crate::w5_chunk5::W5Effect>),
     SetHealth(Expr, Expr),
     SetGamemode(Expr, Expr),
     /// Experience change; the two expressions are in pattern order.
@@ -533,6 +535,7 @@ pub enum EffKind {
     W2e3(crate::w2_effects_3::W2Op),
     W6(crate::w2_expressions_6::W6Op),
     Rtw(crate::w4_skbee_raytrace_world::EOp),
+    W5c5(crate::w5_chunk5::EOp),
     SetHealth,
     SetGamemode,
     Xp(crate::xp_level::XpOp),
@@ -786,6 +789,11 @@ fn registry() -> &'static Registry {
                     .iter()
                     .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
             )
+            .chain(
+                crate::w5_chunk5::EFFECT_PATTERNS
+                    .iter()
+                    .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
+            )
             .collect(),
         conditions: crate::op_kick_ban::CONDITION_PATTERNS
             .iter()
@@ -824,6 +832,7 @@ pub fn check_registry() -> Result<(), String> {
         .chain(crate::w2_expressions_5::EFFECT_PATTERNS)
         .chain(crate::w2_expressions_6::EFFECT_PATTERNS)
         .chain(crate::w4_skbee_raytrace_world::EFFECT_PATTERNS)
+        .chain(crate::w5_chunk5::EFFECT_PATTERNS)
     {
         Pattern::new(s, *k)?;
     }
@@ -1807,6 +1816,7 @@ impl Cx<'_> {
             .chain(crate::w2_effects_3::EFFECT_PATTERNS)
             .chain(crate::w2_expressions_6::EFFECT_PATTERNS)
             .chain(crate::w4_skbee_raytrace_world::EFFECT_PATTERNS)
+            .chain(crate::w5_chunk5::EFFECT_PATTERNS)
             .map(|(s, _)| *s)
             .collect();
         let mut e = ScriptError::new(
@@ -2061,6 +2071,7 @@ fn build_effect(kind: EffKind, mut c: Vec<Option<Capture>>) -> Option<Effect> {
         EffKind::W5(op) => return crate::w2_expressions_5::build(op, c),
         EffKind::W6(op) => return crate::w2_expressions_6::build(op, c),
         EffKind::Rtw(op) => return crate::w4_skbee_raytrace_world::build(op, c),
+        EffKind::W5c5(op) => return crate::w5_chunk5::build(op, c),
         EffKind::Heal => Effect::Heal(take_expr(c, 0)?),
         EffKind::SetHealth => Effect::SetHealth(take_expr(c, 0)?, take_expr(c, 1)?),
         EffKind::SetGamemode => Effect::SetGamemode(take_expr(c, 0)?, take_expr(c, 1)?),
