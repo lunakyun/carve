@@ -1,0 +1,174 @@
+# Checks for api-store.js: actions done through the plugin API (no console
+# commands) and what Carve keeps between runs.
+
+command /as_sound:
+    trigger:
+        play sound "entity.experience_orb.pickup" with volume 1 and pitch 1 to player
+        play sound "block.note_block.bass" with volume 2 and pitch 0.5 to player at location(10, 70, 20)
+
+command /as_stop:
+    trigger:
+        stop sound "entity.experience_orb.pickup" for player
+        stop all sounds for player
+
+command /as_badsound:
+    trigger:
+        play sound "entity.nope.nothing" to player
+        send "as:after-bad" to player
+
+command /as_kick <text>:
+    trigger:
+        kick arg-1 due to "as:kick-reason"
+
+command /as_kickoff:
+    trigger:
+        kick "Ghost"
+
+command /as_ban <text>:
+    trigger:
+        ban arg-1 because of "as:ban-reason"
+        if arg-1 is banned:
+            send "as:ban=yes" to player
+        else:
+            send "as:ban=no" to player
+
+command /as_banfor <text>:
+    trigger:
+        ban arg-1 because of "as:ban-for" for 1 minute
+        if arg-1 is banned:
+            send "as:banfor=yes" to player
+        else:
+            send "as:banfor=no" to player
+
+command /as_unban <text>:
+    trigger:
+        unban arg-1
+        if arg-1 is banned:
+            send "as:unban=still-banned" to player
+        else:
+            send "as:unban=ok" to player
+
+command /as_op <text>:
+    trigger:
+        op arg-1
+        send "as:opped" to player
+
+command /as_deop <text>:
+    trigger:
+        deop arg-1
+        send "as:deopped" to player
+
+command /as_isop:
+    trigger:
+        if player is op:
+            send "as:isop=yes" to player
+        else:
+            send "as:isop=no" to player
+
+command /as_give:
+    trigger:
+        give 2 diamond named "&6As Prize" with lore "&7a lore line" to player
+        give 3 stick to player
+        send "as:given" to player
+
+command /as_level:
+    trigger:
+        set level of player to 2
+        give player 3 levels
+        remove 1 level from player
+        send "as:level %level of player%" to player
+
+command /as_ride:
+    trigger:
+        spawn a pig at location(x of player + 2, y of player, z of player)
+        set {as_pig} to last spawned entity
+        make player ride {as_pig}
+        send "as:ride-sent" to player
+
+command /as_riding:
+    trigger:
+        if player is riding a pig:
+            send "as:riding=yes" to player
+        else:
+            send "as:riding=no" to player
+
+command /as_dismount:
+    trigger:
+        make player dismount
+        send "as:dismount-sent" to player
+
+command /as_title:
+    trigger:
+        send title "as:title" to player
+        wait 5 ticks
+        clear title of player
+        send "as:title-cleared" to player
+
+command /as_poison:
+    trigger:
+        poison player for 5 seconds
+        send "as:poisoned" to player
+
+command /as_cure:
+    trigger:
+        cure player
+        send "as:cured" to player
+
+command /as_team:
+    trigger:
+        register a new objective "as_obj" with criteria "dummy" named "As Obj"
+        set score of player in objective "as_obj" to 7
+        register team "as_team"
+        set prefix of team "as_team" to "&c[As] "
+        add player to team "as_team"
+        send "as:team %team of player% %score of player in ""as_obj""%" to player
+
+command /as_team_end:
+    trigger:
+        unregister team "as_team"
+        unregister objective "as_obj"
+        send "as:team-gone" to player
+
+command /as_firework:
+    trigger:
+        launch a firework at location(x of player, y of player + 2, z of player)
+        send "as:firework" to player
+
+# ---- what Carve keeps ----
+
+on first join:
+    add 1 to {as_firsts}
+
+command /as_set1:
+    trigger:
+        set {as_text} to "saved text"
+        set {as_num} to 41
+        add "one" to {as_list::*}
+        add "two" to {as_list::*}
+        create bound with id "asbound" within location(0, 60, 0) and location(5, 65, 5)
+        send "as:set1" to player
+
+command /as_set2:
+    trigger:
+        add 1 to {as_num}
+        add "three" to {as_list::*}
+        delete {as_text}
+        send "as:set2" to player
+
+command /as_crash:
+    trigger:
+        set {as_crash} to 99
+        send "as:crash-set" to player
+
+command /as_show:
+    trigger:
+        set {_b} to "no"
+        if bound "asbound" exists:
+            set {_b} to "yes"
+        set {_o} to "no"
+        if bound "oldbound" exists:
+            set {_o} to "yes"
+        set {_pb} to "no"
+        if player has played before:
+            set {_pb} to "yes"
+        send "as:show text=%{as_text}% num=%{as_num}% list=%size of {as_list::*}% firsts=%{as_firsts}% bound=%{_b}% old=%{_o}% legacy=%{as_old}%/%{as_oldt}% played=%{_pb}% crash=%{as_crash}%" to player

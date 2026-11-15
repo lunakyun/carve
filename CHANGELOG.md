@@ -7,6 +7,27 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Changed (infrastructure)
+
+- Actions that ran vanilla commands as the console now use the plugin API, so
+  ops no longer see `[Server: Played sound ...]` in chat and the console log has
+  no command echo: `play sound`, `stop sound`, `kick`, `ban` (also `ban ... for
+  <time>`, offline names the server already knows), `unban`, `op`, `deop`,
+  `give` (with names, lore and enchantments, so colour codes are no longer
+  left in item names), experience, `make ... ride`, `dismount`, `clear title`,
+  `poison`, `cure`, `launch a firework` and the scoreboard and team effects.
+  An action that can't be done (unknown sound, player not online, item that
+  doesn't exist) logs a warning with the script file and line. Console
+  commands remain where the plugin API v0.1 has no call (swing, the recipe
+  book, `stop`, difficulty, weather length, entity NBT such as `baby` and
+  `leash`, `drop`, `place tree`, `set spawn`); each has a comment saying which.
+- Carve keeps variables, bounds and the players that joined before in one file,
+  `carve.redb` (a redb database), instead of `variables.json`, `bounds.json`
+  and `first_join.txt`. Only changed keys are written, in one transaction per
+  write, and also on `/carve reload` and when the server stops. On the first
+  start with the new file, the old files are imported and renamed to `.old`.
+  See [variables](docs/variables.md#saving).
+
 ### Added (Skript parity, wave 6 chunk 1)
 
 - New events: `on jump`, `on player chunk enter`, `on step on <block>`,

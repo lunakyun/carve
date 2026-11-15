@@ -20,7 +20,8 @@ const SOUND_SOURCES = ['master', 'music', 'record', 'weather', 'block', 'hostile
 
 function soundRef (r) {
   const n = r.varint()
-  if (n === 0) { const name = r.str(); r.opt(() => r.f32()); return name }
+  // A sound sent by name (the plugin does that) has the `minecraft:` prefix; registry ids do not.
+  if (n === 0) { const name = r.str(); r.opt(() => r.f32()); return name.replace(/^minecraft:/, '') }
   return nameOf('sound', n - 1) || `#${n - 1}`
 }
 

@@ -39,7 +39,7 @@ node tests/ingame/run.js
 ```
 
 The runner copies `carve.wasm`, the examples and `tests/ingame/carve-test.carve`
-into the server. It deletes `variables.json` first. It prints one line per
+into the server. It deletes Carve's saved state (`carve.redb` and the old files) first. It prints one line per
 case and exits with code 1 if anything fails. The server log is saved to
 `.test/server/last-run.log`. Set `CARVE_SERVER_DIR` or `PUMPKIN_EXE` to use
 another folder or binary, and `CARVE_PORT` when that server listens on another
@@ -73,6 +73,7 @@ Checks per area (2026-11-15):
 | player | 25575 | 162 | 2 |
 | language | 25576 | 218 | 0 |
 | case-chest | 25640 | 21 | 1 |
+| api-store | 25650 | 62 | 0 |
 | `run.js` | 25565 | 68 | 0 |
 | **all** | | **819** | **9** |
 
@@ -86,7 +87,8 @@ through `/.test/`). On first use the harness copies the Pumpkin binary (a
 hard link where possible), `pumpkin.toml` and `data/*.json` from
 `CARVE_TEMPLATE_DIR` (default `../pumpscript/.test/server`, the server from
 the setup above). It never copies the world. On every start it rewrites the
-ports, `ops.json`, `carve.wasm` and the scripts, and deletes `variables.json`
+ports, `ops.json`, `carve.wasm` and the scripts, and deletes Carve's saved
+state (`carve.redb`, the old `variables.json`, `bounds.json` and `first_join.txt`)
 and the world unless you pass `keepVariables` or `keepWorld`. The server log
 is saved to `.test/areas/<name>/last-run.log`.
 
