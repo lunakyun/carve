@@ -30,6 +30,9 @@ pub trait Host {
     /// Find an online player by name.
     fn find_player(&mut self, name: &str) -> Option<PlayerRef>;
     fn has_permission(&mut self, player: &PlayerRef, node: &str) -> bool;
+    /// The script line the next effect comes from. Called before every effect
+    /// except `set`, so a host can name the line if the effect goes wrong later.
+    fn effect_at(&mut self, _file: &std::sync::Arc<str>, _line: usize) {}
     /// Call `Engine::resume(token)` after `ticks` server ticks.
     fn schedule_wait(&mut self, ticks: u64, token: u64);
     /// Milliseconds on any monotonic clock (used for the save debounce).

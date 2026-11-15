@@ -216,7 +216,7 @@ fn explosion() {
     // Absurd force is clamped.
     assert_eq!(
         run("create explosion of force 9999 at player"),
-        ["explode 1.5 64 -3 p=100 fire=false"]
+        ["explode 1.5 64 -3 p=32 fire=false"]
     );
 }
 

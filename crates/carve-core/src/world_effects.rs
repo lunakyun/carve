@@ -94,7 +94,7 @@ pub struct WorldCond {
 const DEFAULT_POTION_TICKS: f64 = 15.0 * 20.0;
 const DEFAULT_POWER: f64 = 3.0;
 const MAX_PARTICLES: f64 = 1000.0;
-const MAX_POWER: f64 = 100.0;
+const MAX_POWER: f64 = 32.0;
 const MAX_TICKS: f64 = 20_000_000.0;
 
 // ---------- parsing ----------
