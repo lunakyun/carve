@@ -98,7 +98,7 @@ The same goes for `player has diamond sword named "x"`: it counts diamond swords
 
 ## How give works
 
-`give` runs the vanilla `give` command with item components, as the console. Pumpkin reads names and lore as plain strings, so Carve turns color codes into `§` codes.
+`give` uses the plugin API, with names, lore and enchantments set on the item. Only what doesn't fit in the inventory is handed to the vanilla `give` command (with item components), which drops it at the player's feet. Pumpkin reads names and lore as plain strings there, so Carve turns color codes into `§` codes.
 
 ## Limits
 

@@ -122,8 +122,8 @@ give player 1 diamond sword
 ```
 
 Item names are checked when the script loads (see [types](types.md)). Carve
-runs Pumpkin's `give` command as the console, so a full inventory drops the
-rest, as with `/give`. The amount is capped at 6400.
+uses the plugin API. If the inventory is full, the rest is dropped with
+Pumpkin's `give` command, as with `/give`. The amount is capped at 6400.
 
 ### `execute console command %text%`
 

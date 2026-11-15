@@ -23,7 +23,7 @@ Rules:
 - `with`, `at` and `and` work before `volume` and `pitch`. `for` works like `to`,
   and `from` like `for` for stop.
 
-How it works: Pumpkin's plugin API has no sound call. Carve runs the vanilla
-`playsound` and `stopsound` console commands (the `master` category). Sounds
-play in the console's world. Not done yet: sound categories and playing to
+How it works: Carve uses the plugin API (the `master` category). A sound name
+that isn't a vanilla sound, or a player who isn't online, logs a warning with
+the script file and line. Not done yet: sound categories and playing to
 several players at once.

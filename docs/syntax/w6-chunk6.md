@@ -22,8 +22,8 @@ send "%villager level of {_v}% %villager profession of {_v}%" to player
 - `protocol version of <player>` is the number of the version the Java client joined with. Without a player it is the
   server's own (777 for Minecraft 26.3). Bedrock players have no number.
 - `yaw` / `pitch` of a player or entity can be set, added to and removed from. Pitch is clamped to -90..90.
-- `vehicle of` and `passengers of` read what an entity rides and what rides it. To change that, use the `ride`
-  command (`execute console command "ride <name> mount <uuid>"`).
+- `vehicle of` and `passengers of` read what an entity rides and what rides it. To change that, use `make <player> ride <player>`
+  and `make <player> dismount` (see [ride and dismount](w6-chunk2.md#ride-and-dismount-any-entity)).
 - `villager level`, `villager experience` and `villager profession` are read only. The profession is text such as
   `librarian` or `none`.
 

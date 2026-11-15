@@ -5,9 +5,12 @@
 ```
 set {_e} to potion effect of speed of tier 2 for 30 seconds
 set {_e} to an ambient potion effect of regeneration 3 without particles for 10 seconds
-set {_e} to infinite potion effect of night vision
+set {_e} to infinite potion effect of night_vision
 apply {_e} to player
 ```
+
+In a potion effect value, write a name with several words with an underscore
+(`night_vision`). The `apply` effect also takes spaces.
 
 - The tier is `of tier N`, `tier N` or a plain number after the effect (1 is the lowest). Without one it is 1.
 - Without `for`, the effect lasts 15 seconds, like `apply speed to player`.

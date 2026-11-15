@@ -43,7 +43,7 @@ Alignment is `left`, `center` or `right`. Line width is in pixels (default 200),
 
 ```
 send "%sea pickles of targeted block of player%"
-add 1 to sea pickles of event-block
+add 1 to sea pickles of targeted block of player
 send "%block data of block at player%"          # oak_log[axis=y]
 set block data of {_b} to "sea_pickle[pickles=3,waterlogged=false]"
 send "%temperature of block below player%"

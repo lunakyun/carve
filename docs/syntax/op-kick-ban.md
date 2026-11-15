@@ -28,10 +28,12 @@ reset player's tab list name
 The reason can start with `due to`, `because`, `because of`, `by reason of`,
 `on account of`, `for` or `with reason`.
 
-Op, kick and ban run the server's own `op`, `deop`, `kick`, `ban`, `pardon`,
-`ban-ip` and `pardon-ip` commands as the console. They are queued and run
-right after the script, like `execute console command`. Display and tab list
-names are set directly. `&` color codes work in names.
+Op, deop, kick, ban and unban use the plugin API, not console commands. They
+run right away. If one fails (kick of a player who isn't online), the log has a
+warning with the script file and line. Only a ban of an offline name the server
+doesn't know yet still uses the `ban` command, because it needs a profile
+lookup. Display and tab list names are set directly. `&` color
+codes work in names.
 
 ## Conditions
 

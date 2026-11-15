@@ -48,6 +48,21 @@ features:
     linkText: Hosted servers
 ---
 
+## What's new in 0.3
+
+- **0.3.0:** Skript parity is now about 70% of core Skript
+  (about 90% of what Pumpkin allows). Sounds, kick, ban, op, give, XP, ride,
+  titles and teams use the plugin API instead of console commands, so no more
+  `[Server: ...]` lines in chat. An action that can't be done logs a warning
+  with the file and line instead of failing in silence. Variables, bounds and
+  first joins now live in one `carve.redb` database.
+- **0.3.1:** scripts can no longer freeze or crash the server. Commands that
+  run themselves, text that doubles in a loop, runaway regexes, huge lists and
+  endless waits are now stopped with an error that names the script and line.
+  See [the limits](/limits#limits-that-keep-the-server-safe).
+
+Everything else is in the [changelog](/changelog).
+
 ## What is Carve?
 
 Carve is a scripting plugin for [Pumpkin](https://github.com/Pumpkin-MC/Pumpkin), the Minecraft server written in Rust. You write commands, events and small minigames in Skript-style English, and `/carve reload` puts them live without a restart.

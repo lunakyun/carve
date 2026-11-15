@@ -28,43 +28,37 @@ The cases:
 | a | An `on join` trigger with 20 effects that use `player`, text templates and `{joins::%player%}`. Includes building the event (3 host calls). |
 | b | `set {_x} to 0`, then 50 lines of `set {_x} to {_x} + 1`. |
 | c | An `if` / `else if` chain of 10 branches where the last branch matches. |
-| d | Compiling every file in `examples/` once. The table below used the two original examples (`welcome.carve`, `heal.carve`). |
+| d | Compiling every file in `examples/` once (six files when this was measured). |
 | e | One event with no triggers for it (the bench runs 10,000 of them). |
+| f | A loop of 10,000 rounds that adds to a list. |
+| g | A loop of 1,000 calls of a one-line function. |
+| h | 1,000 passes through a 10-branch `if` chain that compares with negative numbers. |
 
 ## Results
 
-Measured on a Windows 11 desktop, native build. "Before" is commit `7d495a0`,
-which used `opt-level = "s"`. "After" is shown at both opt levels so you can
-see what the code changes did on their own.
+One run of the bench on a Windows 11 desktop, native release build (opt-level 3,
+LTO). Times change from machine to machine and from run to run, so compare
+them only with a run on your own machine. The host-call counts are exact.
 
-| Case | Before ns | After ns (opt "s") | After ns (opt 3) | Before calls | After calls |
-|---|---:|---:|---:|---:|---:|
-| a) join, 20 effects | 10,712 | 4,937 | 4,497 | 74 | 21 |
-| b) 50x `set {_x}` + 1 | 10,343 | 1,467 | 1,383 | 3 | 3 |
-| c) if/else-if x10 | 1,705 | 715 | 601 | 5 | 5 |
-| d) compile examples | 68,000 | 44,000 | 39,300 | 0 | 0 |
-| e) fire, no triggers | 10 | 10 | 9 | 0 | 0 |
-
-Case (a) also went from 74 host calls to 21. In the plugin that is the biggest
-win, because every call it saves is a trip across the wasm boundary.
-
-### Wasm: opt-level 3 or "s"?
-
-We ran the same bench as wasm (target `wasm32-wasip1`, under Node's WASI):
-
-| Case | opt "s" ns | opt 3 ns |
+| Case | ns/run | Host calls/run |
 |---|---:|---:|
-| a | 3,990 | 3,510 |
-| b | 2,110 | 1,690 |
-| c | 720 | 530 |
+| a) join, 20 effects | 6,642 | 20 |
+| b) 50x `set {_x}` + 1 | 2,014 | 3 |
+| c) if/else-if x10 | 617 | 4 |
+| d) compile examples | 771,620 | 0 |
+| e) fire, no triggers | 4 | 0 |
+| f) 10k list adds | 5,303,880 | 3 |
+| g) 1k function calls | 171,126 | 3 |
+| h) 1k if-chain | 66,618 | 3 |
 
-| Plugin build | Size of `carve.wasm` |
-|---|---:|
-| opt-level "s" | 801,226 bytes |
-| opt-level 3 | 869,120 bytes |
+The bench runs the native build only. It does not time the plugin as wasm.
 
-Opt-level 3 is 12 to 26% faster for 8% more size, so the release profile now
-uses `opt-level = 3`.
+### Plugin build
+
+The release profile uses `opt-level = 3` and LTO. `carve.wasm` on the release
+page is that build (about 5.5 MB). `carve-small.wasm` is the same code built
+for size (about 4.5 MB) and a little slower, for hosts that limit uploads to
+5 MB.
 
 ## What changed
 
@@ -103,28 +97,7 @@ uses `opt-level = 3`.
   storing the result. Expression trees do not dominate, so a bytecode VM would
   add code for little gain.
 
-## v2
+## Loops
 
-v2 added loops, functions, more condition kinds and more types. The bench
-below compares v1 (`3757017`) with v2 on the same machine, as the median of 5
-alternating runs. Case d now always compiles the six v1 example files, so it
-stays comparable as examples are added.
-
-| Case | v1 ns | v2 ns | Change |
-|---|--:|--:|--:|
-| a) join, 20 effects | 4,708 | 4,878 | +3.6% |
-| b) 50x `set {_x}` + 1 | 1,530 | 1,571 | +2.7% |
-| c) if/else-if x10 | 624 | 549 | -12% |
-| d) compile 6 examples | 153,858 | ~171,000 | ~+11% |
-| e) fire, no triggers | 9 | 9 | 0% |
-
-- **Getting there.** The first v2 build was 20–40% slower in b, c and d. Most
-  of it came back by keeping the hot functions (`eval`, `cond`, `effect`) small
-  and moving rare cases out of line. A direct path for `{var} <op> number`
-  comparisons made c faster than v1.
-- **Compiling.** It got about 11% slower (about 3 µs per file) because there
-  are more patterns and expression forms to try. That only happens when
-  scripts load or reload.
-- **Loops.** Each round of a loop costs a few instructions. All of them count
-  towards the 100,000-instruction runaway guard.
-
+Each round of a loop costs a few instructions. All of them count towards the
+100,000-instruction budget of a run slice (see [limits](limits.md)).

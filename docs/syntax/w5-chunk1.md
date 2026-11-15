@@ -33,9 +33,7 @@ The message goes to the sender and the trigger stops there. It only works inside
 ## Drops and kept inventories
 
 ```
-on break of stone:
-    cancel the drops
-on break of oak log:
+on break:
     cancel the drops of xp
 on death:
     keep the inventory and experience

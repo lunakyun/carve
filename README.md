@@ -39,7 +39,7 @@ command /heal [<player>]:
 
 ## Features
 
-- **Events:** about 150 triggers: join, quit, chat, break, place, death,
+- **Events:** about 165 triggers: join, quit, chat, break, place, death,
   damage (with `attacker`), clicks (`on right click with blaze rod on barrel:`),
   inventories, items, movement, vehicles, weather, worlds, `on load`,
   `every 5 seconds` and `at 18:00`. Most can be cancelled.
@@ -121,8 +121,9 @@ cargo build -p carve-wasm --release --target wasm32-wasip2
 ## FAQ
 
 **Is it Skript compatible?**
-No. Carve looks a lot like Skript, but it is its own language with far fewer
-features. Most Skript scripts will not load without changes.
+Not fully. Carve looks a lot like Skript and covers about 70% of core Skript
+(about 90% of what Pumpkin allows), but it is its own language. Many Skript
+scripts need changes. See the [Skript parity checklist](docs/skript-parity.md).
 
 **Why does my new command need a restart?**
 Pumpkin lets a plugin register commands only while the plugin loads, and it
