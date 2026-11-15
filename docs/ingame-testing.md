@@ -167,8 +167,9 @@ for new commands, and the runaway guard.
 - tab completion of subcommands, and that asking for argument completion
   doesn't crash the server
 
-Not covered: `attacker` with a real hit. That needs the test client to attack
-another player's entity, which it can't do yet.
+Not covered here: `attacker` with a real hit. The `combat` area
+(`tests/ingame/areas/combat.js`, port 25572) covers it with the bot hitting
+mobs and a zombie hitting the bot, plus entity values, velocity and push.
 
 ## Client notes
 

@@ -91,6 +91,13 @@ impl WasmHost<'_> {
         Some(f64::from(l.get_health()))
     }
 
+    pub(super) fn set_entity_health(&mut self, r: &EntityRef, health: f64) {
+        if let Some(l) = self.find_entity(&r.uuid).and_then(|e| e.as_living()) {
+            let max = f64::from(l.get_max_health());
+            l.set_health(health.min(max) as f32);
+        }
+    }
+
     pub(super) fn set_entity_name(&mut self, r: &EntityRef, name: Option<&str>) {
         if let Some(e) = self.find_entity(&r.uuid) {
             match name {
@@ -126,6 +133,12 @@ impl WasmHost<'_> {
     }
 
     pub(super) fn set_entity_velocity(&mut self, r: &EntityRef, v: (f64, f64, f64)) {
+        // The entity call only stores the velocity, and the client moves its own
+        // player, so a player needs the player call that sends the packet.
+        if let Some(p) = self.get_by_uuid(&r.uuid) {
+            p.set_velocity(v);
+            return;
+        }
         if let Some(e) = self.find_entity(&r.uuid) {
             e.set_velocity(v);
         }

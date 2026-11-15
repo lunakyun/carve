@@ -53,6 +53,20 @@ pub struct LateHit {
     tick: u64,
 }
 
+/// Fallback cause for a by-entity event without its plain event: Pumpkin
+/// sends the Debug text of its damage type, so keep only the message id.
+#[cold]
+fn cause_text(raw: &str) -> String {
+    let raw = raw.strip_prefix("minecraft:").unwrap_or(raw);
+    match raw
+        .split_once("message_id: \"")
+        .and_then(|(_, r)| r.split_once('"'))
+    {
+        Some((id, _)) => id.to_string(),
+        None => raw.to_string(),
+    }
+}
+
 fn out_num(o: &FireOutcome) -> Option<f32> {
     o.set.iter().rev().find_map(|(s, v)| match (*s, v) {
         (SLOT_DAMAGE, Value::Num(n)) => Some(*n as f32),
@@ -168,6 +182,12 @@ impl EventHandler<EntityDamageByEntityEvent> for OnDamageByEntity {
         mut data: EventData<EntityDamageByEntityEvent>,
     ) -> EventData<EntityDamageByEntityEvent> {
         let out = with_state(&server, None, |st, host| {
+            // The plain event of this hit has the damage type; `data.cause` is
+            // only Pumpkin's Debug text of the damage type struct.
+            let plain = match &st.late_hit {
+                Some(l) if l.victim == data.entity_id && l.tick == st.hs.tick => Some(l.cause.clone()),
+                _ => None,
+            };
             st.flush_late(host, Some(data.entity_id));
             st.track_hit(host, data.entity_id, data.damage, None, Some(data.damager_id));
             if !st.engine.table().has_event(EventKind::Damage) {
@@ -181,11 +201,7 @@ impl EventHandler<EntityDamageByEntityEvent> for OnDamageByEntity {
                 return None;
             }
             st.damage_pending = None;
-            let cause = data
-                .cause
-                .strip_prefix("minecraft:")
-                .unwrap_or(&data.cause)
-                .to_string();
+            let cause = plain.unwrap_or_else(|| cause_text(&data.cause));
             Some(st.fire_damage(host, data.entity_id, data.damage, Some(data.damager_id), cause))
         });
         if let Some(Some(o)) = out {

@@ -46,6 +46,14 @@ Carve itself. For the full feature-by-feature status, see the
 - **Nested events:** if the server calls back into Carve while a script is
   running, that event is skipped with a warning. Console commands from scripts
   run after the script finishes, which avoids this in the common case.
+  `kill` on a mob is not a console command, so the mob dies inside the script
+  and `on damage` doesn't run for that hit.
+
+## Entities
+
+- **Mobs keep moving while a script runs.** Pumpkin ticks entities on its own
+  thread, so `y velocity of {_e}` read right after `set y velocity of {_e}` can
+  already show one tick of gravity and drag.
 
 ## Inventories
 
