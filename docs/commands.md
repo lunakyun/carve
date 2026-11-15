@@ -64,8 +64,24 @@ Too many arguments. Usage: /pay <player> <number>
 | `aliases: /h, /hi` | no | Other names for the command. Like the command itself, they need a restart to appear. |
 | `usage: text` | no | Sent instead of the generated usage line when the arguments are wrong. |
 | `executable by: players` | no | `players` or `console`. Others get an error message. |
+| `cooldown: 1 minute` | no | How long a player waits between uses. Per player; the console has none. |
+| `cooldown message: text` | no | Sent while the cooldown runs. Can use `%remaining time%`, `%elapsed time%` and `%cooldown time%`. |
+| `cooldown bypass: node` | no | Players with this permission never wait. |
 
-There is no `cooldown:` entry yet. Store the time in a variable instead.
+```
+command /heal:
+    cooldown: 1 minute
+    cooldown message: Wait %remaining time% before healing again.
+    cooldown bypass: heal.nocooldown
+    trigger:
+        heal player
+        if player's health is 20:
+            cancel the cooldown
+```
+
+`cancel the cooldown` in the trigger makes this use not count. Cooldowns are
+kept in memory, so they reset when the server restarts; `cooldown storage:`
+is not supported.
 
 ## Permissions
 
