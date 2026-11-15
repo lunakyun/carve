@@ -5,7 +5,7 @@
 use std::marker::PhantomData;
 
 use carve_core::w2_events_3::Ev3;
-use carve_core::{EventCtx, EventKind, PlayerRef};
+use carve_core::{EventCtx, EventKind, FireOutcome, PlayerRef, Value};
 use pumpkin_plugin_api::Context;
 use pumpkin_plugin_api::Server;
 use pumpkin_plugin_api::events::{
@@ -27,11 +27,15 @@ struct Extract {
     entity: Option<i32>,
     text: Option<String>,
     number: Option<f64>,
+    /// `event-...` values in `EventCtx::ev` (the barter input and drops).
+    ev: Vec<Value>,
 }
 
 trait ExtEvent: FromIntoEvent {
     fn extract(d: &EventData<Self>) -> Extract;
     fn cancel(d: &mut EventData<Self>);
+    /// Write values the script changed back into the event.
+    fn apply(_d: &mut EventData<Self>, _o: &FireOutcome) {}
 }
 
 macro_rules! ext {
@@ -72,7 +76,26 @@ ext!(EntityEnterLoveModeEvent, |d| Extract {
     number: Some(f64::from(d.ticks_in_love)),
     ..Extract::default()
 });
-ext!(PiglinBarterEvent, |_d| Extract::default());
+impl ExtEvent for PiglinBarterEvent {
+    fn extract(d: &EventData<Self>) -> Extract {
+        Extract {
+            ev: vec![
+                crate::gaps::value_of(&d.input_item),
+                Value::List(d.outcome.iter().map(crate::gaps::value_of).collect()),
+            ],
+            ..Extract::default()
+        }
+    }
+    fn cancel(d: &mut EventData<Self>) {
+        d.cancelled = true;
+    }
+    fn apply(d: &mut EventData<Self>, o: &FireOutcome) {
+        let slot = carve_core::w5_chunk3::DROPS_SLOT;
+        if let Some((_, Value::List(l))) = o.set.iter().rev().find(|(s, _)| *s == slot) {
+            d.outcome = l.iter().filter_map(crate::gaps::stack_of).collect();
+        }
+    }
+}
 ext!(BlockPistonExtendEvent, |d| Extract {
     text: Some(d.direction.clone()),
     ..Extract::default()
@@ -129,7 +152,7 @@ impl<E: ExtEvent> EventHandler<E> for OnExt<E> {
         let kind = EventKind::Ext3(self.0);
         let cancelled = with_state(&server, None, |st, host| {
             if !st.engine.table().has_event(kind) {
-                return false;
+                return None;
             }
             let x = E::extract(&data);
             let player = match (x.player, x.entity) {
@@ -143,14 +166,18 @@ impl<E: ExtEvent> EventHandler<E> for OnExt<E> {
             };
             ctx.message = x.text;
             ctx.damage = x.number;
+            ctx.ev = x.ev;
             let mut th = TickHost {
                 inner: host,
                 hs: &mut st.hs,
             };
-            st.engine.fire(kind, ctx, &mut th).cancelled
+            Some(st.engine.fire(kind, ctx, &mut th))
         });
-        if cancelled == Some(true) {
-            E::cancel(&mut data);
+        if let Some(Some(o)) = cancelled {
+            E::apply(&mut data, &o);
+            if o.cancelled {
+                E::cancel(&mut data);
+            }
         }
         data
     }

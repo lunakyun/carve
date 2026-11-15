@@ -66,6 +66,7 @@ mod w2_expressions_3;
 mod w4;
 mod w4_conditions_1;
 mod w4_events_movement;
+mod w5_chunk3;
 
 const SCRIPTS_DIR: &str = "scripts";
 const VARS_FILE: &str = "variables.json";
@@ -1467,6 +1468,10 @@ impl WasmHost<'_> {
         self.w4c1_check_impl(c, v)
     }
 
+    fn w5c3(&mut self, q: carve_core::w5_chunk3::Q<'_>) -> Option<Value> {
+        self.w5c3_impl(q)
+    }
+
     fn w2e7_query(&mut self, q: Query<'_>) -> Option<Value> {
         let num = |n: f64| Some(Value::Num(n));
         match q {
@@ -1787,6 +1792,10 @@ impl Host for TickHost<'_, '_> {
 
     fn w4c1_check(&mut self, c: carve_core::w4_conditions_1::Check, v: &Value) -> Option<bool> {
         self.inner.w4c1_check(c, v)
+    }
+
+    fn w5c3(&mut self, q: carve_core::w5_chunk3::Q<'_>) -> Option<Value> {
+        self.inner.w5c3(q)
     }
 
     sb::sb_host_methods!();
