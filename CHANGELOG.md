@@ -7,6 +7,8 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-11-15
+
 ### Added
 
 - Syntax from real Skript servers: `play sound ... at <location> to all players`
@@ -29,11 +31,14 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### Changed
 
+- Indentation works like Skript: each trigger, command or function can use its
+  own width or tabs. Before, the first indented line set one step for the whole
+  file, so a file mixing 2- and 4-space blocks failed to load.
 - `/carve reload` and `/carve errors` print every error, not the first ten.
 - A call of a function that does not exist now says `unknown function 'name'`.
 - `on break of <block>:` (also `on break of stone or oak log:`) runs only for those blocks.
   `event-block` is now the broken block in every `on break`.
-- Docs pages under `docs/syntax` are named by topic. Old page URLs redirect to the new ones.
+- Source files, tests and docs pages are named by topic. Old docs page URLs redirect to the new ones.
 
 ## [0.3.1] - 2026-11-15
 
@@ -277,7 +282,8 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - Faster pattern matching at load time.
 - The release build uses `opt-level = 3`.
 
-[Unreleased]: https://github.com/lunakyun/carve/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/lunakyun/carve/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/lunakyun/carve/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/lunakyun/carve/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/lunakyun/carve/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/lunakyun/carve/compare/v0.1.0...v0.2.0
