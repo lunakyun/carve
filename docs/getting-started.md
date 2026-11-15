@@ -6,7 +6,10 @@ From nothing to a working script.
 
 - A [Pumpkin](https://github.com/Pumpkin-MC/Pumpkin) server with plugin
   support (plugin API v0.1).
-- `carve.wasm`, from a release or built yourself (see below).
+- `carve.wasm`, from the [latest release](https://github.com/lunakyun/carve/releases/latest)
+  or built yourself (see below). If your host limits uploads to 5 MB, take
+  `carve-small.wasm` instead: the same code built for size, a little slower.
+  Rename it to `carve.wasm` or keep the name, either works.
 
 ## Install
 
