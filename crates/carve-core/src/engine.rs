@@ -308,6 +308,7 @@ mod w2_run;
 mod w2e3;
 mod w4_eval;
 mod w5_eval;
+mod w5c2_eval;
 mod w6_eval;
 mod x2_eval;
 
@@ -1471,6 +1472,7 @@ impl Engine {
             Cond::Sb(c, negate) => Ok(self.sb_cond(c, ex, host)? != *negate),
             Cond::Nbt(n) => self.nbt_cond(n, ex, host),
             Cond::Ent(c) => self.ent_cond(c, ex, host),
+            Cond::W5c2(c) => self.w5c2_cond(c, ex, host),
             Cond::Skb(c) => self.skb_cond(c, ex, host),
             Cond::Server(c) => self.server_cond(c, ex, host),
             Cond::HasPerm { player, node, negate } => {

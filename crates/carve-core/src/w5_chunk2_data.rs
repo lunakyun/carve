@@ -1,0 +1,217 @@
+// Generated from Pumpkin's assets/items.json; do not edit by hand.
+/// Default equippable flags of vanilla items (bits: 1 dispensable, 2 swappable,
+/// 4 damage on hurt, 8 equip on interact, 16 can be sheared). Generated from
+/// Pumpkin's items.json; sorted by id.
+pub static EQUIPPABLE: &[(&str, u8)] = &[
+    ("black_carpet", 23),
+    ("black_harness", 31),
+    ("blue_carpet", 23),
+    ("blue_harness", 31),
+    ("brown_carpet", 23),
+    ("brown_harness", 31),
+    ("carved_pumpkin", 5),
+    ("chainmail_boots", 7),
+    ("chainmail_chestplate", 7),
+    ("chainmail_helmet", 7),
+    ("chainmail_leggings", 7),
+    ("copper_boots", 7),
+    ("copper_chestplate", 7),
+    ("copper_helmet", 7),
+    ("copper_horse_armor", 19),
+    ("copper_leggings", 7),
+    ("copper_nautilus_armor", 27),
+    ("creeper_head", 5),
+    ("cyan_carpet", 23),
+    ("cyan_harness", 31),
+    ("diamond_boots", 7),
+    ("diamond_chestplate", 7),
+    ("diamond_helmet", 7),
+    ("diamond_horse_armor", 19),
+    ("diamond_leggings", 7),
+    ("diamond_nautilus_armor", 27),
+    ("dragon_head", 5),
+    ("elytra", 3),
+    ("golden_boots", 7),
+    ("golden_chestplate", 7),
+    ("golden_helmet", 7),
+    ("golden_horse_armor", 19),
+    ("golden_leggings", 7),
+    ("golden_nautilus_armor", 27),
+    ("gray_carpet", 23),
+    ("gray_harness", 31),
+    ("green_carpet", 23),
+    ("green_harness", 31),
+    ("iron_boots", 7),
+    ("iron_chestplate", 7),
+    ("iron_helmet", 7),
+    ("iron_horse_armor", 19),
+    ("iron_leggings", 7),
+    ("iron_nautilus_armor", 27),
+    ("leather_boots", 7),
+    ("leather_chestplate", 7),
+    ("leather_helmet", 7),
+    ("leather_horse_armor", 19),
+    ("leather_leggings", 7),
+    ("light_blue_carpet", 23),
+    ("light_blue_harness", 31),
+    ("light_gray_carpet", 23),
+    ("light_gray_harness", 31),
+    ("lime_carpet", 23),
+    ("lime_harness", 31),
+    ("magenta_carpet", 23),
+    ("magenta_harness", 31),
+    ("netherite_boots", 7),
+    ("netherite_chestplate", 7),
+    ("netherite_helmet", 7),
+    ("netherite_horse_armor", 19),
+    ("netherite_leggings", 7),
+    ("netherite_nautilus_armor", 27),
+    ("orange_carpet", 23),
+    ("orange_harness", 31),
+    ("piglin_head", 5),
+    ("pink_carpet", 23),
+    ("pink_harness", 31),
+    ("player_head", 5),
+    ("purple_carpet", 23),
+    ("purple_harness", 31),
+    ("red_carpet", 23),
+    ("red_harness", 31),
+    ("saddle", 31),
+    ("shield", 5),
+    ("skeleton_skull", 5),
+    ("turtle_helmet", 7),
+    ("white_carpet", 23),
+    ("white_harness", 31),
+    ("wither_skeleton_skull", 5),
+    ("wolf_armor", 23),
+    ("yellow_carpet", 23),
+    ("yellow_harness", 31),
+    ("zombie_head", 5),
+];
+
+/// Items that share tool rules, and the rules that decide drops, in order:
+/// block list or `#tag`, correct.
+pub type ToolRule = (&'static [&'static str], &'static [(&'static str, bool)]);
+
+pub static TOOL_RULES: &[ToolRule] = &[
+    (
+        &["copper_sword", "diamond_sword", "golden_sword", "iron_sword", "netherite_sword", "shears", "stone_sword", "wooden_sword"],
+        &[("cobweb", true)],
+    ),
+    (
+        &["wooden_shovel"],
+        &[("#incorrect_for_wooden_tool", false), ("#mineable/shovel", true)],
+    ),
+    (
+        &["wooden_pickaxe"],
+        &[("#incorrect_for_wooden_tool", false), ("#mineable/pickaxe", true)],
+    ),
+    (
+        &["wooden_axe"],
+        &[("#incorrect_for_wooden_tool", false), ("#mineable/axe", true)],
+    ),
+    (
+        &["wooden_hoe"],
+        &[("#incorrect_for_wooden_tool", false), ("#mineable/hoe", true)],
+    ),
+    (
+        &["copper_shovel"],
+        &[("#incorrect_for_copper_tool", false), ("#mineable/shovel", true)],
+    ),
+    (
+        &["copper_pickaxe"],
+        &[("#incorrect_for_copper_tool", false), ("#mineable/pickaxe", true)],
+    ),
+    (
+        &["copper_axe"],
+        &[("#incorrect_for_copper_tool", false), ("#mineable/axe", true)],
+    ),
+    (
+        &["copper_hoe"],
+        &[("#incorrect_for_copper_tool", false), ("#mineable/hoe", true)],
+    ),
+    (
+        &["stone_shovel"],
+        &[("#incorrect_for_stone_tool", false), ("#mineable/shovel", true)],
+    ),
+    (
+        &["stone_pickaxe"],
+        &[("#incorrect_for_stone_tool", false), ("#mineable/pickaxe", true)],
+    ),
+    (
+        &["stone_axe"],
+        &[("#incorrect_for_stone_tool", false), ("#mineable/axe", true)],
+    ),
+    (
+        &["stone_hoe"],
+        &[("#incorrect_for_stone_tool", false), ("#mineable/hoe", true)],
+    ),
+    (
+        &["golden_shovel"],
+        &[("#incorrect_for_gold_tool", false), ("#mineable/shovel", true)],
+    ),
+    (
+        &["golden_pickaxe"],
+        &[("#incorrect_for_gold_tool", false), ("#mineable/pickaxe", true)],
+    ),
+    (
+        &["golden_axe"],
+        &[("#incorrect_for_gold_tool", false), ("#mineable/axe", true)],
+    ),
+    (
+        &["golden_hoe"],
+        &[("#incorrect_for_gold_tool", false), ("#mineable/hoe", true)],
+    ),
+    (
+        &["iron_shovel"],
+        &[("#incorrect_for_iron_tool", false), ("#mineable/shovel", true)],
+    ),
+    (
+        &["iron_pickaxe"],
+        &[("#incorrect_for_iron_tool", false), ("#mineable/pickaxe", true)],
+    ),
+    (
+        &["iron_axe"],
+        &[("#incorrect_for_iron_tool", false), ("#mineable/axe", true)],
+    ),
+    (
+        &["iron_hoe"],
+        &[("#incorrect_for_iron_tool", false), ("#mineable/hoe", true)],
+    ),
+    (
+        &["diamond_shovel"],
+        &[("#incorrect_for_diamond_tool", false), ("#mineable/shovel", true)],
+    ),
+    (
+        &["diamond_pickaxe"],
+        &[("#incorrect_for_diamond_tool", false), ("#mineable/pickaxe", true)],
+    ),
+    (
+        &["diamond_axe"],
+        &[("#incorrect_for_diamond_tool", false), ("#mineable/axe", true)],
+    ),
+    (
+        &["diamond_hoe"],
+        &[("#incorrect_for_diamond_tool", false), ("#mineable/hoe", true)],
+    ),
+    (
+        &["netherite_shovel"],
+        &[("#incorrect_for_netherite_tool", false), ("#mineable/shovel", true)],
+    ),
+    (
+        &["netherite_pickaxe"],
+        &[("#incorrect_for_netherite_tool", false), ("#mineable/pickaxe", true)],
+    ),
+    (
+        &["netherite_axe"],
+        &[("#incorrect_for_netherite_tool", false), ("#mineable/axe", true)],
+    ),
+    (
+        &["netherite_hoe"],
+        &[("#incorrect_for_netherite_tool", false), ("#mineable/hoe", true)],
+    ),
+    (
+        &["mace", "trident"],
+        &[],
+    ),
+];

@@ -37,6 +37,18 @@ thread_local! {
     static SB: RefCell<Sb> = RefCell::new(Sb::default());
 }
 
+/// Whether a flag is on for a boss bar; `None` for an unknown bar.
+pub fn bar_flag(id: &str, flag: BarFlag) -> Option<bool> {
+    SB.with(|s| {
+        let m = s.borrow().bars.get(id)?.get_metadata();
+        Some(match flag {
+            BarFlag::DarkenSky => m.darken_sky,
+            BarFlag::Fog => m.create_fog,
+            BarFlag::Dragon => m.dragon_bar,
+        })
+    })
+}
+
 /// A player left: their sidebar and tab list are gone with their session.
 pub fn forget(uuid: &str) {
     SB.with(|s| {

@@ -72,6 +72,7 @@ pub mod w4_functions;
 pub mod w4_sections;
 pub mod w4_skbee_raytrace_world;
 pub mod w4_tags_data;
+pub mod w5_chunk2;
 pub mod weather_time;
 pub mod world_effects;
 pub mod xp_level;
