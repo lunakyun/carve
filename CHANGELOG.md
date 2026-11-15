@@ -7,8 +7,15 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-15
+
 ### Changed
 
+- Faster: `add x to {list::*}` no longer slows down as the list grows (10,000
+  adds went from 4.7 s to 4 ms), function calls are about 30% cheaper, and
+  comparing a loop value with a number takes a fast path. In a side-by-side
+  benchmark against Skript on Paper (100,000 runs of each case), Carve is
+  faster on all seven cases, from about 1.3x (text) to 7x (global variables).
 - Loading works like Skript: a broken line is reported and skipped, a broken
   `if`/`loop`/`while` skips its block, a broken trigger header skips that
   trigger, and the rest of the file loads. `/carve reload` replaces the old
@@ -50,6 +57,10 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   particles and display entities, recipes, advancements, statistics,
   scoreboard teams, ray traces, Minecraft tags and utilities.
 - Placeholders for other plugins.
+- About 200 more entries in wave 5: command `cooldown:`, `damage was caused
+  by`, `blocks in radius`, book pages, tamed and saddled checks, `all
+  operators` and more. 645 core Skript entries now fully work and 223 work
+  with a noted limit, all checked on a real server (1035 in-game checks).
 - Every registry event, effect and condition now has a description in the
   generated syntax reference.
 
@@ -140,5 +151,6 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - Faster pattern matching at load time.
 - The release build uses `opt-level = 3`.
 
-[Unreleased]: https://github.com/lunakyun/carve/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/lunakyun/carve/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/lunakyun/carve/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/lunakyun/carve/releases/tag/v0.1.0
