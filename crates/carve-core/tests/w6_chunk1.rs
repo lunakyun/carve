@@ -137,7 +137,6 @@ fn new_event_names_compile() {
     for name in [
         "player pickup arrow",
         "riptide",
-        "attempt attack",
         "experience spawn",
         "projectile collide",
         "pressure plate",
@@ -146,7 +145,6 @@ fn new_event_names_compile() {
         "player chunk enters",
         "jump",
         "world border bounds change",
-        "world border bounds finish change",
         "world border center change",
         "armor change",
         "spectate",

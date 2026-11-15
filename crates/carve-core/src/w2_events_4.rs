@@ -57,7 +57,6 @@ pub enum ExtEvent {
     // Wave 6 chunk 1 (see `w6_chunk1`).
     PickupArrow,
     Riptide,
-    AttemptAttack,
     ExperienceSpawn,
     ProjectileCollide,
     PressurePlate,
@@ -65,7 +64,6 @@ pub enum ExtEvent {
     StepOn,
     Jump,
     BorderBounds,
-    BorderFinish,
     BorderCenter,
     ArmorChange,
     Spectate,
@@ -161,8 +159,6 @@ const NAMES: &[(&str, ExtEvent)] = &[
     ("arrow pickup", ExtEvent::PickupArrow),
     ("riptide", ExtEvent::Riptide),
     ("player riptide", ExtEvent::Riptide),
-    ("attempt attack", ExtEvent::AttemptAttack),
-    ("player attempt attack", ExtEvent::AttemptAttack),
     ("experience spawn", ExtEvent::ExperienceSpawn),
     ("xp spawn", ExtEvent::ExperienceSpawn),
     ("exp spawn", ExtEvent::ExperienceSpawn),
@@ -182,8 +178,6 @@ const NAMES: &[(&str, ExtEvent)] = &[
     ("player jump", ExtEvent::Jump),
     ("world border bounds change", ExtEvent::BorderBounds),
     ("border bounds change", ExtEvent::BorderBounds),
-    ("world border bounds finish change", ExtEvent::BorderFinish),
-    ("border bounds finish change", ExtEvent::BorderFinish),
     ("world border center change", ExtEvent::BorderCenter),
     ("border center change", ExtEvent::BorderCenter),
     ("armor change", ExtEvent::ArmorChange),
@@ -265,7 +259,6 @@ impl ExtEvent {
             PlaceholderRequest => &[r!("identifier"), w!("result"), r!("prefix")],
             PickupArrow => &[r!("entity")],
             Riptide => &[r!("item")],
-            AttemptAttack => &[r!("entity")],
             ExperienceSpawn => &[r!("entity"), r!("location")],
             ProjectileCollide => &[r!("entity"), r!("hit-entity"), r!("location")],
             PressurePlate => &[r!("location"), r!("power")],
@@ -277,7 +270,7 @@ impl ExtEvent {
             ],
             StepOn => &[r!("block"), r!("location")],
             Jump => &[],
-            BorderBounds | BorderFinish => &[r!("world"), r!("old-size"), r!("new-size")],
+            BorderBounds => &[r!("world"), r!("old-size"), r!("new-size")],
             BorderCenter => &[r!("world"), r!("old-x"), r!("old-z"), r!("new-x"), r!("new-z")],
             ArmorChange => &[r!("slot"), r!("item"), r!("previous-item")],
             Spectate => &[r!("entity")],
@@ -307,7 +300,6 @@ impl ExtEvent {
                 | StepOn
                 | Jump
                 | BorderBounds
-                | BorderFinish
                 | BorderCenter
                 | ArmorChange
                 | Spectate
@@ -334,7 +326,6 @@ impl ExtEvent {
                 | PrepareCraft
                 | PickupArrow
                 | Riptide
-                | AttemptAttack
                 | ChunkEnter
                 | StepOn
                 | Jump

@@ -734,9 +734,16 @@ impl WasmHost<'_> {
     fn strike_lightning(&mut self, at: &FxPos, effect_only: bool) {
         if let Some(w) = self.fx_world(at) {
             w.strike_lightning((at.x, at.y, at.z), effect_only);
+            let mut ctx = carve_core::EventCtx::console();
+            ctx.ev = vec![Value::Location {
+                x: at.x,
+                y: at.y,
+                z: at.z,
+                world: at.world.clone(),
+            }];
             self.late.push((
                 EventKind::Ext3(carve_core::w2_events_3::Ev3::LightningStrike),
-                carve_core::EventCtx::console(),
+                ctx,
             ));
         }
     }

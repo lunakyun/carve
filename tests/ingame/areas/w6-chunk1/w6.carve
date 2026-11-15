@@ -1,0 +1,82 @@
+# Wave 6 chunk 1 area. Every result goes to chat as w6:<key> <value>.
+
+on step on stone:
+    send "w6:step %event-block%" to player
+
+on walk on dirt:
+    send "w6:walkdirt %event-block%" to player
+
+on player chunk enter:
+    send "w6:chunk %event-chunk-x% %event-chunk-z% from %event-previous-chunk-x% %event-previous-chunk-z%" to player
+
+on player chunk enters:
+    send "w6:chunks" to player
+
+on jump:
+    send "w6:jump" to player
+
+on tool change:
+    send "w6:tool %event-item% / %past event-item%" to player
+
+on pressure plate:
+    broadcast "w6:plate %event-location% %event-power%"
+
+on spawn change:
+    broadcast "w6:spawn %event-new-location%"
+
+on world border bounds change:
+    broadcast "w6:wbb %event-old-size% -> %event-new-size%"
+
+on world border center change:
+    broadcast "w6:wbc %event-old-x% %event-old-z% -> %event-new-x% %event-new-z%"
+
+on armor change:
+    send "w6:armor %event-slot% %event-item% / %past event-item%" to player
+
+on experience spawn:
+    broadcast "w6:xp %event-location%"
+
+on piston extend:
+    broadcast "w6:piston %event-text% %event-location%"
+
+on lightning strike:
+    broadcast "w6:bolt %event-location%"
+
+on block drop:
+    broadcast "w6:drop %event-items%"
+
+on bell ring:
+    broadcast "w6:bell %player% %event-location%"
+
+on bucket catch entity:
+    broadcast "w6:bucket %type of event-entity%"
+
+on combust:
+    broadcast "w6:combust %type of event-entity%"
+
+on can build check:
+    if event-block is dirt:
+        set event-boolean to false
+        broadcast "w6:nobuild"
+
+on leash:
+    broadcast "w6:leash %type of event-entity%"
+
+on love mode enter:
+    broadcast "w6:love %type of event-entity% %event-number%"
+
+on unload:
+    send "w6:unload" to console
+
+on server stop:
+    send "w6:stop" to console
+
+command /cignite:
+    trigger:
+        ignite player for 3 seconds
+        send "w6:ignitecmd" to player
+
+command /cbolt:
+    trigger:
+        strike lightning at location(10.5, 101, 10.5, world "world")
+        send "w6:boltcmd" to player

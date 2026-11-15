@@ -127,25 +127,9 @@ impl W6 for PlayerRiptideEvent {
     }
 }
 
-impl W6 for PlayerInteractEntityEvent {
-    const KIND: ExtEvent = ExtEvent::AttemptAttack;
-    fn build(
-        st: &mut State,
-        host: &mut WasmHost<'_>,
-        d: &EventData<Self>,
-    ) -> Option<(Option<PlayerRef>, Vals)> {
-        if !matches!(
-            d.action,
-            pumpkin_plugin_api::wit::pumpkin::plugin::event::EntityInteractionAction::Attack
-        ) {
-            return None;
-        }
-        Some((Some(player_ref(&d.player)), vec![ent(st, host, d.entity_id)]))
-    }
-    fn cancel(d: &mut EventData<Self>) {
-        d.cancelled = true;
-    }
-}
+/// Pumpkin 0.2.2 sends the numeric registry id of the entity type in this
+/// event (`entities.json`: `experience_orb` is 50), not its name.
+const EXPERIENCE_ORB_ID: &str = "50";
 
 impl W6 for EntitySpawnEvent {
     const KIND: ExtEvent = ExtEvent::ExperienceSpawn;
@@ -154,7 +138,7 @@ impl W6 for EntitySpawnEvent {
         host: &mut WasmHost<'_>,
         d: &EventData<Self>,
     ) -> Option<(Option<PlayerRef>, Vals)> {
-        if !d.entity_type.ends_with("experience_orb") {
+        if d.entity_type != EXPERIENCE_ORB_ID && !d.entity_type.ends_with("experience_orb") {
             return None;
         }
         let w = world_name(&d.target_world);
@@ -349,8 +333,8 @@ impl EventHandler<PlayerInputEvent> for OnInput {
 
 #[derive(Default)]
 struct Poll {
-    /// World name -> (diameter, target diameter, center x, center z).
-    border: HashMap<String, (f64, f64, f64, f64)>,
+    /// World name -> (target diameter, center x, center z).
+    border: HashMap<String, (f64, f64, f64)>,
     armor: HashMap<String, [Option<(String, u32)>; 4]>,
     camera: HashMap<String, u32>,
 }
@@ -368,9 +352,7 @@ const ARMOR_SLOTS: [(&str, u32); 4] = [
 
 /// Called every tick. Cheap when no script uses these events.
 pub(crate) fn tick(server: &Server, st: &mut State, host: &mut WasmHost<'_>, now: u64) {
-    let border = used(st, ExtEvent::BorderBounds)
-        || used(st, ExtEvent::BorderFinish)
-        || used(st, ExtEvent::BorderCenter);
+    let border = used(st, ExtEvent::BorderBounds) || used(st, ExtEvent::BorderCenter);
     if border {
         poll_border(server, st, host);
     }
@@ -382,34 +364,27 @@ pub(crate) fn tick(server: &Server, st: &mut State, host: &mut WasmHost<'_>, now
     }
 }
 
+/// Pumpkin sets no end for a border transition (the client does the lerping
+/// and the speed is not stored), so only target and center changes are seen.
 fn poll_border(server: &Server, st: &mut State, host: &mut WasmHost<'_>) {
     for w in server.get_all_worlds() {
         let name = world_name(&w);
         let b = w.get_world_border();
-        let cur = (
-            b.get_diameter(),
-            b.get_target_diameter(),
-            b.get_center_x(),
-            b.get_center_z(),
-        );
+        let cur = (b.get_target_diameter(), b.get_center_x(), b.get_center_z());
         let Some(prev) = POLL.with(|p| p.borrow_mut().border.insert(name.clone(), cur)) else {
             continue;
         };
-        if (prev.1 - cur.1).abs() > f64::EPSILON {
-            let v = vec![Value::World(name.clone()), Value::Num(prev.1), Value::Num(cur.1)];
+        if (prev.0 - cur.0).abs() > f64::EPSILON {
+            let v = vec![Value::World(name.clone()), Value::Num(prev.0), Value::Num(cur.0)];
             fire(st, host, ExtEvent::BorderBounds, None, v);
         }
-        if (prev.0 - prev.1).abs() > 1e-6 && (cur.0 - cur.1).abs() <= 1e-6 {
-            let v = vec![Value::World(name.clone()), Value::Num(prev.0), Value::Num(cur.0)];
-            fire(st, host, ExtEvent::BorderFinish, None, v);
-        }
-        if (prev.2 - cur.2).abs() > f64::EPSILON || (prev.3 - cur.3).abs() > f64::EPSILON {
+        if (prev.1 - cur.1).abs() > f64::EPSILON || (prev.2 - cur.2).abs() > f64::EPSILON {
             let v = vec![
                 Value::World(name),
+                Value::Num(prev.1),
                 Value::Num(prev.2),
-                Value::Num(prev.3),
+                Value::Num(cur.1),
                 Value::Num(cur.2),
-                Value::Num(cur.3),
             ];
             fire(st, host, ExtEvent::BorderCenter, None, v);
         }
@@ -495,9 +470,6 @@ pub(crate) fn register_all(ctx: &Context, used: &dyn Fn(ExtEvent) -> bool) {
     }
     if used(ExtEvent::Riptide) {
         listen::<PlayerRiptideEvent>(ctx);
-    }
-    if used(ExtEvent::AttemptAttack) {
-        listen::<PlayerInteractEntityEvent>(ctx);
     }
     if used(ExtEvent::ExperienceSpawn) {
         listen::<EntitySpawnEvent>(ctx);
