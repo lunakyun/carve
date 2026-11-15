@@ -390,7 +390,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Shoot — only the `shoot ...:` section form exists (see Sections); the plugin API cannot set a projectile owner
 - ⛔ Silence Entity — no silent flag in the plugin API
 - ✅ Sort — `sort {x::*}`, `in descending order`; no `by`
-- 🟡 Spawn ⭐ — `spawn [N] <mob> [named "x"] [at <place>]`; no NBT or mob-specific data
+- 🟡 Spawn ⭐ — `spawn of world "x"` (a location), `teleport player to spawn`; `set spawn of world "x" to <location>` runs `setworldspawn`, which only reaches the main world
 - ✅ Sprinting — `make %player% start/stop sprinting`
 - ✅ Stop Server — `stop [the] server`
 - 🟡 Stop Sound ⭐ (one sound or all, via `stopsound`; no categories)
@@ -948,26 +948,26 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Particle with Offset/Distribution/Velocity — velocity sends count 0 so the vector is the direction
 - ✅ Particle with Speed/Extra Value
 - ⛔ Particles with Data — Pumpkin's particle API and `/particle` take no particle data (dust colours, blocks, items); drawing one logs a warning
-- ⛔ Passenger — the plugin API has no passenger access
-- ⛔ Pathfinding Target Entity — the plugin API has no pathfinding access
-- ⛔ Pathfinding Target Location — the plugin API has no pathfinding access
+- 🟡 Passenger — `passengers of <player|entity>` is a list; read only, add passengers with the `ride` command (Carve has no add passenger effect yet)
+- ⛔ Pathfinding Target Entity — the mob API has `navigate-to-entity` but no getter for the navigator's current target, and Carve has no navigate effect to remember one from
+- ⛔ Pathfinding Target Location — v0.1 has no `navigate-to-position` call and no getter for the path target (only `navigate-to-entity`)
 - ✅ Percent of — `10% of 200`, `{_x}% of 3`, `25 percent of {_y}`
 - 🟡 Persistent Data Value — `persistent data value "key" of <player|world|item>`; saved with the variables file, not in the entity
 - ✅ Pi — `pi`
-- ⛔ Picked Item/Block/Entity — no pick-item event in the plugin API
-- ⛔ Pickup Delay — the plugin API has no item entity access
+- ⛔ Picked Item/Block/Entity — Pumpkin handles the pick-item packet but fires no plugin event for it (nothing in event.wit)
+- ⛔ Pickup Delay — `get-pickup-delay` / `set-pickup-delay` exist only in plugin API v0.2, not v0.1
 - ✅ Ping ⭐ — `ping of player`
-- 🟡 Plain Item — `plain <item>`; items carry no extra data yet, so it returns the item as is
+- ✅ Plain Item — `plain <item>` drops the name, lore and enchantments and keeps the type and amount
 - ⛔ Player Chat Completions — the plugin API cannot change chat completions
 - ⛔ Player Input Keys — only an input event exists, no way to read the current keys
 - ✅ Player List Header and Footer — set and reset, for one player or all players; no reading
 - ✅ Player List Name — `player list name of <player>`, `<player>'s tab list name`; set and reset
 - 🟡 Player List Priority — `set player list priority of <player> to <number>`; write only
-- ⛔ Player Protocol Version — the plugin API does not give the client version
+- ✅ Player Protocol Version — `protocol version of <player>` (Java clients, from the version the client joined with; a number like 777)
 - ✅ Player Skull — `skull of player` / `skull of "Name"`, given with its profile through `/give`; inside chest menus the profile is not set
 - ✅ Player Weather — `client weather of player`: set, reset and read; only that player sees it
 - ⛔ Portal — the plugin API has no portal access
-- ⛔ Portal Cooldown — the plugin API has no portal cooldown
+- ✅ Portal Cooldown — `portal cooldown of <entity>` is a timespan; `set portal cooldown of <entity> to 7 seconds`
 - ✅ Potion (item) — `[splash|lingering] potion of <effect>` and `potion item of <potion effect>`, given with its contents through `/give`; inside chest menus the contents are not set
 - ✅ Potion Effect - Amplifier — readable and settable on potion effect values
 - ✅ Potion Effect - Duration — readable and settable on potion effect values
@@ -979,11 +979,11 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Progress — `progress of bossbar "id"` (0 to 100)
 - ⛔ Projectile Critical State — the API has no arrow state, and `/data` cannot report back to a plugin
 - ✅ Projectile Force — in `on entity shoot bow`; Pumpkin fires that event only for mobs
-- ⛔ Protocol Version — the plugin API does not give the client protocol version of Java players
+- ✅ Protocol Version — `protocol version of <player>`, and `protocol version` for the server (777 for Minecraft 26.3)
 - ✅ Queue (Experimental) — `a new queue of ...`, `queue with ...`
 - ✅ Queue Start/End (Experimental)
 - ✅ Quit Message ⭐ — `quit message` in `on quit`, `set quit message to "..."`
-- ⛔ Quit Reason — the leave event has no reason field
+- ⛔ Quit Reason — the leave event has no reason field (player, leave message, cancelled only) and Pumpkin fires it without a reason
 - 🟡 Random — `random element of {list::*}`, `random N elements of {list::*}`
 - ✅ Random Character — `a random character`, `random alphanumeric character`, `random character between "a" and "z"`
 - ✅ Random Numbers
@@ -991,27 +991,27 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Raw Name — the namespaced id, like `minecraft:diamond_sword`
 - 🟡 Raw String — `raw "&aHi"` stops colour codes and tags from turning into colours by adding an invisible character, so it does not compare equal to the plain text
 - ⛔ Readied Arrow/Bow — Pumpkin has no ready-arrow event
-- 🟡 Recursive — `recursive {x::*}` in `loop` and `set {y::*} to`
+- ✅ Recursive — `recursive {x::*}` in `loop` and `set {y::*} to`
 - ✅ Recursive Size — `recursive size of {x::*}`
 - 🟡 Redstone Block Power — read from the block state (wire, plates, targets, detectors, redstone blocks, powered levers, buttons, torches, repeaters); power from neighbours is not seen
-- 🟡 Reduce — `reduce {x::*} with [reduced value + input]` or `{x::*} reduced with [...]`; starts from the first element
-- 🟡 Reduced Value — `reduced value` inside `reduce`; the current item is `input`
+- ✅ Reduce — `reduce {x::*} with [reduced value + input]`; starts from the first element
+- ✅ Reduced Value — `reduced value` inside `reduce`; the current item is `input`
 - ⛔ Region — needs WorldGuard
 - 🟡 Region Members & Owners — `owners of bound`, `members of bound` (Carve bounds, not WorldGuard)
 - 🟡 Regions At — `bounds at <location>` (Carve bounds, not WorldGuard)
 - ✅ Remaining Air — `remaining air of player`, set / add / remove with a timespan
 - ✅ Repeat String — `"ab" repeated 3 times`; capped at 1,000,000 characters
 - ⛔ Resolve Text Component — no text component values in Carve
-- ⛔ Resonating Time — bell block entity is not exposed
+- ⛔ Resonating Time — the bell block entity only has `is-ringing` and `get-ring-ticks`; Pumpkin keeps no resonate timer
 - ✅ Respawn Anchor Charges — read and set, 0 to 4
 - ✅ Respawn Location — `respawn location of player`, `set respawn location of player to <location>`
 - ✅ Respawn Reason — `death`, or `end_portal` when leaving the End (Pumpkin fires `on respawn` for no other reason)
 - ✅ Result — `result of function "name" with arguments ...`; no function values yet
 - ✅ Reversed List ⭐ — `reversed {x::*}`
-- ⛔ Ringing Time — bell block entity is not exposed
-- ⛔ Rotated Quaternion/Vector — Carve has no vector or quaternion types
-- ⛔ Rotation Axis/Angle — Carve has no vector or quaternion types
-- 🟡 Rounding — as functions, plus `n rounded to N decimal places`
+- 🟡 Ringing Time — `ringing time of <bell block>` is a timespan from the bell block entity; only the idle value (0) is checked in game, the console cannot ring a bell
+- ✅ Rotated Quaternion/Vector — `<vector|quaternion> rotated around x|y|z|<vector> by <degrees>`
+- ✅ Rotation Axis/Angle — `rotation angle of <quaternion>` (degrees) and `rotation axis of <quaternion>` (a unit vector)
+- ✅ Rounding — `round`, `floor`, `ceil` and `n rounded to N decimal places`
 - ✅ Saturation — read, set, add, remove
 - ✅ Scale — `scale of <entity>`: the scale attribute (0.0625 to 16); a vector for display entities; set, add, remove, reset
 - ⛔ Scoreboard Tags — no entity tag API in the plugin API
@@ -1019,27 +1019,27 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 Script Command Cooldown Information — no cooldowns yet
 - ⛔ Script Command Suggestion Input — same Pumpkin crash
 - ⛔ Script Command Suggestions — Pumpkin 0.2.2 crashes on plugin tab completion
-- 🟡 Sea Level — `sea level of world "x"`, read only
+- ✅ Sea Level — `sea level of world "x"`, read only (Skript's is read only too)
 - ✅ Sea Pickles — `[min|max] [sea] pickles of <block>`; set, add, remove, reset (clamped 1 to 4)
-- ⛔ Seed of Loot Table — no loot table data in the plugin API
+- 🟡 Seed of Loot Table — `loot table seed of <chest-like block>` reads `LootTableSeed` from the block entity data (blocks only, not entities); an unset chest checked in game
 - ⛔ Sent Command List — Pumpkin has no event for the command tree sent to a client (its command send event is the typed command)
 - ⛔ Server Icon — the icon is only in the server list ping event, which Carve does not expose
 - ✅ Sets — `all <type>s` / `every <type>` for the named-value types (difficulties, moon phases, boss bar styles...)
 - ✅ Shooter — `shooter` in `on shoot` (the mob that shot)
 - ✅ Shuffled List ⭐ — `shuffled {x::*}`
-- ⛔ Sign Text — block entities only expose custom data, not sign text
+- 🟡 Sign Text — `sign text of <sign block>` (also `lines of`) lists the 4 front lines, read from the block entity data; an empty sign checked in game, text values only in unit tests (`data merge block` does not fill signs)
 - 🟡 Simulation Distance — `simulation distance`, read only
 - ✅ Size — `size of {list::*}`
-- 🟡 Size of World Border — `world border size [of world]`, `set world border size to 500 over 30 seconds`; no add or remove
-- ⛔ Skull Owner — block entities only expose custom data, not skull data
-- ⛔ Skull Texture — block entities only expose custom data, not skull data
+- ✅ Size of World Border — `world border size [of world]`, `set world border size to 500 over 30 seconds`, `add 10 to world border size`, `remove 30 from world border size`
+- 🟡 Skull Owner — `skull owner of <skull block>` reads the profile name from the block entity data; empty skull checked in game, filled profiles only in unit tests
+- 🟡 Skull Texture — `skull texture of <skull block>` reads the textures value from the block entity data; empty skull checked in game, filled profiles only in unit tests
 - ✅ Slot Index — `[raw|unique] index of <slot>` for `clicked slot` and `slot N of <inventory>`
 - ✅ Sorted List ⭐ — `sorted {x::*}`, `sorted {x::*} by <expression with input>`
 - ✅ Source Block — `source block` in `on spread`
-- 🟡 Spawn ⭐ — `spawn of world "x"` (a location); also `teleport player to spawn`; no setting it
+- 🟡 Spawn ⭐ — `spawn of world "x"` (a location), `teleport player to spawn`; `set spawn of world "x" to <location>` runs `setworldspawn`, which only reaches the main world
 - ✅ Spawn Egg Entity — `spawn egg entity of <item>`; set it to turn the item into another spawn egg
 - ✅ Spawn Reason — `spawn[ing] reason` in `on spawn`; Pumpkin only fires the event for spawn eggs, dispensers and buckets
-- ⛔ Spawner Type — spawner block entity is not exposed
+- 🟡 Spawner Type — `spawner type of <spawner block>` reads the spawned entity id from the block entity data; an empty spawner checked in game, `data merge block` cannot fill spawners
 - ✅ Special Number — `pi`, `infinity`, `negative infinity`, `NaN`
 - ✅ Spectator Target — `spectator target of <player>`; set (any game mode) and reset
 - ⛔ Speed (walk and fly speed: no attribute API in the plugin API)
@@ -1058,7 +1058,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Targeted Block ⭐ — `targeted block of player`
 - ⛔ Teleport Cause — Pumpkin's teleport event carries no cause
 - ✅ Temperature — `temperature of <block>`: biome base temperature, lowered above y 80 like vanilla (no per-column noise)
-- 🟡 Ternary ⭐ — `a if <condition> else b`; the condition can be a comparison, `contains`, `starts with`, `is set`, joined with `and` / `or`
+- ✅ Ternary ⭐ — `a if <condition> else b`; the condition can be a comparison, `contains`, `starts with`, `is set`, joined with `and` / `or`
 - ✅ Text Display Alignment — `text alignment of <text display>`: left, center, right
 - ✅ Text Display Line Width — `line width of <text display>`; set, add, remove, reset (200)
 - ✅ Text Display Opacity — `text opacity of <text display>` 0 to 255; set, add, remove, reset
@@ -1080,14 +1080,14 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 Unbreakable Items — `set unbreakable of player's tool to true` (main-hand item only)
 - ✅ Unix Date
 - ✅ Unix Timestamp ⭐
-- ⛔ Unknown Command Message — the plugin API has no unknown-command event or message
+- ⛔ Unknown Command Message — Pumpkin's dispatcher sends the unknown-command error itself with no event, and the server-command event is console only
 - ⛔ Unleash Reason — needs entity values and leash triggers, which Carve does not have yet
 - ✅ UUID — `uuid of player`
 - ⛔ Value — needs typed value lists; Carve variables already hold their value
 - ⛔ Value (Experimental) — experimental Skript feature, not planned
 - ⛔ Value of Subnode — Carve has no config nodes
 - ⛔ Value Within — needs ranges and objects with an inner value, which Carve does not have
-- ⛔ Vector/Quaternion - WXYZ Component — no quaternion type; x, y and z of a vector work
+- ✅ Vector/Quaternion - WXYZ Component — `w of q`, `x of q`, `y of q`, `z of q` read; `set w of {q} to ...`, `add`, `remove` change a variable
 - ✅ Vectors - Angle Between — `angle between v and w` (degrees)
 - ✅ Vectors - Arithmetic — `v + w`, `v - w`, `v * n`, `v / n`, `v * w`, `-v`, `loc + v`
 - ✅ Vectors - Create from Direction — `vector from direction of player`, `vector from direction north`
@@ -1106,36 +1106,36 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Vectors - Vector from Location — `vector from loc`, `vector of player`
 - ✅ Vectors - Vector from Yaw and Pitch — `vector from yaw y and pitch p`
 - ✅ Vectors - Vector Projection — `v projected onto w`, `projection of v onto w`
-- 🟡 Vectors - XYZ Component — `x of v`, `v's y`, `z component of v`; read only (rebuild with `vector(...)` to change one)
-- 🟡 Vectors - Yaw and Pitch — `yaw of v`, `pitch of v`; read only
-- ⛔ Vehicle — needs entity values, which Carve does not have yet
+- ✅ Vectors - XYZ Component — `x of v`, `v's y`, `z component of v` read; `set|add|remove x|y|z of {v}` change the variable
+- ✅ Vectors - Yaw and Pitch — `yaw of v`, `pitch of v` read; `set yaw|pitch of {v} to n` turns the vector and keeps its length
+- ✅ Vehicle — `vehicle of <player|entity>` (the entity it rides); to mount use the `ride` command
 - ✅ Velocity ⭐ — `x/y/z velocity of <entity>`, set per axis, `set velocity of <entity> to vector(0, 1, 0)`
-- 🟡 Version — `server version`, `minecraft version`; the Minecraft version is fixed at build time
-- 🟡 Version String — `server version string`, `version string of server`; versions are plain text
+- ✅ Version — `server version`, `minecraft version` (text, read only like Skript's)
+- ✅ Version String — `server version string`, `version string of server`
 - 🟡 View Distance — `view distance of server`, `view distance of player`; read only
 - ✅ View Distance of Client — `client view distance of player`
 - ✅ Viewers — `viewers of <bossbar|inventory>`; add or remove players to show or open, hide or close
-- ⛔ Villager Level/Experience — the plugin API has no villager data
-- ⛔ Villager Profession — the plugin API has no villager data
-- ⛔ Villager Type — the plugin API has no villager data
-- ⛔ Warden Anger Level — the plugin API has no warden data
-- ⛔ Warden Most Angered At — the plugin API has no warden data
+- 🟡 Villager Level/Experience — `villager level of <villager>`, `villager experience of <villager>` read from the villager data; read only here (the API has set-mob-data, not wired up yet)
+- 🟡 Villager Profession — `villager profession of <villager>` (text like `librarian`) reads the villager data; read only here
+- ⛔ Villager Type — the villager data has only profession, level and experience (no biome type), and the API cannot read entity NBT
+- ⛔ Warden Anger Level — `warden-anger-change-event` is never fired by Pumpkin, the warden keeps no anger table and no call reads it
+- ⛔ Warden Most Angered At — `warden-anger-change-event` is never fired by Pumpkin, the warden keeps no anger table and no call reads it
 - ✅ Warning Distance of World Border — `world border warning distance [of <border>]`; set, add, remove, reset
 - ✅ Warning Time of World Border — `world border warning time [of <border>]` as a timespan; set, add, remove, reset
 - ✅ Weather ⭐ — `weather in world "w"`, `set weather to rain for 5 minutes`
 - 🟡 Whether — `whether a is b` with is, is not, is set, is not set, greater, less, at least, at most
-- 🟡 Whitelist — `add player to the whitelist`, `whitelist player`, `unwhitelist player`; no player list, no on/off
+- ✅ Whitelist — `add player to the whitelist`, `whitelist player`, `unwhitelist player`, `whitelist enabled`, `set whitelist to true|false|on|off`, `whitelisted players`
 - ⛔ With Fire Resistance — item components are not reachable from the plugin API
 - ✅ World — `world of`
 - ✅ World Border — `world border [of <world|player|location>]`, `<x>'s world border`
 - ✅ World Environment — `environment of world "x"` (normal, nether, the end)
 - ✅ World from Name — `world "name"`
-- ⛔ World Seed — the plugin API cannot read the world seed
+- ⛔ World Seed — `get-seed` exists only in plugin API v0.2, not v0.1; the `/seed` command only prints to chat
 - ✅ Worlds — `all worlds` in `loop` and `set {w::*} to all worlds`
-- ⛔ WXYZ Component/Coordinate — no quaternion type; x, y and z of a vector work
+- ✅ WXYZ Component/Coordinate — `w of q`, `x of v`, ... read; `set w|x|y|z of {var} to ...` changes the variable
 - 🟡 X of Item/Entity Type — `3 of diamond`; items only
-- 🟡 X Times — only in `loop N times`
-- 🟡 Yaw / Pitch — `yaw of player`, `pitch of player`, and of vectors; read only
+- ✅ X Times — `3 times` is the list 1, 2, 3; works in `set {x::*} to 3 times` and loops
+- ✅ Yaw / Pitch — `yaw of player`, `pitch of player`; `set|add|remove yaw|pitch of <player|entity> to n` turns it (pitch is clamped to -90..90)
 - ✅ Placeholder / Parse Placeholders — `placeholder "player_name" for player`, `parse placeholders in "Hi %%player_name%%" for player`; built-ins, `carve_var_<name>` and script-defined ones
 - 🟡 Placeholders for other plugins — Carve answers `carve:parse` / `carve:get` over Pumpkin's plugin IPC (docs/placeholders.md); Pumpkin has no shared placeholder registry, so other plugins must call Carve themselves
 
