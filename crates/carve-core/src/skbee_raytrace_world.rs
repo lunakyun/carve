@@ -268,8 +268,8 @@ fn build_ray(
             let dir = match dir {
                 Some(d) => d,
                 None => {
-                    let yaw = num(&host.w2e7_query(Query::Yaw(&p))?)?;
-                    let pitch = num(&host.w2e7_query(Query::Pitch(&p))?)?;
+                    let yaw = num(&host.server_query(Query::Yaw(&p))?)?;
+                    let pitch = num(&host.server_query(Query::Pitch(&p))?)?;
                     look_dir(yaw, pitch)
                 }
             };

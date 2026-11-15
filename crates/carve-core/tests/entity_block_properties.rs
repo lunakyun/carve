@@ -97,7 +97,7 @@ impl Host for Mock {
             kind: kind.into(),
         })
     }
-    fn w2e7_query(&mut self, q: carve_core::expr_vectors_server::Query<'_>) -> Option<Value> {
+    fn server_query(&mut self, q: carve_core::expr_vectors_server::Query<'_>) -> Option<Value> {
         use carve_core::expr_vectors_server::Query;
         match q {
             Query::Yaw(_) | Query::Pitch(_) => Some(Value::Num(0.0)),
@@ -125,7 +125,7 @@ impl Host for Mock {
     fn close_inventory(&mut self, _p: &PlayerRef) {
         self.closed += 1;
     }
-    fn c6_get(&mut self, q: Get<'_>) -> Option<Value> {
+    fn property_get(&mut self, q: Get<'_>) -> Option<Value> {
         Some(match q {
             Get::Scale(e) if e.kind == "text_display" => {
                 let (x, y, z) = self.display_scale.unwrap_or((1.0, 1.0, 1.0));
@@ -155,7 +155,7 @@ impl Host for Mock {
             Get::MenuViewers(_) => Value::List(Vec::new()),
         })
     }
-    fn c6_set(&mut self, s: Set<'_>) -> bool {
+    fn property_set(&mut self, s: Set<'_>) -> bool {
         match s {
             Set::Scale(_, Some(Value::Num(n))) => self.scale = *n,
             Set::Scale(_, Some(Value::Vector { x, y, z })) => self.display_scale = Some((*x, *y, *z)),
@@ -177,7 +177,7 @@ impl Host for Mock {
         }
         true
     }
-    fn c6_block_state(&mut self, _at: &BlockPos) -> Option<BlockState> {
+    fn block_state_prop(&mut self, _at: &BlockPos) -> Option<BlockState> {
         self.block.clone()
     }
     fn log(&mut self, level: LogLevel, msg: &str) {
@@ -554,7 +554,7 @@ fn tamer_is_the_owner_slot() {
     ctx.args = vec![Value::Text("wolf".into()), Value::Player(steve())];
     let mut h = Mock::default();
     e.fire(
-        EventKind::Ext4(carve_core::events_world_vehicles::ExtEvent::Tame),
+        EventKind::WorldVehicles(carve_core::events_world_vehicles::ExtEvent::Tame),
         ctx,
         &mut h,
     );

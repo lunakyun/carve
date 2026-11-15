@@ -72,7 +72,7 @@ impl Host for Mock {
     fn is_banned(&mut self, name: &str) -> bool {
         name == "Griefer"
     }
-    fn w6c3(&mut self, q: Q<'_>) -> Option<Value> {
+    fn mob_block_check(&mut self, q: Q<'_>) -> Option<Value> {
         Some(match q {
             Q::Check(c, _) => Value::Bool(self.yes.contains(&c)),
             Q::Block(k, ..) => Value::Bool(self.blocks.contains(&k)),

@@ -29,7 +29,7 @@ pub enum BlockTrait {
 
 /// What a pattern means. Copy, so it can sit inside `CondKind`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum W2Kind {
+pub enum EntityBlockKind {
     Valid(bool),
     ScriptLoaded(bool),
     /// `matches`: the whole text must match.
@@ -48,7 +48,7 @@ pub enum W2Kind {
 
 /// The built condition. `negate` is already folded in where it applies.
 #[derive(Debug, Clone, PartialEq)]
-pub enum W2Cond {
+pub enum EntityBlockCond {
     Valid(Expr, bool),
     ScriptLoaded(Expr, bool),
     Regex {
@@ -83,122 +83,134 @@ pub enum W2Cond {
     Block(Expr, BlockTrait, bool),
 }
 
-pub const W2_CONDITION_PATTERNS: &[(&str, CondKind)] = &[
-    ("%object% is valid", CondKind::W3(W2Kind::Valid(false))),
-    ("%object% (is not|isn't) valid", CondKind::W3(W2Kind::Valid(true))),
+pub const CONDITION_PATTERNS: &[(&str, CondKind)] = &[
+    (
+        "%object% is valid",
+        CondKind::EntityBlock(EntityBlockKind::Valid(false)),
+    ),
+    (
+        "%object% (is not|isn't) valid",
+        CondKind::EntityBlock(EntityBlockKind::Valid(true)),
+    ),
     (
         "script %text% is loaded",
-        CondKind::W3(W2Kind::ScriptLoaded(false)),
+        CondKind::EntityBlock(EntityBlockKind::ScriptLoaded(false)),
     ),
     (
         "script %text% (is not|isn't) loaded",
-        CondKind::W3(W2Kind::ScriptLoaded(true)),
+        CondKind::EntityBlock(EntityBlockKind::ScriptLoaded(true)),
     ),
     (
         "pvp is enabled in %world%",
-        CondKind::W3(W2Kind::Pvp(false, true)),
+        CondKind::EntityBlock(EntityBlockKind::Pvp(false, true)),
     ),
     (
         "pvp is (disabled|not enabled) in %world%",
-        CondKind::W3(W2Kind::Pvp(true, true)),
+        CondKind::EntityBlock(EntityBlockKind::Pvp(true, true)),
     ),
-    ("pvp is enabled", CondKind::W3(W2Kind::Pvp(false, false))),
+    (
+        "pvp is enabled",
+        CondKind::EntityBlock(EntityBlockKind::Pvp(false, false)),
+    ),
     (
         "pvp is (disabled|not enabled)",
-        CondKind::W3(W2Kind::Pvp(true, false)),
+        CondKind::EntityBlock(EntityBlockKind::Pvp(true, false)),
     ),
     (
         "%player% (is|are) poisoned",
-        CondKind::W3(W2Kind::State(PlayerState::Poisoned, false)),
+        CondKind::EntityBlock(EntityBlockKind::State(PlayerState::Poisoned, false)),
     ),
     (
         "%player% (is not|isn't|are not|aren't) poisoned",
-        CondKind::W3(W2Kind::State(PlayerState::Poisoned, true)),
+        CondKind::EntityBlock(EntityBlockKind::State(PlayerState::Poisoned, true)),
     ),
     (
         "%player% (is|are) silent",
-        CondKind::W3(W2Kind::State(PlayerState::Silent, false)),
+        CondKind::EntityBlock(EntityBlockKind::State(PlayerState::Silent, false)),
     ),
     (
         "%player% (is not|isn't|are not|aren't) silent",
-        CondKind::W3(W2Kind::State(PlayerState::Silent, true)),
+        CondKind::EntityBlock(EntityBlockKind::State(PlayerState::Silent, true)),
     ),
     (
         "%player% (is|are) riding",
-        CondKind::W3(W2Kind::State(PlayerState::Riding, false)),
+        CondKind::EntityBlock(EntityBlockKind::State(PlayerState::Riding, false)),
     ),
     (
         "%player% (is not|isn't|are not|aren't) riding",
-        CondKind::W3(W2Kind::State(PlayerState::Riding, true)),
+        CondKind::EntityBlock(EntityBlockKind::State(PlayerState::Riding, true)),
     ),
-    ("%text% (is|are) instant", CondKind::W3(W2Kind::Instant(false))),
+    (
+        "%text% (is|are) instant",
+        CondKind::EntityBlock(EntityBlockKind::Instant(false)),
+    ),
     (
         "%text% (is not|isn't|are not|aren't) instant",
-        CondKind::W3(W2Kind::Instant(true)),
+        CondKind::EntityBlock(EntityBlockKind::Instant(true)),
     ),
     (
         "%object% is solid",
-        CondKind::W3(W2Kind::Block(BlockTrait::Solid, false)),
+        CondKind::EntityBlock(EntityBlockKind::Block(BlockTrait::Solid, false)),
     ),
     (
         "%object% (is not|isn't) solid",
-        CondKind::W3(W2Kind::Block(BlockTrait::Solid, true)),
+        CondKind::EntityBlock(EntityBlockKind::Block(BlockTrait::Solid, true)),
     ),
     (
         "%object% is transparent",
-        CondKind::W3(W2Kind::Block(BlockTrait::Transparent, false)),
+        CondKind::EntityBlock(EntityBlockKind::Block(BlockTrait::Transparent, false)),
     ),
     (
         "%object% (is not|isn't) transparent",
-        CondKind::W3(W2Kind::Block(BlockTrait::Transparent, true)),
+        CondKind::EntityBlock(EntityBlockKind::Block(BlockTrait::Transparent, true)),
     ),
     (
         "%object% is passable",
-        CondKind::W3(W2Kind::Block(BlockTrait::Passable, false)),
+        CondKind::EntityBlock(EntityBlockKind::Block(BlockTrait::Passable, false)),
     ),
     (
         "%object% (is not|isn't) passable",
-        CondKind::W3(W2Kind::Block(BlockTrait::Passable, true)),
+        CondKind::EntityBlock(EntityBlockKind::Block(BlockTrait::Passable, true)),
     ),
     (
         "%object% is within %number% (block|blocks|meter|meters|metre|metres) (around|of|from) %object%",
-        CondKind::W3(W2Kind::WithinRadius(false)),
+        CondKind::EntityBlock(EntityBlockKind::WithinRadius(false)),
     ),
     (
         "%object% (is not|isn't) within %number% (block|blocks|meter|meters|metre|metres) (around|of|from) %object%",
-        CondKind::W3(W2Kind::WithinRadius(true)),
+        CondKind::EntityBlock(EntityBlockKind::WithinRadius(true)),
     ),
     (
         "%object% is within %object% (and|to) %object%",
-        CondKind::W3(W2Kind::WithinBox(false)),
+        CondKind::EntityBlock(EntityBlockKind::WithinBox(false)),
     ),
     (
         "%object% (is not|isn't) within %object% (and|to) %object%",
-        CondKind::W3(W2Kind::WithinBox(true)),
+        CondKind::EntityBlock(EntityBlockKind::WithinBox(true)),
     ),
     (
         "%object% is within %object%",
-        CondKind::W3(W2Kind::WithinWorld(false)),
+        CondKind::EntityBlock(EntityBlockKind::WithinWorld(false)),
     ),
     (
         "%object% (is not|isn't) within %object%",
-        CondKind::W3(W2Kind::WithinWorld(true)),
+        CondKind::EntityBlock(EntityBlockKind::WithinWorld(true)),
     ),
     (
         "%text% (matches|match) %text%",
-        CondKind::W3(W2Kind::Matches(false)),
+        CondKind::EntityBlock(EntityBlockKind::Matches(false)),
     ),
     (
         "%text% (doesn't|does not|don't|do not) match %text%",
-        CondKind::W3(W2Kind::Matches(true)),
+        CondKind::EntityBlock(EntityBlockKind::Matches(true)),
     ),
     (
         "%text% (contains|contain) regex %text%",
-        CondKind::W3(W2Kind::FindsRegex(false)),
+        CondKind::EntityBlock(EntityBlockKind::FindsRegex(false)),
     ),
     (
         "%text% (doesn't|does not|don't|do not) contain regex %text%",
-        CondKind::W3(W2Kind::FindsRegex(true)),
+        CondKind::EntityBlock(EntityBlockKind::FindsRegex(true)),
     ),
 ];
 
@@ -210,41 +222,41 @@ fn take(c: &mut [Option<Capture>], i: usize) -> Option<Expr> {
 }
 
 /// Build the condition from the captured slots. Returns `None` if a slot is missing.
-pub fn build(kind: W2Kind, mut c: Vec<Option<Capture>>) -> Option<W2Cond> {
+pub fn build(kind: EntityBlockKind, mut c: Vec<Option<Capture>>) -> Option<EntityBlockCond> {
     let c = &mut c;
     Some(match kind {
-        W2Kind::Valid(n) => W2Cond::Valid(take(c, 0)?, n),
-        W2Kind::ScriptLoaded(n) => W2Cond::ScriptLoaded(take(c, 0)?, n),
-        W2Kind::Matches(n) | W2Kind::FindsRegex(n) => W2Cond::Regex {
+        EntityBlockKind::Valid(n) => EntityBlockCond::Valid(take(c, 0)?, n),
+        EntityBlockKind::ScriptLoaded(n) => EntityBlockCond::ScriptLoaded(take(c, 0)?, n),
+        EntityBlockKind::Matches(n) | EntityBlockKind::FindsRegex(n) => EntityBlockCond::Regex {
             text: take(c, 0)?,
             pattern: take(c, 1)?,
-            whole: matches!(kind, W2Kind::Matches(_)),
+            whole: matches!(kind, EntityBlockKind::Matches(_)),
             negate: n,
         },
-        W2Kind::WithinBox(n) => W2Cond::WithinBox {
+        EntityBlockKind::WithinBox(n) => EntityBlockCond::WithinBox {
             loc: take(c, 0)?,
             a: take(c, 1)?,
             b: take(c, 2)?,
             negate: n,
         },
-        W2Kind::WithinRadius(n) => W2Cond::WithinRadius {
+        EntityBlockKind::WithinRadius(n) => EntityBlockCond::WithinRadius {
             loc: take(c, 0)?,
             radius: take(c, 1)?,
             center: take(c, 2)?,
             negate: n,
         },
-        W2Kind::WithinWorld(n) => W2Cond::WithinWorld {
+        EntityBlockKind::WithinWorld(n) => EntityBlockCond::WithinWorld {
             loc: take(c, 0)?,
             world: take(c, 1)?,
             negate: n,
         },
-        W2Kind::State(s, n) => W2Cond::State(take(c, 0)?, s, n),
-        W2Kind::Pvp(negate, with_world) => W2Cond::Pvp {
+        EntityBlockKind::State(s, n) => EntityBlockCond::State(take(c, 0)?, s, n),
+        EntityBlockKind::Pvp(negate, with_world) => EntityBlockCond::Pvp {
             world: if with_world { Some(take(c, 0)?) } else { None },
             negate,
         },
-        W2Kind::Instant(n) => W2Cond::Instant(take(c, 0)?, n),
-        W2Kind::Block(t, n) => W2Cond::Block(take(c, 0)?, t, n),
+        EntityBlockKind::Instant(n) => EntityBlockCond::Instant(take(c, 0)?, n),
+        EntityBlockKind::Block(t, n) => EntityBlockCond::Block(take(c, 0)?, t, n),
     })
 }
 

@@ -2,17 +2,17 @@
 //! a hot path.
 
 use super::{Engine, Exec};
-use crate::conditions_flags_metadata::{self as c2, C2Cond, Kind};
-use crate::expr_numbers_metadata::{self as w5, DataKind};
+use crate::conditions_flags_metadata::{self as c2, FlagsCond, Kind};
+use crate::expr_numbers_metadata::{self as numbers, DataKind};
 use crate::host::Host;
 use crate::value::Value;
 
 impl Engine {
     #[cold]
     #[inline(never)]
-    pub(super) fn w5c2_cond(
+    pub(super) fn flags_cond(
         &mut self,
-        c: &C2Cond,
+        c: &FlagsCond,
         ex: &mut Exec,
         host: &mut dyn Host,
     ) -> Result<bool, String> {
@@ -37,7 +37,7 @@ impl Engine {
                 _ => None,
             },
             Kind::Metadata | Kind::Persistent => {
-                let (Some(key), Some(id)) = (b.as_ref(), w5::target_id(&a)) else {
+                let (Some(key), Some(id)) = (b.as_ref(), numbers::target_id(&a)) else {
                     return Ok(false);
                 };
                 let key = key.to_string();
@@ -46,9 +46,9 @@ impl Engine {
                 } else {
                     DataKind::Persistent
                 };
-                let k = w5::data_key(kind, &id, &key);
+                let k = numbers::data_key(kind, &id, &key);
                 Some(match kind {
-                    DataKind::Metadata => self.w5.metadata.contains_key(&k),
+                    DataKind::Metadata => self.numbers.metadata.contains_key(&k),
                     DataKind::Persistent => self.vars.get(&k) != Value::None,
                 })
             }

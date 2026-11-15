@@ -175,7 +175,7 @@ fn wpos(at: &BlockPos) -> WitPos {
 }
 
 impl WasmHost<'_> {
-    fn c4_entity(&mut self, v: &Value) -> Option<Entity> {
+    fn shape_entity(&mut self, v: &Value) -> Option<Entity> {
         match v {
             Value::Player(p) => self.get(p).map(|pl| pl.as_entity()),
             Value::Entity(e) => self.find_entity(&e.uuid),
@@ -183,13 +183,13 @@ impl WasmHost<'_> {
         }
     }
 
-    fn c4_held(&mut self, p: &PlayerRef) -> Option<ItemStack> {
+    fn shape_held(&mut self, p: &PlayerRef) -> Option<ItemStack> {
         self.get(p)?.get_item_in_hand(Hand::Right)
     }
 
     /// The slots of the brewing stand at `at`. A stand placed by a script has
     /// no block entity yet; with `create` one is written first.
-    fn c4_brew(&mut self, at: &BlockPos, create: bool) -> Option<ContainerBlockEntity> {
+    fn shape_brew(&mut self, at: &BlockPos, create: bool) -> Option<ContainerBlockEntity> {
         let w = self.block_world(at)?;
         let get = |w: &wapi::World| match w.get_block_entity(wpos(at)) {
             Some(BlockEntityType::BrewingStandBlockEntity(b)) => Some(b.get_container()),
@@ -211,11 +211,11 @@ impl WasmHost<'_> {
         get(&w)
     }
 
-    pub(super) fn w5c4_impl(&mut self, q: Q<'_>) -> Option<Value> {
+    pub(super) fn block_shape_query_impl(&mut self, q: Q<'_>) -> Option<Value> {
         let ok = |b: bool| Some(Value::Bool(b));
         match q {
             Q::Brew(at, slot) => {
-                let c = self.c4_brew(at, false)?;
+                let c = self.shape_brew(at, false)?;
                 Some(
                     c.get_stack(u32::from(slot))
                         .map_or(Value::None, |st| super::gaps::value_of(&st)),
@@ -227,7 +227,7 @@ impl WasmHost<'_> {
                     Value::None => None,
                     other => Some(super::gaps::stack_of(other)?),
                 };
-                self.c4_brew(at, true)?.set_stack(u32::from(slot), stack);
+                self.shape_brew(at, true)?.set_stack(u32::from(slot), stack);
                 ok(true)
             }
             Q::Border(world, f) => {
@@ -254,7 +254,7 @@ impl WasmHost<'_> {
                 ok(true)
             }
             Q::HeldBook(p) => {
-                let stack = self.c4_held(p)?;
+                let stack = self.shape_held(p)?;
                 let bytes = stack
                     .get_components()
                     .into_iter()
@@ -308,17 +308,17 @@ impl WasmHost<'_> {
                 ok(true)
             }
             Q::Ai(v) => {
-                let mob = self.c4_entity(v)?.as_mob()?;
+                let mob = self.shape_entity(v)?.as_mob()?;
                 ok(!mob.is_ai_disabled())
             }
             Q::SetAi(v, on) => {
-                let mob = self.c4_entity(v)?.as_mob()?;
+                let mob = self.shape_entity(v)?.as_mob()?;
                 mob.set_ai_disabled(!on);
                 ok(true)
             }
             Q::Attr(v, name, total) => {
                 let a = attribute(name)?;
-                let l = self.c4_entity(v)?.as_living()?;
+                let l = self.shape_entity(v)?.as_living()?;
                 Some(Value::Num(if total {
                     l.get_attribute_value(a)
                 } else {
@@ -327,12 +327,12 @@ impl WasmHost<'_> {
             }
             Q::SetAttr(v, name, n) => {
                 let a = attribute(name)?;
-                self.c4_entity(v)?.as_living()?.set_attribute_base(a, n);
+                self.shape_entity(v)?.as_living()?.set_attribute_base(a, n);
                 ok(true)
             }
             Q::ResetAttr(v, name) => {
                 let a = attribute(name)?;
-                self.c4_entity(v)?.as_living()?.reset_attribute(a);
+                self.shape_entity(v)?.as_living()?.reset_attribute(a);
                 ok(true)
             }
             Q::CarriedBlock(e) => {

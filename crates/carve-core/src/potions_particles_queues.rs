@@ -4,9 +4,9 @@
 //! slots and viewers, player skulls, potion items, `result of function`,
 //! `respawn reason` and `on-screen kick message`.
 //!
-//! Every expression is one boxed [`Node`] (`Expr::W5c5`), so the hot `Expr`
+//! Every expression is one boxed [`Node`] (`Expr::PotionsParticles`), so the hot `Expr`
 //! and `eval` paths stay small. The engine evaluates the arguments and calls
-//! [`apply`]. Game facts come through one host method, [`Host::w5c5`], with a
+//! [`apply`]. Game facts come through one host method, [`Host::potion_particle_query`], with a
 //! [`Q`] that says what is wanted.
 
 use crate::compile::{EffKind, Effect};
@@ -105,16 +105,16 @@ impl Obj {
 }
 
 fn potion_value(p: PotionVal) -> Value {
-    Value::W5(Box::new(Obj::Potion(p)))
+    Value::Obj(Box::new(Obj::Potion(p)))
 }
 
 fn particle_value(p: PartVal) -> Value {
-    Value::W5(Box::new(Obj::Particle(p)))
+    Value::Obj(Box::new(Obj::Particle(p)))
 }
 
 // ---- host queries ---------------------------------------------------------------
 
-/// What [`Host::w5c5`] is asked. The answer is a [`Value`]; `Value::None`
+/// What [`Host::potion_particle_query`] is asked. The answer is a [`Value`]; `Value::None`
 /// means unknown or not supported.
 #[derive(Debug)]
 pub enum Q<'a> {
@@ -330,7 +330,7 @@ pub struct Node {
 }
 
 fn node(op: Op, args: Vec<Expr>, ty: Ty) -> Expr {
-    Expr::W5c5(Box::new(Node { op, args, ty }))
+    Expr::PotionsParticles(Box::new(Node { op, args, ty }))
 }
 
 fn lit_text(s: &str) -> Expr {
@@ -344,7 +344,7 @@ pub fn effect_of(v: &Value) -> Option<&'static str> {
     let s = match v {
         Value::Enum(e) => e.id().to_string(),
         Value::Text(t) => t.trim().to_ascii_lowercase().replace(' ', "_"),
-        Value::W5(o) => match &**o {
+        Value::Obj(o) => match &**o {
             Obj::Potion(p) => p.effect.clone(),
             Obj::Particle(_) | Obj::Loot(_) => return None,
         },
@@ -359,7 +359,7 @@ fn num(v: &Value) -> Option<f64> {
 
 fn potion(v: &Value) -> Option<&PotionVal> {
     match v {
-        Value::W5(o) => match &**o {
+        Value::Obj(o) => match &**o {
             Obj::Potion(p) => Some(p),
             Obj::Particle(_) | Obj::Loot(_) => None,
         },
@@ -369,7 +369,7 @@ fn potion(v: &Value) -> Option<&PotionVal> {
 
 fn particle(v: &Value) -> Option<&PartVal> {
     match v {
-        Value::W5(o) => match &**o {
+        Value::Obj(o) => match &**o {
             Obj::Particle(p) => Some(p),
             Obj::Potion(_) | Obj::Loot(_) => None,
         },
@@ -429,7 +429,7 @@ fn block_pos(v: &Value) -> Option<crate::block_ops::BlockPos> {
 /// Block id, state index and default state id of a block.
 fn block_state(v: &Value, host: &mut dyn Host) -> Option<(String, i64, i64)> {
     let pos = block_pos(v)?;
-    let Value::List(parts) = host.w5c5(Q::BlockState(&pos)) else {
+    let Value::List(parts) = host.potion_particle_query(Q::BlockState(&pos)) else {
         return None;
     };
     let [Value::Text(name), Value::Num(state), Value::Num(default)] = parts.as_slice() else {
@@ -545,14 +545,14 @@ pub fn apply(op: Op, vals: &[Value], host: &mut dyn Host) -> Result<Value, Strin
             potion_value(p)
         }
         Op::EffectsOf => match a {
-            Value::Player(p) => host.w5c5(Q::Effects(p)),
+            Value::Player(p) => host.potion_particle_query(Q::Effects(p)),
             _ => Value::None,
         },
         Op::EffectOf | Op::TierOf => {
             let (Some(effect), Value::Player(p)) = (effect_of(a), b) else {
                 return Ok(Value::None);
             };
-            let Value::List(all) = host.w5c5(Q::Effects(p)) else {
+            let Value::List(all) = host.potion_particle_query(Q::Effects(p)) else {
                 return Ok(Value::None);
             };
             let found = all
@@ -667,14 +667,14 @@ pub fn apply(op: Op, vals: &[Value], host: &mut dyn Host) -> Result<Value, Strin
         },
         Op::BarKey => {
             let id = a.to_string();
-            match host.w5c5(Q::BarExists(&id)) {
+            match host.potion_particle_query(Q::BarExists(&id)) {
                 Value::Bool(true) => Value::Text(id),
                 _ => Value::None,
             }
         }
-        Op::BarProgress => host.w5c5(Q::BarProgress(&a.to_string())),
+        Op::BarProgress => host.potion_particle_query(Q::BarProgress(&a.to_string())),
         Op::Weather => match a {
-            Value::Player(p) => match host.w5c5(Q::Weather(p)) {
+            Value::Player(p) => match host.potion_particle_query(Q::Weather(p)) {
                 Value::Text(t) => named("weather type", &t),
                 v => v,
             },
@@ -699,7 +699,7 @@ pub fn apply(op: Op, vals: &[Value], host: &mut dyn Host) -> Result<Value, Strin
                 Op::InvSlots => Value::Num(inv.size() as f64),
                 // Chest inventories made by scripts have no holder.
                 Op::InvHolder => Value::None,
-                _ => host.w5c5(Q::Viewers(inv.id, inv.viewer.as_deref())),
+                _ => host.potion_particle_query(Q::Viewers(inv.id, inv.viewer.as_deref())),
             }
         }
     })
@@ -727,12 +727,12 @@ pub enum EOp {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct W5Effect {
+pub struct PotionEffect {
     pub op: EOp,
     pub args: Vec<Expr>,
 }
 
-use EffKind::W5c5 as K;
+use EffKind::PotionsParticles as K;
 
 pub const EFFECT_PATTERNS: &[(&str, EffKind)] = &[
     ("apply %object% to %player%", K(EOp::Apply)),
@@ -822,7 +822,7 @@ pub fn build(op: EOp, caps: &mut [Option<Capture>]) -> Option<Effect> {
                     None => {}
                 }
             }
-            Some(Effect::W5c5(Box::new(W5Effect { op, args })))
+            Some(Effect::PotionsParticles(Box::new(PotionEffect { op, args })))
         }
     }
 }
@@ -872,7 +872,7 @@ pub fn run_effect(op: EOp, vals: &[Value], host: &mut dyn Host) -> Result<(), St
             let Value::Player(who) = b else {
                 return Ok(());
             };
-            if host.w5c5(Q::AddEffect(who, p)) != Value::Bool(true) {
+            if host.potion_particle_query(Q::AddEffect(who, p)) != Value::Bool(true) {
                 host.add_effect(who, &p.effect, p.ticks.min(i32::MAX as u32), p.amplifier);
             }
         }
@@ -908,16 +908,16 @@ pub fn run_effect(op: EOp, vals: &[Value], host: &mut dyn Host) -> Result<(), St
             let Some(rain) = rain_of(b) else {
                 return Err(format!("'{b}' is not a weather (clear or rain)"));
             };
-            host.w5c5(Q::SetWeather(p, Some(rain)));
+            host.potion_particle_query(Q::SetWeather(p, Some(rain)));
         }
         EOp::SetWeatherTo(rain) => {
             if let Value::Player(p) = a {
-                host.w5c5(Q::SetWeather(p, Some(rain)));
+                host.potion_particle_query(Q::SetWeather(p, Some(rain)));
             }
         }
         EOp::ResetWeather => {
             if let Value::Player(p) = a {
-                host.w5c5(Q::SetWeather(p, None));
+                host.potion_particle_query(Q::SetWeather(p, None));
             }
         }
         EOp::SetCharges => {
@@ -933,7 +933,7 @@ pub fn run_effect(op: EOp, vals: &[Value], host: &mut dyn Host) -> Result<(), St
             }
             let n = num(b).ok_or("charges must be a number")?.clamp(0.0, 4.0) as i64;
             if let (Some(pos), Ok(state)) = (block_pos(a), u16::try_from(default + n)) {
-                host.w5c5(Q::SetBlockState(&pos, state));
+                host.potion_particle_query(Q::SetBlockState(&pos, state));
             }
         }
         EOp::SetPart(_) | EOp::SetPotion(_) => {}
@@ -1117,7 +1117,7 @@ impl P<'_> {
     }
 
     /// Called with the head word read. `Ok(None)`: not one of ours.
-    pub(crate) fn w5c5_head(&mut self, lw: &str) -> Result<Option<Expr>, String> {
+    pub(crate) fn potion_head(&mut self, lw: &str) -> Result<Option<Expr>, String> {
         let save = self.pos;
         let e = match lw {
             "a" | "an" => {
@@ -1134,7 +1134,7 @@ impl P<'_> {
                 }
                 self.pos += 1;
                 let next = next.unwrap_or_default();
-                return match self.w5c5_head(&next)? {
+                return match self.potion_head(&next)? {
                     Some(e) => Ok(Some(e)),
                     None => {
                         self.pos = save;
@@ -1479,13 +1479,13 @@ impl P<'_> {
 
     /// `<particle> with offset <vector>`, `with distribution`, `with velocity`,
     /// `with particle speed <n>`, `with extra value <n>`.
-    pub(crate) fn w5c5_post(&mut self, mut e: Expr) -> Result<Expr, String> {
+    pub(crate) fn potion_post(&mut self, mut e: Expr) -> Result<Expr, String> {
         loop {
             if !matches!(self.toks.get(self.pos), Some(t) if t.is_lit("with")) {
                 return Ok(e);
             }
             let is_part = match &e {
-                Expr::W5c5(n) => matches!(n.op, Op::Particle(_) | Op::PartWith(_)),
+                Expr::PotionsParticles(n) => matches!(n.op, Op::Particle(_) | Op::PartWith(_)),
                 Expr::Var(_) => true,
                 _ => false,
             };

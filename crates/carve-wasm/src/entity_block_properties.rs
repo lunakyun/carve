@@ -24,7 +24,7 @@ fn align_name(a: TextAlignment) -> &'static str {
 
 impl WasmHost<'_> {
     /// A script value for a live entity: a player value for players.
-    fn c6_value(&mut self, e: &Entity) -> Value {
+    fn prop_value(&mut self, e: &Entity) -> Value {
         let id = uuid::to_string(e.get_uuid());
         if let Some(p) = self.get_by_uuid(&id) {
             return Value::Player(player_ref(p));
@@ -36,7 +36,7 @@ impl WasmHost<'_> {
     }
 
     #[cold]
-    pub(super) fn c6_get_impl(&mut self, q: Get<'_>) -> Option<Value> {
+    pub(super) fn property_get_impl(&mut self, q: Get<'_>) -> Option<Value> {
         match q {
             Get::Scale(r) => {
                 let e = self.find_entity(&r.uuid)?;
@@ -56,7 +56,7 @@ impl WasmHost<'_> {
                     Some(m) => m.get_target()?,
                     None => e.get_target_entity(PLAYER_TARGET_RANGE)?,
                 };
-                Some(self.c6_value(&t))
+                Some(self.prop_value(&t))
             }
             Get::Camera(p) => {
                 let pl = self.get(p)?;
@@ -66,7 +66,7 @@ impl WasmHost<'_> {
                 }
                 let r = self.entity_by_id(i32::try_from(cam).ok()?)?;
                 let e = self.find_entity(&r.uuid)?;
-                Some(self.c6_value(&e))
+                Some(self.prop_value(&e))
             }
             Get::Text(r, f) => {
                 let t = self.find_entity(&r.uuid)?.as_text_display()?;
@@ -87,16 +87,16 @@ impl WasmHost<'_> {
             Get::BarStyle(id) => crate::sb::bar_style(id).map(|s| Value::Text(s.into())),
             Get::BarViewers(id) => {
                 let uuids = crate::sb::bar_viewers(id)?;
-                Some(Value::List(self.c6_players(&uuids)))
+                Some(Value::List(self.prop_players(&uuids)))
             }
             Get::MenuViewers(id) => {
                 let uuids = crate::inv::viewers_of(id);
-                Some(Value::List(self.c6_players(&uuids)))
+                Some(Value::List(self.prop_players(&uuids)))
             }
         }
     }
 
-    fn c6_players(&mut self, uuids: &[String]) -> Vec<Value> {
+    fn prop_players(&mut self, uuids: &[String]) -> Vec<Value> {
         uuids
             .iter()
             .filter_map(|u| self.get_by_uuid(u).map(|p| Value::Player(player_ref(p))))
@@ -104,7 +104,7 @@ impl WasmHost<'_> {
     }
 
     #[cold]
-    pub(super) fn c6_set_impl(&mut self, s: Set<'_>) -> bool {
+    pub(super) fn property_set_impl(&mut self, s: Set<'_>) -> bool {
         match s {
             Set::Scale(r, v) => {
                 let Some(e) = self.find_entity(&r.uuid) else {
@@ -192,7 +192,7 @@ impl WasmHost<'_> {
     }
 
     #[cold]
-    pub(super) fn c6_block_state_impl(&mut self, at: &BlockPos) -> Option<BlockState> {
+    pub(super) fn block_state_prop_impl(&mut self, at: &BlockPos) -> Option<BlockState> {
         let w = self.block_world(at)?;
         let b = w.get_block(wit_pos(at));
         let state = w.get_block_state_id(wit_pos(at));

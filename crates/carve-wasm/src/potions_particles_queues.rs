@@ -19,18 +19,18 @@ fn wit_pos(at: &carve_core::block_ops::BlockPos) -> WitPos {
 }
 
 impl WasmHost<'_> {
-    pub(super) fn w5c5_impl(&mut self, q: Q<'_>) -> Value {
-        self.w5c5_inner(q).unwrap_or(Value::None)
+    pub(super) fn potion_particle_query_impl(&mut self, q: Q<'_>) -> Value {
+        self.potion_particle_inner(q).unwrap_or(Value::None)
     }
 
-    fn w5c5_inner(&mut self, q: Q<'_>) -> Option<Value> {
+    fn potion_particle_inner(&mut self, q: Q<'_>) -> Option<Value> {
         Some(match q {
             Q::Effects(p) => {
                 let list = self.get(p)?.get_active_effects();
                 Value::List(
                     list.into_iter()
                         .map(|e| {
-                            Value::W5(Box::new(Obj::Potion(PotionVal {
+                            Value::Obj(Box::new(Obj::Potion(PotionVal {
                                 effect: enum_name(&format!("{:?}", e.effect_type)),
                                 amplifier: e.amplifier,
                                 ticks: if e.duration as i32 == -1 {

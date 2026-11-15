@@ -71,7 +71,7 @@ fn compile_errors(src: &str) -> Vec<String> {
 }
 
 fn fire(e: &mut Engine, h: &mut Mock, k: ExtEvent, p: Option<PlayerRef>, vals: Vec<Value>) -> FireOutcome {
-    e.fire(EventKind::Ext4(k), ev::ctx(p, vals), h)
+    e.fire(EventKind::WorldVehicles(k), ev::ctx(p, vals), h)
 }
 
 fn sent(h: &Mock) -> Vec<String> {

@@ -159,7 +159,7 @@ fn decode(bytes: &[u8]) -> Option<Value> {
 /// The JSON a value is saved as; `None` for values that can't be saved.
 fn value_json(v: &Value) -> Option<Json> {
     Some(match v {
-        Value::None | Value::List(_) | Value::Entity(_) | Value::Queue(_) | Value::Ray(_) | Value::W5(_) => {
+        Value::None | Value::List(_) | Value::Entity(_) | Value::Queue(_) | Value::Ray(_) | Value::Obj(_) => {
             return None;
         }
         // NaN and infinity have no JSON form (they were saved as null and dropped on load).

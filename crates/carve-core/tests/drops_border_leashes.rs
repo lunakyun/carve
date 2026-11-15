@@ -1,7 +1,7 @@
 use carve_core::block_ops::BlockPos;
 use carve_core::compile::EventKind;
-use carve_core::drops_border_leashes::{self as w5, HostOp, Ignite, PathTarget, PotionFlag};
-use carve_core::events_world_vehicles::{self as ev4, ExtEvent};
+use carve_core::drops_border_leashes::{self as drops, HostOp, Ignite, PathTarget, PotionFlag};
+use carve_core::events_world_vehicles::{self as world_event, ExtEvent};
 use carve_core::skbee_nbt::ItemComp;
 use carve_core::world_effects::FxPos;
 use carve_core::*;
@@ -124,7 +124,7 @@ impl Host for Mock {
     fn read_data_file(&mut self, path: &str) -> Option<Vec<u8>> {
         (path == "icon.png").then(|| self.file.clone()).flatten()
     }
-    fn w5c1(&mut self, op: HostOp<'_>) -> Option<bool> {
+    fn drops_query(&mut self, op: HostOp<'_>) -> Option<bool> {
         let kind = |v: &Value| match v {
             Value::Entity(e) => e.kind.clone(),
             Value::Player(_) => "player".into(),
@@ -193,9 +193,9 @@ fn join(lines: &str, mut h: Mock) -> Mock {
 
 #[test]
 fn patterns_compile() {
-    let n = w5::check_patterns().unwrap();
+    let n = drops::check_patterns().unwrap();
     assert!(n > 90, "only {n} patterns");
-    assert_eq!(w5::pattern_sources().len(), n);
+    assert_eq!(drops::pattern_sources().len(), n);
 }
 
 #[test]
@@ -271,12 +271,16 @@ fn drops_and_keep_inventory() {
     let mut h = Mock::default();
     let o = e.fire(EventKind::Break, EventCtx::player(steve()), &mut h);
     let slots: Vec<u8> = o.set.iter().map(|(s, _)| *s).collect();
-    assert_eq!(slots, vec![w5::SLOT_NO_ITEM_DROPS, w5::SLOT_NO_XP_DROPS]);
+    assert_eq!(slots, vec![drops::SLOT_NO_ITEM_DROPS, drops::SLOT_NO_XP_DROPS]);
     let o = e.fire(EventKind::Death, EventCtx::player(steve()), &mut h);
     let slots: Vec<u8> = o.set.iter().map(|(s, _)| *s).collect();
     assert_eq!(
         slots,
-        vec![w5::SLOT_KEEP_INVENTORY, w5::SLOT_KEEP_XP, w5::SLOT_NO_XP_DROPS]
+        vec![
+            drops::SLOT_KEEP_INVENTORY,
+            drops::SLOT_KEEP_XP,
+            drops::SLOT_NO_XP_DROPS
+        ]
     );
     let mut e = load("on death:\n    keep the inventory\n");
     let o = e.fire(EventKind::Death, EventCtx::player(steve()), &mut h);
@@ -393,7 +397,7 @@ fn world_border() {
 #[test]
 fn leash_and_persist() {
     assert_eq!(
-        w5::uuid_ints("00000001-0000-0000-ffff-fffffffffffe"),
+        drops::uuid_ints("00000001-0000-0000-ffff-fffffffffffe"),
         Some([1, 0, -1, -2])
     );
     let h = join(
@@ -433,12 +437,12 @@ fn png(w: u32, h: u32) -> Vec<u8> {
 #[test]
 fn server_icon() {
     assert!(
-        w5::icon_data_url(&png(64, 64))
+        drops::icon_data_url(&png(64, 64))
             .unwrap()
             .starts_with("data:image/png;base64,iVBORw0KGgo")
     );
-    assert!(w5::icon_data_url(&png(32, 32)).unwrap_err().contains("64x64"));
-    assert!(w5::icon_data_url(b"GIF89a").is_err());
+    assert!(drops::icon_data_url(&png(32, 32)).unwrap_err().contains("64x64"));
+    assert!(drops::icon_data_url(b"GIF89a").is_err());
     let mut e = load(
         "on load:\n    load the server icon from file \"icon.png\"\non server list ping:\n    set the server icon to the last loaded server icon\n",
     );
@@ -456,8 +460,8 @@ fn server_icon() {
         Value::None,
     ];
     let o = e.fire(
-        EventKind::Ext4(ExtEvent::ServerListPing),
-        ev4::ctx(None, vals),
+        EventKind::WorldVehicles(ExtEvent::ServerListPing),
+        world_event::ctx(None, vals),
         &mut h,
     );
     assert_eq!(o.set.len(), 1);
@@ -505,8 +509,8 @@ fn prepare_craft_event() {
     let mut e = load("on preparing craft:\n    send \"crafting %event-item%\" to player\n");
     let mut h = Mock::default();
     e.fire(
-        EventKind::Ext4(ExtEvent::PrepareCraft),
-        ev4::ctx(
+        EventKind::WorldVehicles(ExtEvent::PrepareCraft),
+        world_event::ctx(
             Some(steve()),
             vec![Value::Text("stick".into()), Value::Text("minecraft:stick".into())],
         ),

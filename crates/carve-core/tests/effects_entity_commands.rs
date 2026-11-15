@@ -1,5 +1,5 @@
 use carve_core::compile::EventKind;
-use carve_core::effects_entity_commands::{self as w6, Axis2, HostOp};
+use carve_core::effects_entity_commands::{self as cmds, Axis2, HostOp};
 use carve_core::world_effects::FxPos;
 use carve_core::*;
 
@@ -81,7 +81,7 @@ impl Host for Mock {
     fn entity_remove(&mut self, e: &EntityRef) {
         self.ops.push(format!("remove {}", e.kind));
     }
-    fn w6c2(&mut self, op: HostOp<'_>) -> Option<bool> {
+    fn entity_command(&mut self, op: HostOp<'_>) -> Option<bool> {
         self.ops.push(format!("{op:?}").replace(
             "PlayerRef { uuid: \"00000001-0000-0000-0000-000000000002\", name: \"Steve\" }",
             "Steve",
@@ -131,9 +131,9 @@ const COW: &str = "00000001-0000-0000-0000-00000000000a";
 
 #[test]
 fn patterns_compile() {
-    let n = w6::check_patterns().unwrap();
+    let n = cmds::check_patterns().unwrap();
     assert!(n > 90, "only {n} patterns");
-    assert_eq!(w6::pattern_sources().len(), n);
+    assert_eq!(cmds::pattern_sources().len(), n);
 }
 
 #[test]
@@ -217,7 +217,7 @@ fn reset_and_remove_all() {
 
 #[test]
 fn vector_rotation() {
-    let r = |v, a, d| w6::rotate(v, &a, d);
+    let r = |v, a, d| cmds::rotate(v, &a, d);
     let close = |a: (f64, f64, f64), b: (f64, f64, f64)| {
         assert!(
             (a.0 - b.0).abs() < 1e-9 && (a.1 - b.1).abs() < 1e-9 && (a.2 - b.2).abs() < 1e-9,

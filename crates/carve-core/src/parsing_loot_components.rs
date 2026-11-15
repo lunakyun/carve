@@ -2,9 +2,9 @@
 //! human-readable`, loot tables and loot contexts (plain records), item values
 //! with a component (`with custom model data`, `with enchantment glint`,
 //! `with item model`) and a few game facts through one host
-//! method, [`Host::w6c5`].
+//! method, [`Host::game_fact`].
 //!
-//! Every expression is one boxed [`Node`] (`Expr::W6c5`), so the hot `Expr`
+//! Every expression is one boxed [`Node`] (`Expr::ParsingLoot`), so the hot `Expr`
 //! and `eval` paths stay small.
 
 use crate::expr::{Expr, P, Ty};
@@ -12,7 +12,7 @@ use crate::host::Host;
 use crate::lexer::Tok;
 use crate::value::{Value, push_num};
 
-/// A loot table key or a loot context. Stored in `Value::W5` (see
+/// A loot table key or a loot context. Stored in `Value::Obj` (see
 /// `potions_particles_queues::Obj::Loot`). Not saved in global variables.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Loot {
@@ -51,7 +51,7 @@ impl Loot {
     }
 }
 
-/// What [`Host::w6c5`] is asked. `None` means unknown.
+/// What [`Host::game_fact`] is asked. `None` means unknown.
 #[derive(Debug)]
 pub enum Q<'a> {
     /// Largest stack of an item id, read from the server.
@@ -98,11 +98,11 @@ pub struct Node {
 }
 
 fn node(op: Op, args: Vec<Expr>, ty: Ty) -> Expr {
-    Expr::W6c5(Box::new(Node { op, args, ty }))
+    Expr::ParsingLoot(Box::new(Node { op, args, ty }))
 }
 
 fn loot_value(l: Loot) -> Value {
-    Value::W5(Box::new(crate::potions_particles_queues::Obj::Loot(l)))
+    Value::Obj(Box::new(crate::potions_particles_queues::Obj::Loot(l)))
 }
 
 /// `key of <value>`: the namespaced key of an item, a named value or a loot table.
@@ -110,7 +110,7 @@ pub fn key_of(v: &Value) -> Value {
     match v {
         Value::Item { id, .. } => Value::Text(format!("minecraft:{id}")),
         Value::Enum(e) => Value::Text(format!("minecraft:{}", e.id())),
-        Value::W5(o) => match &**o {
+        Value::Obj(o) => match &**o {
             crate::potions_particles_queues::Obj::Loot(Loot::Table(k)) => Value::Text(k.clone()),
             _ => Value::None,
         },
@@ -219,7 +219,7 @@ pub fn apply(op: Op, vals: &[Value], host: &mut dyn Host) -> Result<Value, Strin
             })))
         }
         Op::CtxLocation | Op::CtxLooter | Op::CtxLooted | Op::CtxLuck => match a {
-            Value::W5(o) => match &**o {
+            Value::Obj(o) => match &**o {
                 crate::potions_particles_queues::Obj::Loot(Loot::Context(c)) => match op {
                     Op::CtxLocation => c.loc.clone(),
                     Op::CtxLooter => c.looter.clone(),
@@ -249,7 +249,7 @@ pub fn apply(op: Op, vals: &[Value], host: &mut dyn Host) -> Result<Value, Strin
 
 /// Largest stack of an item: the server's value, else the built-in table.
 pub fn max_stack(id: &str, host: &mut dyn Host) -> u32 {
-    host.w6c5(Q::MaxStack(id))
+    host.game_fact(Q::MaxStack(id))
         .and_then(|v| v.as_num())
         .filter(|n| *n >= 1.0)
         .map_or_else(
@@ -309,7 +309,7 @@ pub fn human_span_expr(e: Expr) -> Expr {
 
 impl P<'_> {
     /// `of <operand>` with the `of` at `self.pos`.
-    fn x6_of(&mut self) -> Result<Expr, String> {
+    fn parse_of(&mut self) -> Result<Expr, String> {
         self.pos += 1;
         if self.pos >= self.toks.len() {
             self.hit_end.set(true);
@@ -319,15 +319,15 @@ impl P<'_> {
 
     /// Heads: `loot table from key "x"`, `loot context at <loc> ...`,
     /// `loot location|luck of <ctx>`, `looter of <ctx>`, `looted entity of <ctx>`.
-    pub(crate) fn w6c5_head(&mut self, lw: &str) -> Result<Option<Expr>, String> {
+    pub(crate) fn parse_head(&mut self, lw: &str) -> Result<Option<Expr>, String> {
         let e = match lw {
-            "a" | "an" if self.x6_lit(0, "loot") && self.x6_lit(1, "context") => {
+            "a" | "an" if self.lit_at(0, "loot") && self.lit_at(1, "context") => {
                 self.pos += 1;
-                return self.w6c5_head("loot");
+                return self.parse_head("loot");
             }
-            "loot" if self.x6_lit(0, "table") && (self.x6_lit(1, "from") || self.x6_lit(1, "of")) => {
+            "loot" if self.lit_at(0, "table") && (self.lit_at(1, "from") || self.lit_at(1, "of")) => {
                 self.pos += 2;
-                if self.x6_lit(0, "key") {
+                if self.lit_at(0, "key") {
                     self.pos += 1;
                 }
                 if self.pos >= self.toks.len() {
@@ -336,22 +336,22 @@ impl P<'_> {
                 let k = self.primary()?;
                 node(Op::TableFromKey, vec![k], Ty::Object)
             }
-            "loot" if self.x6_lit(0, "context") && self.x6_lit(1, "at") => {
+            "loot" if self.lit_at(0, "context") && self.lit_at(1, "at") => {
                 self.pos += 2;
                 let loc = self.primary()?;
                 let mut luck = Expr::Num(0.0);
                 let mut looter = Expr::Text(vec![]);
                 let mut looted = Expr::Text(vec![]);
-                while self.x6_lit(0, "with") {
+                while self.lit_at(0, "with") {
                     let save = self.pos;
                     self.pos += 1;
-                    if self.x6_lit(0, "luck") {
+                    if self.lit_at(0, "luck") {
                         self.pos += 1;
                         luck = self.sum()?;
-                    } else if self.x6_lit(0, "looter") {
+                    } else if self.lit_at(0, "looter") {
                         self.pos += 1;
                         looter = self.primary()?;
-                    } else if self.x6_lit(0, "looted") && self.x6_lit(1, "entity") {
+                    } else if self.lit_at(0, "looted") && self.lit_at(1, "entity") {
                         self.pos += 2;
                         looted = self.primary()?;
                     } else {
@@ -361,23 +361,23 @@ impl P<'_> {
                 }
                 node(Op::CtxNew, vec![loc, luck, looter, looted], Ty::Object)
             }
-            "loot" if self.x6_lit(0, "location") && self.x6_lit(1, "of") => {
+            "loot" if self.lit_at(0, "location") && self.lit_at(1, "of") => {
                 self.pos += 1;
-                let c = self.x6_of()?;
+                let c = self.parse_of()?;
                 node(Op::CtxLocation, vec![c], Ty::Location)
             }
-            "loot" if self.x6_lit(0, "luck") && self.x6_lit(1, "of") => {
+            "loot" if self.lit_at(0, "luck") && self.lit_at(1, "of") => {
                 self.pos += 1;
-                let c = self.x6_of()?;
+                let c = self.parse_of()?;
                 node(Op::CtxLuck, vec![c], Ty::Number)
             }
-            "looter" if self.x6_lit(0, "of") => {
-                let c = self.x6_of()?;
+            "looter" if self.lit_at(0, "of") => {
+                let c = self.parse_of()?;
                 node(Op::CtxLooter, vec![c], Ty::Object)
             }
-            "looted" if self.x6_lit(0, "entity") && self.x6_lit(1, "of") => {
+            "looted" if self.lit_at(0, "entity") && self.lit_at(1, "of") => {
                 self.pos += 1;
-                let c = self.x6_of()?;
+                let c = self.parse_of()?;
                 node(Op::CtxLooted, vec![c], Ty::Object)
             }
             _ => return Ok(None),
@@ -387,16 +387,16 @@ impl P<'_> {
 
     /// `<item> with custom model data 5`, `with enchantment glint true`,
     /// `with item model "ns:key"`.
-    pub(crate) fn w6c5_post(&mut self, mut e: Expr) -> Result<Expr, String> {
-        while self.x6_lit(0, "with") && matches!(e.ty(self.env), Ty::Item) {
+    pub(crate) fn parse_post(&mut self, mut e: Expr) -> Result<Expr, String> {
+        while self.lit_at(0, "with") && matches!(e.ty(self.env), Ty::Item) {
             let save = self.pos;
             self.pos += 1;
             let comp = match word(self.toks.get(self.pos)).as_deref() {
-                Some("custom") if self.x6_lit(1, "model") && self.x6_lit(2, "data") => {
+                Some("custom") if self.lit_at(1, "model") && self.lit_at(2, "data") => {
                     self.pos += 3;
                     Some(Comp::CustomModelData)
                 }
-                Some("enchantment" | "enchant") if self.x6_lit(1, "glint") => {
+                Some("enchantment" | "enchant") if self.lit_at(1, "glint") => {
                     self.pos += 2;
                     Some(Comp::Glint)
                 }
@@ -404,7 +404,7 @@ impl P<'_> {
                     self.pos += 1;
                     Some(Comp::Glint)
                 }
-                Some("item") if self.x6_lit(1, "model") => {
+                Some("item") if self.lit_at(1, "model") => {
                     self.pos += 2;
                     Some(Comp::Model)
                 }
@@ -418,7 +418,7 @@ impl P<'_> {
                 self.pos = save;
                 break;
             };
-            if c == Comp::Glint && self.x6_lit(0, "override") {
+            if c == Comp::Glint && self.lit_at(0, "override") {
                 self.pos += 1;
             }
             let arg = match c {

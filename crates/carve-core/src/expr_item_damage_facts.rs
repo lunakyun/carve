@@ -3,8 +3,8 @@
 //! facts, last death location, join message, resource pack response and
 //! highest/lowest solid block.
 //!
-//! They are rare, so they share one boxed `Expr::W4` and one boxed
-//! `Effect::W4`. The hot enums in `engine.rs` do not grow.
+//! They are rare, so they share one boxed `Expr::ItemDamageFacts` and one boxed
+//! `Effect::ItemDamageFacts`. The hot enums in `engine.rs` do not grow.
 
 use crate::compile::{EffKind, Effect};
 use crate::expr::{Expr, Ty};
@@ -13,7 +13,7 @@ use crate::pattern::Capture;
 use crate::value::{PlayerRef, Value};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum W4Op {
+pub enum FactOp {
     /// `not x`
     Not,
     MaxDouble,
@@ -57,14 +57,14 @@ pub enum W4Op {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct W4 {
-    pub op: W4Op,
+pub struct Fact {
+    pub op: FactOp,
     pub args: Vec<Expr>,
 }
 
-impl W4 {
+impl Fact {
     pub fn ty(&self) -> Ty {
-        use W4Op::*;
+        use FactOp::*;
         match self.op {
             Not => Ty::Boolean,
             MaxDouble | MaxFloat | ItemAmount | MaxDurability | LastDamage | Light | BlockLight
@@ -88,7 +88,7 @@ pub struct DamageInfo {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum W4Eff {
+pub enum FactSetOp {
     /// `set cooldown of <item> for <player> to <timespan>`
     SetCooldown,
     /// `reset cooldown of <item> for <player>`
@@ -98,35 +98,35 @@ pub enum W4Eff {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct W4Effect {
-    pub op: W4Eff,
+pub struct FactEffect {
+    pub op: FactSetOp,
     pub args: Vec<Expr>,
 }
 
 pub const EFFECT_PATTERNS: &[(&str, EffKind)] = &[
     (
         "set [the] [item] cooldown of %item% for %player% to %timespan%",
-        EffKind::W4(W4Eff::SetCooldown),
+        EffKind::ItemDamageFacts(FactSetOp::SetCooldown),
     ),
     (
         "reset [the] [item] cooldown of %item% for %player%",
-        EffKind::W4(W4Eff::ResetCooldown),
+        EffKind::ItemDamageFacts(FactSetOp::ResetCooldown),
     ),
     (
         "set [the] join message to %text%",
-        EffKind::W4(W4Eff::SetJoinMessage),
+        EffKind::ItemDamageFacts(FactSetOp::SetJoinMessage),
     ),
 ];
 
 /// Build the effect from the pattern captures, in pattern order.
-pub fn build(op: W4Eff, caps: &mut [Option<Capture>]) -> Option<Effect> {
+pub fn build(op: FactSetOp, caps: &mut [Option<Capture>]) -> Option<Effect> {
     let mut args = Vec::new();
     for c in caps.iter_mut() {
         if let Some(Capture::Expr(e)) = c.take() {
             args.push(e);
         }
     }
-    Some(Effect::W4(Box::new(W4Effect { op, args })))
+    Some(Effect::ItemDamageFacts(Box::new(FactEffect { op, args })))
 }
 
 fn item_id(v: &Value) -> Option<String> {
@@ -142,19 +142,19 @@ fn item_id(v: &Value) -> Option<String> {
 }
 
 /// Run an effect. Arguments are already evaluated; players are resolved.
-pub fn run(op: W4Eff, args: &[Value], host: &mut dyn Host) {
+pub fn run(op: FactSetOp, args: &[Value], host: &mut dyn Host) {
     match (op, args) {
-        (W4Eff::SetCooldown, [item, Value::Player(p), Value::Timespan { millis }]) => {
+        (FactSetOp::SetCooldown, [item, Value::Player(p), Value::Timespan { millis }]) => {
             if let Some(id) = item_id(item) {
                 host.set_item_cooldown(p, &id, (*millis / 50).max(0));
             }
         }
-        (W4Eff::ResetCooldown, [item, Value::Player(p)]) => {
+        (FactSetOp::ResetCooldown, [item, Value::Player(p)]) => {
             if let Some(id) = item_id(item) {
                 host.set_item_cooldown(p, &id, 0);
             }
         }
-        (W4Eff::SetJoinMessage, [Value::Text(t)]) => host.set_join_message(t),
+        (FactSetOp::SetJoinMessage, [Value::Text(t)]) => host.set_join_message(t),
         _ => {}
     }
 }
@@ -164,8 +164,8 @@ fn span_ticks(ticks: i64) -> Value {
 }
 
 /// Evaluate an expression from its already evaluated arguments.
-pub fn apply(op: W4Op, args: &[Value], host: &mut dyn Host) -> Value {
-    use W4Op::*;
+pub fn apply(op: FactOp, args: &[Value], host: &mut dyn Host) -> Value {
+    use FactOp::*;
     let a0 = args.first().unwrap_or(&Value::None);
     let player = match a0 {
         Value::Player(p) => Some(p),

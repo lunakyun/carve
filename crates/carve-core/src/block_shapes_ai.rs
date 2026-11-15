@@ -3,10 +3,10 @@
 //! entity AI and attributes, enchanting offers, inventory actions and a few
 //! event values (`broadcast message`, `consumed item`, `the zombie`).
 //!
-//! Every expression is one boxed [`Node`] (`Expr::C4`) and every effect one
-//! boxed [`C4Eff`] (`Effect::C4`), so the hot enums stay small. The engine
+//! Every expression is one boxed [`Node`] (`Expr::BlockShapes`) and every effect one
+//! boxed [`ShapeEffect`] (`Effect::BlockShapes`), so the hot enums stay small. The engine
 //! side is in the `impl Engine` block at the bottom; both entry points are
-//! `#[cold]`. Game access goes through one host call, [`Host::w5c4`].
+//! `#[cold]`. Game access goes through one host call, [`Host::block_shape_query`].
 
 use crate::block_ops::BlockPos;
 use crate::compile::Effect;
@@ -105,7 +105,7 @@ impl Node {
 }
 
 fn node(op: Op, args: Vec<Expr>, ty: Ty) -> Expr {
-    Expr::C4(Box::new(Node { op, args, ty }))
+    Expr::BlockShapes(Box::new(Node { op, args, ty }))
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -117,7 +117,7 @@ pub enum Mode {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum C4Eff {
+pub enum ShapeEffect {
     Change {
         target: Node,
         mode: Mode,
@@ -222,7 +222,7 @@ impl P<'_> {
         is(self.toks.get(self.pos + n), w)
     }
 
-    fn c4_word(&self, n: usize) -> Option<String> {
+    fn shape_word(&self, n: usize) -> Option<String> {
         if self.pos + n >= self.toks.len() {
             self.hit_end.set(true);
         }
@@ -233,13 +233,13 @@ impl P<'_> {
     }
 
     /// Skips `the` at the current position.
-    fn c4_the(&mut self) {
+    fn shape_the(&mut self) {
         if self.c4(0, "the") {
             self.pos += 1;
         }
     }
 
-    fn c4_of(&mut self, what: &str) -> Result<Expr, String> {
+    fn shape_of(&mut self, what: &str) -> Result<Expr, String> {
         if !(self.c4(0, "of") || self.c4(0, "in")) {
             return Err(format!("expected 'of' after '{what}'"));
         }
@@ -247,7 +247,7 @@ impl P<'_> {
         self.primary()
     }
 
-    fn c4_num(&mut self, what: &str) -> Result<Expr, String> {
+    fn shape_num(&mut self, what: &str) -> Result<Expr, String> {
         let e = self.primary()?;
         if !Ty::Number.accepts(e.ty(self.env)) {
             return Err(format!("{what} needs a number"));
@@ -256,31 +256,31 @@ impl P<'_> {
     }
 
     /// Expression heads of this module. `self.pos` is after the first word `lw`.
-    pub(crate) fn w5c4_head(&mut self, lw: &str) -> Result<Option<Expr>, String> {
+    pub(crate) fn shape_head(&mut self, lw: &str) -> Result<Option<Expr>, String> {
         let start = self.pos;
-        let r = self.c4_head_inner(lw);
+        let r = self.shape_head_inner(lw);
         if matches!(r, Ok(None)) {
             self.pos = start;
         }
         r
     }
 
-    fn c4_head_inner(&mut self, lw: &str) -> Result<Option<Expr>, String> {
+    fn shape_head_inner(&mut self, lw: &str) -> Result<Option<Expr>, String> {
         Ok(Some(match lw {
             "all" if self.c4(0, "blocks") || (self.c4(0, "the") && self.c4(1, "blocks")) => {
-                self.c4_the();
+                self.shape_the();
                 self.pos += 1;
-                match self.c4_blocks()? {
+                match self.shape_blocks()? {
                     Some(e) => e,
                     None => return Ok(None),
                 }
             }
-            "blocks" => match self.c4_blocks()? {
+            "blocks" => match self.shape_blocks()? {
                 Some(e) => e,
                 None => return Ok(None),
             },
             "book" => {
-                let part = match self.c4_word(0).as_deref() {
+                let part = match self.shape_word(0).as_deref() {
                     Some("author" | "writer" | "publisher") => Book::Author,
                     Some("title" | "name") => Book::Title,
                     Some("pages" | "content") => Book::Pages,
@@ -288,10 +288,10 @@ impl P<'_> {
                     _ => return Ok(None),
                 };
                 self.pos += 1;
-                self.c4_book(part)?
+                self.shape_book(part)?
             }
-            "author" | "writer" | "publisher" if self.c4(0, "of") => self.c4_book(Book::Author)?,
-            "pages" if self.c4(0, "of") => self.c4_book(Book::Pages)?,
+            "author" | "writer" | "publisher" if self.c4(0, "of") => self.shape_book(Book::Author)?,
+            "pages" if self.c4(0, "of") => self.shape_book(Book::Pages)?,
             "page" if matches!(self.toks.get(self.pos), Some(Tok::Num(_) | Tok::Var(_))) => {
                 // One token: `2 of player's tool` would read as `N of item`.
                 let n = parse_expr(&self.toks[self.pos..=self.pos], self.env)?;
@@ -299,8 +299,8 @@ impl P<'_> {
                 if !self.c4(0, "of") {
                     return Ok(None);
                 }
-                let mut e = self.c4_book(Book::Page)?;
-                if let Expr::C4(b) = &mut e {
+                let mut e = self.shape_book(Book::Page)?;
+                if let Expr::BlockShapes(b) = &mut e {
                     b.args.push(n);
                 }
                 e
@@ -330,18 +330,18 @@ impl P<'_> {
                 if matches!(self.toks.get(self.pos), Some(Tok::Sym("'s"))) {
                     self.pos += 1;
                 }
-                let Some(w) = self.c4_word(0) else {
+                let Some(w) = self.shape_word(0) else {
                     return Ok(None);
                 };
                 self.pos += 1;
-                match self.c4_brew_slot(&w)? {
+                match self.shape_brew_slot(&w)? {
                     Some(e) => e,
                     None => return Ok(None),
                 }
             }
             "first" | "second" | "third" | "ingredient" | "fuel" | "1st" | "2nd" | "3rd" => {
                 if self.c4(0, "bottle") || (lw == "ingredient" || lw == "fuel") && self.c4(0, "slot") {
-                    match self.c4_brew_slot(lw)? {
+                    match self.shape_brew_slot(lw)? {
                         Some(e) => e,
                         None => return Ok(None),
                     }
@@ -353,9 +353,9 @@ impl P<'_> {
                     return Ok(None);
                 }
             }
-            "world" | "worldborder" if self.c4_border_ahead(lw) => {
+            "world" | "worldborder" if self.shape_border_ahead(lw) => {
                 self.pos += if lw == "world" { 1 } else { 0 };
-                let field = match self.c4_word(0).as_deref() {
+                let field = match self.shape_word(0).as_deref() {
                     Some("center" | "centre" | "middle") => {
                         self.pos += 1;
                         BorderField::Center
@@ -370,7 +370,7 @@ impl P<'_> {
                     }
                     _ => return Ok(None),
                 };
-                let w = self.c4_of("world border")?;
+                let w = self.shape_of("world border")?;
                 let ty = if field == BorderField::Center {
                     Ty::Location
                 } else {
@@ -384,12 +384,12 @@ impl P<'_> {
                     self.pos += 1;
                     let _ = self.primary()?;
                 }
-                self.c4_click("cursor slot")?;
+                self.shape_click("cursor slot")?;
                 node(Op::Cursor, vec![], Ty::Item)
             }
             "inventory" | "click" if self.c4(0, "action") => {
                 self.pos += 1;
-                self.c4_click("inventory action")?;
+                self.shape_click("inventory action")?;
                 let ty = crate::named_types::ty_from_name("inventory action").unwrap_or(Ty::Object);
                 node(Op::InvAction, vec![], ty)
             }
@@ -399,7 +399,7 @@ impl P<'_> {
                 if !self.c4(0, "of") {
                     self.pos += 1;
                 }
-                let it = self.c4_of(lw)?;
+                let it = self.shape_of(lw)?;
                 if !matches!(it.ty(self.env), Ty::Item | Ty::Object) {
                     return Err(format!("'{lw} of' needs an item"));
                 }
@@ -420,23 +420,23 @@ impl P<'_> {
                 if self.c4(0, "inventory") {
                     self.pos += 1;
                 }
-                let p = self.c4_of("ender chest")?;
+                let p = self.shape_of("ender chest")?;
                 if !matches!(p.ty(self.env), Ty::Player | Ty::Object) {
                     return Err("'ender chest of' needs a player".into());
                 }
                 node(Op::EnderChest, vec![p], Ty::List)
             }
-            "slot" => match self.c4_ender_slot()? {
+            "slot" => match self.shape_ender_slot()? {
                 Some(e) => e,
                 None => return Ok(None),
             },
             "ai" if self.c4(0, "of") => {
-                let e = self.c4_of("ai")?;
+                let e = self.shape_of("ai")?;
                 node(Op::Ai, vec![e], Ty::Boolean)
             }
             "artificial" if self.c4(0, "intelligence") && self.c4(1, "of") => {
                 self.pos += 1;
-                let e = self.c4_of("artificial intelligence")?;
+                let e = self.shape_of("artificial intelligence")?;
                 node(Op::Ai, vec![e], Ty::Boolean)
             }
             "carried" if self.c4(0, "block") || self.c4(0, "blockdata") => {
@@ -444,17 +444,17 @@ impl P<'_> {
                 if self.c4(0, "data") {
                     self.pos += 1;
                 }
-                let e = self.c4_of("carried block")?;
+                let e = self.shape_of("carried block")?;
                 node(Op::CarriedBlock, vec![e], Ty::Text)
             }
             "enchantment" | "enchant" if self.c4(0, "level") || self.c4(0, "levels") => {
                 self.pos += 1;
-                let e = self.c4_of("enchantment level")?;
+                let e = self.shape_of("enchantment level")?;
                 node(Op::EnchLevel, vec![e], Ty::Number)
             }
             "enchantment" | "enchant" if self.c4(0, "offers") => {
                 self.pos += 1;
-                self.c4_prepare("enchantment offers")?;
+                self.shape_prepare("enchantment offers")?;
                 node(Op::Offers, vec![], Ty::List)
             }
             "enchantment" | "enchant"
@@ -462,20 +462,20 @@ impl P<'_> {
                     && matches!(self.toks.get(self.pos + 1), Some(Tok::Num(_) | Tok::Var(_))) =>
             {
                 self.pos += 1;
-                self.c4_prepare("enchantment offer")?;
-                let n = self.c4_num("'enchantment offer'")?;
+                self.shape_prepare("enchantment offer")?;
+                let n = self.shape_num("'enchantment offer'")?;
                 node(Op::Offer, vec![n], Ty::Object)
             }
             "enchantment" | "enchant" if self.c4(0, "cost") && self.c4(1, "of") => {
                 self.pos += 1;
-                let e = self.c4_of("enchantment cost")?;
+                let e = self.shape_of("enchantment cost")?;
                 node(Op::OfferCost, vec![e], Ty::Number)
             }
             "cost" if self.c4(0, "of") => {
-                let e = self.c4_of("cost")?;
+                let e = self.shape_of("cost")?;
                 node(Op::OfferCost, vec![e], Ty::Number)
             }
-            "the" | "event-entity" | "event-creature" | "event-mob" => match self.c4_event_entity(lw) {
+            "the" | "event-entity" | "event-creature" | "event-mob" => match self.shape_event_entity(lw) {
                 Some(e) => e,
                 None => return Ok(None),
             },
@@ -502,14 +502,14 @@ impl P<'_> {
                 self.pos += 1;
                 Expr::EventVal(crate::events_items::EventVal::Item)
             }
-            _ => match self.c4_attribute(lw)? {
+            _ => match self.shape_attribute(lw)? {
                 Some(e) => e,
                 None => return Ok(None),
             },
         }))
     }
 
-    fn c4_click(&self, what: &str) -> Result<(), String> {
+    fn shape_click(&self, what: &str) -> Result<(), String> {
         if self.env.has_inv && !self.env.in_function {
             Ok(())
         } else {
@@ -517,7 +517,7 @@ impl P<'_> {
         }
     }
 
-    fn c4_prepare(&self, what: &str) -> Result<(), String> {
+    fn shape_prepare(&self, what: &str) -> Result<(), String> {
         if self.env.ext_event == Some(crate::events_game::Ev::EnchantPrepare) && !self.env.in_function {
             Ok(())
         } else {
@@ -526,15 +526,15 @@ impl P<'_> {
     }
 
     /// After `blocks` (and `all [the]`).
-    fn c4_blocks(&mut self) -> Result<Option<Expr>, String> {
-        let Some(w) = self.c4_word(0) else {
+    fn shape_blocks(&mut self) -> Result<Option<Expr>, String> {
+        let Some(w) = self.shape_word(0) else {
             return Ok(None);
         };
         Ok(Some(match w.as_str() {
             // `blocks in radius 5 [of|around] player`
             "in" | "within" if self.c4(1, "radius") => {
                 self.pos += 2;
-                let r = self.c4_num("'blocks in radius'")?;
+                let r = self.shape_num("'blocks in radius'")?;
                 if !(self.c4(0, "of") || self.c4(0, "around")) {
                     return Err("expected 'of' or 'around' after the radius".into());
                 }
@@ -550,7 +550,7 @@ impl P<'_> {
                     return Err("expected 'in radius <number>' after 'blocks around <location>'".into());
                 }
                 self.pos += 2;
-                let r = self.c4_num("'blocks around ... in radius'")?;
+                let r = self.shape_num("'blocks around ... in radius'")?;
                 node(Op::Sphere, vec![r, c], Ty::List)
             }
             "between" | "within" => {
@@ -587,8 +587,8 @@ impl P<'_> {
         }))
     }
 
-    fn c4_book(&mut self, part: Book) -> Result<Expr, String> {
-        let it = self.c4_of("book")?;
+    fn shape_book(&mut self, part: Book) -> Result<Expr, String> {
+        let it = self.shape_of("book")?;
         if !matches!(it.ty(self.env), Ty::Item | Ty::Object) {
             return Err("book values need an item, like player's tool".into());
         }
@@ -597,7 +597,7 @@ impl P<'_> {
     }
 
     /// `first bottle [slot] of`, `ingredient slot of`, `fuel slot of`.
-    fn c4_brew_slot(&mut self, w: &str) -> Result<Option<Expr>, String> {
+    fn shape_brew_slot(&mut self, w: &str) -> Result<Option<Expr>, String> {
         let slot = match w {
             "ingredient" => 3,
             "fuel" => 4,
@@ -617,11 +617,11 @@ impl P<'_> {
         if !self.c4(0, "of") {
             return Ok(None);
         }
-        let b = self.c4_of("brewing stand slot")?;
+        let b = self.shape_of("brewing stand slot")?;
         Ok(Some(node(Op::BrewSlot(slot), vec![b], Ty::Item)))
     }
 
-    fn c4_border_ahead(&self, lw: &str) -> bool {
+    fn shape_border_ahead(&self, lw: &str) -> bool {
         let i = if lw == "world" {
             if !self.c4(0, "border") {
                 return false;
@@ -637,7 +637,7 @@ impl P<'_> {
     }
 
     /// `slot N of ender chest of P` / `slot N of P's ender chest`.
-    fn c4_ender_slot(&mut self) -> Result<Option<Expr>, String> {
+    fn shape_ender_slot(&mut self) -> Result<Option<Expr>, String> {
         let save = self.pos;
         let Ok(n) = self.primary() else {
             self.pos = save;
@@ -648,7 +648,7 @@ impl P<'_> {
             return Ok(None);
         }
         self.pos += 1;
-        self.c4_the();
+        self.shape_the();
         let owner = if self.c4(0, "ender") && self.c4(1, "chest") || self.c4(0, "enderchest") {
             self.pos += if self.c4(0, "ender") { 2 } else { 1 };
             if self.c4(0, "inventory") {
@@ -685,7 +685,7 @@ impl P<'_> {
     }
 
     /// `movement speed attribute of player`, `max health total attribute of e`.
-    fn c4_attribute(&mut self, lw: &str) -> Result<Option<Expr>, String> {
+    fn shape_attribute(&mut self, lw: &str) -> Result<Option<Expr>, String> {
         let first = |a: &&str| a.split('_').next() == Some(lw);
         if !(lw == "generic" || lw == "player" || crate::data::named_types::ATTRIBUTES.iter().any(first)) {
             return Ok(None);
@@ -694,7 +694,7 @@ impl P<'_> {
         let mut i = 0;
         let mut total = false;
         loop {
-            let Some(w) = self.c4_word(i) else {
+            let Some(w) = self.shape_word(i) else {
                 return Ok(None);
             };
             if w == "attribute" {
@@ -717,16 +717,16 @@ impl P<'_> {
         if self.c4(0, "value") {
             self.pos += 1;
         }
-        let e = self.c4_of("attribute")?;
+        let e = self.shape_of("attribute")?;
         Ok(Some(node(Op::Attr(idx, total), vec![e], Ty::Number)))
     }
 
-    fn c4_event_entity(&mut self, lw: &str) -> Option<Expr> {
+    fn shape_event_entity(&mut self, lw: &str) -> Option<Expr> {
         if !self.env.has_attacker || self.env.in_function {
             return None;
         }
         let word = if lw == "the" {
-            let w = self.c4_word(0)?;
+            let w = self.shape_word(0)?;
             if w == "living" && self.c4(1, "entity") {
                 self.pos += 2;
                 return Some(node(Op::EventEntity, vec![], Ty::Object));
@@ -746,7 +746,7 @@ impl P<'_> {
     }
 
     /// `<loc>'s block data`, `<player>'s ender chest`, `<entity>'s ai`. `self.pos` is at the word after `'s`.
-    pub(crate) fn w5c4_poss(&mut self, lw: &str, e: &Expr) -> Option<Expr> {
+    pub(crate) fn shape_poss(&mut self, lw: &str, e: &Expr) -> Option<Expr> {
         let (op, n, ty) = match lw {
             "ender" if self.c4(1, "chest") => (Op::EnderChest, 2, Ty::List),
             "enderchest" => (Op::EnderChest, 1, Ty::List),
@@ -763,7 +763,7 @@ impl P<'_> {
     }
 
     /// `<item> with damage 10`, `<item> damaged by 10`. `self.pos` is after the item.
-    pub(crate) fn w5c4_post(&mut self, e: Expr) -> Result<Expr, String> {
+    pub(crate) fn shape_post(&mut self, e: Expr) -> Result<Expr, String> {
         if !matches!(e.ty(self.env), Ty::Item) {
             return Ok(e);
         }
@@ -775,7 +775,7 @@ impl P<'_> {
             return Ok(e);
         };
         self.pos += n;
-        let d = self.c4_num("'with damage'")?;
+        let d = self.shape_num("'with damage'")?;
         Ok(node(Op::WithDamage, vec![e, d], Ty::Item))
     }
 }
@@ -790,9 +790,9 @@ fn rpos(toks: &[Tok], w: &str) -> Option<usize> {
     toks.iter().rposition(|t| t.is_lit(w))
 }
 
-fn c4_node(toks: &[Tok], env: &Env) -> Option<Node> {
+fn shape_node(toks: &[Tok], env: &Env) -> Option<Node> {
     match parse_expr(toks, env) {
-        Ok(Expr::C4(n)) if n.settable() => Some(*n),
+        Ok(Expr::BlockShapes(n)) if n.settable() => Some(*n),
         _ => None,
     }
 }
@@ -810,11 +810,11 @@ pub fn is_list_expr(toks: &[Tok], env: &Env) -> bool {
         "enchantment" | "enchant" => toks.get(1).is_some_and(|t| t.is_lit("offers")),
         _ => toks.iter().any(|t| matches!(t, Tok::Sym("'s"))),
     };
-    maybe && matches!(parse_expr(toks, env), Ok(e @ Expr::C4(_)) if e.ty(env) == Ty::List)
+    maybe && matches!(parse_expr(toks, env), Ok(e @ Expr::BlockShapes(_)) if e.ty(env) == Ty::List)
 }
 
-fn eff(e: C4Eff) -> Effect {
-    Effect::C4(Box::new(e))
+fn eff(e: ShapeEffect) -> Effect {
+    Effect::BlockShapes(Box::new(e))
 }
 
 /// The effects of this module: `set/reset/add/remove` on a settable
@@ -834,15 +834,15 @@ pub fn parse_effect(toks: &[Tok], env: &Env) -> Result<Option<Effect>, String> {
             if let [Tok::Var(raw)] = toks.get(1..to).unwrap_or_default()
                 && let Ok(var) = crate::expr::parse_varref(raw, env)
                 && !var.is_list()
-                && let Ok(v @ Expr::C4(_)) = parse_expr(toks.get(to + 1..).unwrap_or_default(), env)
+                && let Ok(v @ Expr::BlockShapes(_)) = parse_expr(toks.get(to + 1..).unwrap_or_default(), env)
             {
                 return Ok(Some(Effect::Set(var, v)));
             }
-            let Some(target) = c4_node(toks.get(1..to).unwrap_or_default(), env) else {
+            let Some(target) = shape_node(toks.get(1..to).unwrap_or_default(), env) else {
                 return Ok(None);
             };
             let v = parse_expr(toks.get(to + 1..).unwrap_or_default(), env)?;
-            Some(eff(C4Eff::Change {
+            Some(eff(ShapeEffect::Change {
                 target,
                 mode: Mode::Set,
                 value: Some(v),
@@ -850,12 +850,12 @@ pub fn parse_effect(toks: &[Tok], env: &Env) -> Result<Option<Effect>, String> {
         }
         "reset" | "delete" | "clear" => {
             if let Some(owner) = ender_owner(rest, env) {
-                return Ok(Some(eff(C4Eff::ClearEnder(owner))));
+                return Ok(Some(eff(ShapeEffect::ClearEnder(owner))));
             }
-            let Some(target) = c4_node(rest, env) else {
+            let Some(target) = shape_node(rest, env) else {
                 return Ok(None);
             };
-            Some(eff(C4Eff::Change {
+            Some(eff(ShapeEffect::Change {
                 target,
                 mode: Mode::Reset,
                 value: None,
@@ -866,7 +866,7 @@ pub fn parse_effect(toks: &[Tok], env: &Env) -> Result<Option<Effect>, String> {
             let Some(at) = rpos(toks, sep) else {
                 return Ok(None);
             };
-            let Some(target) = c4_node(toks.get(at + 1..).unwrap_or_default(), env) else {
+            let Some(target) = shape_node(toks.get(at + 1..).unwrap_or_default(), env) else {
                 return Ok(None);
             };
             if !matches!(target.ty, Ty::Number) {
@@ -874,7 +874,7 @@ pub fn parse_effect(toks: &[Tok], env: &Env) -> Result<Option<Effect>, String> {
             }
             let v = parse_expr(toks.get(1..at).unwrap_or_default(), env)?;
             let mode = if lw == "add" { Mode::Add } else { Mode::Remove };
-            Some(eff(C4Eff::Change {
+            Some(eff(ShapeEffect::Change {
                 target,
                 mode,
                 value: Some(v),
@@ -895,7 +895,7 @@ pub fn parse_effect(toks: &[Tok], env: &Env) -> Result<Option<Effect>, String> {
                 Some(t) => Some(parse_expr(t, env)?),
                 None => None,
             };
-            Some(eff(C4Eff::OpenEnder { owner, to }))
+            Some(eff(ShapeEffect::OpenEnder { owner, to }))
         }
         _ => None,
     })
@@ -904,7 +904,7 @@ pub fn parse_effect(toks: &[Tok], env: &Env) -> Result<Option<Effect>, String> {
 /// `ender chest of P`, `P's ender chest`, `the ender chest of P`.
 fn ender_owner(toks: &[Tok], env: &Env) -> Option<Expr> {
     match parse_expr(toks, env) {
-        Ok(Expr::C4(n)) if n.op == Op::EnderChest => n.args.into_iter().next(),
+        Ok(Expr::BlockShapes(n)) if n.op == Op::EnderChest => n.args.into_iter().next(),
         _ => None,
     }
 }
@@ -1284,23 +1284,28 @@ fn border_world(v: &Value) -> Option<&str> {
 }
 
 impl Engine {
-    fn c4_held(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<Option<PlayerRef>, String> {
+    fn shape_held(
+        &mut self,
+        e: &Expr,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<Option<PlayerRef>, String> {
         match e {
             Expr::Prop(crate::expr::Prop::Tool, p) => self.player(p, ex, host),
             _ => Err("this only works on a held item, like player's tool".into()),
         }
     }
 
-    fn c4_book_data(
+    fn shape_book_data(
         &mut self,
         e: &Expr,
         ex: &mut Exec,
         host: &mut dyn Host,
     ) -> Result<Option<(PlayerRef, BookData)>, String> {
-        let Some(p) = self.c4_held(e, ex, host)? else {
+        let Some(p) = self.shape_held(e, ex, host)? else {
             return Ok(None);
         };
-        let data = match host.w5c4(Q::HeldBook(&p)) {
+        let data = match host.block_shape_query(Q::HeldBook(&p)) {
             Some(Value::Text(_)) | None => BookData::default(),
             Some(Value::List(bytes)) => {
                 let b: Vec<u8> = bytes.iter().filter_map(|v| v.as_num().map(|n| n as u8)).collect();
@@ -1311,7 +1316,7 @@ impl Engine {
         Ok(Some((p, data)))
     }
 
-    fn c4_entity_val(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
+    fn shape_entity_val(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
         let v = self.eval(e, ex, host)?;
         Ok(match v {
             Value::Entity(_) => v,
@@ -1320,7 +1325,7 @@ impl Engine {
     }
 
     /// The block position of a brewing stand value, with its world filled in.
-    fn c4_brew_pos(
+    fn shape_brew_pos(
         &mut self,
         e: &Expr,
         ex: &mut Exec,
@@ -1338,7 +1343,12 @@ impl Engine {
 
     #[cold]
     #[inline(never)]
-    pub(crate) fn c4_expr(&mut self, n: &Node, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
+    pub(crate) fn shape_expr(
+        &mut self,
+        n: &Node,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<Value, String> {
         let arg = |i: usize| n.args.get(i).ok_or_else(|| "missing value".to_string());
         Ok(match n.op {
             Op::Sphere => {
@@ -1393,7 +1403,7 @@ impl Engine {
                 }
             }
             Op::Book(part) => {
-                let Some((_, b)) = self.c4_book_data(arg(0)?, ex, host)? else {
+                let Some((_, b)) = self.shape_book_data(arg(0)?, ex, host)? else {
                     return Ok(Value::None);
                 };
                 let opt = |s: String| if s.is_empty() { Value::None } else { Value::Text(s) };
@@ -1416,19 +1426,19 @@ impl Engine {
             }
             Op::BarById => {
                 let id = self.text(arg(0)?, ex, host)?;
-                match host.w5c4(Q::BarExists(&id)) {
+                match host.block_shape_query(Q::BarExists(&id)) {
                     Some(Value::Bool(true)) => Value::Text(id),
                     _ => Value::None,
                 }
             }
-            Op::BrewSlot(s) => match self.c4_brew_pos(arg(0)?, ex, host)? {
-                Some(pos) => host.w5c4(Q::Brew(&pos, s)).unwrap_or(Value::None),
+            Op::BrewSlot(s) => match self.shape_brew_pos(arg(0)?, ex, host)? {
+                Some(pos) => host.block_shape_query(Q::Brew(&pos, s)).unwrap_or(Value::None),
                 None => Value::None,
             },
             Op::Border(f) => {
                 let v = self.eval(arg(0)?, ex, host)?;
                 match border_world(&v) {
-                    Some(w) => host.w5c4(Q::Border(w, f)).unwrap_or(Value::None),
+                    Some(w) => host.block_shape_query(Q::Border(w, f)).unwrap_or(Value::None),
                     None => Value::None,
                 }
             }
@@ -1483,7 +1493,7 @@ impl Engine {
                 }
             }
             Op::EnderChest => match self.player(arg(0)?, ex, host)? {
-                Some(p) => host.w5c4(Q::Ender(&p, None)).unwrap_or(Value::None),
+                Some(p) => host.block_shape_query(Q::Ender(&p, None)).unwrap_or(Value::None),
                 None => Value::None,
             },
             Op::EnderSlot => {
@@ -1492,19 +1502,21 @@ impl Engine {
                     return Ok(Value::None);
                 }
                 match self.player(arg(1)?, ex, host)? {
-                    Some(p) => host.w5c4(Q::Ender(&p, Some(s as u8))).unwrap_or(Value::None),
+                    Some(p) => host
+                        .block_shape_query(Q::Ender(&p, Some(s as u8)))
+                        .unwrap_or(Value::None),
                     None => Value::None,
                 }
             }
             Op::Ai => {
-                let v = self.c4_entity_val(arg(0)?, ex, host)?;
+                let v = self.shape_entity_val(arg(0)?, ex, host)?;
                 if v == Value::None {
                     return Ok(Value::None);
                 }
-                host.w5c4(Q::Ai(&v)).unwrap_or(Value::None)
+                host.block_shape_query(Q::Ai(&v)).unwrap_or(Value::None)
             }
             Op::Attr(i, total) => {
-                let v = self.c4_entity_val(arg(0)?, ex, host)?;
+                let v = self.shape_entity_val(arg(0)?, ex, host)?;
                 let name = crate::data::named_types::ATTRIBUTES
                     .get(usize::from(i))
                     .copied()
@@ -1512,10 +1524,11 @@ impl Engine {
                 if v == Value::None {
                     return Ok(Value::None);
                 }
-                host.w5c4(Q::Attr(&v, name, total)).unwrap_or(Value::None)
+                host.block_shape_query(Q::Attr(&v, name, total))
+                    .unwrap_or(Value::None)
             }
             Op::CarriedBlock => match self.eval(arg(0)?, ex, host)? {
-                Value::Entity(e) => host.w5c4(Q::CarriedBlock(&e)).unwrap_or(Value::None),
+                Value::Entity(e) => host.block_shape_query(Q::CarriedBlock(&e)).unwrap_or(Value::None),
                 _ => Value::None,
             },
             Op::EnchLevel => {
@@ -1525,7 +1538,7 @@ impl Engine {
             Op::Offers => {
                 let mut out = Vec::new();
                 for i in 0..3 {
-                    let o = c4_offer(&ex.ctx, i);
+                    let o = shape_offer(&ex.ctx, i);
                     if o != Value::None {
                         out.push(o);
                     }
@@ -1537,7 +1550,7 @@ impl Engine {
                 if !(1.0..4.0).contains(&i) {
                     return Ok(Value::None);
                 }
-                c4_offer(&ex.ctx, i as u8 - 1)
+                shape_offer(&ex.ctx, i as u8 - 1)
             }
             Op::OfferCost => match self.eval(arg(0)?, ex, host)? {
                 Value::Nbt(c) => match c.get("cost") {
@@ -1563,10 +1576,17 @@ impl Engine {
 
     #[cold]
     #[inline(never)]
-    pub(crate) fn c4_effect(&mut self, e: &C4Eff, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
+    pub(crate) fn shape_effect(
+        &mut self,
+        e: &ShapeEffect,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<(), String> {
         match e {
-            C4Eff::Change { target, mode, value } => self.c4_change(target, *mode, value.as_ref(), ex, host),
-            C4Eff::OpenEnder { owner, to } => {
+            ShapeEffect::Change { target, mode, value } => {
+                self.shape_change(target, *mode, value.as_ref(), ex, host)
+            }
+            ShapeEffect::OpenEnder { owner, to } => {
                 let Some(owner) = self.player(owner, ex, host)? else {
                     return Ok(());
                 };
@@ -1576,19 +1596,19 @@ impl Engine {
                         return Err("Pumpkin can only open a player's own ender chest".into());
                     }
                 }
-                host.w5c4(Q::OpenEnder(&owner));
+                host.block_shape_query(Q::OpenEnder(&owner));
                 Ok(())
             }
-            C4Eff::ClearEnder(owner) => {
+            ShapeEffect::ClearEnder(owner) => {
                 if let Some(p) = self.player(owner, ex, host)? {
-                    host.w5c4(Q::ClearEnder(&p));
+                    host.block_shape_query(Q::ClearEnder(&p));
                 }
                 Ok(())
             }
         }
     }
 
-    fn c4_change(
+    fn shape_change(
         &mut self,
         t: &Node,
         mode: Mode,
@@ -1611,7 +1631,7 @@ impl Engine {
             Ok(Some(match mode {
                 Mode::Set => delta,
                 _ => {
-                    let cur = engine.c4_expr(t, ex, host)?.as_num().unwrap_or(0.0);
+                    let cur = engine.shape_expr(t, ex, host)?.as_num().unwrap_or(0.0);
                     if mode == Mode::Add {
                         cur + delta
                     } else {
@@ -1622,7 +1642,7 @@ impl Engine {
         };
         match t.op {
             Op::Book(part) => {
-                let Some((p, mut b)) = self.c4_book_data(arg(0)?, ex, host)? else {
+                let Some((p, mut b)) = self.shape_book_data(arg(0)?, ex, host)? else {
                     return Ok(());
                 };
                 let s = match &val {
@@ -1652,11 +1672,11 @@ impl Engine {
                     }
                 }
                 let bytes = b.encode()?;
-                host.w5c4(Q::SetHeldBook(&p, &bytes));
+                host.block_shape_query(Q::SetHeldBook(&p, &bytes));
             }
             Op::BrewSlot(s) => {
-                if let Some(pos) = self.c4_brew_pos(arg(0)?, ex, host)? {
-                    host.w5c4(Q::SetBrew(&pos, s, &val));
+                if let Some(pos) = self.shape_brew_pos(arg(0)?, ex, host)? {
+                    host.block_shape_query(Q::SetBrew(&pos, s, &val));
                 }
             }
             Op::Border(f) => {
@@ -1681,10 +1701,10 @@ impl Engine {
                         None => Value::Num(if f == BorderField::DamageAmount { 0.2 } else { 5.0 }),
                     }
                 };
-                host.w5c4(Q::SetBorder(&w, f, &v));
+                host.block_shape_query(Q::SetBorder(&w, f, &v));
             }
             Op::Damage | Op::Durability => {
-                let Some(p) = self.c4_held(arg(0)?, ex, host)? else {
+                let Some(p) = self.shape_held(arg(0)?, ex, host)? else {
                     return Ok(());
                 };
                 let Some((id, _)) = host.held_item(&p) else {
@@ -1715,22 +1735,22 @@ impl Engine {
                     return Err("an ender chest has slots 0 to 26".into());
                 }
                 if let Some(p) = self.player(arg(1)?, ex, host)? {
-                    host.w5c4(Q::SetEnder(&p, s as u8, &val));
+                    host.block_shape_query(Q::SetEnder(&p, s as u8, &val));
                 }
             }
             Op::Ai => {
-                let v = self.c4_entity_val(arg(0)?, ex, host)?;
+                let v = self.shape_entity_val(arg(0)?, ex, host)?;
                 let on = match (&val, mode) {
                     (_, Mode::Reset) => true,
                     (Value::Bool(b), Mode::Set) => *b,
                     _ => return Err("ai must be set to true or false".into()),
                 };
                 if v != Value::None {
-                    host.w5c4(Q::SetAi(&v, on));
+                    host.block_shape_query(Q::SetAi(&v, on));
                 }
             }
             Op::Attr(i, _) => {
-                let v = self.c4_entity_val(arg(0)?, ex, host)?;
+                let v = self.shape_entity_val(arg(0)?, ex, host)?;
                 let name = crate::data::named_types::ATTRIBUTES
                     .get(usize::from(i))
                     .copied()
@@ -1741,7 +1761,7 @@ impl Engine {
                 // add/remove change the base value.
                 let delta = match (&val, mode) {
                     (_, Mode::Reset) => {
-                        host.w5c4(Q::ResetAttr(&v, name));
+                        host.block_shape_query(Q::ResetAttr(&v, name));
                         return Ok(());
                     }
                     (Value::Num(n), _) => *n,
@@ -1751,7 +1771,7 @@ impl Engine {
                     Mode::Set => delta,
                     _ => {
                         let cur = host
-                            .w5c4(Q::Attr(&v, name, false))
+                            .block_shape_query(Q::Attr(&v, name, false))
                             .and_then(|x| x.as_num())
                             .unwrap_or(0.0);
                         if mode == Mode::Add {
@@ -1761,7 +1781,7 @@ impl Engine {
                         }
                     }
                 };
-                host.w5c4(Q::SetAttr(&v, name, n));
+                host.block_shape_query(Q::SetAttr(&v, name, n));
             }
             Op::CarriedBlock => {
                 if let Value::Entity(e) = self.eval(arg(0)?, ex, host)? {
@@ -1771,7 +1791,7 @@ impl Engine {
                         (Value::Item { id, .. }, _) => Some(id.clone()),
                         _ => return Err("carried block must be a block type or block data text".into()),
                     };
-                    host.w5c4(Q::SetCarriedBlock(&e, data.as_deref()));
+                    host.block_shape_query(Q::SetCarriedBlock(&e, data.as_deref()));
                 }
             }
             _ => return Err("that value can't be changed".into()),
@@ -1780,7 +1800,7 @@ impl Engine {
     }
 }
 
-fn c4_offer(ctx: &crate::engine::EventCtx, i: u8) -> Value {
+fn shape_offer(ctx: &crate::engine::EventCtx, i: u8) -> Value {
     use crate::events_game::{Slot, read};
     let num = |k: u8| read(ctx, Slot::Num(2 + i * 3 + k)).as_num();
     match (num(0), num(1), num(2)) {

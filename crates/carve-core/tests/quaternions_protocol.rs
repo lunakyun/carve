@@ -74,7 +74,7 @@ impl Host for Mock {
     fn block_entity_nbt(&mut self, _w: &str, _x: i32, _y: i32, _z: i32) -> Option<Vec<u8>> {
         self.nbt.clone()
     }
-    fn w6c6_get(&mut self, q: Get<'_>) -> Option<Value> {
+    fn protocol_get(&mut self, q: Get<'_>) -> Option<Value> {
         match q {
             Get::Portal(_) => Some(Value::Num(f64::from(self.portal))),
             Get::Protocol(_) => Some(Value::Num(777.0)),
@@ -91,7 +91,7 @@ impl Host for Mock {
             })])),
         }
     }
-    fn w6c6_set(&mut self, s: Set<'_>) -> bool {
+    fn protocol_set(&mut self, s: Set<'_>) -> bool {
         match s {
             Set::Portal(_, t) => self.portal = t,
             Set::Whitelist(on) => self.whitelist = on,

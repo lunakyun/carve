@@ -65,12 +65,12 @@ impl Host for Mock {
     fn add_effect(&mut self, _p: &PlayerRef, effect: &str, ticks: u32, amplifier: u8) {
         self.applied.push((effect.into(), ticks, amplifier, false, true));
     }
-    fn w5c5(&mut self, q: Q<'_>) -> Value {
+    fn potion_particle_query(&mut self, q: Q<'_>) -> Value {
         match q {
             Q::Effects(_) => Value::List(
                 self.effects
                     .iter()
-                    .map(|p| Value::W5(Box::new(Obj::Potion(p.clone()))))
+                    .map(|p| Value::Obj(Box::new(Obj::Potion(p.clone()))))
                     .collect(),
             ),
             Q::AddEffect(_, p) => {
@@ -485,7 +485,7 @@ fn on_screen_kick_message() {
     let out = fire(
         &mut h,
         "on kick:",
-        EventKind::Ext3(carve_core::events_player_server::Ev3::Kick),
+        EventKind::PlayerServer(carve_core::events_player_server::PlayerServerEvent::Kick),
         ctx,
         "send \"%on-screen kick message%\"",
     );

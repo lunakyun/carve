@@ -59,7 +59,7 @@ impl Host for Mock {
     fn world_names(&mut self) -> Vec<String> {
         vec!["world".into(), "nether".into()]
     }
-    fn w2e7_query(&mut self, q: Query<'_>) -> Option<Value> {
+    fn server_query(&mut self, q: Query<'_>) -> Option<Value> {
         Some(match q {
             Query::Tps => Value::Num(19.5),
             Query::Mspt => Value::Num(32.0),

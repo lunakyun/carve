@@ -6,9 +6,9 @@
 //! flags and `can age`.
 //!
 //! The compiler calls `parse_effect` and `parse_cond` (both behind a cheap
-//! first-word check); the engine runs the results through `Engine::w5c1_effect`
-//! and `Engine::w5c1_cond`, which are out of line so the hot paths stay small.
-//! Game-side work goes through two `Host` methods: `w5c1` (mobs, signs,
+//! first-word check); the engine runs the results through `Engine::drops_effect`
+//! and `Engine::drops_cond`, which are out of line so the hot paths stay small.
+//! Game-side work goes through two `Host` methods: `drops_query` (mobs, signs,
 //! potion flags) and `read_data_file`. Leashes, persistence and dropped items
 //! use console commands Pumpkin implements (`data merge entity`, `summon`).
 
@@ -58,7 +58,7 @@ pub enum PathTarget<'a> {
     Entity(&'a Value),
 }
 
-/// A game-side change (`Host::w5c1`). `Some(true)`: done, `Some(false)`: the
+/// A game-side change (`Host::drops_query`). `Some(true)`: done, `Some(false)`: the
 /// target exists but can't do it (not a creeper, not ageable, ...).
 #[derive(Debug, Clone, Copy)]
 pub enum HostOp<'a> {
@@ -619,18 +619,18 @@ pub fn parse_effect(toks: &[Tok], env: &Env, is_command: bool) -> Result<Option<
         K::Unleash => Fx::Unleash(need(&mut c, 0)?),
         K::LoadIcon => Fx::LoadIcon(need(&mut c, 0)?),
         K::SetLastIcon | K::SetIcon
-            if env.ext4 != Some(crate::events_world_vehicles::ExtEvent::ServerListPing) =>
+            if env.world_event != Some(crate::events_world_vehicles::ExtEvent::ServerListPing) =>
         {
             return Err("the server icon can only be set in 'on server list ping'".into());
         }
         K::SetLastIcon => Fx::SetLastIcon,
         K::SetIcon => {
-            if env.ext4 != Some(crate::events_world_vehicles::ExtEvent::ServerListPing) {
+            if env.world_event != Some(crate::events_world_vehicles::ExtEvent::ServerListPing) {
                 return Err("the server icon can only be set in 'on server list ping'".into());
             }
             let v = need(&mut c, 0)?;
             return Ok(Some((
-                Effect::Ext4(Box::new(crate::events_world_vehicles::ExtEffect::SetVal(
+                Effect::WorldVehicles(Box::new(crate::events_world_vehicles::ExtEffect::SetVal(
                     ICON_SLOT, v,
                 ))),
                 false,
@@ -650,7 +650,7 @@ pub fn parse_effect(toks: &[Tok], env: &Env, is_command: bool) -> Result<Option<
         K::Firework(i) => Fx::Firework(need(&mut c, i)?),
     };
     let stop = matches!(fx, Fx::Fail(_));
-    Ok(Some((Effect::W5c1(Box::new(fx)), stop)))
+    Ok(Some((Effect::DropsBorder(Box::new(fx)), stop)))
 }
 
 /// `%object% can age` / `can grow up` and the negated forms.
@@ -673,7 +673,7 @@ pub fn parse_cond(toks: &[Tok], env: &Env) -> Option<Cond> {
     });
     ps.iter().find_map(|p| {
         let mut c = p.matches(toks, env).ok()?;
-        Some(Cond::W5c1(Box::new(CanAge {
+        Some(Cond::CanAge(Box::new(CanAge {
             who: take(&mut c, 0)?,
             negate: p.kind,
         })))
@@ -823,7 +823,7 @@ impl Engine {
     /// Before a command with a `cooldown:` runs. `Some(message)`: the sender
     /// has to wait.
     #[cold]
-    pub(crate) fn w5c1_cooldown_gate(
+    pub(crate) fn drops_cooldown_gate(
         &mut self,
         name: &str,
         cd: &Cooldown,
@@ -836,7 +836,7 @@ impl Engine {
         }
         let now = host.wall_clock_millis();
         let key = (name.to_string(), p.uuid.clone());
-        let prev = self.w5c1.last_use.get(&key).copied();
+        let prev = self.drops_query.last_use.get(&key).copied();
         if let Some(t) = prev {
             let elapsed = now - t;
             if elapsed < cd.millis {
@@ -850,29 +850,31 @@ impl Engine {
                 });
             }
         }
-        self.w5c1.last_use.insert(key.clone(), now);
-        self.w5c1.current = Some((key, prev, now));
+        self.drops_query.last_use.insert(key.clone(), now);
+        self.drops_query.current = Some((key, prev, now));
         None
     }
 
     /// After the first slice of a command run.
     #[cold]
-    pub(crate) fn w5c1_command_done(&mut self) {
-        self.w5c1.current = None;
+    pub(crate) fn drops_command_done(&mut self) {
+        self.drops_query.current = None;
     }
 
     #[inline(never)]
-    pub(crate) fn w5c1_cond(
+    pub(crate) fn drops_cond(
         &mut self,
         c: &CanAge,
         ex: &mut Exec,
         host: &mut dyn Host,
     ) -> Result<bool, String> {
         let v = self.eval(&c.who, ex, host)?;
-        Ok(host.w5c1(HostOp::Ageable(&v)).is_some_and(|b| b != c.negate))
+        Ok(host
+            .drops_query(HostOp::Ageable(&v))
+            .is_some_and(|b| b != c.negate))
     }
 
-    fn w5c1_pos(&mut self, v: &Value, ex: &mut Exec, host: &mut dyn Host) -> Option<FxPos> {
+    fn drops_pos(&mut self, v: &Value, ex: &mut Exec, host: &mut dyn Host) -> Option<FxPos> {
         let fx = |(x, y, z, w): (f64, f64, f64, String)| FxPos {
             x,
             y,
@@ -896,19 +898,19 @@ impl Engine {
     }
 
     #[inline(never)]
-    pub(crate) fn w5c1_effect(&mut self, f: &Fx, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
+    pub(crate) fn drops_effect(&mut self, f: &Fx, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
         match f {
             Fx::Cooldown(cancel) => {
-                if let Some((key, prev, now)) = self.w5c1.current.clone() {
+                if let Some((key, prev, now)) = self.drops_query.current.clone() {
                     match (cancel, prev) {
                         (true, Some(t)) => {
-                            self.w5c1.last_use.insert(key, t);
+                            self.drops_query.last_use.insert(key, t);
                         }
                         (true, None) => {
-                            self.w5c1.last_use.remove(&key);
+                            self.drops_query.last_use.remove(&key);
                         }
                         (false, _) => {
-                            self.w5c1.last_use.insert(key, now);
+                            self.drops_query.last_use.insert(key, now);
                         }
                     }
                 }
@@ -956,7 +958,7 @@ impl Engine {
             }
             Fx::Detonate(who) => {
                 for v in each(self.eval(who, ex, host)?) {
-                    if host.w5c1(HostOp::Creeper(&v, Ignite::Instant)) == Some(true) {
+                    if host.drops_query(HostOp::Creeper(&v, Ignite::Instant)) == Some(true) {
                         continue;
                     }
                     let Value::Entity(e) = &v else { continue };
@@ -969,7 +971,7 @@ impl Engine {
                         "firework_rocket" => 0.0,
                         _ => continue,
                     };
-                    if let Some(pos) = self.w5c1_pos(&v, ex, host) {
+                    if let Some(pos) = self.drops_pos(&v, ex, host) {
                         host.entity_remove(e);
                         if power > 0.0 {
                             host.explode(&pos, power, false);
@@ -979,17 +981,17 @@ impl Engine {
             }
             Fx::Creeper(who, mode) => {
                 for v in each(self.eval(who, ex, host)?) {
-                    host.w5c1(HostOp::Creeper(&v, *mode));
+                    host.drops_query(HostOp::Creeper(&v, *mode));
                 }
             }
             Fx::Drop { what, at, still } => {
                 let pos = match at {
                     Some(a) => {
                         let v = self.eval(a, ex, host)?;
-                        self.w5c1_pos(&v, ex, host)
+                        self.drops_pos(&v, ex, host)
                     }
                     None => match ex.ctx.player.clone() {
-                        Some(p) => self.w5c1_pos(&Value::Player(p), ex, host),
+                        Some(p) => self.drops_pos(&Value::Player(p), ex, host),
                         None => return Err("drop needs 'at <location>' here".into()),
                     },
                 };
@@ -1013,12 +1015,12 @@ impl Engine {
             }
             Fx::Firework(at) => {
                 let v = self.eval(at, ex, host)?;
-                if let Some(pos) = self.w5c1_pos(&v, ex, host) {
+                if let Some(pos) = self.drops_pos(&v, ex, host) {
                     host.launch_firework(&pos);
                 }
             }
             Fx::Enforce(on) => {
-                if *on && host.w5c1(HostOp::WhitelistOn) != Some(false) {
+                if *on && host.drops_query(HostOp::WhitelistOn) != Some(false) {
                     for p in host.online_players() {
                         if !host.is_whitelisted(&p.name) && !host.is_op(&p) {
                             host.kick(&p.name, Some("You are not whitelisted on this server!"));
@@ -1067,7 +1069,7 @@ impl Engine {
             Fx::Fail(msg) => {
                 let m = self.text(msg, ex, host)?;
                 if !ex.waited {
-                    self.w5c1.failed = Some(m);
+                    self.drops_query.failed = Some(m);
                 }
             }
             Fx::Leash(who, holder) => {
@@ -1101,11 +1103,11 @@ impl Engine {
                 let bytes = host
                     .read_data_file(&path)
                     .ok_or_else(|| format!("can't read the icon file '{path}'"))?;
-                self.w5c1.icon = Some(icon_data_url(&bytes)?);
+                self.drops_query.icon = Some(icon_data_url(&bytes)?);
             }
             Fx::SetLastIcon => {
                 if !ex.waited
-                    && let Some(i) = &self.w5c1.icon
+                    && let Some(i) = &self.drops_query.icon
                 {
                     self.ext_out.push((ICON_SLOT, Value::Text(i.clone())));
                 }
@@ -1136,13 +1138,13 @@ impl Engine {
             }
             Fx::SignGlow(at, on) => {
                 for v in each(self.eval(at, ex, host)?) {
-                    let Some(pos) = self.w5c1_pos(&v, ex, host) else {
+                    let Some(pos) = self.drops_pos(&v, ex, host) else {
                         continue;
                     };
                     let Some(w) = pos.world.clone().or_else(|| host.default_world()) else {
                         continue;
                     };
-                    host.w5c1(HostOp::SignGlow(
+                    host.drops_query(HostOp::SignGlow(
                         &w,
                         pos.x.floor() as i32,
                         pos.y.floor() as i32,
@@ -1168,12 +1170,12 @@ impl Engine {
                     _ => return Ok(()),
                 };
                 for v in each(self.eval(who, ex, host)?) {
-                    host.w5c1(HostOp::Pathfind(&v, t, speed));
+                    host.drops_query(HostOp::Pathfind(&v, t, speed));
                 }
             }
             Fx::StopPath(who) => {
                 for v in each(self.eval(who, ex, host)?) {
-                    host.w5c1(HostOp::StopPath(&v));
+                    host.drops_query(HostOp::StopPath(&v));
                 }
             }
             Fx::Persist(who, on) => {
@@ -1185,7 +1187,7 @@ impl Engine {
                             e.uuid,
                             u8::from(*on)
                         )),
-                        Value::Location { .. } => self.w5c1_leaves(&v, *on, ex, host),
+                        Value::Location { .. } => self.drops_leaves(&v, *on, ex, host),
                         _ => {}
                     }
                 }
@@ -1193,7 +1195,7 @@ impl Engine {
             Fx::Potion(who, flag, on) => {
                 for v in each(self.eval(who, ex, host)?) {
                     if let Some(p) = online(&v, &mut ex.seen, host) {
-                        host.w5c1(HostOp::Potion(&p, *flag, *on));
+                        host.drops_query(HostOp::Potion(&p, *flag, *on));
                     }
                 }
             }
@@ -1202,8 +1204,8 @@ impl Engine {
     }
 
     /// Leaves keep (`persistent=true`) or lose their leaves when no log is near.
-    fn w5c1_leaves(&mut self, v: &Value, on: bool, ex: &mut Exec, host: &mut dyn Host) {
-        let Some(pos) = self.w5c1_pos(v, ex, host) else {
+    fn drops_leaves(&mut self, v: &Value, on: bool, ex: &mut Exec, host: &mut dyn Host) {
+        let Some(pos) = self.drops_pos(v, ex, host) else {
             return;
         };
         let at = crate::block_ops::BlockPos {

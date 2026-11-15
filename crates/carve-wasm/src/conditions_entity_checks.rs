@@ -11,7 +11,7 @@ use pumpkin_plugin_api::world::{Entity, MobData};
 use super::WasmHost;
 
 impl WasmHost<'_> {
-    fn w4_entity(&mut self, v: &Value) -> Option<Entity> {
+    fn check_entity(&mut self, v: &Value) -> Option<Entity> {
         match v {
             Value::Player(p) => self.get(p).map(|pl| pl.as_entity()),
             Value::Entity(e) => self.find_entity(&e.uuid),
@@ -19,7 +19,7 @@ impl WasmHost<'_> {
         }
     }
 
-    pub(super) fn w4c1_check_impl(&mut self, c: Check, v: &Value) -> Option<bool> {
+    pub(super) fn entity_check_impl(&mut self, c: Check, v: &Value) -> Option<bool> {
         match c {
             Check::ChatColors | Check::ChatMessages | Check::ChatFiltering => {
                 let Value::Player(p) = v else { return None };
@@ -53,7 +53,7 @@ impl WasmHost<'_> {
                 }
             }
             Check::InLiquid | Check::Wet => {
-                let e = self.w4_entity(v)?;
+                let e = self.check_entity(v)?;
                 let water = e.is_in_water();
                 Some(if c == Check::Wet {
                     water
@@ -62,11 +62,11 @@ impl WasmHost<'_> {
                 })
             }
             Check::HasAi => {
-                let mob = self.w4_entity(v)?.as_mob()?;
+                let mob = self.check_entity(v)?.as_mob()?;
                 Some(!mob.is_ai_disabled())
             }
             Check::CanBreed | Check::Sheared | Check::Stared => {
-                let mob = self.w4_entity(v)?.as_mob()?;
+                let mob = self.check_entity(v)?.as_mob()?;
                 match (c, mob.get_mob_data()) {
                     (Check::CanBreed, MobData::Ageable(d)) => Some(!d.is_baby && d.age == 0),
                     (Check::Sheared, MobData::Sheep(d)) => Some(d.is_sheared),

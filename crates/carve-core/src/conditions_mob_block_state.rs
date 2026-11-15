@@ -4,9 +4,9 @@
 //! `is pressing <key>`, `is holding`, `plugin "x" is enabled`, `running
 //! minecraft "x"`, ...). The old notes said the API had nothing for these.
 //!
-//! Everything compiles to one boxed `Cond::W6c3`, so the hot condition enum
+//! Everything compiles to one boxed `Cond::MobBlockState`, so the hot condition enum
 //! does not grow. Lines without a key word never touch the pattern table. The
-//! game answers through [`Host::w6c3`](crate::host::Host::w6c3); a question the
+//! game answers through [`Host::mob_block_check`](crate::host::Host::mob_block_check); a question the
 //! game cannot answer makes the condition false, negated or not.
 
 use std::sync::OnceLock;
@@ -167,7 +167,7 @@ pub fn spawner_used() -> bool {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct C3Cond {
+pub struct MobBlockCond {
     pub kind: Kind,
     pub negate: bool,
     pub a: Option<Expr>,
@@ -637,7 +637,7 @@ pub fn parse_cond(toks: &[Tok], env: &Env) -> Option<Cond> {
         _ => {}
     }
     let (a, b) = (cap(&mut caps, 0), cap(&mut caps, 1));
-    Some(Cond::W6c3(Box::new(C3Cond { kind, negate, a, b })))
+    Some(Cond::MobBlockState(Box::new(MobBlockCond { kind, negate, a, b })))
 }
 
 /// `<entity> is of type pig`, `<entity> isn't of type zombie`: an entity type word.
@@ -655,7 +655,7 @@ fn of_type(toks: &[Tok], env: &Env) -> Option<Cond> {
         negate = !negate;
     }
     let subject = crate::expr::parse_expr(toks.get(..is_at)?, env).ok()?;
-    Some(Cond::W6c3(Box::new(C3Cond {
+    Some(Cond::MobBlockState(Box::new(MobBlockCond {
         kind: Kind::OfType,
         negate,
         a: Some(subject),
@@ -681,7 +681,7 @@ fn riding_type(toks: &[Tok], env: &Env) -> Option<Cond> {
         negate = !negate;
     }
     let subject = crate::expr::parse_expr(toks.get(..is_at)?, env).ok()?;
-    Some(Cond::W6c3(Box::new(C3Cond {
+    Some(Cond::MobBlockState(Box::new(MobBlockCond {
         kind: Kind::RidingType,
         negate,
         a: Some(subject),
@@ -788,7 +788,7 @@ fn entity_kind(v: &Value) -> Option<String> {
 }
 
 impl Engine {
-    fn c6_eval(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
+    fn mobstate_eval(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
         match e {
             Expr::Var(v) if v.list => Ok(Value::List(
                 self.list_items(v, ex, host)?
@@ -803,33 +803,33 @@ impl Engine {
     /// Run one of these conditions. `None` from the game counts as false,
     /// negated or not.
     #[cold]
-    pub(crate) fn cond_w6c3(
+    pub(crate) fn cond_mob_block_state(
         &mut self,
-        c: &C3Cond,
+        c: &MobBlockCond,
         ex: &mut Exec,
         host: &mut dyn Host,
     ) -> Result<bool, String> {
         let a = match &c.a {
-            Some(e) => self.c6_eval(e, ex, host)?,
+            Some(e) => self.mobstate_eval(e, ex, host)?,
             None => Value::None,
         };
         let b = match &c.b {
-            Some(e) => Some(self.c6_eval(e, ex, host)?),
+            Some(e) => Some(self.mobstate_eval(e, ex, host)?),
             None => None,
         };
         let hit = match c.kind {
             Kind::Plugin => match &a {
-                Value::Text(n) => as_bool(host.w6c3(Q::Plugin(n.trim()))),
+                Value::Text(n) => as_bool(host.mob_block_check(Q::Plugin(n.trim()))),
                 _ => None,
             },
             Kind::Feature => match &a {
-                Value::Text(n) => as_bool(host.w6c3(Q::Feature(&norm(n)))),
-                Value::Enum(e) => as_bool(host.w6c3(Q::Feature(&norm(e.id())))),
+                Value::Text(n) => as_bool(host.mob_block_check(Q::Feature(&norm(n)))),
+                Value::Enum(e) => as_bool(host.mob_block_check(Q::Feature(&norm(e.id())))),
                 _ => None,
             },
             Kind::WorldFeature => match b.as_ref() {
-                Some(Value::Text(n)) => as_bool(host.w6c3(Q::Feature(&norm(n)))),
-                Some(Value::Enum(e)) => as_bool(host.w6c3(Q::Feature(&norm(e.id())))),
+                Some(Value::Text(n)) => as_bool(host.mob_block_check(Q::Feature(&norm(n)))),
+                Some(Value::Enum(e)) => as_bool(host.mob_block_check(Q::Feature(&norm(e.id())))),
                 _ => None,
             },
             Kind::Version(cmp) => {
@@ -839,7 +839,7 @@ impl Engine {
                     _ => String::new(),
                 };
                 let w = version_parts(&want);
-                match host.w6c3(Q::Version) {
+                match host.mob_block_check(Q::Version) {
                     Some(Value::Text(have)) if !w.is_empty() => Some(match cmp {
                         // `running minecraft "26"` matches every 26.x.
                         Cmp::Eq => {
@@ -858,7 +858,7 @@ impl Engine {
                     None => self.eval(&Expr::Player, ex, host)?,
                 };
                 match online(&who, &mut ex.seen, host) {
-                    Some(p) => match host.w6c3(Q::SpawnKind(&p)) {
+                    Some(p) => match host.mob_block_check(Q::SpawnKind(&p)) {
                         Some(Value::Text(k)) => Some(k == if anchor { "anchor" } else { "bed" }),
                         _ => None,
                     },
@@ -878,7 +878,7 @@ impl Engine {
                 })
             }
             Kind::Key(bit) => match online(&a, &mut ex.seen, host) {
-                Some(p) => as_bool(host.w6c3(Q::Key(&p, bit))),
+                Some(p) => as_bool(host.mob_block_check(Q::Key(&p, bit))),
                 None => None,
             },
             Kind::Normalized => all(&a, |v| match v {
@@ -886,7 +886,7 @@ impl Engine {
                 _ => None,
             }),
             Kind::Infinite => match (&a, b.as_ref()) {
-                (Value::W5(o), _) => match &**o {
+                (Value::Obj(o), _) => match &**o {
                     crate::potions_particles_queues::Obj::Potion(p) => {
                         Some(p.ticks == crate::potions_particles_queues::INFINITE)
                     }
@@ -901,7 +901,7 @@ impl Engine {
                         _ => None,
                     };
                     match (p, name) {
-                        (Some(p), Some(n)) => as_bool(host.w6c3(Q::InfiniteEffect(&p, &n))),
+                        (Some(p), Some(n)) => as_bool(host.mob_block_check(Q::InfiniteEffect(&p, &n))),
                         _ => None,
                     }
                 }
@@ -927,7 +927,7 @@ impl Engine {
                     None
                 } else {
                     all(&a, |v| {
-                        let Value::List(h) = host.w6c3(Q::Hands(v))? else {
+                        let Value::List(h) = host.mob_block_check(Q::Hands(v))? else {
                             return None;
                         };
                         let slot = |i: usize| match h.get(i) {
@@ -947,7 +947,7 @@ impl Engine {
                 let want = b.as_ref().and_then(entity_kind);
                 all(&a, |v| {
                     let want = want.as_ref()?;
-                    match host.w6c3(Q::Vehicle(v))? {
+                    match host.mob_block_check(Q::Vehicle(v))? {
                         Value::Text(k) => Some(norm(&k) == *want),
                         Value::None => Some(false),
                         _ => None,
@@ -962,12 +962,12 @@ impl Engine {
 
 fn block_check(k: Bk, v: &Value, host: &mut dyn Host) -> Option<bool> {
     let (w, x, y, z) = block_of(v, host)?;
-    as_bool(host.w6c3(Q::Block(k, &w, x, y, z)))
+    as_bool(host.mob_block_check(Q::Block(k, &w, x, y, z)))
 }
 
 /// One subject of a check (before negation).
 fn check_one(kind: Kind, v: &Value, host: &mut dyn Host) -> Option<bool> {
-    let mut ent = |c: Ck| as_bool(host.w6c3(Q::Check(c, v)));
+    let mut ent = |c: Ck| as_bool(host.mob_block_check(Q::Check(c, v)));
     match kind {
         Kind::Baby => ent(Ck::Baby),
         Kind::Adult => ent(Ck::Baby).map(|b| !b),
@@ -1009,7 +1009,7 @@ fn check_one(kind: Kind, v: &Value, host: &mut dyn Host) -> Option<bool> {
 /// Id of the block at a location value.
 pub fn block_id_at(v: &Value, host: &mut dyn Host) -> Option<String> {
     let (w, x, y, z) = block_of(v, host)?;
-    match host.w6c3(Q::BlockId(&w, x, y, z))? {
+    match host.mob_block_check(Q::BlockId(&w, x, y, z))? {
         Value::Text(t) => Some(norm(&t)),
         _ => None,
     }
@@ -1063,7 +1063,7 @@ pub fn within_area(
         }
         Value::Border(name) => {
             let same = world.as_ref().is_none_or(|w| w.eq_ignore_ascii_case(name));
-            same && as_bool(host.w6c3(Q::Border(name, x, z))).unwrap_or(false)
+            same && as_bool(host.mob_block_check(Q::Border(name, x, z))).unwrap_or(false)
         }
         _ => false,
     }

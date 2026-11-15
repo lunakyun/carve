@@ -58,11 +58,11 @@ fn player_tail(toks: &[Tok], p: usize, env: &Env) -> Result<(Option<Expr>, usize
 pub fn parse_word(toks: &[Tok], pos: usize, env: &Env, lw: &str) -> Result<Option<(Expr, usize)>, String> {
     use crate::events_world_vehicles::ExtEvent;
     match lw {
-        "identifier" | "result" | "prefix" if env.ext4 == Some(ExtEvent::PlaceholderRequest) => {
+        "identifier" | "result" | "prefix" if env.world_event == Some(ExtEvent::PlaceholderRequest) => {
             let name = if lw == "prefix" { "prefix" } else { lw };
             let i = ExtEvent::PlaceholderRequest.slot_index(name).unwrap_or(0);
             // `placeholder prefix` is the long form of `prefix`.
-            Ok(Some((Expr::Ev4Val(i as u8), pos)))
+            Ok(Some((Expr::WorldEventVal(i as u8), pos)))
         }
         "placeholder" if !is(toks, pos, "request") => {
             if pos >= toks.len() {

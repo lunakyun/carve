@@ -225,7 +225,10 @@ impl EventHandler<PlayerDeathEvent> for OnDeath {
             st.flush_late(host, None);
             PlayerDeathEvent::observe(&data, &mut st.hs);
             let mut ctx = PlayerDeathEvent::ctx(&data);
-            let last = ctx.player.as_ref().and_then(|p| st.hs.w4.hit_by.remove(&p.uuid));
+            let last = ctx
+                .player
+                .as_ref()
+                .and_then(|p| st.hs.facts.hit_by.remove(&p.uuid));
             if !st.engine.table().has_event(EventKind::Death) {
                 return None;
             }
@@ -242,7 +245,7 @@ impl EventHandler<PlayerDeathEvent> for OnDeath {
             let o = st.engine.fire(EventKind::Death, ctx, &mut th);
             let (keep_inv, keep_xp, no_drops) = super::drops_border_leashes::death_flags(&o.set);
             if let Some(p) = player {
-                host.w5_death(&p, keep_inv, keep_xp, no_drops);
+                host.drops_death(&p, keep_inv, keep_xp, no_drops);
             }
             Some(o)
         });

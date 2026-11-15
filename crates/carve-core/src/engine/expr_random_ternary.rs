@@ -2,7 +2,7 @@
 
 use super::{Engine, Exec, online};
 use crate::expr::VarRef;
-use crate::expr_random_ternary::{REDUCED_KEY, Read, W6, W6Effect, W6Op};
+use crate::expr_random_ternary::{REDUCED_KEY, RandomEffect, RandomExpr, RandomOp, Read};
 use crate::host::Host;
 use crate::list_ops::INPUT_KEY;
 use crate::value::Value;
@@ -11,16 +11,21 @@ use crate::value::Value;
 const TICK_MS: i64 = 50;
 
 impl Engine {
-    pub(super) fn eval_w6(&mut self, w: &W6, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
+    pub(super) fn eval_random_ternary(
+        &mut self,
+        w: &RandomExpr,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<Value, String> {
         Ok(match w {
-            W6::Ternary(c, a, b) => {
+            RandomExpr::Ternary(c, a, b) => {
                 if self.cond(c, ex, host)? {
                     self.eval(a, ex, host)?
                 } else {
                     self.eval(b, ex, host)?
                 }
             }
-            W6::RandomChar { alnum, from, to } => {
+            RandomExpr::RandomChar { alnum, from, to } => {
                 let range = match (from, to) {
                     (Some(a), Some(b)) => {
                         let first = |s: String| s.chars().next();
@@ -36,18 +41,18 @@ impl Engine {
                 let r = self.next_random(host);
                 Value::Text(crate::expr_random_ternary::pick_char(*alnum, range, r).to_string())
             }
-            W6::RandomUuid => {
+            RandomExpr::RandomUuid => {
                 let mut bytes = [0u8; 16];
                 for b in &mut bytes {
                     *b = (self.next_random(host) * 256.0) as u8;
                 }
                 Value::Text(crate::expr_random_ternary::uuid_from(bytes))
             }
-            W6::Raw(e) => {
+            RandomExpr::Raw(e) => {
                 let t = self.text(e, ex, host)?;
                 Value::Text(crate::expr_random_ternary::raw(&t))
             }
-            W6::Repeat(e, n) => {
+            RandomExpr::Repeat(e, n) => {
                 let t = self.text(e, ex, host)?;
                 let n = self.num(n, ex, host)?;
                 match crate::expr_random_ternary::repeat(&t, n) {
@@ -63,7 +68,7 @@ impl Engine {
                     }
                 }
             }
-            W6::Reduce(src, body) => {
+            RandomExpr::Reduce(src, body) => {
                 let items = self.eval_list(src, ex, host)?;
                 let saved_in = ex.locals.get(INPUT_KEY).cloned();
                 let saved_acc = ex.locals.get(REDUCED_KEY).cloned();
@@ -88,8 +93,8 @@ impl Engine {
                 }
                 acc
             }
-            W6::RecursiveSize(v) => Value::Num(self.recursive_items(v, ex, host)?.len() as f64),
-            W6::Read(r, of) => self.read_w6(*r, of.as_ref(), ex, host)?,
+            RandomExpr::RecursiveSize(v) => Value::Num(self.recursive_items(v, ex, host)?.len() as f64),
+            RandomExpr::Read(r, of) => self.read_random(*r, of.as_ref(), ex, host)?,
         })
     }
 
@@ -110,7 +115,7 @@ impl Engine {
         Ok(all.into_iter().map(|(_, x)| x).collect())
     }
 
-    fn read_w6(
+    fn read_random(
         &mut self,
         r: Read,
         of: Option<&crate::expr::Expr>,
@@ -155,13 +160,18 @@ impl Engine {
         })
     }
 
-    pub(super) fn exec_w6(&mut self, e: &W6Effect, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
+    pub(super) fn exec_random_ternary(
+        &mut self,
+        e: &RandomEffect,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<(), String> {
         let value = self.eval(&e.value, ex, host)?;
         let Some(p) = self.player(&e.player, ex, host)? else {
             return Ok(());
         };
         match e.op {
-            W6Op::SetAir | W6Op::AddAir | W6Op::RemoveAir => {
+            RandomOp::SetAir | RandomOp::AddAir | RandomOp::RemoveAir => {
                 let Value::Timespan { millis } = value else {
                     return Err(format!(
                         "expected a timespan, got {} ({})",
@@ -171,10 +181,10 @@ impl Engine {
                 };
                 let ticks = millis / TICK_MS;
                 let new = match e.op {
-                    W6Op::SetAir => ticks,
+                    RandomOp::SetAir => ticks,
                     _ => {
                         let cur = host.remaining_air(&p).unwrap_or(0);
-                        if e.op == W6Op::AddAir {
+                        if e.op == RandomOp::AddAir {
                             cur + ticks
                         } else {
                             cur - ticks
@@ -183,7 +193,7 @@ impl Engine {
                 };
                 host.set_remaining_air(&p, new);
             }
-            W6Op::SetRespawn => match value {
+            RandomOp::SetRespawn => match value {
                 Value::Location { x, y, z, .. } => host.set_respawn_location(&p, x, y, z),
                 v => return Err(format!("expected a location, got {} ({})", v.type_name(), v)),
             },

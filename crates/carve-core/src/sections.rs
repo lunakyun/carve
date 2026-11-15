@@ -125,7 +125,7 @@ fn filter(cx: &mut Cx, l: &Line) {
         );
         return;
     }
-    let tmp = format!("{{_w4filter{}::*}}", l.num);
+    let tmp = format!("{{_filter{}::*}}", l.num);
     let conds = rewrite_lines(
         &l.children,
         &[("input index", "loop-index"), ("input", "loop-value")],

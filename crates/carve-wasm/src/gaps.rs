@@ -192,7 +192,7 @@ impl EventHandler<EntityDeathEvent> for OnMobDeath {
                 return;
             }
             let mut ctx = EventCtx::entity_victim(EntSlot::Id(id));
-            if let Some((a, tick)) = st.hs.w4.hit_by.remove(&format!("#{id}"))
+            if let Some((a, tick)) = st.hs.facts.hit_by.remove(&format!("#{id}"))
                 && st.hs.tick.saturating_sub(tick) <= 100
             {
                 match st.player_by_entity(host, a) {

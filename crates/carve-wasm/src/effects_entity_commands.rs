@@ -28,7 +28,7 @@ fn category(name: &str) -> Option<SoundCategory> {
 }
 
 impl WasmHost<'_> {
-    fn w6_entity(&mut self, v: &Value) -> Option<Entity> {
+    fn entcmd_entity(&mut self, v: &Value) -> Option<Entity> {
         match v {
             Value::Player(p) => self.get(p).map(|pl| pl.as_entity()),
             Value::Entity(e) => self.find_entity(&e.uuid),
@@ -36,7 +36,7 @@ impl WasmHost<'_> {
         }
     }
 
-    pub(super) fn w6c2_impl(&mut self, op: HostOp<'_>) -> Option<bool> {
+    pub(super) fn entity_command_impl(&mut self, op: HostOp<'_>) -> Option<bool> {
         match op {
             HostOp::AllowFlight(p, on) => {
                 let pl = self.get(p)?;
@@ -61,13 +61,13 @@ impl WasmHost<'_> {
                 Some(true)
             }
             HostOp::Responsive(v, on) => {
-                let e = self.w6_entity(v)?;
+                let e = self.entcmd_entity(v)?;
                 let i = InteractionEntity::from_entity(&e)?;
                 i.set_response(on);
                 Some(true)
             }
             HostOp::Display(v, flag, on) => {
-                let e = self.w6_entity(v)?;
+                let e = self.entcmd_entity(v)?;
                 let t = e.as_text_display()?;
                 match flag {
                     DisplayFlag::Shadow => t.set_shadow(on),
@@ -89,7 +89,7 @@ impl WasmHost<'_> {
             }
             HostOp::Ride(rider, vehicle) => self.ride_op(rider, vehicle),
             HostOp::Tame(v, on, owner) => {
-                let e = self.w6_entity(v)?;
+                let e = self.entcmd_entity(v)?;
                 let mob = e.as_mob()?;
                 let owner = if on {
                     owner.and_then(|p| uuid::parse(&p.uuid))

@@ -16,7 +16,7 @@ struct Ext<E: FromIntoEvent> {
 
 impl<E: FromIntoEvent> EventHandler<E> for Ext<E> {
     fn handle(&self, server: Server, mut data: EventData<E>) -> EventData<E> {
-        let kind = EventKind::Ext2(self.ev);
+        let kind = EventKind::Game(self.ev);
         let cancelled = with_state(&server, None, |st, host| {
             if !st.engine.table().has_event(kind) {
                 return false;

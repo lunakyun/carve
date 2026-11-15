@@ -12,8 +12,8 @@
 //!   `set x|y|z|w of {var} to ...`, `add|remove ... world border size`,
 //!   `set spawn of <world> to <location>`.
 //!
-//! Every expression is one boxed [`Node`] (`Expr::W6`), every change one boxed
-//! [`W6Fx`] (`Effect::W6`). Both run out of line (`#[cold]`).
+//! Every expression is one boxed [`Node`] (`Expr::RandomTernary`), every change one boxed
+//! [`QuatEffect`] (`Effect::RandomTernary`). Both run out of line (`#[cold]`).
 
 use crate::compile::Effect;
 use crate::engine::{Engine, Exec, online};
@@ -66,7 +66,7 @@ pub struct Node {
 }
 
 fn node(op: Op, args: Vec<Expr>, ty: Ty) -> Expr {
-    Expr::Z6(Box::new(Node { op, args, ty }))
+    Expr::Quaternions(Box::new(Node { op, args, ty }))
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -87,7 +87,7 @@ pub enum Change {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum W6Fx {
+pub enum QuatEffect {
     /// `set x of {v} to 3`, `set yaw of player to 10`.
     Comp {
         comp: Comp,
@@ -363,7 +363,7 @@ const HEADS: &[&str] = &[
 ];
 
 impl P<'_> {
-    fn z6_lit(&self, off: usize, w: &str) -> bool {
+    fn quat_lit(&self, off: usize, w: &str) -> bool {
         if self.pos + off >= self.toks.len() {
             self.hit_end.set(true);
         }
@@ -371,8 +371,8 @@ impl P<'_> {
     }
 
     /// `of <x>` operand, or `None` when no `of` follows.
-    fn z6_of(&mut self) -> Result<Option<Expr>, String> {
-        if !self.z6_lit(0, "of") {
+    fn quat_of(&mut self) -> Result<Option<Expr>, String> {
+        if !self.quat_lit(0, "of") {
             return Ok(None);
         }
         self.pos += 1;
@@ -383,30 +383,30 @@ impl P<'_> {
         self.primary().map(Some)
     }
 
-    fn z6_need(&mut self, op: Op, ty: Ty) -> Result<Option<Expr>, String> {
-        match self.z6_of()? {
+    fn quat_need(&mut self, op: Op, ty: Ty) -> Result<Option<Expr>, String> {
+        match self.quat_of()? {
             Some(x) => Ok(Some(node(op, vec![x], ty))),
             None => Ok(None),
         }
     }
 
     /// Called with the head word read. `Ok(None)`: not ours, position kept.
-    pub(crate) fn z6_head(&mut self, lw: &str) -> Result<Option<Expr>, String> {
+    pub(crate) fn quat_head(&mut self, lw: &str) -> Result<Option<Expr>, String> {
         if !HEADS.contains(&lw) {
             return Ok(None);
         }
         let start = self.pos;
-        let r = self.z6_inner(lw);
+        let r = self.quat_inner(lw);
         if matches!(r, Ok(None)) {
             self.pos = start;
         }
         r
     }
 
-    fn z6_inner(&mut self, lw: &str) -> Result<Option<Expr>, String> {
+    fn quat_inner(&mut self, lw: &str) -> Result<Option<Expr>, String> {
         match lw {
             "plain" => {
-                if self.pos >= self.toks.len() || self.z6_lit(0, "text") {
+                if self.pos >= self.toks.len() || self.quat_lit(0, "text") {
                     return Ok(None);
                 }
                 let Ok(x) = self.primary() else {
@@ -417,88 +417,88 @@ impl P<'_> {
                 }
                 Ok(Some(node(Op::Plain, vec![x], Ty::Item)))
             }
-            "portal" if self.z6_lit(0, "cooldown") => {
+            "portal" if self.quat_lit(0, "cooldown") => {
                 self.pos += 1;
-                self.z6_need(Op::Portal, Ty::Timespan)
+                self.quat_need(Op::Portal, Ty::Timespan)
             }
-            "protocol" if self.z6_lit(0, "version") => {
+            "protocol" if self.quat_lit(0, "version") => {
                 self.pos += 1;
-                match self.z6_of()? {
+                match self.quat_of()? {
                     Some(x) => Ok(Some(node(Op::Protocol, vec![x], Ty::Number))),
                     None => Ok(Some(node(Op::Protocol, vec![], Ty::Number))),
                 }
             }
-            "vehicle" => self.z6_need(Op::Vehicle, Ty::Object),
-            "passengers" | "passenger" => self.z6_need(Op::Passengers, Ty::List),
+            "vehicle" => self.quat_need(Op::Vehicle, Ty::Object),
+            "passengers" | "passenger" => self.quat_need(Op::Passengers, Ty::List),
             "villager" => {
-                let (vf, ty) = if self.z6_lit(0, "level") {
+                let (vf, ty) = if self.quat_lit(0, "level") {
                     (Vf::Level, Ty::Number)
-                } else if self.z6_lit(0, "profession") {
+                } else if self.quat_lit(0, "profession") {
                     (Vf::Profession, Ty::Text)
-                } else if self.z6_lit(0, "experience") || self.z6_lit(0, "xp") {
+                } else if self.quat_lit(0, "experience") || self.quat_lit(0, "xp") {
                     (Vf::Experience, Ty::Number)
                 } else {
                     return Ok(None);
                 };
                 self.pos += 1;
-                self.z6_need(Op::Villager(vf), ty)
+                self.quat_need(Op::Villager(vf), ty)
             }
-            "ringing" if self.z6_lit(0, "time") => {
+            "ringing" if self.quat_lit(0, "time") => {
                 self.pos += 1;
-                self.z6_need(Op::Ringing, Ty::Timespan)
+                self.quat_need(Op::Ringing, Ty::Timespan)
             }
             "whitelist"
-                if self.z6_lit(0, "enabled") || self.z6_lit(0, "status") || self.z6_lit(0, "state") =>
+                if self.quat_lit(0, "enabled") || self.quat_lit(0, "status") || self.quat_lit(0, "state") =>
             {
                 self.pos += 1;
                 Ok(Some(node(Op::WhitelistOn, vec![], Ty::Boolean)))
             }
-            "whitelisted" if self.z6_lit(0, "players") => {
+            "whitelisted" if self.quat_lit(0, "players") => {
                 self.pos += 1;
                 Ok(Some(node(Op::WhitelistPlayers, vec![], Ty::List)))
             }
-            "sign" if self.z6_lit(0, "text") || self.z6_lit(0, "lines") => {
+            "sign" if self.quat_lit(0, "text") || self.quat_lit(0, "lines") => {
                 self.pos += 1;
-                self.z6_need(Op::SignText, Ty::List)
+                self.quat_need(Op::SignText, Ty::List)
             }
-            "lines" => self.z6_need(Op::SignText, Ty::List),
-            "skull" if self.z6_lit(0, "owner") => {
+            "lines" => self.quat_need(Op::SignText, Ty::List),
+            "skull" if self.quat_lit(0, "owner") => {
                 self.pos += 1;
-                self.z6_need(Op::SkullOwner, Ty::Text)
+                self.quat_need(Op::SkullOwner, Ty::Text)
             }
-            "skull" if self.z6_lit(0, "texture") => {
+            "skull" if self.quat_lit(0, "texture") => {
                 self.pos += 1;
-                self.z6_need(Op::SkullTexture, Ty::Text)
+                self.quat_need(Op::SkullTexture, Ty::Text)
             }
-            "spawner" if self.z6_lit(0, "type") => {
+            "spawner" if self.quat_lit(0, "type") => {
                 self.pos += 1;
-                self.z6_need(Op::SpawnerType, Ty::Text)
+                self.quat_need(Op::SpawnerType, Ty::Text)
             }
-            "loot" if self.z6_lit(0, "table") && self.z6_lit(1, "seed") => {
+            "loot" if self.quat_lit(0, "table") && self.quat_lit(1, "seed") => {
                 self.pos += 2;
-                self.z6_need(Op::LootSeed, Ty::Number)
+                self.quat_need(Op::LootSeed, Ty::Number)
             }
-            "rotation" if self.z6_lit(0, "angle") => {
+            "rotation" if self.quat_lit(0, "angle") => {
                 self.pos += 1;
-                self.z6_need(Op::RotAngle, Ty::Number)
+                self.quat_need(Op::RotAngle, Ty::Number)
             }
-            "rotation" if self.z6_lit(0, "axis") => {
+            "rotation" if self.quat_lit(0, "axis") => {
                 self.pos += 1;
-                self.z6_need(Op::RotAxis, Ty::Vector)
+                self.quat_need(Op::RotAxis, Ty::Vector)
             }
-            "w" if self.z6_lit(0, "of") || self.z6_lit(0, "component") => {
-                if self.z6_lit(0, "component") {
+            "w" if self.quat_lit(0, "of") || self.quat_lit(0, "component") => {
+                if self.quat_lit(0, "component") {
                     self.pos += 1;
                 }
-                self.z6_need(Op::QuatW, Ty::Number)
+                self.quat_need(Op::QuatW, Ty::Number)
             }
             _ => Ok(None),
         }
     }
 
     /// `<n> times` right after a number (end of the expression, not `3 times 4`).
-    pub(crate) fn z6_times(&mut self, n: f64) -> Option<Expr> {
-        if !self.z6_lit(0, "times") {
+    pub(crate) fn quat_times(&mut self, n: f64) -> Option<Expr> {
+        if !self.quat_lit(0, "times") {
             return None;
         }
         // Only where a list can start: `to 3 times`, `(3 times)`, `, 3 times`, a line start.
@@ -516,8 +516,8 @@ impl P<'_> {
     }
 
     /// After a vector or quaternion: `rotated around <axis> by <degrees>`.
-    pub(crate) fn z6_post(&mut self, e: Expr) -> Result<Expr, String> {
-        if !(self.z6_lit(0, "rotated") && self.z6_lit(1, "around")) {
+    pub(crate) fn quat_post(&mut self, e: Expr) -> Result<Expr, String> {
+        if !(self.quat_lit(0, "rotated") && self.quat_lit(1, "around")) {
             return Ok(e);
         }
         self.pos += 2;
@@ -525,14 +525,14 @@ impl P<'_> {
             Some(Tok::Word(w)) if matches!(w.to_ascii_lowercase().as_str(), "x" | "y" | "z") => {
                 let name = w.to_ascii_lowercase();
                 self.pos += 1;
-                if self.z6_lit(0, "axis") {
+                if self.quat_lit(0, "axis") {
                     self.pos += 1;
                 }
                 Expr::Text(vec![crate::expr::Part::Lit(name)])
             }
             _ => self.primary()?,
         };
-        if !self.z6_lit(0, "by") {
+        if !self.quat_lit(0, "by") {
             return Err("expected 'rotated around <axis> by <degrees>'".into());
         }
         self.pos += 1;
@@ -603,10 +603,16 @@ pub fn parse_effect(toks: &[Tok], env: &Env) -> Option<Result<Effect, String>> {
     }
     let ti = usize::from(lit(target, 0, "the"));
     let fx = fx_of(change, target, ti, value, env);
-    fx.map(|r| r.map(|f| Effect::Z6(Box::new(f))))
+    fx.map(|r| r.map(|f| Effect::Quaternions(Box::new(f))))
 }
 
-fn fx_of(change: Change, t: &[Tok], i: usize, value: &[Tok], env: &Env) -> Option<Result<W6Fx, String>> {
+fn fx_of(
+    change: Change,
+    t: &[Tok],
+    i: usize,
+    value: &[Tok],
+    env: &Env,
+) -> Option<Result<QuatEffect, String>> {
     let first = match t.get(i) {
         Some(Tok::Word(w)) => w.to_ascii_lowercase(),
         _ => return None,
@@ -615,14 +621,14 @@ fn fx_of(change: Change, t: &[Tok], i: usize, value: &[Tok], env: &Env) -> Optio
     // `set portal cooldown of X to 5 seconds`
     if first == "portal" && lit(t, i + 1, "cooldown") && lit(t, i + 2, "of") {
         let tg = parse_expr(t.get(i + 3..)?, env).ok()?;
-        return Some(val(env).map(|value| W6Fx::Portal { target: tg, value }));
+        return Some(val(env).map(|value| QuatEffect::Portal { target: tg, value }));
     }
     if first == "whitelist" && change == Change::Set {
         let rest = t.get(i + 1..)?;
         if rest.is_empty()
             || (rest.len() == 1 && ["enabled", "status", "state"].iter().any(|w| rest[0].is_lit(w)))
         {
-            return Some(val(env).map(|value| W6Fx::Whitelist { value }));
+            return Some(val(env).map(|value| QuatEffect::Whitelist { value }));
         }
         return None;
     }
@@ -636,11 +642,11 @@ fn fx_of(change: Change, t: &[Tok], i: usize, value: &[Tok], env: &Env) -> Optio
             Some(r) if lit(r, 0, "of") => parse_expr(r.get(1..)?, env).ok(),
             _ => return None,
         };
-        return Some(val(env).map(|value| W6Fx::Border { world, change, value }));
+        return Some(val(env).map(|value| QuatEffect::Border { world, change, value }));
     }
     if first == "spawn" && change == Change::Set && lit(t, i + 1, "of") {
         let w = parse_expr(t.get(i + 2..)?, env).ok()?;
-        return Some(val(env).map(|value| W6Fx::Spawn { world: w, value }));
+        return Some(val(env).map(|value| QuatEffect::Spawn { world: w, value }));
     }
     if let Some(comp) = comp_of(&first) {
         let at = i + 1;
@@ -662,7 +668,7 @@ fn fx_of(change: Change, t: &[Tok], i: usize, value: &[Tok], env: &Env) -> Optio
             return None;
         }
         // Yaw and pitch of a variable that holds a vector are changed in place too.
-        return Some(val(env).map(|value| W6Fx::Comp {
+        return Some(val(env).map(|value| QuatEffect::Comp {
             comp,
             target,
             change,
@@ -715,7 +721,12 @@ pub fn quat_comp(prop: crate::expr::Prop, v: &Value) -> Option<Value> {
 impl Engine {
     #[cold]
     #[inline(never)]
-    pub(crate) fn eval_z6(&mut self, n: &Node, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
+    pub(crate) fn eval_quaternions(
+        &mut self,
+        n: &Node,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<Value, String> {
         let mut a = Vec::with_capacity(n.args.len());
         for e in &n.args {
             a.push(self.eval(e, ex, host)?);
@@ -726,9 +737,14 @@ impl Engine {
 
     #[cold]
     #[inline(never)]
-    pub(crate) fn exec_z6(&mut self, f: &W6Fx, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
+    pub(crate) fn exec_quaternions(
+        &mut self,
+        f: &QuatEffect,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<(), String> {
         match f {
-            W6Fx::Portal { target, value } => {
+            QuatEffect::Portal { target, value } => {
                 let t = self.eval(target, ex, host)?;
                 let v = self.eval(value, ex, host)?;
                 let ticks = match v {
@@ -742,10 +758,10 @@ impl Engine {
                     }
                 };
                 if let Some(e) = handle(&t, ex, host) {
-                    host.w6c6_set(Set::Portal(&e, ticks.max(0.0).round() as u32));
+                    host.protocol_set(Set::Portal(&e, ticks.max(0.0).round() as u32));
                 }
             }
-            W6Fx::Whitelist { value } => {
+            QuatEffect::Whitelist { value } => {
                 let v = self.eval(value, ex, host)?;
                 let on = match &v {
                     Value::Bool(b) => *b,
@@ -761,9 +777,9 @@ impl Engine {
                         ));
                     }
                 };
-                host.w6c6_set(Set::Whitelist(on));
+                host.protocol_set(Set::Whitelist(on));
             }
-            W6Fx::Border { world, change, value } => {
+            QuatEffect::Border { world, change, value } => {
                 let w = match world {
                     Some(e) => match self.eval(e, ex, host)? {
                         Value::World(w) | Value::Text(w) => Some(w),
@@ -790,7 +806,7 @@ impl Engine {
                 };
                 host.set_border_size(&w, new.clamp(1.0, 59_999_968.0), 0.0);
             }
-            W6Fx::Spawn { world, value } => {
+            QuatEffect::Spawn { world, value } => {
                 let w = match self.eval(world, ex, host)? {
                     Value::World(w) | Value::Text(w) => w,
                     other => return Err(format!("expected a world, got {}", other.type_name())),
@@ -809,7 +825,7 @@ impl Engine {
                     z.floor() as i64
                 ));
             }
-            W6Fx::Comp {
+            QuatEffect::Comp {
                 comp,
                 target,
                 change,
@@ -833,7 +849,7 @@ impl Engine {
                             Comp::Y => ny = apply(ny),
                             _ => nz = apply(nz),
                         }
-                        self.z6_store(target, Value::Vector { x: nx, y: ny, z: nz }, ex, host)?;
+                        self.quat_store(target, Value::Vector { x: nx, y: ny, z: nz }, ex, host)?;
                     }
                     (Value::Quaternion { w, x, y, z }, Comp::X | Comp::Y | Comp::Z | Comp::W) => {
                         let (mut nw, mut nx, mut ny, mut nz) = (*w, *x, *y, *z);
@@ -843,7 +859,7 @@ impl Engine {
                             Comp::Y => ny = apply(ny),
                             _ => nz = apply(nz),
                         }
-                        self.z6_store(
+                        self.quat_store(
                             target,
                             Value::Quaternion {
                                 w: nw,
@@ -870,7 +886,7 @@ impl Engine {
                             y: -pr.sin() * len,
                             z: pr.cos() * yr.cos() * len,
                         };
-                        self.z6_store(target, nv, ex, host)?;
+                        self.quat_store(target, nv, ex, host)?;
                     }
                     (_, Comp::Yaw | Comp::Pitch) => {
                         let Some(e) = handle(&t, ex, host) else {
@@ -882,9 +898,9 @@ impl Engine {
                         };
                         let new = apply(cur.unwrap_or(0.0)) as f32;
                         if *comp == Comp::Yaw {
-                            host.w6c6_set(Set::Rotation(&e, Some(new), None));
+                            host.protocol_set(Set::Rotation(&e, Some(new), None));
                         } else {
-                            host.w6c6_set(Set::Rotation(&e, None, Some(new.clamp(-90.0, 90.0))));
+                            host.protocol_set(Set::Rotation(&e, None, Some(new.clamp(-90.0, 90.0))));
                         }
                     }
                     _ => return Err(format!("can't change the {comp:?} of {}", t.type_name())),
@@ -894,7 +910,7 @@ impl Engine {
         Ok(())
     }
 
-    fn z6_store(
+    fn quat_store(
         &mut self,
         target: &Expr,
         new: Value,
@@ -953,7 +969,7 @@ fn read(op: Op, a: &Value, all: &[Value], ex: &mut Exec, host: &mut dyn Host) ->
         }
         Op::Portal => {
             let e = handle(a, ex, host)?;
-            match host.w6c6_get(Get::Portal(&e))? {
+            match host.protocol_get(Get::Portal(&e))? {
                 Value::Num(t) => Some(Value::Timespan {
                     millis: (t * 50.0) as i64,
                 }),
@@ -965,19 +981,19 @@ fn read(op: Op, a: &Value, all: &[Value], ex: &mut Exec, host: &mut dyn Host) ->
                 return Some(Value::Num(SERVER_PROTOCOL));
             }
             let p = online(a, &mut ex.seen, host)?;
-            host.w6c6_get(Get::Protocol(&p))
+            host.protocol_get(Get::Protocol(&p))
         }
         Op::Vehicle => {
             let e = handle(a, ex, host)?;
-            host.w6c6_get(Get::Vehicle(&e))
+            host.protocol_get(Get::Vehicle(&e))
         }
         Op::Passengers => {
             let e = handle(a, ex, host)?;
-            host.w6c6_get(Get::Passengers(&e))
+            host.protocol_get(Get::Passengers(&e))
         }
         Op::Villager(f) => {
             let e = handle(a, ex, host)?;
-            host.w6c6_get(Get::Villager(&e, f))
+            host.protocol_get(Get::Villager(&e, f))
         }
         Op::Ringing => {
             let Value::Location { x, y, z, world } = a else {
@@ -987,7 +1003,7 @@ fn read(op: Op, a: &Value, all: &[Value], ex: &mut Exec, host: &mut dyn Host) ->
                 Some(w) => w.clone(),
                 None => host.default_world()?,
             };
-            match host.w6c6_get(Get::Ringing(
+            match host.protocol_get(Get::Ringing(
                 &w,
                 x.floor() as i32,
                 y.floor() as i32,
@@ -999,8 +1015,8 @@ fn read(op: Op, a: &Value, all: &[Value], ex: &mut Exec, host: &mut dyn Host) ->
                 v => Some(v),
             }
         }
-        Op::WhitelistOn => host.w6c6_get(Get::Whitelist),
-        Op::WhitelistPlayers => host.w6c6_get(Get::WhitelistPlayers),
+        Op::WhitelistOn => host.protocol_get(Get::Whitelist),
+        Op::WhitelistPlayers => host.protocol_get(Get::WhitelistPlayers),
         Op::SignText => {
             let nbt = nbt_of(a, host)?;
             Some(Value::List(

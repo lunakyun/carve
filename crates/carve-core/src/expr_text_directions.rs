@@ -2,16 +2,16 @@
 //! `difference between`, directions (`3 blocks above loc`), chunk numbers,
 //! compass target, `death message`, `damage cause` and `chat recipients`.
 //!
-//! All of them live behind one boxed `Expr::W2` variant so the hot `Expr`
+//! All of them live behind one boxed `Expr::TextDirections` variant so the hot `Expr`
 //! enum does not grow. The pure helpers are here; running them is in
-//! `engine/w2_eval.rs`.
+//! `engine/textdir_eval.rs`.
 
 use crate::compile::{EffKind, Effect};
 use crate::expr::{Expr, Ty};
 use crate::pattern::Capture;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum W2Op {
+pub enum TextOp {
     /// `codepoint of "a"`: args: text.
     Codepoint,
     /// `character from codepoint 65`: args: number.
@@ -39,21 +39,21 @@ pub enum W2Op {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct W2 {
-    pub op: W2Op,
+pub struct TextExpr {
+    pub op: TextOp,
     pub args: Vec<Expr>,
 }
 
-impl W2Op {
+impl TextOp {
     /// Static type, used for checks at load time.
     pub fn ty(self, args: &[Expr], env: &crate::expr::Env) -> Ty {
         match self {
-            W2Op::Codepoint | W2Op::ChunkX | W2Op::ChunkZ => Ty::Number,
-            W2Op::FromCodepoint | W2Op::DeathMessage | W2Op::DamageCause => Ty::Text,
-            W2Op::CharsBetween { .. } | W2Op::ChatRecipients => Ty::List,
-            W2Op::Offset(..) | W2Op::CompassTarget => Ty::Location,
-            W2Op::Victim => Ty::Object,
-            W2Op::Difference => match (args.first().map(|a| a.ty(env)), args.get(1).map(|a| a.ty(env))) {
+            TextOp::Codepoint | TextOp::ChunkX | TextOp::ChunkZ => Ty::Number,
+            TextOp::FromCodepoint | TextOp::DeathMessage | TextOp::DamageCause => Ty::Text,
+            TextOp::CharsBetween { .. } | TextOp::ChatRecipients => Ty::List,
+            TextOp::Offset(..) | TextOp::CompassTarget => Ty::Location,
+            TextOp::Victim => Ty::Object,
+            TextOp::Difference => match (args.first().map(|a| a.ty(env)), args.get(1).map(|a| a.ty(env))) {
                 (Some(Ty::Number), Some(Ty::Number)) => Ty::Number,
                 (Some(Ty::Date | Ty::Timespan), Some(Ty::Date | Ty::Timespan)) => Ty::Timespan,
                 _ => Ty::Object,
@@ -154,7 +154,7 @@ pub fn snake_case(debug_name: &str) -> String {
 
 /// Effects of this module.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum W2Eff {
+pub enum TextEffOp {
     /// `set compass target of %player% to %location%`: player, location.
     SetCompass,
     /// `reset compass target of %player%`: points the compass at the world origin.
@@ -164,19 +164,19 @@ pub enum W2Eff {
 pub const EFFECT_PATTERNS: &[(&str, EffKind)] = &[
     (
         "set compass target of %player% to %location%",
-        EffKind::X2(W2Eff::SetCompass),
+        EffKind::TextDirections(TextEffOp::SetCompass),
     ),
     (
         "set %player%'s compass target to %location%",
-        EffKind::X2(W2Eff::SetCompass),
+        EffKind::TextDirections(TextEffOp::SetCompass),
     ),
     (
         "reset compass target of %player%",
-        EffKind::X2(W2Eff::ResetCompass),
+        EffKind::TextDirections(TextEffOp::ResetCompass),
     ),
     (
         "reset %player%'s compass target",
-        EffKind::X2(W2Eff::ResetCompass),
+        EffKind::TextDirections(TextEffOp::ResetCompass),
     ),
 ];
 
@@ -187,8 +187,8 @@ fn cap(caps: &mut [Option<Capture>], i: usize) -> Option<Expr> {
     }
 }
 
-pub fn build(kind: W2Eff, caps: &mut [Option<Capture>]) -> Option<Effect> {
-    Some(Effect::X2(
+pub fn build(kind: TextEffOp, caps: &mut [Option<Capture>]) -> Option<Effect> {
+    Some(Effect::TextDirections(
         kind,
         Box::new((cap(caps, 0)?, cap(caps, 1).unwrap_or(Expr::Num(0.0)))),
     ))

@@ -1,10 +1,10 @@
 //! Extra event triggers (kick, locale change, piston, portal, redstone, ...).
 //! Each game event is turned into a small [`Extract`] and fired as
-//! `EventKind::Ext3(..)`.
+//! `EventKind::PlayerServer(..)`.
 
 use std::marker::PhantomData;
 
-use carve_core::events_player_server::Ev3;
+use carve_core::events_player_server::PlayerServerEvent;
 use carve_core::{EventCtx, EventKind, FireOutcome, PlayerRef, Value};
 use pumpkin_plugin_api::Context;
 use pumpkin_plugin_api::Server;
@@ -176,11 +176,11 @@ ext!(PlayerInputEvent, |d| Extract {
     ..Extract::default()
 });
 
-struct OnExt<E>(Ev3, PhantomData<fn() -> E>);
+struct OnExt<E>(PlayerServerEvent, PhantomData<fn() -> E>);
 
 impl<E: ExtEvent> EventHandler<E> for OnExt<E> {
     fn handle(&self, server: Server, mut data: EventData<E>) -> EventData<E> {
-        let kind = EventKind::Ext3(self.0);
+        let kind = EventKind::PlayerServer(self.0);
         let cancelled = with_state(&server, None, |st, host| {
             if !st.engine.table().has_event(kind) {
                 return None;
@@ -221,14 +221,22 @@ impl<E: ExtEvent> EventHandler<E> for OnExt<E> {
 /// High-volume events: the server only calls into the plugin for these when
 /// a script uses them at startup. Adding the first script for one needs a
 /// server restart.
-fn is_hot(ev: Ev3) -> bool {
+fn is_hot(ev: PlayerServerEvent) -> bool {
     matches!(
         ev,
-        Ev3::Redstone | Ev3::PistonExtend | Ev3::PistonRetract | Ev3::LeavesDecay | Ev3::PlayerInput
+        PlayerServerEvent::Redstone
+            | PlayerServerEvent::PistonExtend
+            | PlayerServerEvent::PistonRetract
+            | PlayerServerEvent::LeavesDecay
+            | PlayerServerEvent::PlayerInput
     )
 }
 
-fn reg<E: ExtEvent + Send + Sync + 'static>(ctx: &Context, used: &dyn Fn(Ev3) -> bool, ev: Ev3) {
+fn reg<E: ExtEvent + Send + Sync + 'static>(
+    ctx: &Context,
+    used: &dyn Fn(PlayerServerEvent) -> bool,
+    ev: PlayerServerEvent,
+) {
     if is_hot(ev) && !used(ev) {
         return;
     }
@@ -243,24 +251,24 @@ fn reg<E: ExtEvent + Send + Sync + 'static>(ctx: &Context, used: &dyn Fn(Ev3) ->
 
 /// Listen to the extra events. Handlers return at once when no script uses
 /// the event.
-pub fn register_all(ctx: &Context, used: &dyn Fn(Ev3) -> bool) {
-    reg::<PlayerKickEvent>(ctx, used, Ev3::Kick);
-    reg::<PlayerLocaleChangeEvent>(ctx, used, Ev3::LanguageChange);
-    reg::<PlayerLeashEntityEvent>(ctx, used, Ev3::Leash);
-    reg::<EntityUnleashEvent>(ctx, used, Ev3::Unleash);
-    reg::<LeavesDecayEvent>(ctx, used, Ev3::LeavesDecay);
-    reg::<LightningStrikeEvent>(ctx, used, Ev3::LightningStrike);
-    reg::<EntityEnterLoveModeEvent>(ctx, used, Ev3::LoveModeEnter);
-    reg::<PiglinBarterEvent>(ctx, used, Ev3::PiglinBarter);
-    reg::<BlockPistonExtendEvent>(ctx, used, Ev3::PistonExtend);
-    reg::<BlockPistonRetractEvent>(ctx, used, Ev3::PistonRetract);
-    reg::<EntityPortalEvent>(ctx, used, Ev3::Portal);
-    reg::<EntityPortalEnterEvent>(ctx, used, Ev3::PortalEnter);
-    reg::<PortalCreateEvent>(ctx, used, Ev3::PortalCreate);
-    reg::<BlockRedstoneEvent>(ctx, used, Ev3::Redstone);
-    reg::<PlayerResourcePackStatusEvent>(ctx, used, Ev3::ResourcePackResponse);
-    reg::<EntityResurrectEvent>(ctx, used, Ev3::ResurrectAttempt);
-    reg::<PlayerCommandSendEvent>(ctx, used, Ev3::SendCommandList);
-    reg::<LootGenerateEvent>(ctx, used, Ev3::LootGenerate);
-    reg::<PlayerInputEvent>(ctx, used, Ev3::PlayerInput);
+pub fn register_all(ctx: &Context, used: &dyn Fn(PlayerServerEvent) -> bool) {
+    reg::<PlayerKickEvent>(ctx, used, PlayerServerEvent::Kick);
+    reg::<PlayerLocaleChangeEvent>(ctx, used, PlayerServerEvent::LanguageChange);
+    reg::<PlayerLeashEntityEvent>(ctx, used, PlayerServerEvent::Leash);
+    reg::<EntityUnleashEvent>(ctx, used, PlayerServerEvent::Unleash);
+    reg::<LeavesDecayEvent>(ctx, used, PlayerServerEvent::LeavesDecay);
+    reg::<LightningStrikeEvent>(ctx, used, PlayerServerEvent::LightningStrike);
+    reg::<EntityEnterLoveModeEvent>(ctx, used, PlayerServerEvent::LoveModeEnter);
+    reg::<PiglinBarterEvent>(ctx, used, PlayerServerEvent::PiglinBarter);
+    reg::<BlockPistonExtendEvent>(ctx, used, PlayerServerEvent::PistonExtend);
+    reg::<BlockPistonRetractEvent>(ctx, used, PlayerServerEvent::PistonRetract);
+    reg::<EntityPortalEvent>(ctx, used, PlayerServerEvent::Portal);
+    reg::<EntityPortalEnterEvent>(ctx, used, PlayerServerEvent::PortalEnter);
+    reg::<PortalCreateEvent>(ctx, used, PlayerServerEvent::PortalCreate);
+    reg::<BlockRedstoneEvent>(ctx, used, PlayerServerEvent::Redstone);
+    reg::<PlayerResourcePackStatusEvent>(ctx, used, PlayerServerEvent::ResourcePackResponse);
+    reg::<EntityResurrectEvent>(ctx, used, PlayerServerEvent::ResurrectAttempt);
+    reg::<PlayerCommandSendEvent>(ctx, used, PlayerServerEvent::SendCommandList);
+    reg::<LootGenerateEvent>(ctx, used, PlayerServerEvent::LootGenerate);
+    reg::<PlayerInputEvent>(ctx, used, PlayerServerEvent::PlayerInput);
 }

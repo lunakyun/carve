@@ -3,10 +3,10 @@
 //! `elements N to M of`, `dequeue`, `banner pattern item of` and
 //! `persistent data keys of`.
 //!
-//! Every expression is one boxed [`Node`] (`Expr::W6C4`) and every change one
-//! boxed [`W6Eff`] (`Effect::W6C4`), so the hot enums stay small. The engine
+//! Every expression is one boxed [`Node`] (`Expr::BlockStateLists`) and every change one
+//! boxed [`StateEffect`] (`Effect::BlockStateLists`), so the hot enums stay small. The engine
 //! side is `#[cold]`. Block properties go through the existing
-//! `Host::c6_block_state` / `Host::c6_set` calls, so there is no new host call.
+//! `Host::block_state_prop` / `Host::property_set` calls, so there is no new host call.
 
 use crate::block_ops::BlockPos;
 use crate::compile::Effect;
@@ -87,7 +87,7 @@ impl Node {
 }
 
 fn node(op: Op, args: Vec<Expr>, ty: Ty) -> Expr {
-    Expr::W6C4(Box::new(Node { op, args, ty }))
+    Expr::BlockStateLists(Box::new(Node { op, args, ty }))
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -100,7 +100,7 @@ pub enum Change {
 
 /// `set honey level of <block> to 3` and friends.
 #[derive(Debug, Clone, PartialEq)]
-pub struct W6Eff {
+pub struct StateEffect {
     pub change: Change,
     pub target: Node,
     pub value: Option<Expr>,
@@ -192,24 +192,24 @@ const HEADS: [&str; 10] = [
 ];
 
 impl P<'_> {
-    fn x6_at(&self, n: usize) -> Option<&Tok> {
+    fn state_at(&self, n: usize) -> Option<&Tok> {
         if self.pos + n >= self.toks.len() {
             self.hit_end.set(true);
         }
         self.toks.get(self.pos + n)
     }
 
-    pub(crate) fn x6_lit(&self, n: usize, w: &str) -> bool {
-        is(self.x6_at(n), w)
+    pub(crate) fn lit_at(&self, n: usize, w: &str) -> bool {
+        is(self.state_at(n), w)
     }
 
-    fn x6_word(&self, n: usize) -> Option<String> {
-        word(self.x6_at(n))
+    fn state_word(&self, n: usize) -> Option<String> {
+        word(self.state_at(n))
     }
 
     /// A number token or a variable: one token only, so `3 elements` stays apart.
-    fn x6_count(&mut self, n: usize) -> Result<Option<Expr>, String> {
-        if !matches!(self.x6_at(n), Some(Tok::Num(_) | Tok::Var(_))) {
+    fn state_count(&mut self, n: usize) -> Result<Option<Expr>, String> {
+        if !matches!(self.state_at(n), Some(Tok::Num(_) | Tok::Var(_))) {
             return Ok(None);
         }
         let at = self.pos + n;
@@ -217,11 +217,11 @@ impl P<'_> {
         Ok(Some(e))
     }
 
-    fn x6_list(&mut self, what: &str) -> Result<Expr, String> {
-        if !self.x6_lit(0, "of") {
+    fn state_list(&mut self, what: &str) -> Result<Expr, String> {
+        if !self.lit_at(0, "of") {
             return Err(format!("expected 'of {{list::*}}' after '{what}'"));
         }
-        if let Some(Tok::Var(_)) = self.x6_at(1) {
+        if let Some(Tok::Var(_)) = self.state_at(1) {
             let at = self.pos + 1;
             let e = parse_expr(&self.toks[at..=at], self.env)?;
             if matches!(&e, Expr::Var(v) if v.list) {
@@ -232,8 +232,8 @@ impl P<'_> {
         Err(format!("'{what} of' needs a list variable like {{x::*}}"))
     }
 
-    fn x6_of_primary(&mut self, what: &str) -> Result<Expr, String> {
-        if !(self.x6_lit(0, "of") || self.x6_lit(0, "in")) {
+    fn state_of_primary(&mut self, what: &str) -> Result<Expr, String> {
+        if !(self.lit_at(0, "of") || self.lit_at(0, "in")) {
             return Err(format!("expected 'of' after '{what}'"));
         }
         self.pos += 1;
@@ -241,31 +241,31 @@ impl P<'_> {
     }
 
     /// Expression heads of this module. `self.pos` is after the first word `lw`.
-    pub(crate) fn w6c4_head(&mut self, lw: &str) -> Result<Option<Expr>, String> {
+    pub(crate) fn state_head(&mut self, lw: &str) -> Result<Option<Expr>, String> {
         let start = self.pos;
-        let r = self.x6_head_inner(lw);
+        let r = self.state_head_inner(lw);
         if matches!(r, Ok(None)) {
             self.pos = start;
         }
         r
     }
 
-    fn x6_head_inner(&mut self, lw: &str) -> Result<Option<Expr>, String> {
+    fn state_head_inner(&mut self, lw: &str) -> Result<Option<Expr>, String> {
         // `max age of`, `maximum honey level of`
         if matches!(lw, "max" | "maximum") {
-            let Some(p) = self.x6_prop_words()? else {
+            let Some(p) = self.state_prop_words()? else {
                 return Ok(None);
             };
-            let b = self.x6_of_primary(p.name())?;
+            let b = self.state_of_primary(p.name())?;
             return Ok(Some(node(Op::Prop(p, true), vec![b], Ty::Number)));
         }
         let mut lw = lw.to_string();
         // `beehive honey level`, `bee hive honey level`, `bee nest honey level`
         if matches!(lw.as_str(), "beehive" | "bee") {
-            if lw == "bee" && matches!(self.x6_word(0).as_deref(), Some("hive" | "nest")) {
+            if lw == "bee" && matches!(self.state_word(0).as_deref(), Some("hive" | "nest")) {
                 self.pos += 1;
             }
-            lw = match self.x6_word(0) {
+            lw = match self.state_word(0) {
                 Some(w) => {
                     self.pos += 1;
                     w
@@ -274,42 +274,42 @@ impl P<'_> {
             };
         }
         if matches!(lw.as_str(), "honey" | "brushing" | "age") {
-            let Some(p) = self.x6_prop_from(&lw)? else {
+            let Some(p) = self.state_prop_from(&lw)? else {
                 return Ok(None);
             };
-            let b = self.x6_of_primary(p.name())?;
+            let b = self.state_of_primary(p.name())?;
             return Ok(Some(node(Op::Prop(p, false), vec![b], Ty::Number)));
         }
         match lw.as_str() {
             "first" | "last" => {
-                let Some(n) = self.x6_count(0)? else {
+                let Some(n) = self.state_count(0)? else {
                     return Ok(None);
                 };
-                if !matches!(self.x6_word(1).as_deref(), Some("elements")) {
+                if !matches!(self.state_word(1).as_deref(), Some("elements")) {
                     return Ok(None);
                 }
                 self.pos += 2;
-                let list = self.x6_list("elements")?;
+                let list = self.state_list("elements")?;
                 let op = if lw == "first" { Op::First } else { Op::Last };
                 Ok(Some(node(op, vec![n, list], Ty::List)))
             }
             "elements" => {
-                let Some(a) = self.x6_count(0)? else {
+                let Some(a) = self.state_count(0)? else {
                     return Ok(None);
                 };
-                if !self.x6_lit(1, "to") {
+                if !self.lit_at(1, "to") {
                     return Ok(None);
                 }
-                let Some(b) = self.x6_count(2)? else {
+                let Some(b) = self.state_count(2)? else {
                     return Ok(None);
                 };
                 self.pos += 3;
-                let list = self.x6_list("elements N to M")?;
+                let list = self.state_list("elements N to M")?;
                 Ok(Some(node(Op::Range, vec![a, b, list], Ty::List)))
             }
             "dequeue" | "de" => {
                 if lw == "de" {
-                    if !(self.x6_lit(0, "-") && self.x6_lit(1, "queue")) {
+                    if !(self.lit_at(0, "-") && self.lit_at(1, "queue")) {
                         return Ok(None);
                     }
                     self.pos += 2;
@@ -317,24 +317,24 @@ impl P<'_> {
                 // `dequeue {q}`, `dequeue first 2 elements of {q}`, `dequeue 2 elements of {q}`
                 let mut n = None;
                 let mut i = 0;
-                if self.x6_lit(i, "first") {
+                if self.lit_at(i, "first") {
                     i += 1;
                 }
-                if matches!(self.x6_word(i + 1).as_deref(), Some("elements" | "element")) {
-                    if let Some(c) = self.x6_count(i)? {
+                if matches!(self.state_word(i + 1).as_deref(), Some("elements" | "element")) {
+                    if let Some(c) = self.state_count(i)? {
                         n = Some(c);
                         self.pos += i + 2;
-                        if self.x6_lit(0, "of") || self.x6_lit(0, "from") {
+                        if self.lit_at(0, "of") || self.lit_at(0, "from") {
                             self.pos += 1;
                         }
                     }
-                } else if i > 0 && self.x6_word(i).as_deref() == Some("element") {
+                } else if i > 0 && self.state_word(i).as_deref() == Some("element") {
                     self.pos += i + 1;
-                    if self.x6_lit(0, "of") || self.x6_lit(0, "from") {
+                    if self.lit_at(0, "of") || self.lit_at(0, "from") {
                         self.pos += 1;
                     }
                 }
-                let Some(Tok::Var(_)) = self.x6_at(0) else {
+                let Some(Tok::Var(_)) = self.state_at(0) else {
                     return Ok(None);
                 };
                 let at = self.pos;
@@ -348,29 +348,29 @@ impl P<'_> {
                 args.extend(n);
                 Ok(Some(node(Op::Dequeue, args, ty)))
             }
-            "banner" if self.x6_lit(0, "pattern") && self.x6_lit(1, "item") => {
+            "banner" if self.lit_at(0, "pattern") && self.lit_at(1, "item") => {
                 self.pos += 2;
-                let e = self.x6_of_primary("banner pattern item")?;
+                let e = self.state_of_primary("banner pattern item")?;
                 Ok(Some(node(Op::BannerItem, vec![e], Ty::Item)))
             }
             "all" | "persistent" | "the" => {
                 let mut i = 0;
                 if matches!(lw.as_str(), "all" | "the") {
-                    if self.x6_lit(i, "the") {
+                    if self.lit_at(i, "the") {
                         i += 1;
                     }
-                    if !self.x6_lit(i, "persistent") {
+                    if !self.lit_at(i, "persistent") {
                         return Ok(None);
                     }
                     i += 1;
                 }
-                if !(self.x6_lit(i, "data")
-                    && matches!(self.x6_word(i + 1).as_deref(), Some("keys" | "tags")))
+                if !(self.lit_at(i, "data")
+                    && matches!(self.state_word(i + 1).as_deref(), Some("keys" | "tags")))
                 {
                     return Ok(None);
                 }
                 self.pos += i + 2;
-                let e = self.x6_of_primary("persistent data keys")?;
+                let e = self.state_of_primary("persistent data keys")?;
                 Ok(Some(node(Op::DataKeys, vec![e], Ty::List)))
             }
             _ => Ok(None),
@@ -378,19 +378,19 @@ impl P<'_> {
     }
 
     /// After `max`: the words of a property (`honey level`, `brushing stage`, `age`).
-    fn x6_prop_words(&mut self) -> Result<Option<Prop>, String> {
+    fn state_prop_words(&mut self) -> Result<Option<Prop>, String> {
         let mut i = 0;
-        if matches!(self.x6_word(0).as_deref(), Some("beehive" | "bee")) {
+        if matches!(self.state_word(0).as_deref(), Some("beehive" | "bee")) {
             i += 1;
-            if matches!(self.x6_word(i).as_deref(), Some("hive" | "nest")) {
+            if matches!(self.state_word(i).as_deref(), Some("hive" | "nest")) {
                 i += 1;
             }
         }
-        let Some(first) = self.x6_word(i) else {
+        let Some(first) = self.state_word(i) else {
             return Ok(None);
         };
         self.pos += i + 1;
-        let r = self.x6_prop_from(&first)?;
+        let r = self.state_prop_from(&first)?;
         if r.is_none() {
             self.pos -= i + 1;
         }
@@ -398,17 +398,17 @@ impl P<'_> {
     }
 
     /// The word `first` was just read: finish `honey level`, `brushing stage|progress`, `age`.
-    fn x6_prop_from(&mut self, first: &str) -> Result<Option<Prop>, String> {
+    fn state_prop_from(&mut self, first: &str) -> Result<Option<Prop>, String> {
         Ok(match first {
-            "honey" if self.x6_lit(0, "level") => {
+            "honey" if self.lit_at(0, "level") => {
                 self.pos += 1;
                 Some(Prop::Honey)
             }
-            "brushing" if matches!(self.x6_word(0).as_deref(), Some("stage" | "progress")) => {
+            "brushing" if matches!(self.state_word(0).as_deref(), Some("stage" | "progress")) => {
                 self.pos += 1;
                 Some(Prop::Brushing)
             }
-            "age" if self.x6_lit(0, "of") => Some(Prop::Age),
+            "age" if self.lit_at(0, "of") => Some(Prop::Age),
             _ => None,
         })
     }
@@ -466,7 +466,7 @@ pub fn parse_effect(toks: &[Tok], env: &Env) -> Option<Result<Effect, String>> {
     if !HEADS.contains(&first.as_str()) {
         return None;
     }
-    let Ok(Expr::W6C4(n)) = parse_expr(target, env) else {
+    let Ok(Expr::BlockStateLists(n)) = parse_expr(target, env) else {
         return None;
     };
     if !n.changeable() {
@@ -480,7 +480,7 @@ pub fn parse_effect(toks: &[Tok], env: &Env) -> Option<Result<Effect, String>> {
         },
         _ => return Some(Err("missing the value".into())),
     };
-    Some(Ok(Effect::W6C4(Box::new(W6Eff {
+    Some(Ok(Effect::BlockStateLists(Box::new(StateEffect {
         change,
         target: *n,
         value,
@@ -507,7 +507,7 @@ fn data_prefix(id: &str) -> String {
 impl Engine {
     #[cold]
     #[inline(never)]
-    pub(crate) fn w6c4_expr(
+    pub(crate) fn state_expr(
         &mut self,
         n: &Node,
         ex: &mut Exec,
@@ -520,7 +520,7 @@ impl Engine {
                 let Some(at) = block_of(&v, host) else {
                     return Ok(Value::None);
                 };
-                let Some((id, state, first)) = host.c6_block_state(&at) else {
+                let Some((id, state, first)) = host.block_state_prop(&at) else {
                     return Ok(Value::None);
                 };
                 let got = if max {
@@ -613,9 +613,9 @@ impl Engine {
 
     #[cold]
     #[inline(never)]
-    pub(crate) fn w6c4_effect(
+    pub(crate) fn state_effect(
         &mut self,
-        e: &W6Eff,
+        e: &StateEffect,
         ex: &mut Exec,
         host: &mut dyn Host,
     ) -> Result<(), String> {
@@ -629,7 +629,7 @@ impl Engine {
         let Some(at) = block_of(&v, host) else {
             return Ok(());
         };
-        let Some((id, state, first)) = host.c6_block_state(&at) else {
+        let Some((id, state, first)) = host.block_state_prop(&at) else {
             return Ok(());
         };
         let (Some(cur), Some(max)) = (prop_value(&id, state, first, p), prop_max(&id, p)) else {
@@ -649,7 +649,7 @@ impl Engine {
         };
         let n = (new.round() as i64).clamp(0, max);
         let s = encode_state(&id, first, state, &[(p.key().to_string(), n.to_string())])?;
-        host.c6_set(Set::BlockState(&at, s));
+        host.property_set(Set::BlockState(&at, s));
         Ok(())
     }
 }

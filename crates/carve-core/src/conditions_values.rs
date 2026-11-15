@@ -12,7 +12,7 @@ use crate::host::Host;
 use crate::value::{PlayerRef, Value};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum W2Kind {
+pub enum ValueKind {
     InPast,
     InFuture,
     Divisible,
@@ -31,72 +31,78 @@ pub enum W2Kind {
 /// One rare condition: what to check, its subject, and an optional second value.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Rare {
-    pub kind: W2Kind,
+    pub kind: ValueKind,
     pub negate: bool,
     pub a: Expr,
     pub b: Option<Expr>,
 }
 
-const fn k(kind: W2Kind, negate: bool) -> CondKind {
-    CondKind::W2(kind, negate)
+const fn k(kind: ValueKind, negate: bool) -> CondKind {
+    CondKind::Values(kind, negate)
 }
 
 /// Patterns. Tried before the plain `is` comparison.
 pub const CONDITION_PATTERNS: &[(&str, CondKind)] = &[
-    ("%date% is in [the] past", k(W2Kind::InPast, false)),
-    ("%date% (is not|isn't) in [the] past", k(W2Kind::InPast, true)),
-    ("%date% is in [the] future", k(W2Kind::InFuture, false)),
-    ("%date% (is not|isn't) in [the] future", k(W2Kind::InFuture, true)),
+    ("%date% is in [the] past", k(ValueKind::InPast, false)),
+    ("%date% (is not|isn't) in [the] past", k(ValueKind::InPast, true)),
+    ("%date% is in [the] future", k(ValueKind::InFuture, false)),
+    (
+        "%date% (is not|isn't) in [the] future",
+        k(ValueKind::InFuture, true),
+    ),
     (
         "%number% is [evenly] divisible by %number%",
-        k(W2Kind::Divisible, false),
+        k(ValueKind::Divisible, false),
     ),
     (
         "%number% (is not|isn't) [evenly] divisible by %number%",
-        k(W2Kind::Divisible, true),
+        k(ValueKind::Divisible, true),
     ),
-    ("%object% is empty", k(W2Kind::Empty, false)),
-    ("%object% (is not|isn't) empty", k(W2Kind::Empty, true)),
-    ("%object% is online", k(W2Kind::Online, false)),
-    ("%object% (is not|isn't) online", k(W2Kind::Online, true)),
-    ("%object% is offline", k(W2Kind::Online, true)),
-    ("%object% (is not|isn't) offline", k(W2Kind::Online, false)),
-    ("%player% is alive", k(W2Kind::Alive, false)),
-    ("%player% (is not|isn't) alive", k(W2Kind::Alive, true)),
-    ("%player% is dead", k(W2Kind::Alive, true)),
-    ("%player% (is not|isn't) dead", k(W2Kind::Alive, false)),
-    ("%object% is in [the] world %object%", k(W2Kind::InWorld, false)),
+    ("%object% is empty", k(ValueKind::Empty, false)),
+    ("%object% (is not|isn't) empty", k(ValueKind::Empty, true)),
+    ("%object% is online", k(ValueKind::Online, false)),
+    ("%object% (is not|isn't) online", k(ValueKind::Online, true)),
+    ("%object% is offline", k(ValueKind::Online, true)),
+    ("%object% (is not|isn't) offline", k(ValueKind::Online, false)),
+    ("%player% is alive", k(ValueKind::Alive, false)),
+    ("%player% (is not|isn't) alive", k(ValueKind::Alive, true)),
+    ("%player% is dead", k(ValueKind::Alive, true)),
+    ("%player% (is not|isn't) dead", k(ValueKind::Alive, false)),
+    (
+        "%object% is in [the] world %object%",
+        k(ValueKind::InWorld, false),
+    ),
     (
         "%object% (is not|isn't) in [the] world %object%",
-        k(W2Kind::InWorld, true),
+        k(ValueKind::InWorld, true),
     ),
-    ("%object% is edible", k(W2Kind::Edible, false)),
-    ("%object% (is not|isn't) edible", k(W2Kind::Edible, true)),
-    ("%object% is [a] fuel", k(W2Kind::Fuel, false)),
-    ("%object% (is not|isn't) [a] fuel", k(W2Kind::Fuel, true)),
-    ("%object% is fire resistant", k(W2Kind::FireResistant, false)),
+    ("%object% is edible", k(ValueKind::Edible, false)),
+    ("%object% (is not|isn't) edible", k(ValueKind::Edible, true)),
+    ("%object% is [a] fuel", k(ValueKind::Fuel, false)),
+    ("%object% (is not|isn't) [a] fuel", k(ValueKind::Fuel, true)),
+    ("%object% is fire resistant", k(ValueKind::FireResistant, false)),
     (
         "%object% (is not|isn't) fire resistant",
-        k(W2Kind::FireResistant, true),
+        k(ValueKind::FireResistant, true),
     ),
-    ("%object% is flammable", k(W2Kind::Flammable, false)),
-    ("%object% (is not|isn't) flammable", k(W2Kind::Flammable, true)),
-    ("%object% is of type %object%", k(W2Kind::OfType, false)),
+    ("%object% is flammable", k(ValueKind::Flammable, false)),
+    ("%object% (is not|isn't) flammable", k(ValueKind::Flammable, true)),
+    ("%object% is of type %object%", k(ValueKind::OfType, false)),
     (
         "%object% (is not|isn't) of type %object%",
-        k(W2Kind::OfType, true),
+        k(ValueKind::OfType, true),
     ),
     (
         "[the] command %text% is a [script] command",
-        k(W2Kind::ScriptCommand, false),
+        k(ValueKind::ScriptCommand, false),
     ),
     (
         "[the] command %text% (is not|isn't) a [script] command",
-        k(W2Kind::ScriptCommand, true),
+        k(ValueKind::ScriptCommand, true),
     ),
 ];
 
-pub fn build(kind: W2Kind, negate: bool, a: Expr, b: Option<Expr>) -> Rare {
+pub fn build(kind: ValueKind, negate: bool, a: Expr, b: Option<Expr>) -> Rare {
     Rare { kind, negate, a, b }
 }
 
@@ -125,18 +131,18 @@ fn item_id(v: &Value) -> Option<String> {
 
 /// Check a rare condition (before negation). `b` is the evaluated second value.
 /// `ScriptCommand` is answered by the engine, which owns the command table.
-pub fn check(kind: W2Kind, a: &Value, b: Option<&Value>, host: &mut dyn Host) -> bool {
+pub fn check(kind: ValueKind, a: &Value, b: Option<&Value>, host: &mut dyn Host) -> bool {
     match kind {
-        W2Kind::InPast | W2Kind::InFuture => {
+        ValueKind::InPast | ValueKind::InFuture => {
             let Value::Date(ms) = a else { return false };
             let now = host.wall_clock_millis();
-            if kind == W2Kind::InPast {
+            if kind == ValueKind::InPast {
                 *ms < now
             } else {
                 *ms > now
             }
         }
-        W2Kind::Divisible => {
+        ValueKind::Divisible => {
             let (Some(x), Some(y)) = (a.as_num(), b.and_then(Value::as_num)) else {
                 return false;
             };
@@ -146,18 +152,18 @@ pub fn check(kind: W2Kind, a: &Value, b: Option<&Value>, host: &mut dyn Host) ->
             let r = (x % y).abs();
             r < 1e-9 || (y.abs() - r).abs() < 1e-9
         }
-        W2Kind::Empty => match a {
+        ValueKind::Empty => match a {
             Value::None => true,
             Value::Text(t) => t.is_empty(),
             Value::List(l) => l.is_empty(),
             _ => false,
         },
-        W2Kind::Online => online_player(a, host).is_some(),
-        W2Kind::Alive => match online_player(a, host) {
+        ValueKind::Online => online_player(a, host).is_some(),
+        ValueKind::Alive => match online_player(a, host) {
             Some(p) => host.health(&p).is_none_or(|h| h > 0.0),
             None => false,
         },
-        W2Kind::InWorld => {
+        ValueKind::InWorld => {
             let want = match b {
                 Some(Value::World(w)) | Some(Value::Text(w)) => w.as_str(),
                 _ => return false,
@@ -171,11 +177,11 @@ pub fn check(kind: W2Kind, a: &Value, b: Option<&Value>, host: &mut dyn Host) ->
             };
             have.is_some_and(|w| w.eq_ignore_ascii_case(want))
         }
-        W2Kind::Edible => item_id(a).is_some_and(|id| is_edible(&id)),
-        W2Kind::Fuel => item_id(a).is_some_and(|id| is_fuel(&id)),
-        W2Kind::FireResistant => item_id(a).is_some_and(|id| is_fire_resistant(&id)),
-        W2Kind::Flammable => item_id(a).is_some_and(|id| is_flammable(&id)),
-        W2Kind::OfType => {
+        ValueKind::Edible => item_id(a).is_some_and(|id| is_edible(&id)),
+        ValueKind::Fuel => item_id(a).is_some_and(|id| is_fuel(&id)),
+        ValueKind::FireResistant => item_id(a).is_some_and(|id| is_fire_resistant(&id)),
+        ValueKind::Flammable => item_id(a).is_some_and(|id| is_flammable(&id)),
+        ValueKind::OfType => {
             let Some(b) = b else { return false };
             match a {
                 Value::Player(_) => item_id(b).is_some_and(|w| w == "player"),
@@ -186,7 +192,7 @@ pub fn check(kind: W2Kind, a: &Value, b: Option<&Value>, host: &mut dyn Host) ->
                 _ => matches!((item_id(a), item_id(b)), (Some(x), Some(y)) if x == y),
             }
         }
-        W2Kind::ScriptCommand => false,
+        ValueKind::ScriptCommand => false,
     }
 }
 

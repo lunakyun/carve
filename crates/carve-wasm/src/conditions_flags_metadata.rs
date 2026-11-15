@@ -12,7 +12,7 @@ use pumpkin_plugin_api::world::Block;
 use super::WasmHost;
 
 impl WasmHost<'_> {
-    pub(super) fn w5c2_query_impl(&mut self, q: Query<'_>) -> Option<Value> {
+    pub(super) fn flags_query_impl(&mut self, q: Query<'_>) -> Option<Value> {
         match q {
             Query::PlayedBefore(uuid) => super::events_movement::played_before(uuid).map(Value::Bool),
             Query::BeeCount { world, x, y, z } => {

@@ -1,30 +1,35 @@
 //! Running the expressions of `expr_item_world_facts`.
 
 use super::{Engine, Exec, online};
-use crate::expr_item_world_facts::{self as w2, W2};
+use crate::expr_item_world_facts::{self as facts, WorldFact};
 use crate::host::Host;
 use crate::value::Value;
 
 impl Engine {
     #[inline(never)]
-    pub(super) fn eval_w2(&mut self, w: &W2, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
+    pub(super) fn eval_item_world_facts(
+        &mut self,
+        w: &WorldFact,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<Value, String> {
         Ok(match w {
-            W2::Eternity => Value::Timespan {
-                millis: w2::ETERNITY_MS,
+            WorldFact::Eternity => Value::Timespan {
+                millis: facts::ETERNITY_MS,
             },
-            W2::Angle(_, e) => Value::Num(self.num(e, ex, host)?),
-            W2::Altitude(e) => {
+            WorldFact::Angle(_, e) => Value::Num(self.num(e, ex, host)?),
+            WorldFact::Altitude(e) => {
                 let v = self.eval(e, ex, host)?;
                 match self.as_location(&v, ex, host) {
                     Some((_, y, _, _)) => Value::Num(y),
                     None => Value::None,
                 }
             }
-            W2::Channel(ch, e) => {
+            WorldFact::Channel(ch, e) => {
                 let t = self.text(e, ex, host)?;
-                w2::channel_of(&t, *ch).map_or(Value::None, Value::Num)
+                facts::channel_of(&t, *ch).map_or(Value::None, Value::Num)
             }
-            W2::ItemCount(item, player) => {
+            WorldFact::ItemCount(item, player) => {
                 let item = self.eval(item, ex, host)?;
                 let p = self.eval(player, ex, host)?;
                 let id = match &item {
@@ -41,7 +46,7 @@ impl Engine {
                     None => Value::None,
                 }
             }
-            W2::Biome(e) => {
+            WorldFact::Biome(e) => {
                 let v = self.eval(e, ex, host)?;
                 let Some((x, y, z, world)) = self.as_location(&v, ex, host) else {
                     return Ok(Value::None);
@@ -50,7 +55,7 @@ impl Engine {
                 host.biome_at(&world, x.floor() as i32, y.floor() as i32, z.floor() as i32)
                     .map_or(Value::None, Value::Text)
             }
-            W2::Armor(slot, e) => {
+            WorldFact::Armor(slot, e) => {
                 let v = self.eval(e, ex, host)?;
                 match online(&v, &mut ex.seen, host).and_then(|p| host.armor_item(&p, *slot)) {
                     Some((id, count)) => Value::Item {
@@ -61,7 +66,7 @@ impl Engine {
                     None => Value::None,
                 }
             }
-            W2::BlockEntity(field, e) => {
+            WorldFact::BlockEntity(field, e) => {
                 let v = self.eval(e, ex, host)?;
                 let Some((x, y, z, world)) = self.as_location(&v, ex, host) else {
                     return Ok(Value::None);
@@ -69,13 +74,15 @@ impl Engine {
                 let world = world.unwrap_or_default();
                 let bytes =
                     host.block_entity_nbt(&world, x.floor() as i32, y.floor() as i32, z.floor() as i32);
-                match bytes.and_then(|b| w2::block_entity_value(*field, &b)) {
+                match bytes.and_then(|b| facts::block_entity_value(*field, &b)) {
                     Some(n) if field.is_span() => Value::Timespan { millis: n as i64 },
                     Some(n) => Value::Num(n),
                     None => Value::None,
                 }
             }
-            W2::AllScripts => Value::List(self.sources.keys().map(|k| Value::Text(k.clone())).collect()),
+            WorldFact::AllScripts => {
+                Value::List(self.sources.keys().map(|k| Value::Text(k.clone())).collect())
+            }
         })
     }
 }

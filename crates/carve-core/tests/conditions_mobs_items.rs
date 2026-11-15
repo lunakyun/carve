@@ -2,7 +2,7 @@ use carve_core::compile::{EventKind, check_registry};
 use carve_core::conditions_mobs_items::{Check, EffFlag, Q};
 use carve_core::events_blocks_players::ExtEvent;
 use carve_core::events_game::Ev;
-use carve_core::events_player_server::Ev3;
+use carve_core::events_player_server::PlayerServerEvent;
 use carve_core::*;
 
 #[derive(Default)]
@@ -60,7 +60,7 @@ impl Host for Mock {
     fn set_respawn_location(&mut self, _: &PlayerRef, x: f64, y: f64, z: f64) {
         self.respawn = Some((x, y, z));
     }
-    fn w5c3(&mut self, q: Q<'_>) -> Option<Value> {
+    fn mob_item_query(&mut self, q: Q<'_>) -> Option<Value> {
         Some(match q {
             Q::Check(c, _) => Value::Bool(self.checks.contains(&c)),
             Q::Worn(_) => Value::List(self.worn.iter().map(|s| Value::Text(s.to_string())).collect()),
@@ -308,11 +308,19 @@ fn resource_pack_states() {
     let mut h = Mock::default();
     let mut ctx = EventCtx::player(steve());
     ctx.message = Some("DownloadSuccess".into());
-    e.fire(EventKind::Ext3(Ev3::ResourcePackResponse), ctx.clone(), &mut h);
+    e.fire(
+        EventKind::PlayerServer(PlayerServerEvent::ResourcePackResponse),
+        ctx.clone(),
+        &mut h,
+    );
     assert_eq!(h.calls, vec!["ok", "ok2", "nd"]);
     h.calls.clear();
     ctx.message = Some("Declined".into());
-    e.fire(EventKind::Ext3(Ev3::ResourcePackResponse), ctx, &mut h);
+    e.fire(
+        EventKind::PlayerServer(PlayerServerEvent::ResourcePackResponse),
+        ctx,
+        &mut h,
+    );
     assert_eq!(h.calls, vec!["d"]);
 }
 
@@ -331,7 +339,11 @@ fn barter_values() {
         item("gold_ingot", 1),
         Value::List(vec![item("gravel", 8), item("string", 3)]),
     ];
-    let out = e.fire(EventKind::Ext3(Ev3::PiglinBarter), ctx, &mut h);
+    let out = e.fire(
+        EventKind::PlayerServer(PlayerServerEvent::PiglinBarter),
+        ctx,
+        &mut h,
+    );
     assert_eq!(h.calls, vec!["gold ingot|2", "3 string and 2 diamond"]);
     let (slot, v) = out.set.last().expect("drops written back");
     assert_eq!(*slot, carve_core::conditions_mobs_items::DROPS_SLOT);
@@ -343,7 +355,11 @@ fn barter_values() {
     let mut e = load(src);
     let mut ctx = EventCtx::console();
     ctx.ev = vec![item("gold_ingot", 1), Value::List(vec![item("gravel", 8)])];
-    let out = e.fire(EventKind::Ext3(Ev3::PiglinBarter), ctx, &mut h);
+    let out = e.fire(
+        EventKind::PlayerServer(PlayerServerEvent::PiglinBarter),
+        ctx,
+        &mut h,
+    );
     assert_eq!(out.set.last().map(|s| s.1.clone()), Some(Value::List(vec![])));
     assert!(!errors("on join:\n    send \"%barter drops%\"\n").is_empty());
 }
@@ -364,7 +380,7 @@ fn applied_enchantments() {
         x.texts.push("sharpness 3".into());
         x.texts.push("unbreaking 2".into());
     }
-    e.fire(EventKind::Ext2(Ev::Enchant), ctx, &mut h);
+    e.fire(EventKind::Game(Ev::Enchant), ctx, &mut h);
     assert_eq!(h.calls[1..], ["e sharpness 3", "e unbreaking 2"]);
     assert!(!errors("on join:\n    send \"%applied enchantments%\"\n").is_empty());
 }

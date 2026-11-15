@@ -23,12 +23,12 @@ use super::{State, TickHost, WasmHost, player_ref, plog, with_state, world_name}
 type Vals = Vec<Value>;
 
 fn used(st: &State, k: ExtEvent) -> bool {
-    st.engine.table().has_event(EventKind::Ext4(k))
+    st.engine.table().has_event(EventKind::WorldVehicles(k))
 }
 
 /// Run the triggers of one event. Returns whether a script cancelled it.
 fn fire(st: &mut State, host: &mut WasmHost<'_>, k: ExtEvent, player: Option<PlayerRef>, vals: Vals) -> bool {
-    let kind = EventKind::Ext4(k);
+    let kind = EventKind::WorldVehicles(k);
     if !st.engine.table().has_event(kind) {
         return false;
     }
@@ -68,7 +68,7 @@ fn item_id(id: &str) -> Value {
 
 // ---------- events that are one server event each ----------
 
-trait W6: FromIntoEvent {
+trait StepEvent: FromIntoEvent {
     const KIND: ExtEvent;
     /// The player and values, or `None` to skip this event.
     fn build(
@@ -81,7 +81,7 @@ trait W6: FromIntoEvent {
 
 struct On<E>(PhantomData<fn() -> E>);
 
-impl<E: W6> EventHandler<E> for On<E> {
+impl<E: StepEvent> EventHandler<E> for On<E> {
     fn handle(&self, server: Server, mut data: EventData<E>) -> EventData<E> {
         let cancelled = with_state(&server, None, |st, host| {
             if !used(st, E::KIND) {
@@ -99,7 +99,7 @@ impl<E: W6> EventHandler<E> for On<E> {
     }
 }
 
-impl W6 for PlayerPickupArrowEvent {
+impl StepEvent for PlayerPickupArrowEvent {
     const KIND: ExtEvent = ExtEvent::PickupArrow;
     fn build(
         st: &mut State,
@@ -113,7 +113,7 @@ impl W6 for PlayerPickupArrowEvent {
     }
 }
 
-impl W6 for PlayerRiptideEvent {
+impl StepEvent for PlayerRiptideEvent {
     const KIND: ExtEvent = ExtEvent::Riptide;
     fn build(
         _st: &mut State,
@@ -131,7 +131,7 @@ impl W6 for PlayerRiptideEvent {
 /// event (`entities.json`: `experience_orb` is 50), not its name.
 const EXPERIENCE_ORB_ID: &str = "50";
 
-impl W6 for EntitySpawnEvent {
+impl StepEvent for EntitySpawnEvent {
     const KIND: ExtEvent = ExtEvent::ExperienceSpawn;
     fn build(
         st: &mut State,
@@ -149,7 +149,7 @@ impl W6 for EntitySpawnEvent {
     }
 }
 
-impl W6 for ProjectileHitEvent {
+impl StepEvent for ProjectileHitEvent {
     const KIND: ExtEvent = ExtEvent::ProjectileCollide;
     fn build(
         st: &mut State,
@@ -166,7 +166,7 @@ impl W6 for ProjectileHitEvent {
     }
 }
 
-impl W6 for BlockRedstoneEvent {
+impl StepEvent for BlockRedstoneEvent {
     const KIND: ExtEvent = ExtEvent::PressurePlate;
     fn build(
         _st: &mut State,
@@ -195,7 +195,7 @@ impl W6 for BlockRedstoneEvent {
 
 /// Players shooting arrows: Pumpkin fires `entity-shoot-bow` for mobs only,
 /// but every arrow fires a launch event with its shooter.
-impl W6 for ProjectileLaunchEvent {
+impl StepEvent for ProjectileLaunchEvent {
     const KIND: ExtEvent = ExtEvent::Shoot;
     fn build(
         st: &mut State,
@@ -223,7 +223,7 @@ impl W6 for ProjectileLaunchEvent {
     }
 }
 
-impl W6 for PlayerSpawnChangeEvent {
+impl StepEvent for PlayerSpawnChangeEvent {
     const KIND: ExtEvent = ExtEvent::SpawnChange;
     fn build(
         _st: &mut State,
@@ -457,7 +457,7 @@ pub(crate) fn fire_unload_here(st: &mut State, host: &mut WasmHost<'_>, stopping
 
 // ---------- registration ----------
 
-fn listen<E: W6 + Send + Sync + 'static>(ctx: &Context) {
+fn listen<E: StepEvent + Send + Sync + 'static>(ctx: &Context) {
     if let Err(e) = ctx.register_event_handler::<E, _>(On::<E>(PhantomData), EventPriority::Normal, true) {
         plog(
             ApiLevel::Error,

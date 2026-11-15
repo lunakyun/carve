@@ -97,7 +97,7 @@ pub fn parse_can_build_set(
         Ok(e) => e,
         Err(e) => return Some(Err(e)),
     };
-    Some(Ok(crate::compile::Effect::Ext4(Box::new(
+    Some(Ok(crate::compile::Effect::WorldVehicles(Box::new(
         crate::events_world_vehicles::ExtEffect::SetVal(0, v),
     ))))
 }

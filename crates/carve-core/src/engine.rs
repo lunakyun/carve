@@ -474,9 +474,9 @@ fn may_fail(e: &Effect) -> bool {
             | Effect::StopSound(..)
             | Effect::Admin(..)
             | Effect::Xp(..)
-            | Effect::W2e3(_)
-            | Effect::W6c2(_)
-            | Effect::W5c1(_)
+            | Effect::PlayerState(_)
+            | Effect::EntityCommands(_)
+            | Effect::DropsBorder(_)
             | Effect::Sb(_)
             | Effect::Sbt(_)
             | Effect::Inv(_)
@@ -490,7 +490,7 @@ fn heavy_cost(e: &Effect) -> usize {
         Effect::World(_) => WORLD_EFFECT_COST,
         Effect::Ent(_)
         | Effect::Block(_)
-        | Effect::C4(_)
+        | Effect::BlockShapes(_)
         | Effect::ConsoleCommand(_)
         | Effect::ExecAs(..)
         | Effect::Give(..)
@@ -561,8 +561,8 @@ pub struct Engine {
     pub(crate) boards: crate::skbee_scoreboard_teams::Boards,
     /// Event values changed by the run in progress (`events_world_vehicles`).
     pub(crate) ext_out: Vec<(u8, Value)>,
-    w5: crate::expr_numbers_metadata::State,
-    pub(crate) w5c1: Box<crate::drops_border_leashes::State>,
+    numbers: crate::expr_numbers_metadata::State,
+    pub(crate) drops_query: Box<crate::drops_border_leashes::State>,
     /// Nesting of placeholder scripts that parse placeholders themselves.
     ph_depth: u8,
 }
@@ -674,8 +674,8 @@ impl Engine {
             bounds: crate::skbee_bound::Bounds::default(),
             boards: Default::default(),
             ext_out: Vec::new(),
-            w5: Default::default(),
-            w5c1: Default::default(),
+            numbers: Default::default(),
+            drops_query: Default::default(),
             ph_depth: 0,
         }
     }
@@ -885,7 +885,7 @@ impl Engine {
             }
         };
         if let Some(cd) = &def.cooldown
-            && let Some(msg) = self.w5c1_cooldown_gate(&name, cd, player.as_ref(), host)
+            && let Some(msg) = self.drops_cooldown_gate(&name, cd, player.as_ref(), host)
         {
             return CommandOutcome::Usage(msg);
         }
@@ -896,9 +896,9 @@ impl Engine {
         let ex = Exec::new(&trig, ctx);
         self.start(ex, host);
         if def.cooldown.is_some() {
-            self.w5c1_command_done();
+            self.drops_command_done();
         }
-        if let Some(msg) = self.w5c1.failed.take() {
+        if let Some(msg) = self.drops_query.failed.take() {
             return CommandOutcome::Usage(msg);
         }
         CommandOutcome::Ran
@@ -1536,7 +1536,7 @@ impl Engine {
                     Some(b) => Some(self.eval(b, ex, host)?),
                     None => None,
                 };
-                let hit = if r.kind == crate::conditions_values::W2Kind::ScriptCommand {
+                let hit = if r.kind == crate::conditions_values::ValueKind::ScriptCommand {
                     match &a {
                         Value::Text(t) => self.table.command(t.trim().trim_start_matches('/')).is_some(),
                         _ => false,
@@ -1563,8 +1563,8 @@ impl Engine {
                 };
                 Ok(is != *negate)
             }
-            Cond::Rare3(r) => self.cond_w2(r, ex, host),
-            Cond::Rare4(r) => {
+            Cond::EntityBlock(r) => self.cond_entity_block(r, ex, host),
+            Cond::EntityChecks(r) => {
                 let a = self.eval(&r.a, ex, host)?;
                 let b = match &r.b {
                     Some(b) => Some(self.eval(b, ex, host)?),
@@ -1576,8 +1576,8 @@ impl Engine {
                 )
             }
             Cond::Gap(g) => self.gap_cond(g, ex, host),
-            Cond::W5c3(c) => self.cond_w5c3(c, ex, host),
-            Cond::W6c3(c) => self.cond_w6c3(c, ex, host),
+            Cond::MobsItems(c) => self.cond_mobs_items(c, ex, host),
+            Cond::MobBlockState(c) => self.cond_mob_block_state(c, ex, host),
             Cond::Rtw(r) => {
                 let a = self.eval(&r.a, ex, host)?;
                 let b = match &r.b {
@@ -1614,8 +1614,8 @@ impl Engine {
             Cond::Sb(c, negate) => Ok(self.sb_cond(c, ex, host)? != *negate),
             Cond::Nbt(n) => self.nbt_cond(n, ex, host),
             Cond::Ent(c) => self.ent_cond(c, ex, host),
-            Cond::W5c2(c) => self.w5c2_cond(c, ex, host),
-            Cond::W5c1(c) => self.w5c1_cond(c, ex, host),
+            Cond::FlagsMetadata(c) => self.flags_cond(c, ex, host),
+            Cond::CanAge(c) => self.drops_cond(c, ex, host),
             Cond::Skb(c) => self.skb_cond(c, ex, host),
             Cond::Server(c) => self.server_cond(c, ex, host),
             Cond::HasPerm { player, node, negate } => {
@@ -2047,7 +2047,12 @@ impl Engine {
     /// Evaluate the arguments of a `expr_item_damage_facts` expression or effect.
     /// A player that is offline becomes `<none>`.
     #[inline(never)]
-    fn w4_args(&mut self, args: &[Expr], ex: &mut Exec, host: &mut dyn Host) -> Result<Vec<Value>, String> {
+    fn builtin_args(
+        &mut self,
+        args: &[Expr],
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<Vec<Value>, String> {
         let mut vals = Vec::with_capacity(args.len());
         for a in args {
             let v = self.eval(a, ex, host)?;
@@ -2083,7 +2088,7 @@ impl Engine {
             Expr::Console => Value::Console,
             Expr::Message => ex.ctx.message.clone().map(Value::Text).unwrap_or(Value::None),
             Expr::Damage => ex.ctx.damage.map(Value::Num).unwrap_or(Value::None),
-            Expr::Ev2Val(s) => crate::events_game::read(&ex.ctx, *s),
+            Expr::GameEventVal(s) => crate::events_game::read(&ex.ctx, *s),
             Expr::Attacker => match ex.ctx.attacker.clone() {
                 Some(a) => online(&Value::Player(a), &mut ex.seen, host)
                     .map(Value::Player)
@@ -2092,7 +2097,7 @@ impl Engine {
             },
             Expr::Inv(i) => self.inv_expr(i, ex, host)?,
             Expr::Gap(g) => self.gap_expr(g, ex, host)?,
-            Expr::C4(n) => self.c4_expr(n, ex, host)?,
+            Expr::BlockShapes(n) => self.shape_expr(n, ex, host)?,
             Expr::ExtVal(i) => ex.ctx.ev.get(usize::from(*i)).cloned().unwrap_or(Value::None),
             Expr::ClickedBlock => match &ex.ctx.block {
                 Some(b) => Value::Item {
@@ -2103,7 +2108,7 @@ impl Engine {
                 None => Value::None,
             },
             Expr::EventVal(v) => crate::events_items::eval(*v, &ex.ctx),
-            Expr::Ev4Val(i) => ex.ctx.args.get(usize::from(*i)).cloned().unwrap_or(Value::None),
+            Expr::WorldEventVal(i) => ex.ctx.args.get(usize::from(*i)).cloned().unwrap_or(Value::None),
             Expr::Arg(i) => ex.ctx.args.get(i.wrapping_sub(1)).cloned().unwrap_or(Value::None),
             Expr::NameOf(inner) => {
                 let v = self.eval(inner, ex, host)?;
@@ -2188,7 +2193,7 @@ impl Engine {
             Expr::Date(op, args) => self.eval_date(*op, args, ex, host)?,
             Expr::Wt(w) => self.wt_eval(w, ex, host)?,
             Expr::Skb(s) => self.skb_eval(s, ex, host)?,
-            Expr::X2(w) => self.eval_x2(w, ex, host)?,
+            Expr::TextDirections(w) => self.eval_text_directions(w, ex, host)?,
             Expr::Color(on, e) => {
                 let t = self.text(e, ex, host)?;
                 Value::Text(if *on {
@@ -2202,7 +2207,7 @@ impl Engine {
                 match t.trim().parse::<f64>().ok().filter(|n| n.is_finite()) {
                     Some(n) => Value::Num(n),
                     None => {
-                        self.w5.last_parse_error = Some(format!("'{t}' is not a number"));
+                        self.numbers.last_parse_error = Some(format!("'{t}' is not a number"));
                         Value::None
                     }
                 }
@@ -2224,8 +2229,10 @@ impl Engine {
                 return Err("split makes a list: use 'set {x::*} to split ...' or 'loop split ...'".into());
             }
             Expr::Length(e) => {
-                if matches!(**e, Expr::Var(_) | Expr::W2(_) | Expr::W7(_) | Expr::Prop(..))
-                    && let Value::Vector { x, y, z } = self.eval(e, ex, host)?
+                if matches!(
+                    **e,
+                    Expr::Var(_) | Expr::ItemWorldFacts(_) | Expr::VectorsServer(_) | Expr::Prop(..)
+                ) && let Value::Vector { x, y, z } = self.eval(e, ex, host)?
                 {
                     return Ok(Value::Num(crate::expr_vectors_server::length((x, y, z))));
                 }
@@ -2245,8 +2252,8 @@ impl Engine {
                 }
                 crate::skbee_text::apply(*f, &vals)
             }
-            Expr::W4(w) => {
-                let vals = self.w4_args(&w.args, ex, host)?;
+            Expr::ItemDamageFacts(w) => {
+                let vals = self.builtin_args(&w.args, ex, host)?;
                 crate::expr_item_damage_facts::apply(w.op, &vals, host)
             }
             Expr::TextFn(f, args) => {
@@ -2289,21 +2296,21 @@ impl Engine {
                 Value::Timespan { millis } => Value::Num(crate::timespans::span_part(millis, *unit, *total)),
                 _ => Value::None,
             },
-            Expr::W5c5(n) => {
+            Expr::PotionsParticles(n) => {
                 let mut vals = Vec::with_capacity(n.args.len());
                 for a in &n.args {
                     vals.push(self.eval(a, ex, host)?);
                 }
                 crate::potions_particles_queues::apply(n.op, &vals, host)?
             }
-            Expr::W6c5(n) => {
+            Expr::ParsingLoot(n) => {
                 let mut vals = Vec::with_capacity(n.args.len());
                 for a in &n.args {
                     vals.push(self.eval(a, ex, host)?);
                 }
                 crate::parsing_loot_components::apply(n.op, &vals, host)?
             }
-            Expr::W5c3(n) => self.eval_w5c3(n, ex, host)?,
+            Expr::MobsItems(n) => self.eval_mobs_items(n, ex, host)?,
             Expr::Rtw(n) => {
                 let mut vals = Vec::with_capacity(n.args.len());
                 for a in &n.args {
@@ -2311,10 +2318,10 @@ impl Engine {
                 }
                 crate::skbee_raytrace_world::apply(n.op, &vals, host)?
             }
-            Expr::C6(n) => self.eval_c6(n, ex, host)?,
-            Expr::W6C4(n) => self.w6c4_expr(n, ex, host)?,
-            Expr::Z6(n) => self.eval_z6(n, ex, host)?,
-            Expr::W7(n) => {
+            Expr::EntityBlockProps(n) => self.eval_entity_props(n, ex, host)?,
+            Expr::BlockStateLists(n) => self.state_expr(n, ex, host)?,
+            Expr::Quaternions(n) => self.eval_quaternions(n, ex, host)?,
+            Expr::VectorsServer(n) => {
                 let mut vals = Vec::with_capacity(n.args.len());
                 for a in &n.args {
                     vals.push(self.eval(a, ex, host)?);
@@ -2330,14 +2337,14 @@ impl Engine {
             }
             Expr::Items(s) => Value::List(self.eval_list(s, ex, host)?),
             Expr::Ext(f, args) => self.eval_ext(*f, args, ex, host)?,
-            Expr::W5(w) => self.eval_w5(w, ex, host)?,
+            Expr::NumbersMetadata(w) => self.eval_numbers_metadata(w, ex, host)?,
             Expr::Ph(p) => self.eval_ph(p, ex, host)?,
-            Expr::W6(w) => self.eval_w6(w, ex, host)?,
-            Expr::W4F(n) => self.eval_w4f(n, ex, host)?,
+            Expr::RandomTernary(w) => self.eval_random_ternary(w, ex, host)?,
+            Expr::Builtin(n) => self.eval_builtin(n, ex, host)?,
             Expr::ListAgg(a, s) => self.eval_agg(*a, s, ex, host)?,
             Expr::Sb(s) => self.sb_eval(s, ex, host)?,
             Expr::Ent(x) => self.ent_expr(x, ex, host)?,
-            Expr::W2(w) => self.eval_w2(w, ex, host)?,
+            Expr::ItemWorldFacts(w) => self.eval_item_world_facts(w, ex, host)?,
             Expr::RandomOf(v) => {
                 let items = self.list_items(v, ex, host)?;
                 if items.is_empty() {
@@ -2748,15 +2755,15 @@ impl Engine {
         _line: usize,
     ) -> Result<Option<u64>, String> {
         match e {
-            Effect::W2b(w) => self.run_w2b(w, ex, host)?,
-            Effect::W5c5(w) => {
+            Effect::PlayerActions(w) => self.run_player_actions(w, ex, host)?,
+            Effect::PotionsParticles(w) => {
                 let mut vals = Vec::with_capacity(w.args.len());
                 for a in &w.args {
                     vals.push(self.eval(a, ex, host)?);
                 }
                 crate::potions_particles_queues::run_effect(w.op, &vals, host)?;
             }
-            Effect::W5c3(w) => self.run_w5c3(w, ex, host)?,
+            Effect::MobsItems(w) => self.run_mobs_items(w, ex, host)?,
             Effect::Rtw(w) => {
                 let name = self.eval(&w.name, ex, host)?;
                 crate::skbee_raytrace_world::run_effect(w, &name, host)?;
@@ -2783,18 +2790,18 @@ impl Engine {
                 let (name, p) = self.admin_target(&v, ex, host);
                 crate::op_kick_ban::run_effect(host, *kind, &name, p.as_ref(), text.as_deref());
             }
-            Effect::W2(w) => self.run_w2(w, ex, host)?,
-            Effect::W2c(w) => {
+            Effect::PlayerVisibility(w) => self.run_player_visibility(w, ex, host)?,
+            Effect::PlayerStat(w) => {
                 let v = self.eval(&w.value, ex, host)?;
                 if let Some(p) = self.player(&w.player, ex, host)? {
                     crate::expr_player_state::run(w, &v, &p, host);
                 }
             }
-            Effect::W4(w) => {
-                let vals = self.w4_args(&w.args, ex, host)?;
+            Effect::ItemDamageFacts(w) => {
+                let vals = self.builtin_args(&w.args, ex, host)?;
                 crate::expr_item_damage_facts::run(w.op, &vals, host);
             }
-            Effect::W6(w) => self.exec_w6(w, ex, host)?,
+            Effect::RandomTernary(w) => self.exec_random_ternary(w, ex, host)?,
             Effect::SetGamemode(p, m) => {
                 let m = self.text(m, ex, host)?;
                 let Some(mode) = crate::gamemode::normalize(&m) else {
@@ -2806,7 +2813,7 @@ impl Engine {
                     host.set_gamemode(&p, mode);
                 }
             }
-            Effect::Ext4(x) => match &**x {
+            Effect::WorldVehicles(x) => match &**x {
                 crate::events_world_vehicles::ExtEffect::SetVal(i, e) => {
                     let v = self.eval(e, ex, host)?;
                     let i = usize::from(*i);
@@ -2817,7 +2824,7 @@ impl Engine {
                     self.ext_out.push((i as u8, v));
                 }
             },
-            Effect::W5(w) => self.run_w5_effect(w, ex, host)?,
+            Effect::NumbersMetadata(w) => self.run_number_effect(w, ex, host)?,
             Effect::Xp(op, a, b) => {
                 let (pe, ne) = if op.num_first { (b, a) } else { (a, b) };
                 let n = self.num(ne, ex, host)?;
@@ -2825,7 +2832,7 @@ impl Engine {
                     crate::xp_level::apply(host, &p, op.field, op.mode, n);
                 }
             }
-            Effect::X2(k, a) => self.run_x2(*k, a, ex, host)?,
+            Effect::TextDirections(k, a) => self.run_text_directions(*k, a, ex, host)?,
             Effect::PlaySound(ps) => {
                 let crate::compile::PlaySound {
                     sound,
@@ -2901,18 +2908,18 @@ impl Engine {
             Effect::Block(b) => self.block_effect(b, ex, host)?,
             Effect::Inv(i) => self.inv_effect(i, ex, host)?,
             Effect::Gap(g) => self.gap_effect(g, ex, host)?,
-            Effect::C6(c) => self.exec_c6(c, ex, host)?,
-            Effect::W6C4(c) => self.w6c4_effect(c, ex, host)?,
-            Effect::Z6(c) => self.exec_z6(c, ex, host)?,
-            Effect::C4(c) => self.c4_effect(c, ex, host)?,
+            Effect::EntityBlockProps(c) => self.exec_entity_props(c, ex, host)?,
+            Effect::BlockStateLists(c) => self.state_effect(c, ex, host)?,
+            Effect::Quaternions(c) => self.exec_quaternions(c, ex, host)?,
+            Effect::BlockShapes(c) => self.shape_effect(c, ex, host)?,
             Effect::Bound(b) => self.bound_effect(b, ex, host)?,
             Effect::Wt(w) => self.wt_effect(w, ex, host)?,
             Effect::Sb(s) => self.sb_effect(s, ex, host)?,
             Effect::Sbt(s) => self.sbt_effect(s, ex, host)?,
             Effect::Nbt(n) => self.nbt_effect(n, ex, host)?,
             Effect::Ent(f) => self.ent_effect(f, ex, host)?,
-            Effect::W5c1(f) => self.w5c1_effect(f, ex, host)?,
-            Effect::W6c2(f) => self.w6c2_effect(f, ex, host)?,
+            Effect::DropsBorder(f) => self.drops_effect(f, ex, host)?,
+            Effect::EntityCommands(f) => self.entcmd_effect(f, ex, host)?,
             Effect::Combat(f) => self.combat_effect(f, ex, host)?,
             Effect::Skb(s) => self.skb_effect(s, ex, host)?,
             Effect::Server(f) => self.server_effect(f, ex, host)?,
@@ -2953,8 +2960,8 @@ impl Engine {
             }
             Effect::SetList(v, s) => self.exec_set_list(v, s, ex, host)?,
             Effect::SortList(v, desc) => self.exec_sort_list(v, *desc, ex, host)?,
-            Effect::W2e3(w) => self.exec_w2(w, ex, host)?,
-            Effect::W2Transform(t) => self.exec_transform(t, ex, host)?,
+            Effect::PlayerState(w) => self.exec_player_state(w, ex, host)?,
+            Effect::PlayerTransform(t) => self.exec_transform(t, ex, host)?,
             // The v1 effects are handled in `effect_rare`.
             _ => unreachable!(),
         }
@@ -3068,7 +3075,7 @@ fn parse_args(def: &CommandDef, raw: &str, host: &mut dyn Host) -> Result<Vec<Va
 }
 
 /// A location from a value: a location itself, or an online player's position.
-fn w2_loc(
+fn fact_loc(
     v: &Value,
     seen: &mut Vec<(String, Option<String>)>,
     host: &mut dyn Host,
@@ -3083,14 +3090,14 @@ fn w2_loc(
 impl Engine {
     /// The rare conditions of `conditions_entity_block`.
     #[inline(never)]
-    fn cond_w2(
+    fn cond_entity_block(
         &mut self,
-        c: &crate::conditions_entity_block::W2Cond,
+        c: &crate::conditions_entity_block::EntityBlockCond,
         ex: &mut Exec,
         host: &mut dyn Host,
     ) -> Result<bool, String> {
         use crate::conditions_entity_block as w;
-        use crate::conditions_entity_block::W2Cond as C;
+        use crate::conditions_entity_block::EntityBlockCond as C;
         Ok(match c {
             C::Valid(e, negate) => {
                 let v = self.eval(e, ex, host)?;
@@ -3122,9 +3129,9 @@ impl Engine {
                     self.eval(b, ex, host)?,
                 );
                 let (l, a, b) = (
-                    w2_loc(&l, &mut ex.seen, host),
-                    w2_loc(&a, &mut ex.seen, host),
-                    w2_loc(&b, &mut ex.seen, host),
+                    fact_loc(&l, &mut ex.seen, host),
+                    fact_loc(&a, &mut ex.seen, host),
+                    fact_loc(&b, &mut ex.seen, host),
                 );
                 let ok = match (l, a, b) {
                     (Some(l), Some(a), Some(b)) => w::in_box(
@@ -3144,7 +3151,7 @@ impl Engine {
             } => {
                 let r = self.num(radius, ex, host)?;
                 let (l, m) = (self.eval(loc, ex, host)?, self.eval(center, ex, host)?);
-                let (l, m) = (w2_loc(&l, &mut ex.seen, host), w2_loc(&m, &mut ex.seen, host));
+                let (l, m) = (fact_loc(&l, &mut ex.seen, host), fact_loc(&m, &mut ex.seen, host));
                 let ok = match (l, m) {
                     (Some(l), Some(m)) => w::in_radius(
                         (l.0, l.1, l.2, l.3.as_deref()),
@@ -3171,7 +3178,7 @@ impl Engine {
                     }
                     _ => return Ok(false),
                 };
-                let Some((_, _, _, Some(lw))) = w2_loc(&l, &mut ex.seen, host) else {
+                let Some((_, _, _, Some(lw))) = fact_loc(&l, &mut ex.seen, host) else {
                     return Ok(false);
                 };
                 lw.eq_ignore_ascii_case(&name) != *negate
@@ -3288,7 +3295,7 @@ impl Engine {
         host: &mut dyn Host,
     ) -> Option<String> {
         use crate::events_world_vehicles::ExtEvent;
-        let kind = EventKind::Ext4(ExtEvent::PlaceholderRequest);
+        let kind = EventKind::WorldVehicles(ExtEvent::PlaceholderRequest);
         if self.ph_depth >= crate::placeholders::MAX_DEPTH {
             return None;
         }

@@ -3,7 +3,7 @@
 //! metadata and persistent data, `parse error`, `plain <item>`.
 //!
 //! Constants fold into plain numbers at compile time. Everything else is one
-//! boxed [`W5`] expression, so the hot expression enum does not grow.
+//! boxed [`NumberFact`] expression, so the hot expression enum does not grow.
 
 use crate::compile::{EffKind, Effect};
 use crate::expr::{Env, Expr, Ty, parse_sum_at};
@@ -30,7 +30,7 @@ pub enum DataKind {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum W5 {
+pub enum NumberFact {
     /// `numbers from a to b` (false) / `integers from a to b` (true).
     Numbers(Box<Expr>, Box<Expr>, bool),
     /// `10% of x`: percent, value.
@@ -55,15 +55,15 @@ pub enum W5 {
     Plain(Box<Expr>),
 }
 
-impl W5 {
+impl NumberFact {
     pub fn ty(&self) -> Ty {
         match self {
-            W5::Numbers(..) => Ty::List,
-            W5::Percent(..) | W5::CountChars(..) | W5::MaxStack(_) => Ty::Number,
-            W5::Midpoint(..) | W5::MiddleOf(_) => Ty::Location,
-            W5::MoonPhase(_) | W5::ListName(_) | W5::ParseError => Ty::Text,
-            W5::Data(..) => Ty::Object,
-            W5::Plain(_) => Ty::Item,
+            NumberFact::Numbers(..) => Ty::List,
+            NumberFact::Percent(..) | NumberFact::CountChars(..) | NumberFact::MaxStack(_) => Ty::Number,
+            NumberFact::Midpoint(..) | NumberFact::MiddleOf(_) => Ty::Location,
+            NumberFact::MoonPhase(_) | NumberFact::ListName(_) | NumberFact::ParseError => Ty::Text,
+            NumberFact::Data(..) => Ty::Object,
+            NumberFact::Plain(_) => Ty::Item,
         }
     }
 }
@@ -117,8 +117,8 @@ pub fn may_continue(lw: &str) -> bool {
     )
 }
 
-pub(crate) fn boxed(e: W5) -> Expr {
-    Expr::W5(Box::new(e))
+pub(crate) fn boxed(e: NumberFact) -> Expr {
+    Expr::NumbersMetadata(Box::new(e))
 }
 
 /// A number constant like `max integer value`, from the words after it.
@@ -161,7 +161,7 @@ pub fn parse_word(toks: &[Tok], pos: usize, env: &Env, lw: &str) -> Result<Optio
             }
             if max && is(toks, pos, "stack") && is(toks, pos + 1, "size") && is(toks, pos + 2, "of") {
                 let (e, end) = sub(pos + 3)?;
-                (boxed(W5::MaxStack(Box::new(e))), end)
+                (boxed(NumberFact::MaxStack(Box::new(e))), end)
             } else {
                 return Ok(None);
             }
@@ -183,7 +183,7 @@ pub fn parse_word(toks: &[Tok], pos: usize, env: &Env, lw: &str) -> Result<Optio
                 return Err("expected 'numbers from <a> to <b>'".into());
             }
             let (b, p) = sub(p + 1)?;
-            (boxed(W5::Numbers(Box::new(a), Box::new(b), ints)), p)
+            (boxed(NumberFact::Numbers(Box::new(a), Box::new(b), ints)), p)
         }
         "number" | "amount" | "count" if is(toks, pos, "of") => {
             let kind = match w(toks, pos + 1).as_deref() {
@@ -204,26 +204,26 @@ pub fn parse_word(toks: &[Tok], pos: usize, env: &Env, lw: &str) -> Result<Optio
                 ));
             }
             let (t, p) = sub(p + 1)?;
-            (boxed(W5::CountChars(kind, Box::new(t))), p)
+            (boxed(NumberFact::CountChars(kind, Box::new(t))), p)
         }
         "midpoint" | "middle" | "center" | "centre" if is(toks, pos, "of") || is(toks, pos, "between") => {
             let (a, p) = sub(pos + 1)?;
             if is(toks, p, "and") {
                 let (b, p) = sub(p + 1)?;
-                (boxed(W5::Midpoint(Box::new(a), Box::new(b))), p)
+                (boxed(NumberFact::Midpoint(Box::new(a), Box::new(b))), p)
             } else if lw == "midpoint" {
                 return Err("expected 'midpoint of <a> and <b>'".into());
             } else {
-                (boxed(W5::MiddleOf(Box::new(a))), p)
+                (boxed(NumberFact::MiddleOf(Box::new(a))), p)
             }
         }
         "moon" if is(toks, pos, "phase") && is(toks, pos + 1, "of") => {
             let (a, p) = sub(pos + 2)?;
-            (boxed(W5::MoonPhase(Box::new(a))), p)
+            (boxed(NumberFact::MoonPhase(Box::new(a))), p)
         }
         "player" | "tab" if is(toks, pos, "list") && is(toks, pos + 1, "name") && is(toks, pos + 2, "of") => {
             let (a, p) = sub(pos + 3)?;
-            (boxed(W5::ListName(Box::new(a))), p)
+            (boxed(NumberFact::ListName(Box::new(a))), p)
         }
         "metadata" | "persistent" => {
             let (kind, at) = if lw == "metadata" {
@@ -241,16 +241,18 @@ pub fn parse_word(toks: &[Tok], pos: usize, env: &Env, lw: &str) -> Result<Optio
                 return Err(format!("expected '{lw} value <key> of <player>'"));
             }
             let (target, p) = sub(p + 1)?;
-            (boxed(W5::Data(kind, Box::new(key), Box::new(target))), p)
+            (boxed(NumberFact::Data(kind, Box::new(key), Box::new(target))), p)
         }
-        "parse" if is(toks, pos, "error") => (boxed(W5::ParseError), pos + 1),
-        "last" if is(toks, pos, "parse") && is(toks, pos + 1, "error") => (boxed(W5::ParseError), pos + 2),
+        "parse" if is(toks, pos, "error") => (boxed(NumberFact::ParseError), pos + 1),
+        "last" if is(toks, pos, "parse") && is(toks, pos + 1, "error") => {
+            (boxed(NumberFact::ParseError), pos + 2)
+        }
         "plain" if toks.get(pos).is_some() => {
             let (e, p) = sub(pos)?;
             if !matches!(e.ty(env), Ty::Item | Ty::Object) {
                 return Err("'plain' needs an item".into());
             }
-            (boxed(W5::Plain(Box::new(e))), p)
+            (boxed(NumberFact::Plain(Box::new(e))), p)
         }
         _ => return Ok(None),
     }))
@@ -260,7 +262,7 @@ pub fn parse_word(toks: &[Tok], pos: usize, env: &Env, lw: &str) -> Result<Optio
 pub fn possessive(toks: &[Tok], pos: usize, base: &Expr) -> Option<(Expr, usize)> {
     let head = w(toks, pos)?;
     if matches!(head.as_str(), "player" | "tab") && is(toks, pos + 1, "list") && is(toks, pos + 2, "name") {
-        return Some((boxed(W5::ListName(Box::new(base.clone()))), pos + 3));
+        return Some((boxed(NumberFact::ListName(Box::new(base.clone()))), pos + 3));
     }
     None
 }
@@ -271,7 +273,7 @@ pub fn percent_follows(toks: &[Tok], pos: usize) -> bool {
 }
 
 pub fn percent(pct: Expr, of: Expr) -> Expr {
-    boxed(W5::Percent(Box::new(pct), Box::new(of)))
+    boxed(NumberFact::Percent(Box::new(pct), Box::new(of)))
 }
 
 // ---- pure helpers ----
@@ -409,7 +411,7 @@ pub fn data_key(kind: DataKind, target_id: &str, key: &str) -> String {
 // ---- effects ----
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum W5Op {
+pub enum NumberOp {
     SetListName,
     ResetListName,
     SetListPriority,
@@ -418,8 +420,8 @@ pub enum W5Op {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct W5Effect {
-    pub op: W5Op,
+pub struct NumberEffect {
+    pub op: NumberOp,
     /// The player or other target.
     pub target: Expr,
     /// The key (data effects) or the new value.
@@ -428,8 +430,8 @@ pub struct W5Effect {
     pub b: Option<Expr>,
 }
 
-use EffKind::W5 as K;
-use W5Op::{DeleteData, ResetListName, SetData, SetListName, SetListPriority};
+use EffKind::NumbersMetadata as K;
+use NumberOp::{DeleteData, ResetListName, SetData, SetListName, SetListPriority};
 
 pub const EFFECT_PATTERNS: &[(&str, EffKind)] = &[
     ("set (player|tab) list name of %player% to %text%", K(SetListName)),
@@ -478,32 +480,32 @@ fn cap(caps: &mut [Option<Capture>], i: usize) -> Option<Expr> {
 /// Build an effect from pattern captures. List name and priority patterns
 /// capture the player first, then the value. Data patterns capture key,
 /// target, then value.
-pub fn build(op: W5Op, caps: &mut [Option<Capture>]) -> Option<Effect> {
+pub fn build(op: NumberOp, caps: &mut [Option<Capture>]) -> Option<Effect> {
     let eff = match op {
-        SetListName | SetListPriority => W5Effect {
+        SetListName | SetListPriority => NumberEffect {
             op,
             target: cap(caps, 0)?,
             a: cap(caps, 1),
             b: None,
         },
-        ResetListName => W5Effect {
+        ResetListName => NumberEffect {
             op,
             target: cap(caps, 0)?,
             a: None,
             b: None,
         },
-        SetData(_) => W5Effect {
+        SetData(_) => NumberEffect {
             op,
             a: cap(caps, 0),
             target: cap(caps, 1)?,
             b: cap(caps, 2),
         },
-        DeleteData(_) => W5Effect {
+        DeleteData(_) => NumberEffect {
             op,
             a: cap(caps, 0),
             target: cap(caps, 1)?,
             b: None,
         },
     };
-    Some(Effect::W5(Box::new(eff)))
+    Some(Effect::NumbersMetadata(Box::new(eff)))
 }

@@ -13,7 +13,7 @@ use super::{State, WasmHost};
 
 /// Things scripts can ask about after the event that produced them.
 #[derive(Default)]
-pub struct W4State {
+pub struct FactState {
     /// player uuid -> x, y, z, world
     pub deaths: HashMap<String, (f64, f64, f64, String)>,
     /// victim uuid -> last hit
@@ -63,7 +63,7 @@ impl State {
             // A mob: remember who hit it, for `attacker` in `on death`.
             if let Some(id) = damager {
                 self.hs
-                    .w4
+                    .facts
                     .hit_by
                     .insert(format!("#{victim_id}"), (id, self.hs.tick));
             }
@@ -71,13 +71,21 @@ impl State {
         };
         let attacker: Option<PlayerRef> = damager.and_then(|id| self.player_by_entity(host, id));
         if let Some(id) = damager {
-            self.hs.w4.hit_by.insert(victim.uuid.clone(), (id, self.hs.tick));
+            self.hs
+                .facts
+                .hit_by
+                .insert(victim.uuid.clone(), (id, self.hs.tick));
         }
-        let entry = self.hs.w4.hits.entry(victim.uuid).or_insert_with(|| DamageInfo {
-            amount: 0.0,
-            cause: String::new(),
-            attacker: None,
-        });
+        let entry = self
+            .hs
+            .facts
+            .hits
+            .entry(victim.uuid)
+            .or_insert_with(|| DamageInfo {
+                amount: 0.0,
+                cause: String::new(),
+                attacker: None,
+            });
         entry.amount = f64::from(amount);
         match cause {
             Some(c) => {

@@ -4,9 +4,9 @@
 //! `resource pack was ...`, `x is any of ...`, the operator and ban lists,
 //! beacon effects, applied enchantments, and bartering drops.
 //!
-//! Everything sits behind boxed variants (`Cond::W5c3`, `Expr::W5c3`,
-//! `Effect::W5c3`), so the hot enums do not grow. The game answers through a
-//! single host call, [`Host::w5c3`](crate::host::Host::w5c3).
+//! Everything sits behind boxed variants (`Cond::MobsItems`, `Expr::MobsItems`,
+//! `Effect::MobsItems`), so the hot enums do not grow. The game answers through a
+//! single host call, [`Host::mob_item_query`](crate::host::Host::mob_item_query).
 
 use crate::compile::{CondKind, EffKind, Effect};
 use crate::engine::{Engine, Exec, online};
@@ -85,7 +85,7 @@ pub enum Kind {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct W5Cond {
+pub struct MobItemCond {
     pub kind: Kind,
     pub negate: bool,
     pub a: Expr,
@@ -93,11 +93,11 @@ pub struct W5Cond {
 }
 
 const fn k(kind: Kind, negate: bool) -> CondKind {
-    CondKind::W5c3(kind, negate)
+    CondKind::MobsItems(kind, negate)
 }
 
 const fn h(c: Check, negate: bool) -> CondKind {
-    CondKind::W5c3(Kind::Host(c), negate)
+    CondKind::MobsItems(Kind::Host(c), negate)
 }
 
 /// Condition patterns. Tried before the plain `is` comparison.
@@ -329,20 +329,20 @@ pub fn line_may_match(toks: &[Tok]) -> bool {
 }
 
 /// Build a condition from pattern captures.
-pub fn build_cond(kind: Kind, negate: bool, mut c: Vec<Option<Capture>>) -> W5Cond {
+pub fn build_cond(kind: Kind, negate: bool, mut c: Vec<Option<Capture>>) -> MobItemCond {
     let mut take = |i: usize| match c.get_mut(i).and_then(Option::take) {
         Some(Capture::Expr(e)) => Some(e),
         _ => None,
     };
     let (a, b) = (take(0).unwrap_or(Expr::Num(0.0)), take(1));
     match kind {
-        Kind::EffectP(f) => W5Cond {
+        Kind::EffectP(f) => MobItemCond {
             kind: Kind::Effect(f),
             negate,
             a: b.unwrap_or(Expr::Num(0.0)),
             b: Some(a),
         },
-        _ => W5Cond { kind, negate, a, b },
+        _ => MobItemCond { kind, negate, a, b },
     }
 }
 
@@ -510,7 +510,7 @@ fn as_bool(v: Option<Value>) -> Option<bool> {
 
 impl Engine {
     /// A value, with a list variable read as all of its items.
-    fn c3_eval(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
+    fn mobitem_eval(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
         match e {
             Expr::Var(v) if v.list => Ok(Value::List(
                 self.list_items(v, ex, host)?
@@ -525,15 +525,15 @@ impl Engine {
     /// Run one of these conditions. `None` from the game counts as false,
     /// negated or not.
     #[cold]
-    pub(crate) fn cond_w5c3(
+    pub(crate) fn cond_mobs_items(
         &mut self,
-        c: &W5Cond,
+        c: &MobItemCond,
         ex: &mut Exec,
         host: &mut dyn Host,
     ) -> Result<bool, String> {
-        let a = self.c3_eval(&c.a, ex, host)?;
+        let a = self.mobitem_eval(&c.a, ex, host)?;
         let b = match &c.b {
-            Some(b) => Some(self.c3_eval(b, ex, host)?),
+            Some(b) => Some(self.mobitem_eval(b, ex, host)?),
             None => None,
         };
         let hit = match c.kind {
@@ -555,7 +555,7 @@ impl Engine {
             Kind::Effect(flag) | Kind::EffectP(flag) => {
                 let p = b.as_ref().and_then(|p| online(p, &mut ex.seen, host));
                 match (p, effect_name(&a)) {
-                    (Some(p), Some(e)) => as_bool(host.w5c3(Q::Effect(&p, &e, flag))),
+                    (Some(p), Some(e)) => as_bool(host.mob_item_query(Q::Effect(&p, &e, flag))),
                     _ => None,
                 }
             }
@@ -593,7 +593,7 @@ impl Engine {
 /// One subject of a check (before negation).
 fn check_one(kind: Kind, v: &Value, b: Option<&Value>, host: &mut dyn Host) -> Option<bool> {
     match kind {
-        Kind::Host(c) => as_bool(host.w5c3(Q::Check(c, v))),
+        Kind::Host(c) => as_bool(host.mob_item_query(Q::Check(c, v))),
         Kind::Tameable => {
             let id = entity_kind(v)?;
             Some(TAMEABLE.contains(&id.as_str()))
@@ -607,7 +607,7 @@ fn check_one(kind: Kind, v: &Value, b: Option<&Value>, host: &mut dyn Host) -> O
             Some(crate::conditions_entity_checks::max_stack(&id) > 1)
         }
         Kind::Wearing => {
-            let worn = match host.w5c3(Q::Worn(v))? {
+            let worn = match host.mob_item_query(Q::Worn(v))? {
                 Value::List(l) => l,
                 _ => return None,
             };
@@ -621,7 +621,7 @@ fn check_one(kind: Kind, v: &Value, b: Option<&Value>, host: &mut dyn Host) -> O
         }
         Kind::Lid(open) => {
             let (w, x, y, z) = block_of(v, host)?;
-            as_bool(host.w5c3(Q::Lid(&w, x, y, z))).map(|is_open| is_open == open)
+            as_bool(host.mob_item_query(Q::Lid(&w, x, y, z))).map(|is_open| is_open == open)
         }
         Kind::Glint | Kind::Effect(_) | Kind::EffectP(_) | Kind::Pack | Kind::AnyOf | Kind::AnyOfRev => None,
     }
@@ -659,23 +659,27 @@ impl Node {
 }
 
 fn node(op: Op, args: Vec<Expr>) -> Expr {
-    Expr::W5c3(Box::new(Node { op, args }))
+    Expr::MobsItems(Box::new(Node { op, args }))
 }
 
 impl Engine {
     #[cold]
-    pub(crate) fn eval_w5c3(
+    pub(crate) fn eval_mobs_items(
         &mut self,
         n: &Node,
         ex: &mut Exec,
         host: &mut dyn Host,
     ) -> Result<Value, String> {
         Ok(match n.op {
-            Op::Ops => host.w5c3(Q::Ops).unwrap_or(Value::List(Vec::new())),
-            Op::BannedPlayers => host.w5c3(Q::BannedPlayers).unwrap_or(Value::List(Vec::new())),
-            Op::BannedIps => host.w5c3(Q::BannedIps).unwrap_or(Value::List(Vec::new())),
+            Op::Ops => host.mob_item_query(Q::Ops).unwrap_or(Value::List(Vec::new())),
+            Op::BannedPlayers => host
+                .mob_item_query(Q::BannedPlayers)
+                .unwrap_or(Value::List(Vec::new())),
+            Op::BannedIps => host
+                .mob_item_query(Q::BannedIps)
+                .unwrap_or(Value::List(Vec::new())),
             Op::AnyOf => match n.args.first() {
-                Some(a) => self.c3_eval(a, ex, host)?,
+                Some(a) => self.mobitem_eval(a, ex, host)?,
                 None => Value::None,
             },
             Op::Beacon(primary) => {
@@ -684,7 +688,9 @@ impl Engine {
                     None => return Ok(Value::None),
                 };
                 match block_of(&at, host) {
-                    Some((w, x, y, z)) => host.w5c3(Q::Beacon(&w, x, y, z, primary)).unwrap_or(Value::None),
+                    Some((w, x, y, z)) => host
+                        .mob_item_query(Q::Beacon(&w, x, y, z, primary))
+                        .unwrap_or(Value::None),
                     None => Value::None,
                 }
             }
@@ -728,7 +734,7 @@ fn in_event(p: &P<'_>, name: &str) -> bool {
 }
 
 impl P<'_> {
-    fn c3_lit(&self, off: usize, w: &str) -> bool {
+    fn mobitem_lit(&self, off: usize, w: &str) -> bool {
         if self.pos + off >= self.toks.len() {
             self.hit_end.set(true);
         }
@@ -737,30 +743,30 @@ impl P<'_> {
 
     /// `[all [[of] the]] banned (players|ips)` and `[all [[of] the]] op[erator]s`,
     /// after `all`: how many words to skip before the list name.
-    fn c3_all_skip(&self) -> usize {
-        match (self.c3_lit(0, "of"), self.c3_lit(1, "the")) {
+    fn mobitem_all_skip(&self) -> usize {
+        match (self.mobitem_lit(0, "of"), self.mobitem_lit(1, "the")) {
             (true, true) => 2,
-            _ if self.c3_lit(0, "the") => 1,
+            _ if self.mobitem_lit(0, "the") => 1,
             _ => 0,
         }
     }
 
-    fn c3_lists(&mut self, skip: usize) -> Option<Expr> {
-        if self.c3_lit(skip, "banned") {
-            let op = if self.c3_lit(skip + 1, "players") {
+    fn mobitem_lists(&mut self, skip: usize) -> Option<Expr> {
+        if self.mobitem_lit(skip, "banned") {
+            let op = if self.mobitem_lit(skip + 1, "players") {
                 Op::BannedPlayers
-            } else if self.c3_lit(skip + 1, "ips")
-                || self.c3_lit(skip + 1, "ip") && self.c3_lit(skip + 2, "addresses")
+            } else if self.mobitem_lit(skip + 1, "ips")
+                || self.mobitem_lit(skip + 1, "ip") && self.mobitem_lit(skip + 2, "addresses")
             {
                 Op::BannedIps
             } else {
                 return None;
             };
-            let extra = usize::from(op == Op::BannedIps && self.c3_lit(skip + 1, "ip"));
+            let extra = usize::from(op == Op::BannedIps && self.mobitem_lit(skip + 1, "ip"));
             self.pos += skip + 2 + extra;
             return Some(node(op, Vec::new()));
         }
-        if self.c3_lit(skip, "ops") || self.c3_lit(skip, "operators") {
+        if self.mobitem_lit(skip, "ops") || self.mobitem_lit(skip, "operators") {
             self.pos += skip + 1;
             return Some(node(Op::Ops, Vec::new()));
         }
@@ -768,18 +774,18 @@ impl P<'_> {
     }
 
     /// Expressions of this module, by their first word. `Ok(None)`: not ours.
-    pub(crate) fn w5c3_head(&mut self, lw: &str) -> Result<Option<Expr>, String> {
+    pub(crate) fn mobitem_head(&mut self, lw: &str) -> Result<Option<Expr>, String> {
         let e = match lw {
             "all" => {
-                let skip = self.c3_all_skip();
-                match self.c3_lists(skip) {
+                let skip = self.mobitem_all_skip();
+                match self.mobitem_lists(skip) {
                     Some(e) => e,
                     None => return Ok(None),
                 }
             }
             "banned" => {
                 self.pos -= 1;
-                match self.c3_lists(0) {
+                match self.mobitem_lists(0) {
                     Some(e) => e,
                     None => {
                         self.pos += 1;
@@ -791,40 +797,40 @@ impl P<'_> {
                 node(Op::Ops, Vec::new())
             }
             "any" | "one" => {
-                let skip = usize::from(lw == "any" && self.c3_lit(0, "one"));
-                if !self.c3_lit(skip, "of") {
+                let skip = usize::from(lw == "any" && self.mobitem_lit(0, "one"));
+                if !self.mobitem_lit(skip, "of") {
                     return Ok(None);
                 }
                 self.pos += skip + 1;
-                if self.c3_lit(0, "the") {
+                if self.mobitem_lit(0, "the") {
                     self.pos += 1;
                 }
                 let list = self.primary()?;
                 node(Op::AnyOf, vec![list])
             }
             "primary" | "secondary" => {
-                let skip = usize::from(self.c3_lit(0, "beacon"));
-                if !self.c3_lit(skip, "effect") {
+                let skip = usize::from(self.mobitem_lit(0, "beacon"));
+                if !self.mobitem_lit(skip, "effect") {
                     return Ok(None);
                 }
                 self.pos += skip + 1;
-                if !self.c3_lit(0, "of") {
+                if !self.mobitem_lit(0, "of") {
                     return Err(format!("use '{lw} beacon effect of <block>'"));
                 }
                 self.pos += 1;
                 let at = self.primary()?;
                 node(Op::Beacon(lw == "primary"), vec![at])
             }
-            "beacon" if self.c3_lit(0, "primary") || self.c3_lit(0, "secondary") => {
-                let primary = self.c3_lit(0, "primary");
-                if !(self.c3_lit(1, "effect") && self.c3_lit(2, "of")) {
+            "beacon" if self.mobitem_lit(0, "primary") || self.mobitem_lit(0, "secondary") => {
+                let primary = self.mobitem_lit(0, "primary");
+                if !(self.mobitem_lit(1, "effect") && self.mobitem_lit(2, "of")) {
                     return Ok(None);
                 }
                 self.pos += 3;
                 let at = self.primary()?;
                 node(Op::Beacon(primary), vec![at])
             }
-            "applied" if self.c3_lit(0, "enchantments") || self.c3_lit(0, "enchants") => {
+            "applied" if self.mobitem_lit(0, "enchantments") || self.mobitem_lit(0, "enchants") => {
                 if self.env.in_function || self.env.ext_event != Some(crate::events_game::Ev::Enchant) {
                     return Err("'applied enchantments' only exists in 'on enchant'".into());
                 }
@@ -833,11 +839,14 @@ impl P<'_> {
             }
             "anvil" => {
                 // `anvil text input`, `anvil [item] repair cost`
-                let (slot, used) = if self.c3_lit(0, "text") && self.c3_lit(1, "input") {
+                let (slot, used) = if self.mobitem_lit(0, "text") && self.mobitem_lit(1, "input") {
                     (0, 2)
-                } else if self.c3_lit(0, "repair") && self.c3_lit(1, "cost") {
+                } else if self.mobitem_lit(0, "repair") && self.mobitem_lit(1, "cost") {
                     (1, 2)
-                } else if self.c3_lit(0, "item") && self.c3_lit(1, "repair") && self.c3_lit(2, "cost") {
+                } else if self.mobitem_lit(0, "item")
+                    && self.mobitem_lit(1, "repair")
+                    && self.mobitem_lit(2, "cost")
+                {
                     (1, 3)
                 } else {
                     return Ok(None);
@@ -848,11 +857,11 @@ impl P<'_> {
                 self.pos += used;
                 Expr::ExtVal(slot)
             }
-            "barter" | "bartering" if self.c3_lit(0, "drops") || self.c3_lit(0, "input") => {
+            "barter" | "bartering" if self.mobitem_lit(0, "drops") || self.mobitem_lit(0, "input") => {
                 if !in_event(self, "piglin barter") {
                     return Err("barter values only exist in 'on piglin barter'".into());
                 }
-                let slot = u8::from(self.c3_lit(0, "drops"));
+                let slot = u8::from(self.mobitem_lit(0, "drops"));
                 self.pos += 1;
                 Expr::ExtVal(slot)
             }
@@ -875,24 +884,24 @@ pub enum EOp {
 pub const EFFECT_PATTERNS: &[(&str, EffKind)] = &[
     (
         "set [the] (barter|bartering) drops to %object%",
-        EffKind::W5c3(EOp::SetDrops),
+        EffKind::MobsItems(EOp::SetDrops),
     ),
     (
         "add %object% to [the] (barter|bartering) drops",
-        EffKind::W5c3(EOp::AddDrops),
+        EffKind::MobsItems(EOp::AddDrops),
     ),
     (
         "remove %object% from [the] (barter|bartering) drops",
-        EffKind::W5c3(EOp::RemoveDrops),
+        EffKind::MobsItems(EOp::RemoveDrops),
     ),
     (
         "(clear|delete|reset) [the] (barter|bartering) drops",
-        EffKind::W5c3(EOp::ClearDrops),
+        EffKind::MobsItems(EOp::ClearDrops),
     ),
 ];
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct W5Effect {
+pub struct MobItemEffect {
     pub op: EOp,
     pub value: Option<Expr>,
 }
@@ -905,7 +914,7 @@ pub fn build_effect(op: EOp, c: &mut [Option<Capture>]) -> Option<Effect> {
     if op != EOp::ClearDrops && value.is_none() {
         return None;
     }
-    Some(Effect::W5c3(Box::new(W5Effect { op, value })))
+    Some(Effect::MobsItems(Box::new(MobItemEffect { op, value })))
 }
 
 /// Slot of the drops in `ev` in `on piglin barter` (0 is the input item).
@@ -924,9 +933,9 @@ fn items_of(v: Value) -> Vec<Value> {
 
 impl Engine {
     #[cold]
-    pub(crate) fn run_w5c3(
+    pub(crate) fn run_mobs_items(
         &mut self,
-        w: &W5Effect,
+        w: &MobItemEffect,
         ex: &mut Exec,
         host: &mut dyn Host,
     ) -> Result<(), String> {
@@ -934,7 +943,7 @@ impl Engine {
             return Err("barter drops only exist in 'on piglin barter'".into());
         }
         let v = match &w.value {
-            Some(e) => self.c3_eval(e, ex, host)?,
+            Some(e) => self.mobitem_eval(e, ex, host)?,
             None => Value::None,
         };
         let slot = usize::from(DROPS_SLOT);

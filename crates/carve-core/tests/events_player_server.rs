@@ -1,5 +1,5 @@
 use carve_core::compile::{EventKind, check_registry};
-use carve_core::events_player_server::Ev3;
+use carve_core::events_player_server::PlayerServerEvent;
 use carve_core::*;
 
 #[derive(Default)]
@@ -73,10 +73,10 @@ fn registry_ok() {
 
 #[test]
 fn every_event_name_parses_and_loads() {
-    for ev in Ev3::all() {
+    for ev in PlayerServerEvent::all() {
         let src = format!("on {}:\n    stop\n", ev.name());
         let e = engine(&src);
-        assert!(e.table().has_event(EventKind::Ext3(ev)), "{}", ev.name());
+        assert!(e.table().has_event(EventKind::PlayerServer(ev)), "{}", ev.name());
     }
 }
 
@@ -86,7 +86,7 @@ fn kick_reason_and_cancel() {
     let mut h = Mock::default();
     let mut ctx = EventCtx::player(steve());
     ctx.message = Some("flying".into());
-    let out = e.fire(EventKind::Ext3(Ev3::Kick), ctx, &mut h);
+    let out = e.fire(EventKind::PlayerServer(PlayerServerEvent::Kick), ctx, &mut h);
     assert!(out.cancelled);
     assert_eq!(h.calls, vec!["Steve kicked: flying"]);
 }
@@ -97,7 +97,11 @@ fn message_alias_works_with_text_events() {
     let mut h = Mock::default();
     let mut ctx = EventCtx::player(steve());
     ctx.message = Some("de_de".into());
-    e.fire(EventKind::Ext3(Ev3::LanguageChange), ctx, &mut h);
+    e.fire(
+        EventKind::PlayerServer(PlayerServerEvent::LanguageChange),
+        ctx,
+        &mut h,
+    );
     assert_eq!(h.calls, vec!["lang de_de"]);
 }
 
@@ -108,11 +112,11 @@ fn redstone_number_without_player() {
     let mut h = Mock::default();
     let mut ctx = EventCtx::console();
     ctx.damage = Some(12.0);
-    e.fire(EventKind::Ext3(Ev3::Redstone), ctx, &mut h);
+    e.fire(EventKind::PlayerServer(PlayerServerEvent::Redstone), ctx, &mut h);
     assert_eq!(h.calls, vec!["broadcast strong 12"]);
     let mut ctx = EventCtx::console();
     ctx.damage = Some(3.0);
-    e.fire(EventKind::Ext3(Ev3::Redstone), ctx, &mut h);
+    e.fire(EventKind::PlayerServer(PlayerServerEvent::Redstone), ctx, &mut h);
     assert_eq!(h.calls.len(), 1);
 }
 
@@ -122,15 +126,25 @@ fn piston_direction() {
     let mut h = Mock::default();
     let mut ctx = EventCtx::console();
     ctx.message = Some("up".into());
-    e.fire(EventKind::Ext3(Ev3::PistonExtend), ctx, &mut h);
+    e.fire(
+        EventKind::PlayerServer(PlayerServerEvent::PistonExtend),
+        ctx,
+        &mut h,
+    );
     assert_eq!(h.calls, vec!["broadcast up"]);
 }
 
 #[test]
 fn aliases() {
-    assert_eq!(Ev3::parse("locale change"), Some(Ev3::LanguageChange));
-    assert_eq!(Ev3::parse("totem"), Some(Ev3::ResurrectAttempt));
-    assert_eq!(Ev3::parse("nonsense"), None);
+    assert_eq!(
+        PlayerServerEvent::parse("locale change"),
+        Some(PlayerServerEvent::LanguageChange)
+    );
+    assert_eq!(
+        PlayerServerEvent::parse("totem"),
+        Some(PlayerServerEvent::ResurrectAttempt)
+    );
+    assert_eq!(PlayerServerEvent::parse("nonsense"), None);
 }
 
 #[test]

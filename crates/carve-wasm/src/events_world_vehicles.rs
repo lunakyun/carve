@@ -36,7 +36,7 @@ impl<E: ExtAccess> EventHandler<E> for OnExt<E> {
     fn handle(&self, server: Server, mut data: EventData<E>) -> EventData<E> {
         let (k1, k2) = E::kinds(&data);
         let res = with_state(&server, None, |st, host| {
-            let wanted = |st: &State, k: ExtEvent| st.engine.table().has_event(EventKind::Ext4(k));
+            let wanted = |st: &State, k: ExtEvent| st.engine.table().has_event(EventKind::WorldVehicles(k));
             let a = wanted(st, k1);
             let b = k2.is_some_and(|k| wanted(st, k));
             if !a && !b {
@@ -55,7 +55,7 @@ impl<E: ExtAccess> EventHandler<E> for OnExt<E> {
                     inner: host,
                     hs: &mut st.hs,
                 };
-                let o = st.engine.fire(EventKind::Ext4(k), c, &mut th);
+                let o = st.engine.fire(EventKind::WorldVehicles(k), c, &mut th);
                 cancelled |= o.cancelled;
                 outs.extend(o.set);
             }

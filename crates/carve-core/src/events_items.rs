@@ -137,9 +137,9 @@ pub fn filter_ok(k: EventKind, what: &str) -> bool {
         "entity" => k == EventKind::MobSpawn,
         "victim" => matches!(k, EventKind::Damage | EventKind::Death),
         "mode" => k == EventKind::GamemodeChange,
-        "prefix" => k == EventKind::Ext4(crate::events_world_vehicles::ExtEvent::PlaceholderRequest),
+        "prefix" => k == EventKind::WorldVehicles(crate::events_world_vehicles::ExtEvent::PlaceholderRequest),
         "command" => k == EventKind::Mv(crate::events_movement::MvEvent::Command),
-        "stepon" => k == EventKind::Ext4(crate::events_world_vehicles::ExtEvent::StepOn),
+        "stepon" => k == EventKind::WorldVehicles(crate::events_world_vehicles::ExtEvent::StepOn),
         _ => false,
     }
 }
@@ -177,7 +177,7 @@ pub fn filter_lhs(what: &str) -> Option<Expr> {
         "entity" => Some(Expr::EventVal(EventVal::Entity)),
         "victim" => Some(crate::entities::victim_type()),
         "mode" => Some(Expr::EventVal(EventVal::NewMode)),
-        "prefix" => Some(Expr::Ev4Val(2)),
+        "prefix" => Some(Expr::WorldEventVal(2)),
         _ => None,
     }
 }

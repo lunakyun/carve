@@ -7,7 +7,7 @@ use pumpkin_plugin_api::ItemStack;
 use super::WasmHost;
 
 impl WasmHost<'_> {
-    pub(crate) fn w6c5_impl(&mut self, q: Q<'_>) -> Option<Value> {
+    pub(crate) fn game_fact_impl(&mut self, q: Q<'_>) -> Option<Value> {
         match q {
             // The server's own stack limit (reads the max stack size component).
             Q::MaxStack(id) => {

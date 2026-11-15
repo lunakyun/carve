@@ -2,38 +2,43 @@
 
 use super::{Engine, Exec, online, to_num_opt};
 use crate::expr::Expr;
-use crate::expr_text_directions::{self as w2, W2, W2Eff, W2Op};
+use crate::expr_text_directions::{self as text, TextEffOp, TextExpr, TextOp};
 use crate::host::Host;
 use crate::value::Value;
 
 impl Engine {
-    pub(super) fn eval_x2(&mut self, w: &W2, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
+    pub(super) fn eval_text_directions(
+        &mut self,
+        w: &TextExpr,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<Value, String> {
         let arg = |i: usize| w.args.get(i);
         Ok(match w.op {
-            W2Op::Codepoint => {
+            TextOp::Codepoint => {
                 let Some(a) = arg(0) else { return Ok(Value::None) };
                 let t = self.text(a, ex, host)?;
-                w2::codepoint(&t).map_or(Value::None, Value::Num)
+                text::codepoint(&t).map_or(Value::None, Value::Num)
             }
-            W2Op::FromCodepoint => {
+            TextOp::FromCodepoint => {
                 let Some(a) = arg(0) else { return Ok(Value::None) };
                 let n = self.num(a, ex, host)?;
-                w2::from_codepoint(n).map_or(Value::None, Value::Text)
+                text::from_codepoint(n).map_or(Value::None, Value::Text)
             }
-            W2Op::CharsBetween { alnum } => {
+            TextOp::CharsBetween { alnum } => {
                 let (Some(a), Some(b)) = (arg(0), arg(1)) else {
                     return Ok(Value::None);
                 };
                 let a = self.text(a, ex, host)?;
                 let b = self.text(b, ex, host)?;
                 Value::List(
-                    w2::chars_between(&a, &b, alnum)
+                    text::chars_between(&a, &b, alnum)
                         .into_iter()
                         .map(Value::Text)
                         .collect(),
                 )
             }
-            W2Op::Difference => {
+            TextOp::Difference => {
                 let (Some(a), Some(b)) = (arg(0), arg(1)) else {
                     return Ok(Value::None);
                 };
@@ -52,7 +57,7 @@ impl Engine {
                     },
                 }
             }
-            W2Op::Offset(dx, dy, dz) => {
+            TextOp::Offset(dx, dy, dz) => {
                 let (Some(n), Some(l)) = (arg(0), arg(1)) else {
                     return Ok(Value::None);
                 };
@@ -68,18 +73,20 @@ impl Engine {
                     None => Value::None,
                 }
             }
-            W2Op::ChunkX | W2Op::ChunkZ => {
+            TextOp::ChunkX | TextOp::ChunkZ => {
                 let Some(l) = arg(0) else { return Ok(Value::None) };
                 let l = self.eval(l, ex, host)?;
                 if let Value::Chunk { x, z, .. } = l {
-                    return Ok(Value::Num(f64::from(if w.op == W2Op::ChunkX { x } else { z })));
+                    return Ok(Value::Num(f64::from(if w.op == TextOp::ChunkX { x } else { z })));
                 }
                 match self.as_location(&l, ex, host) {
-                    Some((x, _, z, _)) => Value::Num(w2::chunk_of(if w.op == W2Op::ChunkX { x } else { z })),
+                    Some((x, _, z, _)) => {
+                        Value::Num(text::chunk_of(if w.op == TextOp::ChunkX { x } else { z }))
+                    }
                     None => Value::None,
                 }
             }
-            W2Op::CompassTarget => {
+            TextOp::CompassTarget => {
                 let Some(a) = arg(0) else { return Ok(Value::None) };
                 let v = self.eval(a, ex, host)?;
                 match online(&v, &mut ex.seen, host).and_then(|p| host.compass_target(&p)) {
@@ -87,19 +94,19 @@ impl Engine {
                     None => Value::None,
                 }
             }
-            W2Op::DeathMessage => ex.ctx.death_message.clone().map_or(Value::None, Value::Text),
-            W2Op::Victim => crate::combat::victim(ex, host),
-            W2Op::DamageCause => ex.ctx.damage_cause.clone().map_or(Value::None, Value::Text),
-            W2Op::ChatRecipients => match &ex.ctx.recipients {
+            TextOp::DeathMessage => ex.ctx.death_message.clone().map_or(Value::None, Value::Text),
+            TextOp::Victim => crate::combat::victim(ex, host),
+            TextOp::DamageCause => ex.ctx.damage_cause.clone().map_or(Value::None, Value::Text),
+            TextOp::ChatRecipients => match &ex.ctx.recipients {
                 Some(r) => Value::List(r.iter().cloned().map(Value::Player).collect()),
                 None => Value::None,
             },
         })
     }
 
-    pub(super) fn run_x2(
+    pub(super) fn run_text_directions(
         &mut self,
-        kind: W2Eff,
+        kind: TextEffOp,
         args: &(Expr, Expr),
         ex: &mut Exec,
         host: &mut dyn Host,
@@ -108,14 +115,14 @@ impl Engine {
             return Ok(());
         };
         match kind {
-            W2Eff::SetCompass => {
+            TextEffOp::SetCompass => {
                 let l = self.eval(&args.1, ex, host)?;
                 match self.as_location(&l, ex, host) {
                     Some((x, y, z, world)) => host.set_compass_target(&p, x, y, z, world.as_deref()),
                     None => return Err("'set compass target' needs a location".into()),
                 }
             }
-            W2Eff::ResetCompass => host.set_compass_target(&p, 0.0, 0.0, 0.0, None),
+            TextEffOp::ResetCompass => host.set_compass_target(&p, 0.0, 0.0, 0.0, None),
         }
         Ok(())
     }

@@ -382,7 +382,7 @@ macro_rules! set_of {
     ($n:literal, $t:literal, $s:expr) => {
         (
             concat!("set ", $n, " of %player% to %", $t, "%"),
-            EffKind::W2c($s, Mode::Set),
+            EffKind::PlayerStat($s, Mode::Set),
         )
     };
 }
@@ -390,7 +390,7 @@ macro_rules! set_poss {
     ($n:literal, $t:literal, $s:expr) => {
         (
             concat!("set %player%'s ", $n, " to %", $t, "%"),
-            EffKind::W2c($s, Mode::Set),
+            EffKind::PlayerStat($s, Mode::Set),
         )
     };
 }
@@ -398,7 +398,7 @@ macro_rules! add_of {
     ($n:literal, $t:literal, $s:expr) => {
         (
             concat!("add %", $t, "% to ", $n, " of %player%"),
-            EffKind::W2c($s, Mode::Add),
+            EffKind::PlayerStat($s, Mode::Add),
         )
     };
 }
@@ -406,7 +406,7 @@ macro_rules! add_poss {
     ($n:literal, $t:literal, $s:expr) => {
         (
             concat!("add %", $t, "% to %player%'s ", $n),
-            EffKind::W2c($s, Mode::Add),
+            EffKind::PlayerStat($s, Mode::Add),
         )
     };
 }
@@ -414,7 +414,7 @@ macro_rules! rem_of {
     ($n:literal, $t:literal, $s:expr) => {
         (
             concat!("remove %", $t, "% from ", $n, " of %player%"),
-            EffKind::W2c($s, Mode::Remove),
+            EffKind::PlayerStat($s, Mode::Remove),
         )
     };
 }
@@ -422,7 +422,7 @@ macro_rules! rem_poss {
     ($n:literal, $t:literal, $s:expr) => {
         (
             concat!("remove %", $t, "% from %player%'s ", $n),
-            EffKind::W2c($s, Mode::Remove),
+            EffKind::PlayerStat($s, Mode::Remove),
         )
     };
 }

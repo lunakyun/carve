@@ -90,7 +90,7 @@ impl Host for Mock {
     fn block_entity_nbt(&mut self, _: &str, _: i32, _: i32, _: i32) -> Option<Vec<u8>> {
         self.sign_nbt.clone()
     }
-    fn w2e7_query(&mut self, q: Query<'_>) -> Option<Value> {
+    fn server_query(&mut self, q: Query<'_>) -> Option<Value> {
         match q {
             Query::Environment(_) => self.dimension.clone().map(Value::Text),
             _ => None,
@@ -99,7 +99,7 @@ impl Host for Mock {
     fn held_component(&mut self, _: &PlayerRef, _: carve_core::skbee_nbt::ItemComp) -> Option<Vec<u8>> {
         self.cmd.then(|| vec![1])
     }
-    fn w4c1_check(&mut self, c: Check, _: &Value) -> Option<bool> {
+    fn entity_check(&mut self, c: Check, _: &Value) -> Option<bool> {
         self.checks.contains(&c).then_some(true).or(Some(false))
     }
 }

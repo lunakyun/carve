@@ -88,7 +88,7 @@ pub enum Value {
     /// A chest inventory built by a script (`chest inventory with 3 rows`).
     Inventory(Box<crate::gaps::InvVal>),
     /// A potion effect or particle value (see `potions_particles_queues`). Not saved in global variables.
-    W5(Box<crate::potions_particles_queues::Obj>),
+    Obj(Box<crate::potions_particles_queues::Obj>),
 }
 
 /// A handle to an entity. Looked up through the host on every use, so a
@@ -120,7 +120,7 @@ impl Value {
             Value::Entity(_) => "entity",
             Value::Ray(_) => "ray trace result",
             Value::Inventory(_) => "inventory",
-            Value::W5(o) => o.type_name(),
+            Value::Obj(o) => o.type_name(),
             v => crate::named_types::type_name(v),
         }
     }
@@ -287,7 +287,7 @@ impl Value {
             }
             Value::Timespan { millis } => crate::timespans::push_span(out, *millis),
             Value::Inventory(i) => i.push_to(out),
-            Value::W5(o) => o.push_to(out),
+            Value::Obj(o) => o.push_to(out),
             Value::Nbt(c) => c.push_snbt(out),
             Value::Enum(_)
             | Value::Color { .. }

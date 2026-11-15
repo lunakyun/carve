@@ -2,7 +2,7 @@
 //! yaw and pitch, `environment of`, `N of item`
 //! and `whether a is b`.
 //!
-//! Every expression here is one boxed [`Node`] (`Expr::W7`), so the hot
+//! Every expression here is one boxed [`Node`] (`Expr::VectorsServer`), so the hot
 //! `Expr` and `eval` paths stay small. The engine evaluates the node's
 //! arguments and calls [`apply`].
 
@@ -94,7 +94,7 @@ pub enum Query<'a> {
 }
 
 fn node(op: Op, args: Vec<Expr>, ty: Ty) -> Expr {
-    Expr::W7(Box::new(Node { op, args, ty }))
+    Expr::VectorsServer(Box::new(Node { op, args, ty }))
 }
 
 // ---- parsing ---------------------------------------------------------------
@@ -194,7 +194,7 @@ impl P<'_> {
     }
 
     /// Called with the head word already read. `Ok(None)`: not one of ours.
-    pub(crate) fn w2e7_head(&mut self, lw: &str) -> Result<Option<Expr>, String> {
+    pub(crate) fn vector_head(&mut self, lw: &str) -> Result<Option<Expr>, String> {
         let e = match lw {
             "a" | "an" if self.w_lit(0, "vector") || (self.w_lit(0, "random") && self.w_lit(1, "vector")) => {
                 self.primary_base()?
@@ -353,7 +353,7 @@ impl P<'_> {
     }
 
     /// `3 of diamond`: an amount of an item. The number is already read.
-    pub(crate) fn w2e7_num_of(&mut self, n: f64) -> Option<Expr> {
+    pub(crate) fn vector_num_of(&mut self, n: f64) -> Option<Expr> {
         if !matches!(self.toks.get(self.pos), Some(t) if t.is_lit("of")) {
             return None;
         }
@@ -499,7 +499,7 @@ impl P<'_> {
 
     /// `v dot w`, `v cross w`, `v projected onto w`, `v normalized`,
     /// `loc offset by v`, `v to location in w`.
-    pub(crate) fn w2e7_post(&mut self, mut e: Expr) -> Result<Expr, String> {
+    pub(crate) fn vector_post(&mut self, mut e: Expr) -> Result<Expr, String> {
         loop {
             let Some(Tok::Word(w)) = self.toks.get(self.pos) else {
                 return Ok(e);
@@ -886,7 +886,7 @@ pub fn apply(op: Op, a: &[Value], host: &mut dyn Host) -> Result<Value, String> 
                 Value::Num(if yaw { yaw_of(v) } else { pitch_of(v) })
             } else if let Some(p) = player_of(first, host) {
                 let q = if yaw { Query::Yaw(&p) } else { Query::Pitch(&p) };
-                host.w2e7_query(q).unwrap_or(Value::None)
+                host.server_query(q).unwrap_or(Value::None)
             } else {
                 Value::None
             }
@@ -897,8 +897,8 @@ pub fn apply(op: Op, a: &[Value], host: &mut dyn Host) -> Result<Value, String> 
         },
         Op::LookDir => match player_of(first, host) {
             Some(p) => {
-                let yaw = host.w2e7_query(Query::Yaw(&p)).as_ref().and_then(num_of);
-                let pitch = host.w2e7_query(Query::Pitch(&p)).as_ref().and_then(num_of);
+                let yaw = host.server_query(Query::Yaw(&p)).as_ref().and_then(num_of);
+                let pitch = host.server_query(Query::Pitch(&p)).as_ref().and_then(num_of);
                 match (yaw, pitch) {
                     (Some(y), Some(p)) => mk(direction(y, p)),
                     _ => Value::None,
@@ -957,10 +957,12 @@ pub fn apply(op: Op, a: &[Value], host: &mut dyn Host) -> Result<Value, String> 
             }
             _ => Value::None,
         },
-        Op::Tps => host.w2e7_query(Query::Tps).unwrap_or(Value::None),
-        Op::Mspt => host.w2e7_query(Query::Mspt).unwrap_or(Value::None),
-        Op::McVersion => host.w2e7_query(Query::MinecraftVersion).unwrap_or(Value::None),
-        Op::ServerViewDistance => host.w2e7_query(Query::ServerViewDistance).unwrap_or(Value::None),
+        Op::Tps => host.server_query(Query::Tps).unwrap_or(Value::None),
+        Op::Mspt => host.server_query(Query::Mspt).unwrap_or(Value::None),
+        Op::McVersion => host.server_query(Query::MinecraftVersion).unwrap_or(Value::None),
+        Op::ServerViewDistance => host
+            .server_query(Query::ServerViewDistance)
+            .unwrap_or(Value::None),
         // The same host read as SkBee's `view distance of player`.
         Op::ClientViewDistance => player_of(first, host)
             .and_then(|p| host.player_info(&p, crate::skbee_utilities::Info::ViewDistance))
@@ -972,7 +974,7 @@ pub fn apply(op: Op, a: &[Value], host: &mut dyn Host) -> Result<Value, String> 
                     Op::TimePlayed => Query::PlayTicks(&p),
                     _ => Query::LivedTicks(&p),
                 };
-                match host.w2e7_query(q) {
+                match host.server_query(q) {
                     Some(Value::Num(n)) => Value::Timespan {
                         millis: (n * 50.0).round() as i64,
                     },
@@ -987,7 +989,7 @@ pub fn apply(op: Op, a: &[Value], host: &mut dyn Host) -> Result<Value, String> 
                 Value::World(w) | Value::Text(w) => w.as_str(),
                 _ => return Ok(Value::None),
             };
-            match host.w2e7_query(Query::Environment(name)) {
+            match host.server_query(Query::Environment(name)) {
                 Some(Value::Text(id)) => Value::Text(environment_name(&id).into()),
                 _ => Value::None,
             }

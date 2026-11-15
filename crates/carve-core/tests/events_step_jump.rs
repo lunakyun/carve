@@ -1,9 +1,9 @@
 //! Wave 6 chunk 1: new event triggers and the pure logic behind them.
 
 use carve_core::compile::check_registry;
-use carve_core::events_player_server::Ev3;
-use carve_core::events_step_jump as w6;
-use carve_core::events_world_vehicles::{self as ev4, ExtEvent};
+use carve_core::events_player_server::PlayerServerEvent;
+use carve_core::events_step_jump as step;
+use carve_core::events_world_vehicles::{self as world_event, ExtEvent};
 use carve_core::*;
 
 #[derive(Default)]
@@ -73,7 +73,7 @@ fn errors(src: &str) -> Vec<String> {
 fn run4(src: &str, k: ExtEvent, p: Option<PlayerRef>, vals: Vec<Value>) -> (Vec<String>, FireOutcome) {
     let mut e = load(src);
     let mut h = Mock::default();
-    let o = e.fire(EventKind::Ext4(k), ev4::ctx(p, vals), &mut h);
+    let o = e.fire(EventKind::WorldVehicles(k), world_event::ctx(p, vals), &mut h);
     let errs: Vec<_> = h.logs.iter().filter(|(l, _)| *l == LogLevel::Error).collect();
     assert!(errs.is_empty(), "runtime errors: {errs:?}");
     (h.calls, o)
@@ -86,50 +86,50 @@ fn registry_still_compiles() {
 
 #[test]
 fn chunk_math() {
-    assert_eq!(w6::chunk_of(0.0), 0);
-    assert_eq!(w6::chunk_of(15.99), 0);
-    assert_eq!(w6::chunk_of(16.0), 1);
-    assert_eq!(w6::chunk_of(-0.1), -1);
-    assert_eq!(w6::chunk_of(-16.0), -1);
-    assert_eq!(w6::chunk_of(-16.1), -2);
-    assert!(!w6::chunk_changed((1.0, 1.0), (15.9, 15.9)));
-    assert!(w6::chunk_changed((15.9, 1.0), (16.1, 1.0)));
-    assert!(w6::chunk_changed((1.0, 0.5), (1.0, -0.5)));
+    assert_eq!(step::chunk_of(0.0), 0);
+    assert_eq!(step::chunk_of(15.99), 0);
+    assert_eq!(step::chunk_of(16.0), 1);
+    assert_eq!(step::chunk_of(-0.1), -1);
+    assert_eq!(step::chunk_of(-16.0), -1);
+    assert_eq!(step::chunk_of(-16.1), -2);
+    assert!(!step::chunk_changed((1.0, 1.0), (15.9, 15.9)));
+    assert!(step::chunk_changed((15.9, 1.0), (16.1, 1.0)));
+    assert!(step::chunk_changed((1.0, 0.5), (1.0, -0.5)));
 }
 
 #[test]
 fn jump_edge() {
-    assert!(w6::jump_started(0, 16));
-    assert!(w6::jump_started(1, 17));
-    assert!(!w6::jump_started(16, 17));
-    assert!(!w6::jump_started(16, 0));
-    assert!(!w6::jump_started(0, 1));
+    assert!(step::jump_started(0, 16));
+    assert!(step::jump_started(1, 17));
+    assert!(!step::jump_started(16, 17));
+    assert!(!step::jump_started(16, 0));
+    assert!(!step::jump_started(0, 1));
 }
 
 #[test]
 fn plate_and_kinds() {
-    assert!(w6::plate_pressed(0, 15));
-    assert!(!w6::plate_pressed(15, 15));
-    assert!(!w6::plate_pressed(15, 0));
-    assert!(w6::is_pressure_plate("minecraft:stone_pressure_plate"));
-    assert!(w6::is_pressure_plate("oak_pressure_plate"));
-    assert!(!w6::is_pressure_plate("minecraft:stone"));
-    assert!(w6::is_zombie_kind("minecraft:husk"));
-    assert!(!w6::is_zombie_kind("creeper"));
+    assert!(step::plate_pressed(0, 15));
+    assert!(!step::plate_pressed(15, 15));
+    assert!(!step::plate_pressed(15, 0));
+    assert!(step::is_pressure_plate("minecraft:stone_pressure_plate"));
+    assert!(step::is_pressure_plate("oak_pressure_plate"));
+    assert!(!step::is_pressure_plate("minecraft:stone"));
+    assert!(step::is_zombie_kind("minecraft:husk"));
+    assert!(!step::is_zombie_kind("creeper"));
 }
 
 #[test]
 fn step_on_header() {
     assert_eq!(
-        w6::split_step_on("step on stone"),
+        step::split_step_on("step on stone"),
         ("step on", Some(("stepon", "stone".into())))
     );
-    assert_eq!(w6::split_step_on("step on"), ("step on", None));
-    assert_eq!(w6::split_step_on("move"), ("move", None));
-    assert!(w6::step_rhs("Oak Planks").is_some());
-    assert!(w6::step_rhs("a minecraft:stone").is_some());
-    assert!(w6::step_rhs("").is_none());
-    assert!(w6::step_rhs("a-b!").is_none());
+    assert_eq!(step::split_step_on("step on"), ("step on", None));
+    assert_eq!(step::split_step_on("move"), ("move", None));
+    assert!(step::step_rhs("Oak Planks").is_some());
+    assert!(step::step_rhs("a minecraft:stone").is_some());
+    assert!(step::step_rhs("").is_none());
+    assert!(step::step_rhs("a-b!").is_none());
 }
 
 #[test]
@@ -273,7 +273,11 @@ fn ev3_location_and_entity_values() {
     let mut h = Mock::default();
     let mut c = EventCtx::console();
     c.ev = vec![loc];
-    e.fire(EventKind::Ext3(Ev3::PistonExtend), c, &mut h);
+    e.fire(
+        EventKind::PlayerServer(PlayerServerEvent::PistonExtend),
+        c,
+        &mut h,
+    );
     assert_eq!(h.calls.len(), 1);
     assert!(
         h.calls[0].contains('1') && h.calls[0].contains('3'),
@@ -288,7 +292,7 @@ fn ev3_location_and_entity_values() {
         uuid: "x".into(),
         kind: "cow".into(),
     })];
-    e.fire(EventKind::Ext3(Ev3::Leash), c, &mut h);
+    e.fire(EventKind::PlayerServer(PlayerServerEvent::Leash), c, &mut h);
     assert_eq!(h.calls, ["send console leashed cow"]);
-    assert_eq!(Ev3::PiglinBarter.fields().len(), 2);
+    assert_eq!(PlayerServerEvent::PiglinBarter.fields().len(), 2);
 }

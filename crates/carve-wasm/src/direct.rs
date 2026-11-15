@@ -410,10 +410,10 @@ impl WasmHost<'_> {
 
     /// `ride`: `rider` gets on `vehicle`, or off whatever it rides. `Some(false)`: one of them is not found.
     pub(super) fn ride_op(&mut self, rider: &Value, vehicle: Option<&Value>) -> Option<bool> {
-        let rider = self.w6_entity_of(rider);
+        let rider = self.entcmd_entity_of(rider);
         match vehicle {
             Some(v) => {
-                let vehicle = self.w6_entity_of(v);
+                let vehicle = self.entcmd_entity_of(v);
                 let (Some(rider), Some(vehicle)) = (rider, vehicle) else {
                     return Some(false);
                 };
@@ -430,7 +430,7 @@ impl WasmHost<'_> {
         Some(true)
     }
 
-    fn w6_entity_of(&mut self, v: &Value) -> Option<Entity> {
+    fn entcmd_entity_of(&mut self, v: &Value) -> Option<Entity> {
         match v {
             Value::Player(p) => self.get(p).map(Player::as_entity),
             Value::Entity(e) => self.find_entity(&e.uuid),

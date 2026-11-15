@@ -1,7 +1,7 @@
 //! Wave 4 conditions, part 1: `is alphanumeric`, `event is cancelled`,
 //! `can hold`, `can build`, `can see`, `has line of sight`, `has item cooldown`,
 //! `is sedated`, `respawn anchors work`, `has glowing text`, and a group of
-//! entity and player checks the game answers through `Host::w4c1_check`
+//! entity and player checks the game answers through `Host::entity_check`
 //! (`is sheared`, `has ai`, `can breed`, `bell is ringing`, ...).
 //!
 //! All of them run through one boxed `Cond` variant so the hot condition enum
@@ -58,7 +58,7 @@ pub enum Kind {
 
 /// One condition: what to check, its subject, and an optional second value.
 #[derive(Debug, Clone, PartialEq)]
-pub struct W4Cond {
+pub struct EntityCheckCond {
     pub kind: Kind,
     pub negate: bool,
     pub a: Expr,
@@ -66,11 +66,11 @@ pub struct W4Cond {
 }
 
 const fn k(kind: Kind, negate: bool) -> CondKind {
-    CondKind::W4(kind, negate)
+    CondKind::EntityChecks(kind, negate)
 }
 
 const fn h(c: Check, negate: bool) -> CondKind {
-    CondKind::W4(Kind::Host(c), negate)
+    CondKind::EntityChecks(Kind::Host(c), negate)
 }
 
 /// Patterns. Tried before the plain `is` comparison.
@@ -221,8 +221,8 @@ pub const CONDITION_PATTERNS: &[(&str, CondKind)] = &[
     ),
 ];
 
-pub fn build(kind: Kind, negate: bool, a: Expr, b: Option<Expr>) -> W4Cond {
-    W4Cond { kind, negate, a, b }
+pub fn build(kind: Kind, negate: bool, a: Expr, b: Option<Expr>) -> EntityCheckCond {
+    EntityCheckCond { kind, negate, a, b }
 }
 
 /// Does this kind read a second value?
@@ -560,7 +560,7 @@ pub fn check(kind: Kind, a: &Value, b: Option<&Value>, cancelled: bool, host: &m
                 Value::World(n) | Value::Text(n) => n.as_str(),
                 _ => return None,
             };
-            match host.w2e7_query(crate::expr_vectors_server::Query::Environment(name))? {
+            match host.server_query(crate::expr_vectors_server::Query::Environment(name))? {
                 Value::Text(d) => {
                     Some(norm_id(&d).ends_with("nether") || norm_id(&d).ends_with("the_nether"))
                 }
@@ -575,6 +575,6 @@ pub fn check(kind: Kind, a: &Value, b: Option<&Value>, cancelled: bool, host: &m
                     .is_some(),
             )
         }
-        Kind::Host(c) => host.w4c1_check(c, a),
+        Kind::Host(c) => host.entity_check(c, a),
     }
 }

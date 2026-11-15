@@ -1408,7 +1408,7 @@ pub fn build(h: &Head, operand: Expr, env: &Env) -> Result<Expr, String> {
             // `max stack size of diamond`: the item type's own limit.
             None if *c == ItemComp::MaxStackSize => {
                 return Ok(crate::expr_numbers_metadata::boxed(
-                    crate::expr_numbers_metadata::W5::MaxStack(Box::new(operand)),
+                    crate::expr_numbers_metadata::NumberFact::MaxStack(Box::new(operand)),
                 ));
             }
             None => return Err(format!("use '{} of player's tool'", c.name())),

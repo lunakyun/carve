@@ -18,7 +18,7 @@ fn profession_name(d: &impl std::fmt::Debug) -> String {
 }
 
 impl WasmHost<'_> {
-    fn w6_value(&mut self, e: &Entity) -> Value {
+    fn quat_value(&mut self, e: &Entity) -> Value {
         let id = uuid::to_string(e.get_uuid());
         if let Some(p) = self.get_by_uuid(&id) {
             return Value::Player(player_ref(p));
@@ -30,7 +30,7 @@ impl WasmHost<'_> {
     }
 
     #[cold]
-    pub(super) fn w6c6_get_impl(&mut self, q: Get<'_>) -> Option<Value> {
+    pub(super) fn protocol_get_impl(&mut self, q: Get<'_>) -> Option<Value> {
         match q {
             Get::Portal(r) => {
                 let e = self.find_entity(&r.uuid)?;
@@ -46,12 +46,12 @@ impl WasmHost<'_> {
             Get::Vehicle(r) => {
                 let e = self.find_entity(&r.uuid)?;
                 let v = e.get_vehicle()?;
-                Some(self.w6_value(&v))
+                Some(self.quat_value(&v))
             }
             Get::Passengers(r) => {
                 let e = self.find_entity(&r.uuid)?;
                 let list = e.get_passengers();
-                Some(Value::List(list.iter().map(|p| self.w6_value(p)).collect()))
+                Some(Value::List(list.iter().map(|p| self.quat_value(p)).collect()))
             }
             Get::Villager(r, f) => {
                 let e = self.find_entity(&r.uuid)?;
@@ -90,7 +90,7 @@ impl WasmHost<'_> {
     }
 
     #[cold]
-    pub(super) fn w6c6_set_impl(&mut self, s: Set<'_>) -> bool {
+    pub(super) fn protocol_set_impl(&mut self, s: Set<'_>) -> bool {
         match s {
             Set::Portal(r, ticks) => match self.find_entity(&r.uuid) {
                 Some(e) => {

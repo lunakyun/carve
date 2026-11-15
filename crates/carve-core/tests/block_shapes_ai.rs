@@ -95,7 +95,7 @@ impl Host for Mock {
     fn add_effect(&mut self, _p: &PlayerRef, effect: &str, ticks: u32, amplifier: u8) {
         self.effects.push(format!("{effect} {ticks} {amplifier}"));
     }
-    fn w5c4(&mut self, q: Q<'_>) -> Option<Value> {
+    fn block_shape_query(&mut self, q: Q<'_>) -> Option<Value> {
         let yes = Some(Value::Bool(true));
         match q {
             Q::Brew(_, 0) => Some(Value::Item {
@@ -457,7 +457,7 @@ fn enchant_offers_in_prepare() {
     let mut h = Mock::steve();
     let nums = [12.0, 2.0, 3.0, 33.0, 1.0, 7.0, 40.0, 2.0, 0.0, -1.0, 0.0];
     e.fire(
-        EventKind::Ext2(Ev::EnchantPrepare),
+        EventKind::Game(Ev::EnchantPrepare),
         make_ctx(Ev::EnchantPrepare, Some(steve()), &nums, &["diamond_sword"], &[]),
         &mut h,
     );
@@ -475,7 +475,7 @@ fn enchant_cost_and_hint() {
     let mut e = load_src(&script("on enchant", body));
     let mut h = Mock::steve();
     e.fire(
-        EventKind::Ext2(Ev::Enchant),
+        EventKind::Game(Ev::Enchant),
         make_ctx(
             Ev::Enchant,
             Some(steve()),

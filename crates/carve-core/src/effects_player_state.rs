@@ -2,7 +2,7 @@
 //! dismount/eject/ride, custom name visibility, resource packs, save world,
 //! stop server, `toggle` and `transform`.
 //!
-//! All of them share one effect variant ([`W2Eff`]) so the hot enums stay small.
+//! All of them share one effect variant ([`StateEffect`]) so the hot enums stay small.
 
 use crate::compile::{EffKind, Effect};
 use crate::expr::{Env, Expr, VarRef, parse_expr, parse_varref};
@@ -13,7 +13,7 @@ use crate::pattern::Capture;
 use crate::value::PlayerRef;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum W2Op {
+pub enum StateOp {
     /// `poison player [for 10 seconds]`
     Poison,
     /// `cure player [of poison]`
@@ -51,25 +51,25 @@ pub enum Arg {
     Var,
 }
 
-impl W2Op {
+impl StateOp {
     pub fn layout(self) -> &'static [Arg] {
         use Arg::*;
         match self {
-            W2Op::Poison => &[Player, Span],
-            W2Op::Hide | W2Op::Reveal | W2Op::Ride => &[Player, Player],
-            W2Op::SaveWorld | W2Op::StopServer => &[],
-            W2Op::ResourcePack => &[Text, Text, Player],
-            W2Op::Toggle => &[Var],
+            StateOp::Poison => &[Player, Span],
+            StateOp::Hide | StateOp::Reveal | StateOp::Ride => &[Player, Player],
+            StateOp::SaveWorld | StateOp::StopServer => &[],
+            StateOp::ResourcePack => &[Text, Text, Player],
+            StateOp::Toggle => &[Var],
             _ => &[Player],
         }
     }
 }
 
-/// One compiled effect. `args` follows [`W2Op::layout`] (without the
+/// One compiled effect. `args` follows [`StateOp::layout`] (without the
 /// variable slot); missing optional parts are `None`.
 #[derive(Debug, Clone, PartialEq)]
-pub struct W2Eff {
-    pub op: W2Op,
+pub struct StateEffect {
+    pub op: StateOp,
     pub args: Vec<Option<Expr>>,
     pub var: Option<VarRef>,
 }
@@ -81,45 +81,45 @@ pub struct Transform {
     pub with: Expr,
 }
 
-use EffKind::W2e3 as W2;
-use W2Op::*;
+use EffKind::PlayerState as K;
+use StateOp::*;
 
 pub const EFFECT_PATTERNS: &[(&str, EffKind)] = &[
-    ("poison %player% [for %timespan%]", W2(Poison)),
-    ("(cure|unpoison) %player% [of poison]", W2(Cure)),
-    ("show [the] custom name of %player%", W2(NameVisible(true))),
-    ("show %player%'s custom name", W2(NameVisible(true))),
-    ("hide [the] custom name of %player%", W2(NameVisible(false))),
-    ("hide %player%'s custom name", W2(NameVisible(false))),
-    ("hide %player%", W2(Hide)),
-    ("reveal %player%", W2(Reveal)),
-    ("save [the] (world|worlds)", W2(SaveWorld)),
-    ("save all worlds", W2(SaveWorld)),
-    ("stop [the] server", W2(StopServer)),
-    ("shut down [the] server", W2(StopServer)),
-    ("shutdown [the] server", W2(StopServer)),
-    ("make %player% start sprinting", W2(Sprint(true))),
-    ("make %player% sprint", W2(Sprint(true))),
-    ("make %player% stop sprinting", W2(Sprint(false))),
-    ("make %player% swing [their] [main] hand", W2(Swing(true))),
-    ("make %player% swing [their] off hand", W2(Swing(false))),
-    ("make %player% swing", W2(Swing(true))),
-    ("clear [the] title of %player%", W2(ClearTitle(false))),
-    ("clear %player%'s title", W2(ClearTitle(false))),
-    ("clear [the] title", W2(ClearTitle(false))),
-    ("reset [the] title of %player%", W2(ClearTitle(true))),
-    ("reset %player%'s title", W2(ClearTitle(true))),
-    ("reset [the] title", W2(ClearTitle(true))),
-    ("dismount %player%", W2(Dismount)),
-    ("make %player% dismount", W2(Dismount)),
-    ("eject %player%", W2(Eject)),
-    ("eject [all] passengers of %player%", W2(Eject)),
-    ("make %player% (ride|mount) %player%", W2(Ride)),
+    ("poison %player% [for %timespan%]", K(Poison)),
+    ("(cure|unpoison) %player% [of poison]", K(Cure)),
+    ("show [the] custom name of %player%", K(NameVisible(true))),
+    ("show %player%'s custom name", K(NameVisible(true))),
+    ("hide [the] custom name of %player%", K(NameVisible(false))),
+    ("hide %player%'s custom name", K(NameVisible(false))),
+    ("hide %player%", K(Hide)),
+    ("reveal %player%", K(Reveal)),
+    ("save [the] (world|worlds)", K(SaveWorld)),
+    ("save all worlds", K(SaveWorld)),
+    ("stop [the] server", K(StopServer)),
+    ("shut down [the] server", K(StopServer)),
+    ("shutdown [the] server", K(StopServer)),
+    ("make %player% start sprinting", K(Sprint(true))),
+    ("make %player% sprint", K(Sprint(true))),
+    ("make %player% stop sprinting", K(Sprint(false))),
+    ("make %player% swing [their] [main] hand", K(Swing(true))),
+    ("make %player% swing [their] off hand", K(Swing(false))),
+    ("make %player% swing", K(Swing(true))),
+    ("clear [the] title of %player%", K(ClearTitle(false))),
+    ("clear %player%'s title", K(ClearTitle(false))),
+    ("clear [the] title", K(ClearTitle(false))),
+    ("reset [the] title of %player%", K(ClearTitle(true))),
+    ("reset %player%'s title", K(ClearTitle(true))),
+    ("reset [the] title", K(ClearTitle(true))),
+    ("dismount %player%", K(Dismount)),
+    ("make %player% dismount", K(Dismount)),
+    ("eject %player%", K(Eject)),
+    ("eject [all] passengers of %player%", K(Eject)),
+    ("make %player% (ride|mount) %player%", K(Ride)),
     (
         "send [the] resource pack %text% [with hash %text%] to %player%",
-        W2(ResourcePack),
+        K(ResourcePack),
     ),
-    ("(toggle|switch) %variable%", W2(Toggle)),
+    ("(toggle|switch) %variable%", K(Toggle)),
 ];
 
 fn take(caps: &mut [Option<Capture>], i: usize) -> Option<Capture> {
@@ -127,7 +127,7 @@ fn take(caps: &mut [Option<Capture>], i: usize) -> Option<Capture> {
 }
 
 /// Build the effect from pattern captures.
-pub fn build(op: W2Op, caps: &mut [Option<Capture>]) -> Option<Effect> {
+pub fn build(op: StateOp, caps: &mut [Option<Capture>]) -> Option<Effect> {
     let mut args = Vec::new();
     let mut var = None;
     for (i, a) in op.layout().iter().enumerate() {
@@ -153,7 +153,7 @@ pub fn build(op: W2Op, caps: &mut [Option<Capture>]) -> Option<Effect> {
     if op == Ride && missing(1) {
         return None;
     }
-    Some(Effect::W2e3(Box::new(W2Eff { op, args, var })))
+    Some(Effect::PlayerState(Box::new(StateEffect { op, args, var })))
 }
 
 /// `transform {list::*} with <expr using input>`. `None` means this line is
@@ -182,7 +182,7 @@ pub fn parse_transform(toks: &[Tok], env: &Env) -> Option<Result<Effect, String>
         .collect();
     Some(
         parse_expr(&rest, env)
-            .map(|with| Effect::W2Transform(Box::new(Transform { list, with })))
+            .map(|with| Effect::PlayerTransform(Box::new(Transform { list, with })))
             .map_err(|e| format!("can't understand the 'transform' expression: {e}")),
     )
 }
@@ -219,7 +219,7 @@ pub struct Args {
 }
 
 /// Run an effect on evaluated arguments (`toggle` is handled by the engine).
-pub fn run(op: W2Op, a: &Args, host: &mut dyn Host) {
+pub fn run(op: StateOp, a: &Args, host: &mut dyn Host) {
     let p0 = a.players[0].as_ref();
     match op {
         Poison => {

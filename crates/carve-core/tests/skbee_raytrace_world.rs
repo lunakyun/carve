@@ -50,7 +50,7 @@ impl Host for Mock {
     fn player_location(&mut self, _p: &PlayerRef) -> Option<(f64, f64, f64, String)> {
         Some((10.0, 64.0, 10.0, "world".into()))
     }
-    fn w2e7_query(&mut self, q: Query<'_>) -> Option<Value> {
+    fn server_query(&mut self, q: Query<'_>) -> Option<Value> {
         match q {
             // Facing south: +z.
             Query::Yaw(_) => Some(Value::Num(0.0)),

@@ -64,7 +64,7 @@ impl BeField {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum W2 {
+pub enum WorldFact {
     Eternity,
     /// `x radians` (true) or `x degrees` (false): the angle in degrees.
     Angle(bool, Expr),
@@ -78,18 +78,20 @@ pub enum W2 {
     AllScripts,
 }
 
-impl W2 {
+impl WorldFact {
     pub fn ty(&self) -> crate::expr::Ty {
         use crate::expr::Ty;
         match self {
-            W2::Eternity => Ty::Timespan,
-            W2::BlockEntity(f, _) if f.is_span() => Ty::Timespan,
-            W2::Angle(..) | W2::Altitude(_) | W2::Channel(..) | W2::ItemCount(..) | W2::BlockEntity(..) => {
-                Ty::Number
-            }
-            W2::Biome(_) => Ty::Text,
-            W2::Armor(..) => Ty::Item,
-            W2::AllScripts => Ty::List,
+            WorldFact::Eternity => Ty::Timespan,
+            WorldFact::BlockEntity(f, _) if f.is_span() => Ty::Timespan,
+            WorldFact::Angle(..)
+            | WorldFact::Altitude(_)
+            | WorldFact::Channel(..)
+            | WorldFact::ItemCount(..)
+            | WorldFact::BlockEntity(..) => Ty::Number,
+            WorldFact::Biome(_) => Ty::Text,
+            WorldFact::Armor(..) => Ty::Item,
+            WorldFact::AllScripts => Ty::List,
         }
     }
 }
@@ -129,7 +131,12 @@ pub(crate) fn starts(lw: &str) -> bool {
 /// Try to parse one of the expressions. `pos` is the position after the first
 /// word `lw` (already lowercase). Returns the expression and the end position,
 /// or `None` when the words are something else.
-pub(crate) fn parse(toks: &[Tok], pos: usize, lw: &str, env: &Env) -> Result<Option<(W2, usize)>, String> {
+pub(crate) fn parse(
+    toks: &[Tok],
+    pos: usize,
+    lw: &str,
+    env: &Env,
+) -> Result<Option<(WorldFact, usize)>, String> {
     if !starts(lw) {
         return Ok(None);
     }
@@ -141,11 +148,11 @@ pub(crate) fn parse(toks: &[Tok], pos: usize, lw: &str, env: &Env) -> Result<Opt
         }
         parse_sum_at(toks, pos + n + 1, env).map(Some)
     };
-    let hit = |r: Option<(Expr, usize)>, f: &dyn Fn(Expr) -> W2| r.map(|(e, p)| (f(e), p));
+    let hit = |r: Option<(Expr, usize)>, f: &dyn Fn(Expr) -> WorldFact| r.map(|(e, p)| (f(e), p));
     Ok(match lw {
-        "eternity" => Some((W2::Eternity, pos)),
-        "an" if is(at(0), "eternity") => Some((W2::Eternity, pos + 1)),
-        "altitude" => hit(of(0)?, &W2::Altitude),
+        "eternity" => Some((WorldFact::Eternity, pos)),
+        "an" if is(at(0), "eternity") => Some((WorldFact::Eternity, pos + 1)),
+        "altitude" => hit(of(0)?, &WorldFact::Altitude),
         "red" | "green" | "blue" | "alpha" => {
             let ch = match lw {
                 "red" => Channel::Red,
@@ -158,11 +165,11 @@ pub(crate) fn parse(toks: &[Tok], pos: usize, lw: &str, env: &Env) -> Result<Opt
             if !(is(at(0), "value") || is(at(0), "component")) {
                 return Ok(None);
             }
-            hit(of(1)?, &|e| W2::Channel(ch, e))
+            hit(of(1)?, &|e| WorldFact::Channel(ch, e))
         }
         "amount" | "number" if is(at(0), "of") => item_count(toks, pos + 1, env)?,
         "biome" if is(at(0), "at") || is(at(0), "of") => {
-            parse_sum_at(toks, pos + 1, env).map(|(e, p)| Some((W2::Biome(e), p)))?
+            parse_sum_at(toks, pos + 1, env).map(|(e, p)| Some((WorldFact::Biome(e), p)))?
         }
         "helmet" | "chestplate" | "leggings" | "boots" => {
             let slot = match lw {
@@ -171,30 +178,30 @@ pub(crate) fn parse(toks: &[Tok], pos: usize, lw: &str, env: &Env) -> Result<Opt
                 "leggings" => ArmorSlot::Leggings,
                 _ => ArmorSlot::Boots,
             };
-            hit(of(0)?, &|e| W2::Armor(slot, e))
+            hit(of(0)?, &|e| WorldFact::Armor(slot, e))
         }
         "beacon" if is(at(0), "tier") || is(at(0), "level") => {
-            hit(of(1)?, &|e| W2::BlockEntity(BeField::BeaconTier, e))
+            hit(of(1)?, &|e| WorldFact::BlockEntity(BeField::BeaconTier, e))
         }
-        "beacon" if is(at(0), "range") => hit(of(1)?, &|e| W2::BlockEntity(BeField::BeaconRange, e)),
+        "beacon" if is(at(0), "range") => hit(of(1)?, &|e| WorldFact::BlockEntity(BeField::BeaconRange, e)),
         "brewing" => {
             // `brewing [stand] time of`, `brewing [stand] fuel [level] of`
             let s = usize::from(is(at(0), "stand"));
             if is(at(s), "time") {
-                hit(of(s + 1)?, &|e| W2::BlockEntity(BeField::BrewTime, e))
+                hit(of(s + 1)?, &|e| WorldFact::BlockEntity(BeField::BrewTime, e))
             } else if is(at(s), "fuel") {
                 let l = usize::from(is(at(s + 1), "level"));
-                hit(of(s + 1 + l)?, &|e| W2::BlockEntity(BeField::BrewFuel, e))
+                hit(of(s + 1 + l)?, &|e| WorldFact::BlockEntity(BeField::BrewFuel, e))
             } else {
                 None
             }
         }
-        "burn" if is(at(0), "time") => hit(of(1)?, &|e| W2::BlockEntity(BeField::BurnTime, e)),
-        "cook" if is(at(0), "time") => hit(of(1)?, &|e| W2::BlockEntity(BeField::CookTime, e)),
+        "burn" if is(at(0), "time") => hit(of(1)?, &|e| WorldFact::BlockEntity(BeField::BurnTime, e)),
+        "cook" if is(at(0), "time") => hit(of(1)?, &|e| WorldFact::BlockEntity(BeField::CookTime, e)),
         "total" if is(at(0), "cook") && is(at(1), "time") => {
-            hit(of(2)?, &|e| W2::BlockEntity(BeField::CookTimeTotal, e))
+            hit(of(2)?, &|e| WorldFact::BlockEntity(BeField::CookTimeTotal, e))
         }
-        "all" if is(at(0), "scripts") => Some((W2::AllScripts, pos + 1)),
+        "all" if is(at(0), "scripts") => Some((WorldFact::AllScripts, pos + 1)),
         _ => None,
     })
 }
@@ -202,7 +209,7 @@ pub(crate) fn parse(toks: &[Tok], pos: usize, lw: &str, env: &Env) -> Result<Opt
 /// `amount of <item> in <player>'s inventory` / `... in inventory of <player>`.
 /// `pos` is just after `of`. Returns `None` for anything else, so
 /// `amount of {list::*}` keeps working.
-fn item_count(toks: &[Tok], pos: usize, env: &Env) -> Result<Option<(W2, usize)>, String> {
+fn item_count(toks: &[Tok], pos: usize, env: &Env) -> Result<Option<(WorldFact, usize)>, String> {
     let Some(in_at) = (pos..toks.len()).find(|&i| is(toks.get(i), "in")) else {
         return Ok(None);
     };
@@ -225,7 +232,7 @@ fn item_count(toks: &[Tok], pos: usize, env: &Env) -> Result<Option<(W2, usize)>
         Some(j) => parse_expr(toks.get(in_at + 1..j).unwrap_or_default(), env)?,
         None => parse_sum_at(toks, in_at + 3, env)?.0,
     };
-    Ok(Some((W2::ItemCount(item, player), end)))
+    Ok(Some((WorldFact::ItemCount(item, player), end)))
 }
 
 /// `5 degrees`, `1.5 radians` after a number. Returns the angle in degrees

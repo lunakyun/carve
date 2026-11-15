@@ -41,7 +41,7 @@ impl Host for Mock {
     fn now(&mut self) -> u64 {
         0
     }
-    fn w6c5(&mut self, q: Q<'_>) -> Option<Value> {
+    fn game_fact(&mut self, q: Q<'_>) -> Option<Value> {
         match q {
             Q::MaxStack("ender_pearl") => self.stack.map(Value::Num),
             Q::MaxStack(_) => None,

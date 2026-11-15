@@ -60,7 +60,7 @@ impl Host for Mock {
     fn world_names(&mut self) -> Vec<String> {
         vec!["world".into()]
     }
-    fn c6_set(&mut self, s: Set<'_>) -> bool {
+    fn property_set(&mut self, s: Set<'_>) -> bool {
         match s {
             Set::BlockState(_, s) => {
                 self.set_states.push(s);
@@ -72,7 +72,7 @@ impl Host for Mock {
             _ => false,
         }
     }
-    fn c6_block_state(&mut self, _at: &BlockPos) -> Option<BlockState> {
+    fn block_state_prop(&mut self, _at: &BlockPos) -> Option<BlockState> {
         self.block.clone()
     }
     fn log(&mut self, level: LogLevel, msg: &str) {

@@ -4,7 +4,7 @@
 //! `has persistent data tag`, `has played before`, `is preferred tool` and
 //! `is responsive`.
 //!
-//! Everything compiles to one boxed `Cond::W5c2`, so the hot condition enum
+//! Everything compiles to one boxed `Cond::FlagsMetadata`, so the hot condition enum
 //! does not grow. Only lines that hold one of the key words are matched
 //! against the patterns. A check the game cannot answer is false, negated or
 //! not.
@@ -56,7 +56,7 @@ pub enum Kind {
 
 /// One condition: what to check, negation, and up to two values.
 #[derive(Debug, Clone, PartialEq)]
-pub struct C2Cond {
+pub struct FlagsCond {
     pub kind: Kind,
     pub negate: bool,
     pub a: Option<Expr>,
@@ -334,15 +334,15 @@ pub fn parse_cond(toks: &[Tok], env: &Env) -> Option<Cond> {
         }
         EggHatch => {
             let ev = crate::events_world_vehicles::ExtEvent::EggThrow;
-            if env.ext4 != Some(ev) || env.in_function {
+            if env.world_event != Some(ev) || env.in_function {
                 return None;
             }
             let i = ev.slot_index("hatching")?;
-            (Some(Expr::Ev4Val(i as u8)), None)
+            (Some(Expr::WorldEventVal(i as u8)), None)
         }
         _ => (cap(&mut caps, 0), cap(&mut caps, 1)),
     };
-    Some(Cond::W5c2(Box::new(C2Cond { kind, negate, a, b })))
+    Some(Cond::FlagsMetadata(Box::new(FlagsCond { kind, negate, a, b })))
 }
 
 // ---------------------------------------------------------------- helpers
@@ -498,7 +498,7 @@ pub fn check(kind: Kind, a: &Value, b: Option<&Value>, host: &mut dyn Host) -> O
     match kind {
         StorageFull => {
             let (world, x, y, z) = block_at(a)?;
-            match host.w5c2_query(Query::BeeCount { world, x, y, z })? {
+            match host.flags_query(Query::BeeCount { world, x, y, z })? {
                 Value::Num(n) => Some(n >= 3.0),
                 _ => None,
             }
@@ -509,7 +509,7 @@ pub fn check(kind: Kind, a: &Value, b: Option<&Value>, host: &mut dyn Host) -> O
         }
         BarFlag(f) => {
             let Value::Text(id) = a else { return None };
-            match host.w5c2_query(Query::BarFlag(id, f))? {
+            match host.flags_query(Query::BarFlag(id, f))? {
                 Value::Bool(on) => Some(on),
                 _ => None,
             }
@@ -519,7 +519,7 @@ pub fn check(kind: Kind, a: &Value, b: Option<&Value>, host: &mut dyn Host) -> O
         LootTable => loot_table(a, host),
         PlayedBefore => {
             let Value::Player(pl) = a else { return None };
-            match host.w5c2_query(Query::PlayedBefore(&pl.uuid))? {
+            match host.flags_query(Query::PlayedBefore(&pl.uuid))? {
                 Value::Bool(b) => Some(b),
                 _ => None,
             }
@@ -527,7 +527,7 @@ pub fn check(kind: Kind, a: &Value, b: Option<&Value>, host: &mut dyn Host) -> O
         PreferredTool => {
             let item = item_id(a)?;
             let block = block_id(b?, host)?;
-            let needs_tool = match host.w5c2_query(Query::ToolRequired(&block))? {
+            let needs_tool = match host.flags_query(Query::ToolRequired(&block))? {
                 Value::Bool(b) => b,
                 _ => return None,
             };
@@ -535,7 +535,7 @@ pub fn check(kind: Kind, a: &Value, b: Option<&Value>, host: &mut dyn Host) -> O
         }
         Responsive => {
             let Value::Entity(e) = a else { return Some(false) };
-            match host.w5c2_query(Query::Responsive(&e.uuid))? {
+            match host.flags_query(Query::Responsive(&e.uuid))? {
                 Value::Bool(b) => Some(b),
                 _ => None,
             }

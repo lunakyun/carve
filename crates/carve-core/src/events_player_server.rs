@@ -11,7 +11,7 @@
 use crate::expr::Ty;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Ev3 {
+pub enum PlayerServerEvent {
     Kick,
     LanguageChange,
     Leash,
@@ -35,55 +35,103 @@ pub enum Ev3 {
 
 /// Name, aliases (all lowercase), has `event-text`, has `event-number`,
 /// has a player.
-type Row = (Ev3, &'static [&'static str], bool, bool, bool);
+type Row = (PlayerServerEvent, &'static [&'static str], bool, bool, bool);
 
 const ROWS: &[Row] = &[
-    (Ev3::Kick, &["kick", "player kick"], true, false, true),
     (
-        Ev3::LanguageChange,
+        PlayerServerEvent::Kick,
+        &["kick", "player kick"],
+        true,
+        false,
+        true,
+    ),
+    (
+        PlayerServerEvent::LanguageChange,
         &["language change", "locale change", "player language change"],
         true,
         false,
         true,
     ),
-    (Ev3::Leash, &["leash", "player leash"], false, false, true),
-    (Ev3::Unleash, &["unleash"], true, false, false),
-    (Ev3::LeavesDecay, &["leaves decay"], false, false, false),
     (
-        Ev3::LightningStrike,
+        PlayerServerEvent::Leash,
+        &["leash", "player leash"],
+        false,
+        false,
+        true,
+    ),
+    (PlayerServerEvent::Unleash, &["unleash"], true, false, false),
+    (
+        PlayerServerEvent::LeavesDecay,
+        &["leaves decay"],
+        false,
+        false,
+        false,
+    ),
+    (
+        PlayerServerEvent::LightningStrike,
         &["lightning strike", "lightning"],
         false,
         false,
         false,
     ),
     (
-        Ev3::LoveModeEnter,
+        PlayerServerEvent::LoveModeEnter,
         &["love mode enter", "enter love mode"],
         false,
         true,
         true,
     ),
-    (Ev3::PiglinBarter, &["piglin barter"], false, false, false),
-    (Ev3::PistonExtend, &["piston extend"], true, false, false),
-    (Ev3::PistonRetract, &["piston retract"], true, false, false),
-    (Ev3::Portal, &["portal", "entity portal"], false, false, true),
     (
-        Ev3::PortalEnter,
+        PlayerServerEvent::PiglinBarter,
+        &["piglin barter"],
+        false,
+        false,
+        false,
+    ),
+    (
+        PlayerServerEvent::PistonExtend,
+        &["piston extend"],
+        true,
+        false,
+        false,
+    ),
+    (
+        PlayerServerEvent::PistonRetract,
+        &["piston retract"],
+        true,
+        false,
+        false,
+    ),
+    (
+        PlayerServerEvent::Portal,
+        &["portal", "entity portal"],
+        false,
+        false,
+        true,
+    ),
+    (
+        PlayerServerEvent::PortalEnter,
         &["portal enter", "entity portal enter"],
         false,
         false,
         true,
     ),
-    (Ev3::PortalCreate, &["portal create"], true, false, false),
     (
-        Ev3::Redstone,
+        PlayerServerEvent::PortalCreate,
+        &["portal create"],
+        true,
+        false,
+        false,
+    ),
+    (
+        PlayerServerEvent::Redstone,
         &["redstone", "redstone change"],
         false,
         true,
         false,
     ),
     (
-        Ev3::ResourcePackResponse,
+        PlayerServerEvent::ResourcePackResponse,
         &[
             "resource pack response",
             "resource pack request response",
@@ -94,30 +142,44 @@ const ROWS: &[Row] = &[
         true,
     ),
     (
-        Ev3::ResurrectAttempt,
+        PlayerServerEvent::ResurrectAttempt,
         &["resurrect attempt", "resurrect", "totem"],
         false,
         false,
         true,
     ),
     (
-        Ev3::SendCommandList,
+        PlayerServerEvent::SendCommandList,
         &["send command list", "command list send"],
         true,
         false,
         true,
     ),
-    (Ev3::LootGenerate, &["loot generate"], true, false, false),
-    (Ev3::PlayerInput, &["player input", "input"], true, true, true),
+    (
+        PlayerServerEvent::LootGenerate,
+        &["loot generate"],
+        true,
+        false,
+        false,
+    ),
+    (
+        PlayerServerEvent::PlayerInput,
+        &["player input", "input"],
+        true,
+        true,
+        true,
+    ),
 ];
 
-impl Ev3 {
-    pub fn parse(s: &str) -> Option<Ev3> {
+impl PlayerServerEvent {
+    pub fn parse(s: &str) -> Option<PlayerServerEvent> {
         ROWS.iter().find(|r| r.1.contains(&s)).map(|r| r.0)
     }
 
     fn row(self) -> &'static Row {
-        ROWS.iter().find(|r| r.0 == self).expect("every Ev3 has a row")
+        ROWS.iter()
+            .find(|r| r.0 == self)
+            .expect("every PlayerServerEvent has a row")
     }
 
     /// The main script name.
@@ -141,7 +203,7 @@ impl Ev3 {
         self.row().4
     }
 
-    pub fn all() -> impl Iterator<Item = Ev3> {
+    pub fn all() -> impl Iterator<Item = PlayerServerEvent> {
         ROWS.iter().map(|r| r.0)
     }
 
@@ -152,14 +214,14 @@ impl Ev3 {
         const ENT: &[(&str, Ty)] = &[("event-entity", Ty::Object)];
         const BARTER: &[(&str, Ty)] = &[("event-item", Ty::Item), ("event-items", Ty::List)];
         match self {
-            Ev3::LeavesDecay
-            | Ev3::LightningStrike
-            | Ev3::PistonExtend
-            | Ev3::PistonRetract
-            | Ev3::PortalCreate
-            | Ev3::Redstone => LOC,
-            Ev3::LoveModeEnter | Ev3::Leash | Ev3::Unleash => ENT,
-            Ev3::PiglinBarter => BARTER,
+            PlayerServerEvent::LeavesDecay
+            | PlayerServerEvent::LightningStrike
+            | PlayerServerEvent::PistonExtend
+            | PlayerServerEvent::PistonRetract
+            | PlayerServerEvent::PortalCreate
+            | PlayerServerEvent::Redstone => LOC,
+            PlayerServerEvent::LoveModeEnter | PlayerServerEvent::Leash | PlayerServerEvent::Unleash => ENT,
+            PlayerServerEvent::PiglinBarter => BARTER,
             _ => &[],
         }
     }

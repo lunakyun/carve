@@ -1,9 +1,9 @@
 //! Extra game events (heal, grow, explode, fishing, furnace, items, ...).
 //!
-//! All of them share one `EventKind::Ext2(Ev)` variant, so the hot event enum
+//! All of them share one `EventKind::Game(Ev)` variant, so the hot event enum
 //! stays small. Each event has a [`Spec`]: its names in `on ...:`, whether it
 //! has a player, whether it can be cancelled, and its event values. Values
-//! live in an [`ExtVals`] box on the `EventCtx`, read by `Expr::Ev2Val`.
+//! live in an [`ExtVals`] box on the `EventCtx`, read by `Expr::GameEventVal`.
 
 use crate::engine::EventCtx;
 use crate::expr::{Env, Expr, Ty};
@@ -28,7 +28,7 @@ impl Slot {
     }
 }
 
-/// Values carried by one event, read with `Expr::Ev2Val`.
+/// Values carried by one event, read with `Expr::GameEventVal`.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct ExtVals {
     pub nums: Vec<f64>,
@@ -642,21 +642,21 @@ pub fn parse_value(ev: Ev, word: &str, rest: &[Tok], need_more: &mut bool) -> Op
                 .vals
                 .iter()
                 .find(|(_, s)| matches!(s, Slot::Num(_)))
-                .map(|(_, s)| (Expr::Ev2Val(*s), 0));
+                .map(|(_, s)| (Expr::GameEventVal(*s), 0));
         }
         "event-text" => {
             return sp
                 .vals
                 .iter()
                 .find(|(_, s)| matches!(s, Slot::Text(_)))
-                .map(|(_, s)| (Expr::Ev2Val(*s), 0));
+                .map(|(_, s)| (Expr::GameEventVal(*s), 0));
         }
         "event-boolean" => {
             return sp
                 .vals
                 .iter()
                 .find(|(_, s)| matches!(s, Slot::Flag(_)))
-                .map(|(_, s)| (Expr::Ev2Val(*s), 0));
+                .map(|(_, s)| (Expr::GameEventVal(*s), 0));
         }
         _ => {}
     }
@@ -687,7 +687,7 @@ pub fn parse_value(ev: Ev, word: &str, rest: &[Tok], need_more: &mut bool) -> Op
             best = Some((*slot, used));
         }
     }
-    best.map(|(s, u)| (Expr::Ev2Val(s), u))
+    best.map(|(s, u)| (Expr::GameEventVal(s), u))
 }
 
 /// Build a context. `nums`, `texts` and `flags` must match the spec counts.

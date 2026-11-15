@@ -3,8 +3,8 @@
 //! (`remaining air`, `respawn location`, `sea level`, `simulation distance`,
 //! `tablisted players`, `quit message`).
 //!
-//! The rare variants all live behind one boxed [`W6`] value in `Expr`, so the
-//! hot expression enum does not grow. Running them is in `engine/w6_eval.rs`.
+//! The rare variants all live behind one boxed [`RandomExpr`] value in `Expr`, so the
+//! hot expression enum does not grow. Running them is in `engine/random_eval.rs`.
 
 use crate::compile::{EffKind, Effect};
 use crate::expr::{Expr, P, Ty, VarRef, parse_varref};
@@ -33,7 +33,7 @@ pub enum Read {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum W6 {
+pub enum RandomExpr {
     /// `a if <condition> else b`
     Ternary(Box<crate::compile::Cond>, Expr, Expr),
     /// `random alphanumeric character`, `random character between "a" and "z"`
@@ -55,17 +55,20 @@ pub enum W6 {
     Read(Read, Option<Expr>),
 }
 
-impl W6 {
+impl RandomExpr {
     pub fn ty(&self, env: &crate::expr::Env) -> Ty {
         match self {
-            W6::Ternary(_, a, b) => {
+            RandomExpr::Ternary(_, a, b) => {
                 let (x, y) = (a.ty(env), b.ty(env));
                 if x == y { x } else { Ty::Object }
             }
-            W6::RandomChar { .. } | W6::RandomUuid | W6::Raw(_) | W6::Repeat(..) => Ty::Text,
-            W6::Reduce(..) => Ty::Object,
-            W6::RecursiveSize(_) => Ty::Number,
-            W6::Read(r, _) => match r {
+            RandomExpr::RandomChar { .. }
+            | RandomExpr::RandomUuid
+            | RandomExpr::Raw(_)
+            | RandomExpr::Repeat(..) => Ty::Text,
+            RandomExpr::Reduce(..) => Ty::Object,
+            RandomExpr::RecursiveSize(_) => Ty::Number,
+            RandomExpr::Read(r, _) => match r {
                 Read::RemainingAir => Ty::Timespan,
                 Read::RespawnLocation => Ty::Location,
                 Read::SeaLevel | Read::SimulationDistance => Ty::Number,
@@ -166,20 +169,20 @@ pub fn possessive(toks: &[Tok], i: usize) -> Option<(Read, usize)> {
 }
 
 impl P<'_> {
-    fn w6_next(&self, k: usize) -> Option<String> {
+    fn random_next(&self, k: usize) -> Option<String> {
         if self.pos + k >= self.toks.len() {
             self.hit_end.set(true);
         }
         lw(self.toks.get(self.pos + k))
     }
 
-    fn w6_expr(&self, w: W6) -> Expr {
-        Expr::W6(Box::new(w))
+    fn random_expr(&self, w: RandomExpr) -> Expr {
+        Expr::RandomTernary(Box::new(w))
     }
 
     /// `of <value>` after the words already read.
-    fn w6_of(&mut self) -> Result<Expr, String> {
-        if self.w6_next(0).as_deref() != Some("of") {
+    fn random_of(&mut self) -> Result<Expr, String> {
+        if self.random_next(0).as_deref() != Some("of") {
             return Err("expected 'of'".into());
         }
         self.pos += 1;
@@ -187,9 +190,9 @@ impl P<'_> {
     }
 
     /// Word-led expressions. `lw` is the word just read.
-    pub(crate) fn w6_word(&mut self, lw: &str) -> Result<Option<Expr>, String> {
-        let n0 = self.w6_next(0);
-        let n1 = self.w6_next(1);
+    pub(crate) fn random_word(&mut self, lw: &str) -> Result<Option<Expr>, String> {
+        let n0 = self.random_next(0);
+        let n1 = self.random_next(1);
         let (n0, n1) = (n0.as_deref(), n1.as_deref());
         Ok(Some(match lw {
             "pi" => Expr::Num(std::f64::consts::PI),
@@ -201,9 +204,9 @@ impl P<'_> {
             }
             "a" | "an" if n0 == Some("random") => {
                 self.pos += 1;
-                return self.w6_random();
+                return self.random();
             }
-            "random" => return self.w6_random(),
+            "random" => return self.random(),
             // `raw iron`, `raw gold block` are items, not `raw <text>`.
             "raw"
                 if self.pos < self.toks.len()
@@ -212,26 +215,26 @@ impl P<'_> {
                 if matches!(n0, Some("string" | "text")) {
                     self.pos += 1;
                 }
-                if self.w6_next(0).as_deref() == Some("of") {
+                if self.random_next(0).as_deref() == Some("of") {
                     self.pos += 1;
                 }
                 let inner = self.primary()?;
-                self.w6_expr(W6::Raw(inner))
+                self.random_expr(RandomExpr::Raw(inner))
             }
             "recursive" if n0 == Some("size") && n1 == Some("of") => {
                 self.pos += 2;
-                let var = self.w6_list_var("recursive size of")?;
-                self.w6_expr(W6::RecursiveSize(var))
+                let var = self.random_list_var("recursive size of")?;
+                self.random_expr(RandomExpr::RecursiveSize(var))
             }
             "recursive" if matches!(self.toks.get(self.pos), Some(Tok::Var(_))) => {
-                let var = self.w6_list_var("recursive")?;
+                let var = self.random_list_var("recursive")?;
                 Expr::Items(Box::new(ListSrc::Recursive(var)))
             }
             "reduce" if self.pos < self.toks.len() => {
                 let (src, end) = parse_src_at(self.toks, self.pos, self.env, false)
                     .inspect_err(|_| self.hit_end.set(true))?;
                 self.pos = end;
-                self.w6_reduce_tail(src)?
+                self.random_reduce_tail(src)?
             }
             "input" => Expr::Var(parse_varref(crate::list_ops::INPUT_KEY, self.env)?),
             "reduced" if n0 == Some("value") => {
@@ -248,36 +251,36 @@ impl P<'_> {
             "remaining" if n0 == Some("air") && n1 == Some("of") => {
                 self.pos += 2;
                 let p = self.primary()?;
-                self.w6_expr(W6::Read(Read::RemainingAir, Some(p)))
+                self.random_expr(RandomExpr::Read(Read::RemainingAir, Some(p)))
             }
             "respawn" | "bed" if n0 == Some("location") && n1 == Some("of") => {
                 self.pos += 2;
                 let p = self.primary()?;
-                self.w6_expr(W6::Read(Read::RespawnLocation, Some(p)))
+                self.random_expr(RandomExpr::Read(Read::RespawnLocation, Some(p)))
             }
             "sea" if n0 == Some("level") && n1 == Some("of") => {
                 self.pos += 2;
                 let w = self.primary()?;
-                self.w6_expr(W6::Read(Read::SeaLevel, Some(w)))
+                self.random_expr(RandomExpr::Read(Read::SeaLevel, Some(w)))
             }
             "simulation" if n0 == Some("distance") => {
                 self.pos += 1;
-                self.w6_expr(W6::Read(Read::SimulationDistance, None))
+                self.random_expr(RandomExpr::Read(Read::SimulationDistance, None))
             }
             "tablisted" if n0 == Some("players") => {
                 self.pos += 1;
-                let of = if self.w6_next(0).as_deref() == Some("of") {
-                    Some(self.w6_of()?)
+                let of = if self.random_next(0).as_deref() == Some("of") {
+                    Some(self.random_of()?)
                 } else {
                     None
                 };
-                self.w6_expr(W6::Read(Read::Tablist, of))
+                self.random_expr(RandomExpr::Read(Read::Tablist, of))
             }
             _ => return Ok(None),
         }))
     }
 
-    fn w6_list_var(&mut self, what: &str) -> Result<VarRef, String> {
+    fn random_list_var(&mut self, what: &str) -> Result<VarRef, String> {
         match self.peek().cloned() {
             Some(Tok::Var(v)) => {
                 self.pos += 1;
@@ -293,41 +296,41 @@ impl P<'_> {
     }
 
     /// After `random`: `uuid`, `[alphanumeric] character [between a and b]`.
-    fn w6_random(&mut self) -> Result<Option<Expr>, String> {
-        let n0 = self.w6_next(0);
+    fn random(&mut self) -> Result<Option<Expr>, String> {
+        let n0 = self.random_next(0);
         match n0.as_deref() {
             Some("uuid") => {
                 self.pos += 1;
-                Ok(Some(self.w6_expr(W6::RandomUuid)))
+                Ok(Some(self.random_expr(RandomExpr::RandomUuid)))
             }
             Some("alphanumeric" | "character" | "char") => {
                 let alnum = n0.as_deref() == Some("alphanumeric");
                 self.pos += 1;
                 if alnum {
-                    if !matches!(self.w6_next(0).as_deref(), Some("character" | "char")) {
+                    if !matches!(self.random_next(0).as_deref(), Some("character" | "char")) {
                         return Err("expected 'random alphanumeric character'".into());
                     }
                     self.pos += 1;
                 }
                 let (mut from, mut to) = (None, None);
-                if matches!(self.w6_next(0).as_deref(), Some("between" | "from")) {
+                if matches!(self.random_next(0).as_deref(), Some("between" | "from")) {
                     self.pos += 1;
                     from = Some(self.primary_base()?);
-                    if !matches!(self.w6_next(0).as_deref(), Some("and" | "to")) {
+                    if !matches!(self.random_next(0).as_deref(), Some("and" | "to")) {
                         return Err("expected 'random character between \"a\" and \"z\"'".into());
                     }
                     self.pos += 1;
                     to = Some(self.primary_base()?);
                 }
-                Ok(Some(self.w6_expr(W6::RandomChar { alnum, from, to })))
+                Ok(Some(self.random_expr(RandomExpr::RandomChar { alnum, from, to })))
             }
             _ => Ok(None),
         }
     }
 
     /// After the list in `reduce <list>`: `with [<expression>]`.
-    fn w6_reduce_tail(&mut self, src: ListSrc) -> Result<Expr, String> {
-        if self.w6_next(0).as_deref() != Some("with") {
+    fn random_reduce_tail(&mut self, src: ListSrc) -> Result<Expr, String> {
+        if self.random_next(0).as_deref() != Some("with") {
             return Err("expected 'reduce {list::*} with [reduced value + input]'".into());
         }
         self.pos += 1;
@@ -382,11 +385,11 @@ impl P<'_> {
             .collect();
         let body = crate::expr::parse_expr(&body, self.env).inspect_err(|_| self.hit_end.set(true))?;
         self.pos = end;
-        Ok(self.w6_expr(W6::Reduce(src, body)))
+        Ok(self.random_expr(RandomExpr::Reduce(src, body)))
     }
 
     /// Postfix forms: `"ab" repeated 3 times`, `{x::*} reduced with [...]`.
-    pub(crate) fn w6_postfix(&mut self, mut e: Expr) -> Result<Expr, String> {
+    pub(crate) fn random_postfix(&mut self, mut e: Expr) -> Result<Expr, String> {
         loop {
             let n0 = lw(self.toks.get(self.pos));
             match n0.as_deref() {
@@ -397,7 +400,7 @@ impl P<'_> {
                         return Err("'repeated' needs a number, like '\"ab\" repeated 3 times'".into());
                     }
                     if self
-                        .w6_next(0)
+                        .random_next(0)
                         .as_deref()
                         .is_some_and(|w| w == "times" || w == "time")
                     {
@@ -405,16 +408,16 @@ impl P<'_> {
                     } else {
                         return Err("expected 'times' after 'repeated N'".into());
                     }
-                    e = self.w6_expr(W6::Repeat(e, n));
+                    e = self.random_expr(RandomExpr::Repeat(e, n));
                 }
-                Some("reduced") if self.w6_next(1).as_deref() == Some("with") => {
+                Some("reduced") if self.random_next(1).as_deref() == Some("with") => {
                     let src = match e {
                         Expr::Var(v) if v.is_list() => ListSrc::Var(v),
                         Expr::Items(s) => *s,
                         _ => return Err("'reduced with' needs a list like {x::*}".into()),
                     };
                     self.pos += 1;
-                    e = self.w6_reduce_tail(src)?;
+                    e = self.random_reduce_tail(src)?;
                 }
                 _ => return Ok(e),
             }
@@ -423,7 +426,7 @@ impl P<'_> {
 
     /// `a if <condition> else b`, below `?`. Leaves `e` alone when there is no
     /// `else` after the `if`.
-    pub(crate) fn w6_ternary(&mut self, e: Expr) -> Result<Expr, String> {
+    pub(crate) fn random_ternary(&mut self, e: Expr) -> Result<Expr, String> {
         if !self.toks.get(self.pos).is_some_and(|t| t.is_lit("if")) {
             return Ok(e);
         }
@@ -448,14 +451,14 @@ impl P<'_> {
             .map_err(|m| format!("bad condition in 'a if <condition> else b': {m}"))?;
         self.pos = at + 1;
         let other = self.top()?;
-        Ok(self.w6_expr(W6::Ternary(Box::new(cond), e, other)))
+        Ok(self.random_expr(RandomExpr::Ternary(Box::new(cond), e, other)))
     }
 }
 
 // ---------- effects ----------
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum W6Op {
+pub enum RandomOp {
     SetAir,
     AddAir,
     RemoveAir,
@@ -463,14 +466,14 @@ pub enum W6Op {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct W6Effect {
-    pub op: W6Op,
+pub struct RandomEffect {
+    pub op: RandomOp,
     pub player: Expr,
     pub value: Expr,
 }
 
-use EffKind::W6 as K;
-use W6Op::{AddAir, RemoveAir, SetAir, SetRespawn};
+use EffKind::RandomTernary as K;
+use RandomOp::{AddAir, RemoveAir, SetAir, SetRespawn};
 
 /// Extra effect patterns, tried after the main list.
 pub const EFFECT_PATTERNS: &[(&str, EffKind)] = &[
@@ -498,12 +501,12 @@ fn cap(caps: &mut [Option<Capture>], i: usize) -> Option<Expr> {
 }
 
 /// Build the effect. `add` and `remove` capture the value first.
-pub fn build(op: W6Op, caps: &mut [Option<Capture>]) -> Option<Effect> {
+pub fn build(op: RandomOp, caps: &mut [Option<Capture>]) -> Option<Effect> {
     let (p, v) = match op {
         AddAir | RemoveAir => (1, 0),
         _ => (0, 1),
     };
-    Some(Effect::W6(Box::new(W6Effect {
+    Some(Effect::RandomTernary(Box::new(RandomEffect {
         op,
         player: cap(caps, p)?,
         value: cap(caps, v)?,

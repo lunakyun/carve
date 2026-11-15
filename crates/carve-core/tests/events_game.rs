@@ -63,7 +63,7 @@ fn fire(src: &str, ev: Ev, ctx: EventCtx) -> (Vec<String>, bool) {
     let (mut e, errs) = load(src);
     assert!(errs.is_empty(), "unexpected errors: {errs:?}");
     let mut h = Mock::default();
-    let out = e.fire(EventKind::Ext2(ev), ctx, &mut h);
+    let out = e.fire(EventKind::Game(ev), ctx, &mut h);
     let errors: Vec<_> = h.logs.iter().filter(|(l, _)| *l == LogLevel::Error).collect();
     assert!(errors.is_empty(), "runtime errors: {errors:?}");
     (h.calls, out.cancelled)
@@ -247,8 +247,8 @@ fn old_events_still_work() {
 fn has_event_per_kind() {
     let (e, errs) = load("on heal:\n    stop\n");
     assert!(errs.is_empty());
-    assert!(e.table().has_event(EventKind::Ext2(Ev::Heal)));
-    assert!(!e.table().has_event(EventKind::Ext2(Ev::Grow)));
+    assert!(e.table().has_event(EventKind::Game(Ev::Heal)));
+    assert!(!e.table().has_event(EventKind::Game(Ev::Grow)));
     assert!(!e.table().has_event(EventKind::Join));
 }
 

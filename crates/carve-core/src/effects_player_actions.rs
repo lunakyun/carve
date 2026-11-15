@@ -1,7 +1,7 @@
 //! Player effects: `make player fly`, `make player invulnerable`, `ignite`,
 //! `knock`, `make player look at`, `make player say`, `open book`, `log`.
 //!
-//! One effect variant carries all of them (`Effect::W2`), so the hot enums
+//! One effect variant carries all of them (`Effect::PlayerVisibility`), so the hot enums
 //! stay small. The engine runs them from its rare path.
 
 use crate::compile::{EffKind, Effect};
@@ -9,7 +9,7 @@ use crate::expr::Expr;
 use crate::pattern::Capture;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum W2Op {
+pub enum ActionOp {
     /// `make p fly` / `make p stop flying`
     Fly(bool),
     /// `make p invulnerable` / `vulnerable`
@@ -36,59 +36,56 @@ pub enum W2Op {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct W2Effect {
-    pub op: W2Op,
+pub struct ActionEffect {
+    pub op: ActionOp,
     pub args: Vec<Option<Expr>>,
 }
 
-use EffKind::W2b as W2;
-use W2Op::*;
+use ActionOp::*;
+use EffKind::PlayerActions as K;
 
 /// Registered after the main effect patterns. Each starts with a literal.
 pub const EFFECT_PATTERNS: &[(&str, EffKind)] = &[
-    ("make %player% (fly|start flying|be able to fly)", W2(Fly(true))),
+    ("make %player% (fly|start flying|be able to fly)", K(Fly(true))),
     (
         "make %player% (stop flying|not fly|stop fly|unable to fly)",
-        W2(Fly(false)),
+        K(Fly(false)),
     ),
-    ("make %player% invulnerable", W2(Invulnerable(true))),
+    ("make %player% invulnerable", K(Invulnerable(true))),
     (
         "make %player% (vulnerable|not invulnerable)",
-        W2(Invulnerable(false)),
+        K(Invulnerable(false)),
     ),
-    ("make %player% invisible", W2(Invisible(true))),
-    ("make %player% (visible|not invisible)", W2(Invisible(false))),
-    ("ignite %player% [for %timespan%]", W2(Ignite)),
-    ("set %player% on fire [for %timespan%]", W2(Ignite)),
-    ("(extinguish|put out) %player%", W2(Extinguish)),
+    ("make %player% invisible", K(Invisible(true))),
+    ("make %player% (visible|not invisible)", K(Invisible(false))),
+    ("ignite %player% [for %timespan%]", K(Ignite)),
+    ("set %player% on fire [for %timespan%]", K(Ignite)),
+    ("(extinguish|put out) %player%", K(Extinguish)),
     (
         "knock %player% (away from|away) %location% [with (strength|force) %number%]",
-        W2(KnockAway),
+        K(KnockAway),
     ),
     (
         "knock %player% (toward|towards|to) %location% [with (strength|force) %number%]",
-        W2(KnockToward),
+        K(KnockToward),
     ),
-    ("make %player% (look|face) at %location%", W2(LookAt)),
-    ("make %player% say %text%", W2(Say)),
+    ("make %player% (look|face) at %location%", K(LookAt)),
+    ("make %player% say %text%", K(Say)),
     (
         "open [the] book [in [the] main hand] to %player%",
-        W2(OpenBook(false)),
+        K(OpenBook(false)),
     ),
-    (
-        "open [the] book in [the] off hand to %player%",
-        W2(OpenBook(true)),
-    ),
-    ("log %text% to [file] %text%", W2(Log)),
-    ("log %text%", W2(Log)),
+    ("open [the] book in [the] off hand to %player%", K(OpenBook(true))),
+    ("log %text% to [file] %text%", K(Log)),
+    ("log %text%", K(Log)),
     (
         "[locally] suppress (conflict|conjunction|missing conjunction|variable save|variable saved|deprecation|deprecated syntax|unreachable code|empty script) (warning|warnings)",
-        W2(Suppress),
+        K(Suppress),
     ),
 ];
 
 /// Build the effect from the captures, which come in slot order.
-pub fn build(op: W2Op, caps: &mut [Option<Capture>]) -> Option<Effect> {
+pub fn build(op: ActionOp, caps: &mut [Option<Capture>]) -> Option<Effect> {
     let args = caps
         .iter_mut()
         .map(|c| match c.take() {
@@ -96,7 +93,7 @@ pub fn build(op: W2Op, caps: &mut [Option<Capture>]) -> Option<Effect> {
             _ => None,
         })
         .collect();
-    Some(Effect::W2b(Box::new(W2Effect { op, args })))
+    Some(Effect::PlayerActions(Box::new(ActionEffect { op, args })))
 }
 
 /// Fire ticks for `ignite` with no time given (Skript uses 5 seconds).

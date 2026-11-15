@@ -61,7 +61,7 @@ impl Host for Mock {
     fn block_entity_nbt(&mut self, _: &str, _: i32, _: i32, _: i32) -> Option<Vec<u8>> {
         self.nbt.clone()
     }
-    fn w5c2_query(&mut self, q: Query<'_>) -> Option<Value> {
+    fn flags_query(&mut self, q: Query<'_>) -> Option<Value> {
         match q {
             Query::BeeCount { .. } => self.bees.map(Value::Num),
             Query::BarFlag(id, f) => (id == "raid").then(|| Value::Bool(self.flags.contains(&f))),

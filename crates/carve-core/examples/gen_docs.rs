@@ -83,7 +83,7 @@ fn main() {
             .iter()
             .map(|s| s.names[0].to_string()),
     );
-    events.extend(carve_core::events_player_server::Ev3::all().map(|e| e.name().to_string()));
+    events.extend(carve_core::events_player_server::PlayerServerEvent::all().map(|e| e.name().to_string()));
     events.extend(carve_core::events_movement::MvEvent::all().map(|e| e.name().to_string()));
     events.extend(scan_table_names(
         &src.join("events_world_vehicles.rs"),

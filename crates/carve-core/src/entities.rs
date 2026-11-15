@@ -195,8 +195,8 @@ fn ent(e: EntExpr) -> Expr {
 
 /// `type of victim`, for the `on damage of <type>` filter.
 pub(crate) fn victim_type() -> Expr {
-    let victim = Expr::X2(Box::new(crate::expr_text_directions::W2 {
-        op: crate::expr_text_directions::W2Op::Victim,
+    let victim = Expr::TextDirections(Box::new(crate::expr_text_directions::TextExpr {
+        op: crate::expr_text_directions::TextOp::Victim,
         args: Vec::new(),
     }));
     ent(EntExpr::TypeOf(victim))

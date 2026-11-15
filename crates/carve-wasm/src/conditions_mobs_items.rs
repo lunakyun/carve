@@ -19,7 +19,7 @@ fn stack_id(s: &pumpkin_plugin_api::ItemStack) -> Option<String> {
 }
 
 impl WasmHost<'_> {
-    fn c3_entity(&mut self, v: &Value) -> Option<Entity> {
+    fn mobitem_entity(&mut self, v: &Value) -> Option<Entity> {
         match v {
             Value::Player(p) => self.get(p).map(|pl| pl.as_entity()),
             Value::Entity(e) => self.find_entity(&e.uuid),
@@ -27,8 +27,8 @@ impl WasmHost<'_> {
         }
     }
 
-    fn c3_check(&mut self, c: Check, v: &Value) -> Option<bool> {
-        let e = self.c3_entity(v)?;
+    fn mobitem_check(&mut self, c: Check, v: &Value) -> Option<bool> {
+        let e = self.mobitem_entity(v)?;
         match c {
             Check::Riptiding => Some(matches!(e.get_pose(), EntityPose::SpinAttack)),
             Check::Saddled => {
@@ -64,8 +64,8 @@ impl WasmHost<'_> {
         }
     }
 
-    fn c3_worn(&mut self, v: &Value) -> Option<Value> {
-        let l = self.c3_entity(v)?.as_living()?;
+    fn mobitem_worn(&mut self, v: &Value) -> Option<Value> {
+        let l = self.mobitem_entity(v)?.as_living()?;
         let mut out = Vec::new();
         for slot in [
             EquipmentSlot::Head,
@@ -82,7 +82,7 @@ impl WasmHost<'_> {
         Some(Value::List(out))
     }
 
-    fn c3_effect(&mut self, p: &PlayerRef, effect: &str, f: EffFlag) -> Option<Value> {
+    fn mobitem_effect(&mut self, p: &PlayerRef, effect: &str, f: EffFlag) -> Option<Value> {
         let kind = fx::effect(effect)?;
         let e = self.get(p)?.get_effect(kind)?;
         Some(Value::Bool(match f {
@@ -92,7 +92,7 @@ impl WasmHost<'_> {
         }))
     }
 
-    fn c3_lid(&mut self, world: &str, x: i32, y: i32, z: i32) -> Option<Value> {
+    fn mobitem_lid(&mut self, world: &str, x: i32, y: i32, z: i32) -> Option<Value> {
         let w = self.server.get_world_by_name(world)?;
         let pos = WitPos { x, y, z };
         let open = match w.get_block_entity(pos)? {
@@ -111,7 +111,7 @@ impl WasmHost<'_> {
         Some(Value::Bool(open))
     }
 
-    fn c3_beacon(&mut self, world: &str, x: i32, y: i32, z: i32, primary: bool) -> Option<Value> {
+    fn mobitem_beacon(&mut self, world: &str, x: i32, y: i32, z: i32, primary: bool) -> Option<Value> {
         let w = self.server.get_world_by_name(world)?;
         let BlockEntityType::BeaconBlockEntity(b) = w.get_block_entity(WitPos { x, y, z })? else {
             return None;
@@ -125,7 +125,7 @@ impl WasmHost<'_> {
         Some(Value::Text((*name).to_string()))
     }
 
-    pub(super) fn w5c3_impl(&mut self, q: Q<'_>) -> Option<Value> {
+    pub(super) fn mob_item_query_impl(&mut self, q: Q<'_>) -> Option<Value> {
         let player = |id: pumpkin_plugin_api::uuid::Uuid, name: String| {
             Value::Player(PlayerRef {
                 uuid: uuid::to_string(id),
@@ -133,11 +133,11 @@ impl WasmHost<'_> {
             })
         };
         match q {
-            Q::Check(c, v) => self.c3_check(c, v).map(Value::Bool),
-            Q::Worn(v) => self.c3_worn(v),
-            Q::Effect(p, e, f) => self.c3_effect(p, e, f),
-            Q::Lid(w, x, y, z) => self.c3_lid(w, x, y, z),
-            Q::Beacon(w, x, y, z, primary) => self.c3_beacon(w, x, y, z, primary),
+            Q::Check(c, v) => self.mobitem_check(c, v).map(Value::Bool),
+            Q::Worn(v) => self.mobitem_worn(v),
+            Q::Effect(p, e, f) => self.mobitem_effect(p, e, f),
+            Q::Lid(w, x, y, z) => self.mobitem_lid(w, x, y, z),
+            Q::Beacon(w, x, y, z, primary) => self.mobitem_beacon(w, x, y, z, primary),
             Q::Ops => Some(Value::List(
                 self.server
                     .get_op_manager()

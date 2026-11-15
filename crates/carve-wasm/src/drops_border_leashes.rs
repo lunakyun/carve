@@ -85,7 +85,7 @@ pub(super) fn death_flags(out: &[(u8, Value)]) -> (bool, bool, bool) {
 }
 
 impl WasmHost<'_> {
-    fn w5_entity(&mut self, v: &Value) -> Option<Entity> {
+    fn drops_entity(&mut self, v: &Value) -> Option<Entity> {
         match v {
             Value::Player(p) => self.get(p).map(|pl| pl.as_entity()),
             Value::Entity(e) => self.find_entity(&e.uuid),
@@ -94,7 +94,7 @@ impl WasmHost<'_> {
     }
 
     /// Called from the death event, before Pumpkin drops the inventory.
-    pub(super) fn w5_death(&mut self, p: &PlayerRef, keep_inv: bool, keep_xp: bool, no_drops: bool) {
+    pub(super) fn drops_death(&mut self, p: &PlayerRef, keep_inv: bool, keep_xp: bool, no_drops: bool) {
         if !keep_inv && !keep_xp && !no_drops {
             return;
         }
@@ -134,8 +134,8 @@ impl WasmHost<'_> {
 
     /// Every tick: keep walks going, and finish the deaths whose player is
     /// alive again (or gone).
-    pub(super) fn w5_tick(&mut self) {
-        self.w5_walks();
+    pub(super) fn drops_tick(&mut self) {
+        self.drops_walks();
         let todo: Vec<Pending> = match PENDING.lock() {
             Ok(mut q) if !q.is_empty() => std::mem::take(&mut *q),
             _ => return,
@@ -179,16 +179,16 @@ impl WasmHost<'_> {
         }
     }
 
-    fn w5_walks(&mut self) {
+    fn drops_walks(&mut self) {
         let walks = match WALKS.lock() {
             Ok(mut q) if !q.is_empty() => std::mem::take(&mut *q),
             _ => return,
         };
-        self.w5_walks_cold(walks);
+        self.drops_walks_cold(walks);
     }
 
     #[cold]
-    fn w5_walks_cold(&mut self, walks: Vec<Walk>) {
+    fn drops_walks_cold(&mut self, walks: Vec<Walk>) {
         let mut keep = Vec::new();
         for mut w in walks {
             w.ticks += 1;
@@ -218,10 +218,10 @@ impl WasmHost<'_> {
         }
     }
 
-    pub(super) fn w5c1_impl(&mut self, op: HostOp<'_>) -> Option<bool> {
+    pub(super) fn drops_query_impl(&mut self, op: HostOp<'_>) -> Option<bool> {
         match op {
             HostOp::Creeper(v, mode) => {
-                let mob = self.w5_entity(v)?.as_mob()?;
+                let mob = self.drops_entity(v)?.as_mob()?;
                 let MobData::Creeper(mut d) = mob.get_mob_data() else {
                     return Some(false);
                 };
@@ -236,20 +236,20 @@ impl WasmHost<'_> {
                 Some(mob.set_mob_data(MobData::Creeper(d)))
             }
             HostOp::Ageable(v) => {
-                let mob = self.w5_entity(v)?.as_mob()?;
+                let mob = self.drops_entity(v)?.as_mob()?;
                 Some(matches!(
                     mob.get_mob_data(),
                     MobData::Ageable(_) | MobData::Zombie(_)
                 ))
             }
             HostOp::Pathfind(v, to, speed) => {
-                let e = self.w5_entity(v)?;
+                let e = self.drops_entity(v)?;
                 let mob = e.as_mob()?;
                 let uuid = super::ent_host::uuid_of(&e);
                 let (ok, to) = match to {
                     PathTarget::Pos(x, y, z) => (mob.navigate_to_pos((x, y, z), speed), WalkTo::Pos(x, y, z)),
                     PathTarget::Entity(t) => {
-                        let t = self.w5_entity(t)?;
+                        let t = self.drops_entity(t)?;
                         let id = super::ent_host::uuid_of(&t);
                         (mob.navigate_to_entity(t, speed), WalkTo::Entity(id))
                     }
@@ -268,7 +268,7 @@ impl WasmHost<'_> {
                 Some(ok)
             }
             HostOp::StopPath(v) => {
-                let e = self.w5_entity(v)?;
+                let e = self.drops_entity(v)?;
                 end_walk(&super::ent_host::uuid_of(&e));
                 let mob = e.as_mob()?;
                 mob.stop_navigation();

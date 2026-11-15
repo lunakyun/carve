@@ -1,7 +1,7 @@
 //! More events: server list ping, sign change, smelting, vehicles, worlds,
 //! weather, targeting, taming, and `at 14:30 in real time:`.
 //!
-//! Every event here is one `ExtEvent`. It travels inside `EventKind::Ext4`, so
+//! Every event here is one `ExtEvent`. It travels inside `EventKind::WorldVehicles`, so
 //! the shared event enum grows by one variant only. The values an event
 //! offers (`event-motd`, `event-world`, ...) live in `EventCtx::args`, in the
 //! order of [`ExtEvent::slots`]. Scripts read them with `event-<name>`, and
@@ -379,7 +379,7 @@ fn parse_clock(t: &str) -> Option<u16> {
     Some((h * 60 + m) as u16)
 }
 
-/// What a `Effect::Ext4` does.
+/// What a `Effect::WorldVehicles` does.
 #[derive(Debug, Clone, PartialEq)]
 pub enum ExtEffect {
     /// `set event-<name> to <value>`: slot index and the new value.
@@ -389,7 +389,7 @@ pub enum ExtEffect {
 /// `set event-motd to "x"` inside an event of this module.
 /// `None`: this line is not one of ours.
 pub fn parse_effect(toks: &[Tok], env: &Env) -> Option<Result<Effect, String>> {
-    let ev = env.ext4?;
+    let ev = env.world_event?;
     if !toks.first()?.is_lit("set") {
         return None;
     }
@@ -435,7 +435,9 @@ pub fn parse_effect(toks: &[Tok], env: &Env) -> Option<Result<Effect, String>> {
         Ok(e) => e,
         Err(e) => return Some(Err(e)),
     };
-    Some(Ok(Effect::Ext4(Box::new(ExtEffect::SetVal(idx as u8, value)))))
+    Some(Ok(Effect::WorldVehicles(Box::new(ExtEffect::SetVal(
+        idx as u8, value,
+    )))))
 }
 
 /// A fresh context for an event of this module. `vals` must follow the slot
@@ -463,7 +465,7 @@ pub fn poll_system_time(engine: &mut Engine, last: &mut i64, host: &mut dyn Host
         return;
     }
     let tod = minute.rem_euclid(1440) as u16;
-    let ev = EventKind::Ext4(ExtEvent::SystemTime(tod));
+    let ev = EventKind::WorldVehicles(ExtEvent::SystemTime(tod));
     if engine.table().has_event(ev) {
         engine.fire(ev, EventCtx::console(), host);
     }

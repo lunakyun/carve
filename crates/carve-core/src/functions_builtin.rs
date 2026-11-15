@@ -4,7 +4,7 @@
 //! `formatNumber`, `fromBase`, `toBase`, `isNaN`, `calcExperience`, `rgb`,
 //! `uuid`, `player` and `offlineplayer`.
 //!
-//! Every call is one boxed [`Node`] (`Expr::W4F`), so the hot expression
+//! Every call is one boxed [`Node`] (`Expr::Builtin`), so the hot expression
 //! enum stays small. The engine evaluates the arguments and calls [`apply`].
 
 use crate::expr::{Expr, Ty};

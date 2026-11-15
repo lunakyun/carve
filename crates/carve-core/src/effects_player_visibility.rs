@@ -6,7 +6,7 @@ use crate::expr::{Expr, VarRef};
 use crate::pattern::Capture;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum W2Op {
+pub enum VisibilityOp {
     /// `connect %player% to server %text% [on port %number%]`
     Connect,
     /// `force %player% to respawn`
@@ -23,8 +23,8 @@ pub enum W2Op {
 
 /// One effect of this module. Boxed inside `Effect` so the hot enum stays small.
 #[derive(Debug, Clone, PartialEq)]
-pub struct W2Effect {
-    pub op: W2Op,
+pub struct VisibilityEffect {
+    pub op: VisibilityOp,
     pub a: Option<Expr>,
     pub b: Option<Expr>,
     pub c: Option<Expr>,
@@ -32,19 +32,19 @@ pub struct W2Effect {
     pub to: Option<VarRef>,
 }
 
-use EffKind::W2;
+use EffKind::PlayerVisibility as K;
 
 pub const EFFECT_PATTERNS: &[(&str, EffKind)] = &[
     (
         "connect %player% to [the] [server] %text% [on port %number%]",
-        W2(W2Op::Connect),
+        K(VisibilityOp::Connect),
     ),
-    ("force %player% to respawn", W2(W2Op::Respawn)),
-    ("force [the] respawn of %player%", W2(W2Op::Respawn)),
-    ("hide %player% from %player%", W2(W2Op::Hide)),
-    ("reveal %player% to %player%", W2(W2Op::Reveal)),
-    ("equip %player% with %item%", W2(W2Op::Equip)),
-    ("copy %variable% (into|to) %variable%", W2(W2Op::Copy)),
+    ("force %player% to respawn", K(VisibilityOp::Respawn)),
+    ("force [the] respawn of %player%", K(VisibilityOp::Respawn)),
+    ("hide %player% from %player%", K(VisibilityOp::Hide)),
+    ("reveal %player% to %player%", K(VisibilityOp::Reveal)),
+    ("equip %player% with %item%", K(VisibilityOp::Equip)),
+    ("copy %variable% (into|to) %variable%", K(VisibilityOp::Copy)),
 ];
 
 fn expr(caps: &mut [Option<Capture>], i: usize) -> Option<Expr> {
@@ -61,8 +61,8 @@ fn var(caps: &mut [Option<Capture>], i: usize) -> Option<VarRef> {
     }
 }
 
-pub fn build(op: W2Op, caps: &mut [Option<Capture>]) -> Option<Effect> {
-    let mut e = W2Effect {
+pub fn build(op: VisibilityOp, caps: &mut [Option<Capture>]) -> Option<Effect> {
+    let mut e = VisibilityEffect {
         op,
         a: None,
         b: None,
@@ -70,18 +70,22 @@ pub fn build(op: W2Op, caps: &mut [Option<Capture>]) -> Option<Effect> {
         from: None,
         to: None,
     };
-    if op == W2Op::Copy {
+    if op == VisibilityOp::Copy {
         e.from = Some(var(caps, 0)?);
         e.to = Some(var(caps, 1)?);
     } else {
         e.a = Some(expr(caps, 0)?);
         e.b = expr(caps, 1);
         e.c = expr(caps, 2);
-        if matches!(op, W2Op::Hide | W2Op::Reveal | W2Op::Equip | W2Op::Connect) && e.b.is_none() {
+        if matches!(
+            op,
+            VisibilityOp::Hide | VisibilityOp::Reveal | VisibilityOp::Equip | VisibilityOp::Connect
+        ) && e.b.is_none()
+        {
             return None;
         }
     }
-    Some(Effect::W2(Box::new(e)))
+    Some(Effect::PlayerVisibility(Box::new(e)))
 }
 
 /// Split `host:port` text. A bare host gets the default port 25565.

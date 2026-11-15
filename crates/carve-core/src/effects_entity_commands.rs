@@ -5,10 +5,10 @@
 //! implements (`data merge entity`, `place feature`, `carve ...`). `reset`,
 //! `remove all` and the vector rotations are plain Carve logic. The effects
 //! that need the game API (flight, fake blocks, interaction and text display
-//! flags, sound categories, shearing, taming) go through `Host::w6c2`.
+//! flags, sound categories, shearing, taming) go through `Host::entity_command`.
 //!
 //! The compiler calls [`parse_effect`] before its other effect parsers; the
-//! run side is [`Engine::w6c2_effect`], out of line so the hot paths stay small.
+//! run side is [`Engine::entcmd_effect`], out of line so the hot paths stay small.
 
 use std::collections::HashMap;
 use std::sync::OnceLock;
@@ -37,7 +37,7 @@ pub enum DisplayFlag {
     SeeThrough,
 }
 
-/// Game-side work for `Host::w6c2`. `Some(true)` done, `Some(false)` the
+/// Game-side work for `Host::entity_command`. `Some(true)` done, `Some(false)` the
 /// target can't do it, `None` this host can't.
 #[derive(Debug, Clone, Copy)]
 pub enum HostOp<'a> {
@@ -550,7 +550,7 @@ pub fn parse_effect(toks: &[Tok], env: &Env) -> Result<Option<Effect>, String> {
             who: take(&mut c, 0),
         },
     };
-    Ok(Some(Effect::W6c2(Box::new(fx))))
+    Ok(Some(Effect::EntityCommands(Box::new(fx))))
 }
 
 // -------------------------------------------------------------------- running
@@ -574,8 +574,8 @@ fn selector(v: &Value) -> Option<String> {
 }
 
 /// Run a game-side change; say so in the log when the game could not do it.
-fn w6c2_run(host: &mut dyn Host, op: HostOp<'_>, what: &str) {
-    match host.w6c2(op) {
+fn entcmd_run(host: &mut dyn Host, op: HostOp<'_>, what: &str) {
+    match host.entity_command(op) {
         Some(true) => {}
         Some(false) => host.log(
             crate::host::LogLevel::Warn,
@@ -590,7 +590,7 @@ fn w6c2_run(host: &mut dyn Host, op: HostOp<'_>, what: &str) {
 
 impl Engine {
     /// The players a value names (online ones).
-    fn w6c2_players(
+    fn entcmd_players(
         &mut self,
         e: &Expr,
         ex: &mut Exec,
@@ -607,7 +607,7 @@ impl Engine {
 
     /// Run `data merge entity` for every entity the expression names. The plugin
     /// API v0.1 has no calls for these flags, so entity NBT goes through the console.
-    fn w6c2_merge(
+    fn entcmd_merge(
         &mut self,
         who: &Expr,
         nbt: &str,
@@ -626,7 +626,7 @@ impl Engine {
 
     #[inline(never)]
     #[cold]
-    pub(crate) fn w6c2_effect(&mut self, f: &Fx, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
+    pub(crate) fn entcmd_effect(&mut self, f: &Fx, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
         match f {
             Fx::Horn(who, left, right, regrow) => {
                 let on = u8::from(*regrow);
@@ -641,13 +641,13 @@ impl Engine {
                     nbt.push_str(&format!("HasRightHorn:{on}b"));
                 }
                 nbt.push('}');
-                self.w6c2_merge(who, &nbt, ex, host)?;
+                self.entcmd_merge(who, &nbt, ex, host)?;
             }
             Fx::Silent(who, on) => {
-                self.w6c2_merge(who, &format!("{{Silent:{}b}}", u8::from(*on)), ex, host)?
+                self.entcmd_merge(who, &format!("{{Silent:{}b}}", u8::from(*on)), ex, host)?
             }
             Fx::Scream(who, on) => {
-                self.w6c2_merge(who, &format!("{{IsScreamingGoat:{}b}}", u8::from(*on)), ex, host)?;
+                self.entcmd_merge(who, &format!("{{IsScreamingGoat:{}b}}", u8::from(*on)), ex, host)?;
             }
             Fx::Tree(feature, at) => {
                 let v = self.eval(at, ex, host)?;
@@ -748,7 +748,7 @@ impl Engine {
             Fx::Reset(v) => {
                 let k = self.key(v, ex, host)?.into_owned();
                 if v.list {
-                    self.w6c2_delete(v, &k, ex, host);
+                    self.entcmd_delete(v, &k, ex, host);
                 } else {
                     let cur = if v.local {
                         ex.locals.get(&k).cloned()
@@ -759,7 +759,7 @@ impl Engine {
                         Some(Value::Num(_)) => self.store(v.local, &k, Value::Num(0.0), ex, host),
                         Some(Value::Text(_)) => self.store(v.local, &k, Value::Text(String::new()), ex, host),
                         Some(Value::Bool(_)) => self.store(v.local, &k, Value::Bool(false), ex, host),
-                        Some(_) => self.w6c2_delete(v, &k, ex, host),
+                        Some(_) => self.entcmd_delete(v, &k, ex, host),
                         None => {}
                     }
                 }
@@ -808,8 +808,8 @@ impl Engine {
                 }
             }
             Fx::Allow(who, on) => {
-                for p in self.w6c2_players(who, ex, host)? {
-                    w6c2_run(host, HostOp::AllowFlight(&p, *on), "allow flight");
+                for p in self.entcmd_players(who, ex, host)? {
+                    entcmd_run(host, HostOp::AllowFlight(&p, *on), "allow flight");
                 }
             }
             Fx::FakeBlock { who, at, block } => {
@@ -828,8 +828,8 @@ impl Engine {
                     None => None,
                 };
                 let world = world.or_else(|| host.default_world()).unwrap_or_default();
-                for p in self.w6c2_players(who, ex, host)? {
-                    w6c2_run(
+                for p in self.entcmd_players(who, ex, host)? {
+                    entcmd_run(
                         host,
                         HostOp::FakeBlock(
                             &p,
@@ -845,12 +845,12 @@ impl Engine {
             }
             Fx::Responsive(who, on) => {
                 for v in each(self.eval(who, ex, host)?) {
-                    w6c2_run(host, HostOp::Responsive(&v, *on), "responsive");
+                    entcmd_run(host, HostOp::Responsive(&v, *on), "responsive");
                 }
             }
             Fx::Display(who, flag, on) => {
                 for v in each(self.eval(who, ex, host)?) {
-                    w6c2_run(host, HostOp::Display(&v, *flag, *on), "display");
+                    entcmd_run(host, HostOp::Display(&v, *flag, *on), "display");
                 }
             }
             Fx::StopSound { sound, category, who } => {
@@ -859,14 +859,14 @@ impl Engine {
                     None => None,
                 };
                 let players = match who {
-                    Some(w) => self.w6c2_players(w, ex, host)?,
+                    Some(w) => self.entcmd_players(w, ex, host)?,
                     None => match ex.ctx.player.clone() {
                         Some(p) => vec![p],
                         None => host.online_players(),
                     },
                 };
                 for p in players {
-                    w6c2_run(
+                    entcmd_run(
                         host,
                         HostOp::StopSound(&p, sound.as_deref(), category),
                         "stop sound",
@@ -895,7 +895,7 @@ impl Engine {
                     if target.as_ref() == Some(&rider) {
                         continue;
                     }
-                    match host.w6c2(HostOp::Ride(&v, vehicle.as_ref())) {
+                    match host.entity_command(HostOp::Ride(&v, vehicle.as_ref())) {
                         Some(true) => {}
                         Some(false) => host.fail(&match &target {
                             Some(_) => {
@@ -1009,14 +1009,14 @@ impl Engine {
             Fx::Tame(who, on) => {
                 let owner = ex.ctx.player.clone();
                 for v in each(self.eval(who, ex, host)?) {
-                    w6c2_run(host, HostOp::Tame(&v, *on, owner.as_ref()), "tame");
+                    entcmd_run(host, HostOp::Tame(&v, *on, owner.as_ref()), "tame");
                 }
             }
         }
         Ok(())
     }
 
-    fn w6c2_delete(&mut self, v: &VarRef, key: &str, ex: &mut Exec, host: &mut dyn Host) {
+    fn entcmd_delete(&mut self, v: &VarRef, key: &str, ex: &mut Exec, host: &mut dyn Host) {
         if v.local {
             ex.locals.delete(key);
         } else {

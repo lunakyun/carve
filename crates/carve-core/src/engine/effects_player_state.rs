@@ -1,15 +1,20 @@
 //! Running the `effects_player_state` effects (see that module for the syntax side).
 
 use super::{Engine, Exec};
-use crate::effects_player_state::{Arg, Args, Transform, W2Eff, W2Op, run};
+use crate::effects_player_state::{Arg, Args, StateEffect, StateOp, Transform, run};
 use crate::host::Host;
 use crate::list_ops::INPUT_KEY;
 use crate::value::Value;
 
 impl Engine {
     #[inline(never)]
-    pub(super) fn exec_w2(&mut self, w: &W2Eff, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
-        if w.op == W2Op::Toggle {
+    pub(super) fn exec_player_state(
+        &mut self,
+        w: &StateEffect,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<(), String> {
+        if w.op == StateOp::Toggle {
             return self.exec_toggle(w, ex, host);
         }
         let mut a = Args::default();
@@ -53,7 +58,7 @@ impl Engine {
     }
 
     /// `toggle {x}`: flip a boolean. An unset variable becomes true.
-    fn exec_toggle(&mut self, w: &W2Eff, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
+    fn exec_toggle(&mut self, w: &StateEffect, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
         let Some(v) = &w.var else { return Ok(()) };
         let k = self.key(v, ex, host)?.into_owned();
         let cur = if v.local {

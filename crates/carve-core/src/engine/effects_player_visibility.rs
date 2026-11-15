@@ -1,19 +1,24 @@
 //! Running the effects from `effects_player_visibility.rs`.
 
 use super::{Engine, Exec};
-use crate::effects_player_visibility::{W2Effect, W2Op, equip_slot, split_host};
+use crate::effects_player_visibility::{VisibilityEffect, VisibilityOp, equip_slot, split_host};
 use crate::host::Host;
 use crate::value::Value;
 
 impl Engine {
     #[inline(never)]
-    pub(super) fn run_w2(&mut self, w: &W2Effect, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
-        if w.op == W2Op::Copy {
+    pub(super) fn run_player_visibility(
+        &mut self,
+        w: &VisibilityEffect,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<(), String> {
+        if w.op == VisibilityOp::Copy {
             return self.run_copy(w, ex, host);
         }
         let (Some(a), Some(b)) = (&w.a, w.b.as_ref()) else {
             // `force ... to respawn` has only the player.
-            if let (W2Op::Respawn, Some(a)) = (w.op, &w.a)
+            if let (VisibilityOp::Respawn, Some(a)) = (w.op, &w.a)
                 && let Some(p) = self.player(a, ex, host)?
             {
                 host.respawn(&p);
@@ -21,7 +26,7 @@ impl Engine {
             return Ok(());
         };
         match w.op {
-            W2Op::Connect => {
+            VisibilityOp::Connect => {
                 let target = self.text(b, ex, host)?;
                 let port = match &w.c {
                     Some(c) => Some(self.num(c, ex, host)?),
@@ -34,19 +39,19 @@ impl Engine {
                     host.transfer(&p, &h, port);
                 }
             }
-            W2Op::Hide | W2Op::Reveal => {
+            VisibilityOp::Hide | VisibilityOp::Reveal => {
                 // `hide %target% from %viewer%`: the first slot is the one hidden.
                 let target = self.player(a, ex, host)?;
                 let viewer = self.player(b, ex, host)?;
                 if let (Some(t), Some(v)) = (target, viewer) {
-                    if w.op == W2Op::Hide {
+                    if w.op == VisibilityOp::Hide {
                         host.hide_player(&v, &t);
                     } else {
                         host.show_player(&v, &t);
                     }
                 }
             }
-            W2Op::Equip => {
+            VisibilityOp::Equip => {
                 let item = self.eval(b, ex, host)?;
                 let Value::Item { id, .. } = item else {
                     return Err(format!("expected an item, got {} ({item})", item.type_name()));
@@ -55,18 +60,18 @@ impl Engine {
                     host.equip(&p, equip_slot(&id), &id);
                 }
             }
-            W2Op::Respawn => {
+            VisibilityOp::Respawn => {
                 if let Some(p) = self.player(a, ex, host)? {
                     host.respawn(&p);
                 }
             }
-            W2Op::Copy => {}
+            VisibilityOp::Copy => {}
         }
         Ok(())
     }
 
     /// `copy {a::*} into {b::*}`: a list copies key by key, a single value copies as is.
-    fn run_copy(&mut self, w: &W2Effect, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
+    fn run_copy(&mut self, w: &VisibilityEffect, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
         let (Some(from), Some(to)) = (&w.from, &w.to) else {
             return Ok(());
         };

@@ -92,7 +92,7 @@ fn short(id: &str) -> &str {
 }
 
 impl WasmHost<'_> {
-    fn c6_entity(&mut self, v: &Value) -> Option<Entity> {
+    fn mobstate_entity(&mut self, v: &Value) -> Option<Entity> {
         match v {
             Value::Player(p) => self.get(p).map(|pl| pl.as_entity()),
             Value::Entity(e) => self.find_entity(&e.uuid),
@@ -100,15 +100,15 @@ impl WasmHost<'_> {
         }
     }
 
-    fn c6_block_id(&mut self, world: &str, x: i32, y: i32, z: i32) -> Option<String> {
+    fn mobstate_block_id(&mut self, world: &str, x: i32, y: i32, z: i32) -> Option<String> {
         let w = self.server.get_world_by_name(world)?;
         let id = w.get_block_state_id(WitPos { x, y, z });
         let st = pumpkin_plugin_api::BlockState::from_id(id)?;
         Some(short(&st.block_name).to_string())
     }
 
-    fn c6_check(&mut self, c: Ck, v: &Value) -> Option<bool> {
-        let e = self.c6_entity(v)?;
+    fn mobstate_check(&mut self, c: Ck, v: &Value) -> Option<bool> {
+        let e = self.mobstate_entity(v)?;
         match c {
             Ck::Baby => {
                 let mob = e.as_mob()?;
@@ -199,7 +199,7 @@ impl WasmHost<'_> {
         }
     }
 
-    fn c6_block(&mut self, k: Bk, world: &str, x: i32, y: i32, z: i32) -> Option<bool> {
+    fn mobstate_block(&mut self, k: Bk, world: &str, x: i32, y: i32, z: i32) -> Option<bool> {
         let w = self.server.get_world_by_name(world)?;
         let pos = WitPos { x, y, z };
         let st = w.get_block_state(pos);
@@ -229,7 +229,7 @@ impl WasmHost<'_> {
         }
     }
 
-    fn c6_hands(&mut self, v: &Value) -> Option<Value> {
+    fn mobstate_hands(&mut self, v: &Value) -> Option<Value> {
         if let Value::Player(p) = v {
             let pl = self.get(p)?;
             let id = |hand| {
@@ -244,7 +244,7 @@ impl WasmHost<'_> {
                 Value::Text(id(Hand::Left)),
             ]));
         }
-        let e = self.c6_entity(v)?;
+        let e = self.mobstate_entity(v)?;
         let l = e.as_living()?;
         let id = |slot| {
             l.get_equipment(slot)
@@ -259,7 +259,7 @@ impl WasmHost<'_> {
         ]))
     }
 
-    fn c6_feature(&mut self, name: &str) -> Option<Value> {
+    fn mobstate_feature(&mut self, name: &str) -> Option<Value> {
         let name = name.strip_prefix("minecraft_").unwrap_or(name);
         if name == "vanilla" {
             return Some(Value::Bool(true));
@@ -272,12 +272,12 @@ impl WasmHost<'_> {
         })))
     }
 
-    pub(super) fn w6c3_impl(&mut self, q: Q<'_>) -> Option<Value> {
+    pub(super) fn mob_block_check_impl(&mut self, q: Q<'_>) -> Option<Value> {
         match q {
-            Q::Check(c, v) => self.c6_check(c, v).map(Value::Bool),
-            Q::Block(k, w, x, y, z) => self.c6_block(k, w, x, y, z).map(Value::Bool),
-            Q::BlockId(w, x, y, z) => self.c6_block_id(w, x, y, z).map(Value::Text),
-            Q::Hands(v) => self.c6_hands(v),
+            Q::Check(c, v) => self.mobstate_check(c, v).map(Value::Bool),
+            Q::Block(k, w, x, y, z) => self.mobstate_block(k, w, x, y, z).map(Value::Bool),
+            Q::BlockId(w, x, y, z) => self.mobstate_block_id(w, x, y, z).map(Value::Text),
+            Q::Hands(v) => self.mobstate_hands(v),
             Q::Plugin(name) => {
                 if name.eq_ignore_ascii_case("carve") {
                     return Some(Value::Bool(true));
@@ -287,7 +287,7 @@ impl WasmHost<'_> {
                     pumpkin_plugin_api::ipc::send_ipc_message(name, &[]).is_ok(),
                 ))
             }
-            Q::Feature(name) => self.c6_feature(name),
+            Q::Feature(name) => self.mobstate_feature(name),
             Q::Key(p, bit) => {
                 let bits = KEYS
                     .lock()
@@ -324,13 +324,13 @@ impl WasmHost<'_> {
                 Some(Value::Text(kind.into()))
             }
             Q::Vehicle(v) => {
-                let e = self.c6_entity(v)?;
+                let e = self.mobstate_entity(v)?;
                 Some(match e.get_vehicle() {
                     Some(veh) => Value::Text(crate::ents::entity_name(veh.get_type()).to_string()),
                     None => Value::None,
                 })
             }
-            Q::InfiniteEffect(p, name) => self.c6_infinite(p, name),
+            Q::InfiniteEffect(p, name) => self.mobstate_infinite(p, name),
             Q::Border(world, x, z) => {
                 let w = self.server.get_world_by_name(world)?;
                 Some(Value::Bool(w.get_world_border().contains(x, z)))
@@ -338,7 +338,7 @@ impl WasmHost<'_> {
         }
     }
 
-    fn c6_infinite(&mut self, p: &PlayerRef, name: &str) -> Option<Value> {
+    fn mobstate_infinite(&mut self, p: &PlayerRef, name: &str) -> Option<Value> {
         let kind = super::fx::effect(name)?;
         let e = self.get(p)?.get_effect(kind)?;
         // The host maps Pumpkin's infinite duration (-1) to 0.

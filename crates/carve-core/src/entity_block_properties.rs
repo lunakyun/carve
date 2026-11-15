@@ -10,8 +10,8 @@
 //! - `source block`, `tamer`, `shooter`, `spawning reason` in their events.
 //! - `shoot <projectile> from <entity> [at speed <n>]:`.
 //!
-//! Every expression is one boxed [`Node`] (`Expr::C6`) and every change is
-//! one boxed [`C6Effect`] (`Effect::C6`). Both run out of line, so the hot
+//! Every expression is one boxed [`Node`] (`Expr::EntityBlockProps`) and every change is
+//! one boxed [`PropertyEffect`] (`Effect::EntityBlockProps`). Both run out of line, so the hot
 //! paths of the engine do not grow.
 
 use crate::block_ops::BlockPos;
@@ -129,7 +129,7 @@ pub struct Node {
 }
 
 fn node(op: Op, args: Vec<Expr>, ty: Ty) -> Expr {
-    Expr::C6(Box::new(Node { op, args, ty }))
+    Expr::EntityBlockProps(Box::new(Node { op, args, ty }))
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -142,7 +142,7 @@ pub enum Change {
 
 /// `set <node> to <value>`, `add <value> to <node>`, `reset <node>`, ...
 #[derive(Debug, Clone, PartialEq)]
-pub struct C6Effect {
+pub struct PropertyEffect {
     pub change: Change,
     pub target: Node,
     pub value: Option<Expr>,
@@ -569,7 +569,7 @@ fn lit(toks: &[Tok], i: usize, w: &str) -> bool {
 }
 
 impl P<'_> {
-    fn c6_lit(&self, off: usize, w: &str) -> bool {
+    fn prop_lit(&self, off: usize, w: &str) -> bool {
         if self.pos + off >= self.toks.len() {
             self.hit_end.set(true);
         }
@@ -577,8 +577,8 @@ impl P<'_> {
     }
 
     /// `of <x>` after the head words: the operand, or `None` when no `of` follows.
-    fn c6_of(&mut self) -> Result<Option<Expr>, String> {
-        if !self.c6_lit(0, "of") {
+    fn of_target(&mut self) -> Result<Option<Expr>, String> {
+        if !self.prop_lit(0, "of") {
             return Ok(None);
         }
         self.pos += 1;
@@ -590,10 +590,10 @@ impl P<'_> {
     }
 
     /// `bossbar "id"` / `boss bar "id"` at the cursor: the id expression.
-    fn c6_bar(&mut self) -> Result<Option<Expr>, String> {
-        let n = if self.c6_lit(0, "bossbar") {
+    fn prop_bar(&mut self) -> Result<Option<Expr>, String> {
+        let n = if self.prop_lit(0, "bossbar") {
             1
-        } else if self.c6_lit(0, "boss") && self.c6_lit(1, "bar") {
+        } else if self.prop_lit(0, "boss") && self.prop_lit(1, "bar") {
             2
         } else {
             return Ok(None);
@@ -612,46 +612,46 @@ impl P<'_> {
 
     /// `<op> of <x>`; with no `of`, `implicit` is the operand (or the head is not ours).
     fn c_unary(&mut self, op: Op, ty: Ty, implicit: Option<Expr>) -> Result<Option<Expr>, String> {
-        match self.c6_of()? {
+        match self.of_target()? {
             Some(x) => Ok(Some(node(op, vec![x], ty))),
             None => Ok(implicit.map(|x| node(op, vec![x], ty))),
         }
     }
 
     /// Called with the head word read. `Ok(None)`: not one of ours, position kept.
-    pub(crate) fn c6_head(&mut self, lw: &str) -> Result<Option<Expr>, String> {
+    pub(crate) fn prop_head(&mut self, lw: &str) -> Result<Option<Expr>, String> {
         if !HEADS.contains(&lw) {
             return Ok(None);
         }
         let start = self.pos;
-        let r = self.c6_inner(lw);
+        let r = self.prop_inner(lw);
         if matches!(r, Ok(None)) {
             self.pos = start;
         }
         r
     }
 
-    fn c6_inner(&mut self, lw: &str) -> Result<Option<Expr>, String> {
+    fn prop_inner(&mut self, lw: &str) -> Result<Option<Expr>, String> {
         let env = self.env;
         let in_event = !env.in_function;
         // Event values under the names Skript uses.
-        if in_event && let Some(ev) = env.ext4 {
+        if in_event && let Some(ev) = env.world_event {
             use crate::events_world_vehicles::ExtEvent;
             let slot = match (lw, ev) {
-                ("source", ExtEvent::Spread) if self.c6_lit(0, "block") => {
+                ("source", ExtEvent::Spread) if self.prop_lit(0, "block") => {
                     self.pos += 1;
                     ev.slot_index("source-block")
                 }
                 ("tamer", ExtEvent::Tame) => ev.slot_index("owner"),
                 ("shooter", ExtEvent::Shoot) => ev.slot_index("entity"),
-                ("target", ExtEvent::Target) if !self.c6_lit(0, "of") => ev.slot_index("target"),
+                ("target", ExtEvent::Target) if !self.prop_lit(0, "of") => ev.slot_index("target"),
                 _ => None,
             };
             if let Some(i) = slot {
-                return Ok(Some(Expr::Ev4Val(i as u8)));
+                return Ok(Some(Expr::WorldEventVal(i as u8)));
             }
         }
-        if lw == "spawning" && self.c6_lit(0, "reason") && in_event && env.event_vals != 0 {
+        if lw == "spawning" && self.prop_lit(0, "reason") && in_event && env.event_vals != 0 {
             let reason = [Tok::Word("reason".into())];
             if let Some((v, _)) = crate::events_items::parse_val(env.event_vals, "spawn", &reason) {
                 self.pos += 1;
@@ -663,46 +663,47 @@ impl P<'_> {
             "min" | "max" | "minimum" | "maximum" | "sea" | "pickle" | "pickles" => self.c_pickles(lw),
             "all" | "every" => Ok(self.c_all()),
             "raw" | "unique" | "index" => self.c_index(lw),
-            "spawn" if self.c6_lit(0, "egg") && self.c6_lit(1, "entity") => {
+            "spawn" if self.prop_lit(0, "egg") && self.prop_lit(1, "entity") => {
                 self.pos += 2;
                 self.c_unary(Op::SpawnEgg, Ty::Text, None)
             }
-            "spectator" if self.c6_lit(0, "target") => {
+            "spectator" if self.prop_lit(0, "target") => {
                 self.pos += 1;
                 self.c_unary(Op::Spectator, Ty::Object, Some(Expr::Player))
             }
             "target" | "targeted" => {
-                if self.c6_lit(0, "block") {
+                if self.prop_lit(0, "block") {
                     return Ok(None);
                 }
-                if self.c6_lit(0, "entity") {
+                if self.prop_lit(0, "entity") {
                     self.pos += 1;
                 }
                 let implicit = (!env.no_player).then_some(Expr::Player);
                 self.c_unary(Op::Target, Ty::Object, implicit)
             }
             "temperature" | "temperatures" => self.c_unary(Op::Temperature, Ty::Number, None),
-            "text" if self.c6_lit(0, "alignment") || self.c6_lit(0, "alignments") => {
+            "text" if self.prop_lit(0, "alignment") || self.prop_lit(0, "alignments") => {
                 self.pos += 1;
                 self.c_unary(Op::Text(TextField::Alignment), Ty::Object, None)
             }
-            "text" if self.c6_lit(0, "opacity") => {
+            "text" if self.prop_lit(0, "opacity") => {
                 self.pos += 1;
                 self.c_unary(Op::Text(TextField::Opacity), Ty::Number, None)
             }
-            "line" if self.c6_lit(0, "width") => {
+            "line" if self.prop_lit(0, "width") => {
                 self.pos += 1;
                 self.c_unary(Op::Text(TextField::LineWidth), Ty::Number, None)
             }
             "display"
-                if self.c6_lit(0, "opacity") || (self.c6_lit(0, "text") && self.c6_lit(1, "opacity")) =>
+                if self.prop_lit(0, "opacity")
+                    || (self.prop_lit(0, "text") && self.prop_lit(1, "opacity")) =>
             {
-                self.pos += if self.c6_lit(0, "text") { 2 } else { 1 };
+                self.pos += if self.prop_lit(0, "text") { 2 } else { 1 };
                 self.c_unary(Op::Text(TextField::Opacity), Ty::Number, None)
             }
             "opacity" => self.c_unary(Op::Text(TextField::Opacity), Ty::Number, None),
             "title" | "titles" | "style" | "styles" | "viewer" | "viewers" => {
-                if !self.c6_lit(0, "of") {
+                if !self.prop_lit(0, "of") {
                     return Ok(None);
                 }
                 self.pos += 1;
@@ -711,7 +712,7 @@ impl P<'_> {
                     "style" | "styles" => (Op::BarStyle, None, Ty::Object),
                     _ => (Op::Viewers, Some(Op::Viewers), Ty::List),
                 };
-                if let Some(id) = self.c6_bar()? {
+                if let Some(id) = self.prop_bar()? {
                     let op = if bar_op == Op::Viewers {
                         Op::BarViewers
                     } else {
@@ -736,8 +737,8 @@ impl P<'_> {
                 }
                 Ok(Some(node(op, vec![x], ty)))
             }
-            "world" if self.c6_lit(0, "border") => self.c_border(),
-            "block" if self.c6_lit(0, "data") => {
+            "world" if self.prop_lit(0, "border") => self.c_border(),
+            "block" if self.prop_lit(0, "data") => {
                 self.pos += 1;
                 self.c_unary(Op::BlockData, Ty::Text, None)
             }
@@ -755,10 +756,10 @@ impl P<'_> {
         let mut i = 0;
         let mut saw_pickle = matches!(lw, "pickle" | "pickles");
         if pick != Pick::Count || lw == "sea" {
-            if pick != Pick::Count && self.c6_lit(i, "sea") {
+            if pick != Pick::Count && self.prop_lit(i, "sea") {
                 i += 1;
             }
-            if self.c6_lit(i, "pickle") || self.c6_lit(i, "pickles") {
+            if self.prop_lit(i, "pickle") || self.prop_lit(i, "pickles") {
                 i += 1;
                 saw_pickle = true;
             }
@@ -766,10 +767,10 @@ impl P<'_> {
         if !saw_pickle {
             return Ok(None);
         }
-        if self.c6_lit(i, "count") || self.c6_lit(i, "amount") {
+        if self.prop_lit(i, "count") || self.prop_lit(i, "amount") {
             i += 1;
         }
-        if !self.c6_lit(i, "of") {
+        if !self.prop_lit(i, "of") {
             return Ok(None);
         }
         self.pos += i;
@@ -779,9 +780,9 @@ impl P<'_> {
     fn c_all(&mut self) -> Option<Expr> {
         let mut words: Vec<String> = Vec::new();
         let mut skip = 0;
-        if self.c6_lit(0, "of") && self.c6_lit(1, "the") {
+        if self.prop_lit(0, "of") && self.prop_lit(1, "the") {
             skip = 2;
-        } else if self.c6_lit(0, "the") {
+        } else if self.prop_lit(0, "the") {
             skip = 1;
         }
         for t in self.toks.get(self.pos + skip..).unwrap_or(&[]).iter().take(5) {
@@ -802,12 +803,12 @@ impl P<'_> {
     /// `[raw|unique] index of <slot>`: a slot is its number already.
     fn c_index(&mut self, lw: &str) -> Result<Option<Expr>, String> {
         if lw != "index" {
-            if !self.c6_lit(0, "index") {
+            if !self.prop_lit(0, "index") {
                 return Ok(None);
             }
             self.pos += 1;
         }
-        if !self.c6_lit(0, "of") {
+        if !self.prop_lit(0, "of") {
             return Ok(None);
         }
         self.pos += 1;
@@ -817,7 +818,7 @@ impl P<'_> {
             return Ok(None);
         };
         // `index of "a" in "abc"` is the text function.
-        if self.c6_lit(0, "in") {
+        if self.prop_lit(0, "in") {
             return Ok(None);
         }
         use crate::inventories::InvExpr;
@@ -833,15 +834,15 @@ impl P<'_> {
 
     /// After `world`, at `border`.
     fn c_border(&mut self) -> Result<Option<Expr>, String> {
-        if self.c6_lit(1, "warning") && (self.c6_lit(2, "distance") || self.c6_lit(2, "time")) {
-            let w = if self.c6_lit(2, "distance") {
+        if self.prop_lit(1, "warning") && (self.prop_lit(2, "distance") || self.prop_lit(2, "time")) {
+            let w = if self.prop_lit(2, "distance") {
                 Warn::Distance
             } else {
                 Warn::Time
             };
             self.pos += 3;
             let ty = if w == Warn::Time { Ty::Timespan } else { Ty::Number };
-            let of = self.c6_of()?.unwrap_or(Expr::Text(Vec::new()));
+            let of = self.of_target()?.unwrap_or(Expr::Text(Vec::new()));
             return Ok(Some(node(Op::Warning(w), vec![of], ty)));
         }
         // `world border size` and friends belong to other modules.
@@ -850,7 +851,7 @@ impl P<'_> {
             return Ok(None);
         }
         self.pos += 1;
-        let of = self.c6_of()?.unwrap_or(Expr::Text(Vec::new()));
+        let of = self.of_target()?.unwrap_or(Expr::Text(Vec::new()));
         Ok(Some(node(
             Op::Border,
             vec![of],
@@ -973,7 +974,7 @@ pub fn parse_effect(toks: &[Tok], env: &Env) -> Option<Result<Effect, String>> {
     if target.is_empty() || !may_target(target) {
         return None;
     }
-    let Ok(Expr::C6(n)) = parse_expr(target, env) else {
+    let Ok(Expr::EntityBlockProps(n)) = parse_expr(target, env) else {
         return None;
     };
     // Boss bar title and style have their own effects (`scoreboards_bossbars`).
@@ -1016,7 +1017,7 @@ pub fn parse_effect(toks: &[Tok], env: &Env) -> Option<Result<Effect, String>> {
         };
         return Some(Err(format!("can't {verb} the {}", n.op.name())));
     }
-    Some(Ok(Effect::C6(Box::new(C6Effect {
+    Some(Ok(Effect::EntityBlockProps(Box::new(PropertyEffect {
         change,
         target: *n,
         value,
@@ -1169,7 +1170,12 @@ fn players_of(v: Value) -> Vec<Value> {
 impl Engine {
     #[cold]
     #[inline(never)]
-    pub(crate) fn eval_c6(&mut self, n: &Node, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
+    pub(crate) fn eval_entity_props(
+        &mut self,
+        n: &Node,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<Value, String> {
         let a = match n.args.first() {
             Some(e) => self.eval(e, ex, host)?,
             None => Value::None,
@@ -1179,7 +1185,12 @@ impl Engine {
 
     #[cold]
     #[inline(never)]
-    pub(crate) fn exec_c6(&mut self, e: &C6Effect, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
+    pub(crate) fn exec_entity_props(
+        &mut self,
+        e: &PropertyEffect,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<(), String> {
         let value = match &e.value {
             Some(v) => self.eval(v, ex, host)?,
             None => Value::None,
@@ -1255,13 +1266,13 @@ fn read(op: Op, a: &Value, ex: &mut Exec, host: &mut dyn Host) -> Option<Value> 
     match op {
         Op::Scale => {
             let e = handle(a, ex, host)?;
-            host.c6_get(G::Scale(&e))
+            host.property_get(G::Scale(&e))
         }
         Op::Pickles(Pick::Min) => Some(Value::Num(MIN_PICKLES as f64)),
         Op::Pickles(Pick::Max) => Some(Value::Num(MAX_PICKLES as f64)),
         Op::Pickles(Pick::Count) => {
             let at = block_of(a, host)?;
-            let (id, state, first) = host.c6_block_state(&at)?;
+            let (id, state, first) = host.block_state_prop(&at)?;
             (id == "sea_pickle").then(|| pickles_of(state, first).map(|n| Value::Num(n as f64)))?
         }
         Op::AllOf(ty) => Some(all_of(ty)),
@@ -1271,11 +1282,11 @@ fn read(op: Op, a: &Value, ex: &mut Exec, host: &mut dyn Host) -> Option<Value> 
         },
         Op::Spectator => {
             let p = online(a, &mut ex.seen, host)?;
-            host.c6_get(G::Camera(&p))
+            host.property_get(G::Camera(&p))
         }
         Op::Target => {
             let e = handle(a, ex, host)?;
-            host.c6_get(G::Target(&e))
+            host.property_get(G::Target(&e))
         }
         Op::Temperature => {
             let at = block_of(a, host)?;
@@ -1285,7 +1296,7 @@ fn read(op: Op, a: &Value, ex: &mut Exec, host: &mut dyn Host) -> Option<Value> 
         }
         Op::Text(f) => {
             let e = handle(a, ex, host)?;
-            let v = host.c6_get(G::Text(&e, f))?;
+            let v = host.property_get(G::Text(&e, f))?;
             Some(match (f, v) {
                 (TextField::Alignment, Value::Text(t)) => enum_named("display text alignment", &t),
                 (_, v) => v,
@@ -1295,8 +1306,8 @@ fn read(op: Op, a: &Value, ex: &mut Exec, host: &mut dyn Host) -> Option<Value> 
             Value::Inventory(inv) => Some(Value::Text(inv.title.clone())),
             _ => None,
         },
-        Op::BarTitle => host.c6_get(G::BarTitle(&a.to_string())),
-        Op::BarStyle => match host.c6_get(G::BarStyle(&a.to_string()))? {
+        Op::BarTitle => host.property_get(G::BarTitle(&a.to_string())),
+        Op::BarStyle => match host.property_get(G::BarStyle(&a.to_string()))? {
             Value::Text(t) => Some(enum_named("boss bar style", &t)),
             v => Some(v),
         },
@@ -1314,14 +1325,14 @@ fn read(op: Op, a: &Value, ex: &mut Exec, host: &mut dyn Host) -> Option<Value> 
                             .collect(),
                     ));
                 }
-                host.c6_get(G::MenuViewers(inv.id))
+                host.property_get(G::MenuViewers(inv.id))
             }
             _ => None,
         },
-        Op::BarViewers => host.c6_get(G::BarViewers(&a.to_string())),
+        Op::BarViewers => host.property_get(G::BarViewers(&a.to_string())),
         Op::Warning(w) => {
             let world = world_of(a, ex, host)?;
-            let v = host.c6_get(G::Warning(&world, w))?;
+            let v = host.property_get(G::Warning(&world, w))?;
             match (w, v) {
                 (Warn::Time, Value::Num(s)) => Some(Value::Timespan {
                     millis: (s * 1000.0) as i64,
@@ -1332,7 +1343,7 @@ fn read(op: Op, a: &Value, ex: &mut Exec, host: &mut dyn Host) -> Option<Value> 
         Op::Border => world_of(a, ex, host).map(Value::Border),
         Op::BlockData => {
             let at = block_of(a, host)?;
-            let (id, state, first) = host.c6_block_state(&at)?;
+            let (id, state, first) = host.block_state_prop(&at)?;
             Some(Value::Text(format_data(&id, state, first)))
         }
     }
@@ -1370,18 +1381,18 @@ fn change(
                 Change::Reset => None,
                 Change::Set if matches!(value, Value::Vector { .. }) => Some(value.clone()),
                 _ => {
-                    let cur = host.c6_get(Get::Scale(&e));
+                    let cur = host.property_get(Get::Scale(&e));
                     let n = delta(cur, "scale")?;
                     Some(Value::Num(n.clamp(MIN_SCALE, MAX_SCALE)))
                 }
             };
-            host.c6_set(Set::Scale(&e, new.as_ref()));
+            host.property_set(Set::Scale(&e, new.as_ref()));
         }
         Op::Pickles(_) => {
             let Some(at) = block_of(a, host) else {
                 return Ok(());
             };
-            let Some((id, state, first)) = host.c6_block_state(&at) else {
+            let Some((id, state, first)) = host.block_state_prop(&at) else {
                 return Ok(());
             };
             if id != "sea_pickle" {
@@ -1396,20 +1407,20 @@ fn change(
             };
             let n = (n.round() as i64).clamp(MIN_PICKLES, MAX_PICKLES);
             let s = encode_state("sea_pickle", first, state, &[("pickles".into(), n.to_string())])?;
-            host.c6_set(Set::BlockState(&at, s));
+            host.property_set(Set::BlockState(&at, s));
         }
         Op::BlockData => {
             let Some(at) = block_of(a, host) else {
                 return Ok(());
             };
             let (id, props) = parse_data(&value.to_string())?;
-            let mut cur = host.c6_block_state(&at);
+            let mut cur = host.block_state_prop(&at);
             if cur.as_ref().is_none_or(|c| c.0 != id) {
                 if !crate::items::is_known(&id) && block_props(&id).is_empty() {
                     return Err(format!("unknown block '{id}'"));
                 }
                 host.set_block(&at, &id);
-                cur = host.c6_block_state(&at);
+                cur = host.block_state_prop(&at);
             }
             let Some((cid, state, first)) = cur else {
                 return Ok(());
@@ -1419,7 +1430,7 @@ fn change(
             }
             if !props.is_empty() {
                 let s = encode_state(&id, first, state, &props)?;
-                host.c6_set(Set::BlockState(&at, s));
+                host.property_set(Set::BlockState(&at, s));
             }
         }
         Op::Spectator | Op::Target => {
@@ -1433,10 +1444,10 @@ fn change(
             };
             if op == Op::Spectator {
                 if let Some(p) = online(a, &mut ex.seen, host) {
-                    host.c6_set(Set::Camera(&p, to.as_ref()));
+                    host.property_set(Set::Camera(&p, to.as_ref()));
                 }
             } else if let Some(e) = handle(a, ex, host) {
-                host.c6_set(Set::Target(&e, to.as_ref()));
+                host.property_set(Set::Target(&e, to.as_ref()));
             }
         }
         Op::Text(f) => {
@@ -1457,7 +1468,7 @@ fn change(
                 (TextField::LineWidth, Change::Reset) => Value::Num(DEFAULT_LINE_WIDTH),
                 (TextField::Opacity, Change::Reset) => Value::Num(DEFAULT_OPACITY),
                 (_, _) => {
-                    let cur = host.c6_get(Get::Text(&e, f));
+                    let cur = host.property_get(Get::Text(&e, f));
                     let n = delta(cur, op.name())?.round();
                     Value::Num(if f == TextField::Opacity {
                         n.clamp(0.0, 255.0)
@@ -1466,7 +1477,7 @@ fn change(
                     })
                 }
             };
-            host.c6_set(Set::Text(&e, f, &new));
+            host.property_set(Set::Text(&e, f, &new));
         }
         Op::Warning(w) => {
             let Some(world) = world_of(a, ex, host) else {
@@ -1476,11 +1487,11 @@ fn change(
                 Change::Reset if w == Warn::Distance => DEFAULT_WARNING_DISTANCE,
                 Change::Reset => DEFAULT_WARNING_SECONDS,
                 _ => {
-                    let cur = host.c6_get(Get::Warning(&world, w));
+                    let cur = host.property_get(Get::Warning(&world, w));
                     delta(cur, op.name())?
                 }
             };
-            host.c6_set(Set::Warning(&world, w, n.round().clamp(0.0, f64::from(i32::MAX))));
+            host.property_set(Set::Warning(&world, w, n.round().clamp(0.0, f64::from(i32::MAX))));
         }
         _ => return Err(format!("can't change the {}", op.name())),
     }
