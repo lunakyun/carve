@@ -1,0 +1,42 @@
+# Combat area: damage, death and respawn. {cmode} picks what on damage does.
+
+command /cmode <text>:
+    trigger:
+        set {cmode} to arg-1
+        send "c:mode %{cmode}%" to player
+
+on damage of player:
+    broadcast "c:pdmg victim=%victim% attacker=%attacker% dmg=%damage% cause=%damage cause%"
+    if attacker is a zombie:
+        broadcast "c:pdmg-by-zombie %type of attacker%"
+        if {cmode} is "zkill":
+            set damage to 100
+    if {cmode} is "set":
+        set damage to 1
+    if {cmode} is "add":
+        add 2 to damage
+    if {cmode} is "remove":
+        remove 1 from damage
+    if {cmode} is "cancel":
+        cancel event
+
+on damage of zombie:
+    broadcast "c:zdmg victim=%type of victim% attacker=%attacker%"
+
+on damage:
+    if victim is a pig:
+        broadcast "c:mobdmg victim=%type of victim% name=%name of victim% attacker=%attacker% dmg=%damage% player=%player% cause=%damage cause%"
+        if {cmode} is "pigkill":
+            set damage to 100
+        if {cmode} is "pigcancel":
+            cancel event
+
+on death:
+    broadcast "c:death player=%player% victim=%victim% attacker=%attacker%"
+    if {cmode} is "msg":
+        set death message to "&cc:custom death of %player%"
+    if attacker is a zombie:
+        set death message to "c:eaten %player%"
+
+on respawn:
+    broadcast "c:respawn %player%"

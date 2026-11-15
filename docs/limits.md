@@ -66,6 +66,14 @@ Carve itself. For the full feature-by-feature status, see the
 - **Weather and lightning events** only come from plugins in Pumpkin 0.2.2:
   the `/weather` command, the natural weather cycle and `/summon
   lightning_bolt` don't fire them.
+- **`kill` on a mob** is not a console command, so the mob dies inside the
+  script and `on damage` doesn't run for that hit.
+
+## Entities
+
+- **Mobs keep moving while a script runs.** Pumpkin ticks entities on its own
+  thread, so `y velocity of {_e}` read right after `set y velocity of {_e}` can
+  already show one tick of gravity and drag.
 
 ## Inventories
 

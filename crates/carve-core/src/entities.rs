@@ -368,6 +368,28 @@ fn is_entity_expr(e: &Expr) -> bool {
     matches!(e, Expr::Ent(_))
 }
 
+/// A variable or loop value, which may hold an entity at run time.
+fn is_value_ref(e: &Expr) -> bool {
+    matches!(e, Expr::Var(_) | Expr::LoopValue(_))
+}
+
+/// A `,` outside parentheses, as in `x, y, z`.
+fn top_level_comma(toks: &[Tok]) -> bool {
+    let mut depth = 0i32;
+    toks.iter().any(|t| match t {
+        Tok::Sym("(") => {
+            depth += 1;
+            false
+        }
+        Tok::Sym(")") => {
+            depth -= 1;
+            false
+        }
+        Tok::Sym(",") => depth == 0,
+        _ => false,
+    })
+}
+
 /// Strip a leading `the` and `entity`/`entities`; true when `entity` was there.
 fn strip_entity(toks: &[Tok]) -> (&[Tok], bool) {
     let mut t = toks;
@@ -447,7 +469,10 @@ fn kill(toks: &[Tok], env: &Env) -> Result<Option<EntFx>, String> {
     let Ok(e) = parse_expr(rest, env) else {
         return Ok(None);
     };
-    if !(said || is_entity_expr(&e)) {
+    // `despawn` only means entities, so a variable holding one is fine;
+    // `delete {x}` / `remove {x}` stay variable and list effects.
+    let despawn = toks.first().is_some_and(|t| is(t, "despawn"));
+    if !(said || is_entity_expr(&e) || (despawn && is_value_ref(&e))) {
         return Ok(None);
     }
     Ok(Some(if verb == Some(true) {
@@ -541,7 +566,7 @@ fn set(toks: &[Tok], env: &Env) -> Result<Option<EntFx>, String> {
         let Ok(who) = parse_expr(who_toks, env) else {
             return Ok(None);
         };
-        if !(said || is_entity_expr(&who)) {
+        if !(said || is_entity_expr(&who) || is_value_ref(&who)) {
             return Ok(None);
         }
         return Ok(Some(EntFx::SetName {
@@ -560,7 +585,10 @@ fn teleport(toks: &[Tok], env: &Env) -> Result<Option<EntFx>, String> {
     let Ok(who) = parse_expr(who_toks, env) else {
         return Ok(None);
     };
-    if !(said || is_entity_expr(&who)) {
+    // A variable may hold an entity, which the player teleport skips. Take it
+    // here unless the target is the `x, y, z` form the player effect parses.
+    let dest = toks.get(to + 1..).unwrap_or_default();
+    if !(said || is_entity_expr(&who) || (is_value_ref(&who) && !top_level_comma(dest))) {
         return Ok(None);
     }
     Ok(Some(EntFx::Teleport {
@@ -803,6 +831,57 @@ impl Engine {
         }
     }
 
+    /// `set health of <player or entity> to n`.
+    #[inline(never)]
+    pub(crate) fn set_health_any(
+        &mut self,
+        who: &Expr,
+        n: f64,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<(), String> {
+        let v = self.eval(who, ex, host)?;
+        match &v {
+            Value::Entity(r) => set_entity_health(host, r, n),
+            _ => {
+                if let Some(p) = online(&v, &mut ex.seen, host) {
+                    host.set_health(&p, n.max(0.0));
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// `add/remove n to/from health of <player or entity>` and the other
+    /// health and food effects; only the health ones work on entities.
+    #[inline(never)]
+    pub(crate) fn hf_any(
+        &mut self,
+        h: &crate::health_food::HfEffect,
+        amount: f64,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<(), String> {
+        use crate::health_food::{HfOp, Vital};
+        let v = self.eval(&h.player, ex, host)?;
+        let Value::Entity(r) = &v else {
+            if let Some(p) = online(&v, &mut ex.seen, host) {
+                crate::health_food::run(h, amount, &p, host);
+            }
+            return Ok(());
+        };
+        let cur = host.entity_health(r);
+        let target = match (h.op, cur) {
+            (HfOp::Set(Vital::Health), _) => amount,
+            (HfOp::Add(Vital::Health), Some(c)) => c + amount,
+            (HfOp::HealBy, Some(c)) => c + amount.max(0.0),
+            (HfOp::Remove(Vital::Health), Some(c)) => c - amount,
+            _ => return Ok(()),
+        };
+        set_entity_health(host, r, target);
+        Ok(())
+    }
+
     /// `kill <player, entity or list of them>`.
     #[inline(never)]
     pub(crate) fn kill_any(&mut self, e: &Expr, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
@@ -965,5 +1044,17 @@ impl Engine {
             Prop::Health => host.entity_health(e).map_or(Value::None, Value::Num),
             _ => return None,
         })
+    }
+}
+
+/// Health at or below zero kills, so drops and death events happen.
+fn set_entity_health(host: &mut dyn Host, r: &EntityRef, n: f64) {
+    if n.is_nan() {
+        return;
+    }
+    if n <= 0.0 {
+        host.entity_kill(r);
+    } else {
+        host.set_entity_health(r, n);
     }
 }

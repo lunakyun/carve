@@ -2326,8 +2326,12 @@ impl Engine {
             }
             Effect::SetHealth(p, n) => {
                 let n = self.num(n, ex, host)?;
-                if let Some(p) = self.player(p, ex, host)? {
-                    host.set_health(&p, n.max(0.0));
+                if let Expr::Player = p {
+                    if let Some(p) = self.player(p, ex, host)? {
+                        host.set_health(&p, n.max(0.0));
+                    }
+                } else {
+                    self.set_health_any(p, n, ex, host)?;
                 }
             }
             Effect::Kill(p) => self.kill_any(p, ex, host)?,
@@ -2498,8 +2502,12 @@ impl Engine {
                     Some(a) => self.num(a, ex, host)?,
                     None => 0.0,
                 };
-                if let Some(p) = self.player(&h.player, ex, host)? {
-                    crate::health_food::run(h, amount, &p, host);
+                if let Expr::Player = h.player {
+                    if let Some(p) = self.player(&h.player, ex, host)? {
+                        crate::health_food::run(h, amount, &p, host);
+                    }
+                } else {
+                    self.hf_any(h, amount, ex, host)?;
                 }
             }
             Effect::Admin(kind, target, text) => {

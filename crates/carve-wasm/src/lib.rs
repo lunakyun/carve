@@ -1639,6 +1639,7 @@ impl Host for TickHost<'_, '_> {
         entity_location(e: &carve_core::EntityRef) -> Option<(f64, f64, f64, String)>;
         entity_name(e: &carve_core::EntityRef) -> Option<String>;
         entity_health(e: &carve_core::EntityRef) -> Option<f64>;
+        set_entity_health(e: &carve_core::EntityRef, health: f64);
         set_entity_name(e: &carve_core::EntityRef, name: Option<&str>);
         entities_near(at: &FxPos, radius: f64, kind: Option<&str>) -> Vec<carve_core::EntityRef>;
         entity_velocity(e: &carve_core::EntityRef) -> Option<(f64, f64, f64)>;
