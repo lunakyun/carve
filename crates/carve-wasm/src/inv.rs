@@ -164,10 +164,14 @@ pub fn get(player: &Player, uuid: &str, current: bool, slot: i64) -> Option<(Str
 }
 
 pub fn set(player: &Player, uuid: &str, current: bool, slot: i64, item: Option<(&str, u32)>) {
+    set_stack(player, uuid, current, slot, item.map(|(id, n)| stack_of(id, n)));
+}
+
+/// Put a stack (with whatever name and lore it has) in a slot; `None` empties it.
+pub fn set_stack(player: &Player, uuid: &str, current: bool, slot: i64, stack: Option<ItemStack>) {
     let Ok(slot) = u32::try_from(slot) else {
         return;
     };
-    let stack = item.map(|(id, n)| stack_of(id, n));
     if current && menu_info(uuid).is_some() {
         with_menu(uuid, |inv| {
             if slot < inv.get_size() {

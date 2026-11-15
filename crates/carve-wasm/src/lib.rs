@@ -890,6 +890,16 @@ impl WasmHost<'_> {
         }
     }
 
+    fn inv_set_item(&mut self, p: &PlayerRef, current: bool, slot: i64, item: &Value) {
+        let stack = match item {
+            Value::Item { id, .. } if id == "air" => None,
+            _ => gaps::stack_of(item),
+        };
+        if let Some(pl) = self.get(p) {
+            inv::set_stack(pl, &p.uuid, current, slot, stack);
+        }
+    }
+
     /// Through the inventory API, so the item is there for the rest of the
     /// script (the default `item replace` command only runs after it).
     fn equip(&mut self, p: &PlayerRef, slot: &str, id: &str) {
@@ -1672,6 +1682,7 @@ impl Host for TickHost<'_, '_> {
         open_chest(p: &PlayerRef, rows: u8, title: &str);
         inv_get(p: &PlayerRef, current: bool, slot: i64) -> Option<(String, u32)>;
         inv_set(p: &PlayerRef, current: bool, slot: i64, item: Option<(&str, u32)>);
+        inv_set_item(p: &PlayerRef, current: bool, slot: i64, item: &Value);
         equip(p: &PlayerRef, slot: &str, id: &str);
         inv_clear(p: &PlayerRef, current: bool);
         inv_remove(p: &PlayerRef, id: &str, count: u32) -> u32;
@@ -2165,6 +2176,22 @@ impl EventAccess for PlayerRespawnEvent {
         ctx
     }
     fn set_cancelled(_d: &mut EventData<Self>) {}
+}
+
+/// Syntax that parses but this plugin API can't carry out; each load warns
+/// at the lines that use it.
+fn unsupported() -> Vec<(carve_core::support::Feature, String)> {
+    use carve_core::support::Feature;
+    vec![
+        (
+            Feature::CloseInventory,
+            "Pumpkin's plugin API v0.1 has no call to close a window; the player has to close it".into(),
+        ),
+        (
+            Feature::PlayerFlag(PlayerFlag::Blocking),
+            "the plugin API has no shield-blocking state, so it is always false".into(),
+        ),
+    ]
 }
 
 /// Left and right clicks: runs `on click` and `on right/left click`.
@@ -3016,7 +3043,11 @@ impl Plugin for Carve {
             Vec::new()
         });
         let t0 = std::time::Instant::now();
+        engine.set_unsupported(unsupported());
         let (sum, errors) = engine.load(&files);
+        for line in carve_core::admin::warning_report(&engine.warnings) {
+            plog(ApiLevel::Warn, &line);
+        }
         // Skript-style: errors and the summary go to the console only.
         for (is_err, line) in carve_core::admin::load_report(&sum, &errors, t0.elapsed().as_secs_f64()) {
             plog(if is_err { ApiLevel::Error } else { ApiLevel::Info }, &line);

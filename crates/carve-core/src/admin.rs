@@ -229,6 +229,11 @@ fn finish(out: &mut AdminOut, errors: &[ScriptError], done: &str, doing: &str, w
     }
 }
 
+/// Console lines for load warnings (see [`Engine::warnings`]), in Skript's layout.
+pub fn warning_report(warnings: &[ScriptError]) -> Vec<String> {
+    warnings.iter().flat_map(ScriptError::plain_lines).collect()
+}
+
 /// Console lines for the load at server start, like Skript's:
 /// each error, then `Loaded 12 scripts with a total of 56 structures in 0.04 seconds`.
 /// `true` marks error lines.
@@ -380,6 +385,7 @@ fn reload(
         out.say("&7Reloading all scripts...");
         let files = read_enabled(store)?;
         let (_, errs) = engine.reload(&files);
+        show_errors(out, &engine.warnings);
         finish(out, &errs, "reloaded", "reloading", "all scripts", t0);
         restart_note(out, engine, env);
         out.loaded = true;
@@ -400,6 +406,13 @@ fn reload(
     let before = engine.errors.clone();
     engine.reload_file(&name, Some(src));
     let errs = errors_for(engine, std::slice::from_ref(&name), &before);
+    let warns: Vec<ScriptError> = engine
+        .warnings
+        .iter()
+        .filter(|w| w.file == name)
+        .cloned()
+        .collect();
+    show_errors(out, &warns);
     finish(out, &errs, "reloaded", "reloading", &name, t0);
     restart_note(out, engine, env);
     Ok(())
@@ -482,6 +495,13 @@ fn toggle(
         errors_for(engine, &[], &before)
     };
     if enable {
+        let warns: Vec<ScriptError> = engine
+            .warnings
+            .iter()
+            .filter(|w| names.contains(&w.file))
+            .cloned()
+            .collect();
+        show_errors(out, &warns);
         finish(out, &errs, "enabled and loaded", "enabling", &what, t0);
         restart_note(out, engine, env);
     } else {

@@ -9,6 +9,8 @@ pub struct ScriptError {
     pub suggestions: Vec<String>,
     /// The offending source line, trimmed (empty when not known).
     pub code: String,
+    /// A load-time warning: the line loaded, but will not work on this server.
+    pub warning: bool,
 }
 
 impl ScriptError {
@@ -19,6 +21,15 @@ impl ScriptError {
             msg: msg.into(),
             suggestions: Vec::new(),
             code: String::new(),
+            warning: false,
+        }
+    }
+
+    /// A warning: the line loads but can't do what it says on this server.
+    pub fn warning(file: &str, line: usize, msg: impl Into<String>) -> Self {
+        ScriptError {
+            warning: true,
+            ..ScriptError::new(file, line, msg)
         }
     }
 
@@ -30,8 +41,9 @@ impl ScriptError {
     ///     Line: return d...
     /// ```
     pub fn skript_lines(&self) -> Vec<String> {
-        let mut out = vec![format!("&4Line {}: &c({})", self.line, self.file)];
-        out.push(format!("    &c{}", capitalize(&self.msg)));
+        let (head, body) = if self.warning { ("&6", "&e") } else { ("&4", "&c") };
+        let mut out = vec![format!("{head}Line {}: {body}({})", self.line, self.file)];
+        out.push(format!("    {body}{}", capitalize(&self.msg)));
         if !self.code.is_empty() {
             out.push(format!("    &7Line: {}", self.code));
         }
@@ -91,7 +103,8 @@ pub fn strip_codes(s: &str) -> String {
 
 impl fmt::Display for ScriptError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}:{}: {}", self.file, self.line, self.msg)?;
+        let kind = if self.warning { "warning: " } else { "" };
+        write!(f, "{}:{}: {kind}{}", self.file, self.line, self.msg)?;
         if !self.suggestions.is_empty() {
             write!(f, " (did you mean: {})", self.suggestions.join(" | "))?;
         }

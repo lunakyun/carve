@@ -1,0 +1,144 @@
+# ============================================================
+#  CASE CHEST - CS2-style case opening for any chest
+#  Right-click a chest -> a GUI scrolls through random items,
+#  slows down, and lands on your drop.
+#  Sneak + right-click to open the chest normally.
+#  Needs Skript 2.7+ and Minecraft 1.16+
+# ============================================================
+
+options:
+    title: &6&lCase Opening
+    prefix: &8[&6Case&8]&r
+
+# ----------------------- rarity + drops ----------------------
+
+# 55% common, 25% uncommon, 13% rare, 6% epic, 1% legendary
+function rarityRoll() :: number:
+    set {_n} to random integer between 1 and 100
+    if {_n} <= 55:
+        return 1
+    if {_n} <= 80:
+        return 2
+    if {_n} <= 93:
+        return 3
+    if {_n} <= 99:
+        return 4
+    return 5
+
+function dropFor(r: number) :: itemtype:
+    set {_k} to random integer between 1 and 3
+    if {_r} is 1:
+        set {_pool::1} to coal named "&fCoal"
+        set {_pool::2} to iron ingot named "&fIron Ingot"
+        set {_pool::3} to bread named "&fBread"
+        set {_label} to "&fCommon"
+    else if {_r} is 2:
+        set {_pool::1} to gold ingot named "&aGold Ingot"
+        set {_pool::2} to redstone named "&aRedstone"
+        set {_pool::3} to lapis lazuli named "&aLapis Lazuli"
+        set {_label} to "&aUncommon"
+    else if {_r} is 3:
+        set {_pool::1} to diamond named "&9Diamond"
+        set {_pool::2} to emerald named "&9Emerald"
+        set {_pool::3} to golden apple named "&9Golden Apple"
+        set {_label} to "&9Rare"
+    else if {_r} is 4:
+        set {_pool::1} to netherite ingot named "&5Netherite Ingot"
+        set {_pool::2} to totem of undying named "&5Totem of Undying"
+        set {_pool::3} to beacon named "&5Beacon"
+        set {_label} to "&5Epic"
+    else:
+        set {_pool::1} to elytra named "&6Elytra"
+        set {_pool::2} to nether star named "&6Nether Star"
+        set {_pool::3} to dragon egg named "&6Dragon Egg"
+        set {_label} to "&6&lLegendary"
+    set {_i} to {_pool::%{_k}%}
+    # set lore of {_i} to {_label}
+    return {_i}
+
+function paneFor(r: number) :: itemtype:
+    if {_r} is 1:
+        return white stained glass pane named "&fCommon"
+    if {_r} is 2:
+        return lime stained glass pane named "&aUncommon"
+    if {_r} is 3:
+        return blue stained glass pane named "&9Rare"
+    if {_r} is 4:
+        return purple stained glass pane named "&5Epic"
+    return orange stained glass pane named "&6&lLegendary"
+
+# ----------------------- open the case -----------------------
+
+on right click on Chest:
+    player is not sneaking
+    cancel event
+    set {_p} to player
+    set {_id} to "%uuid of {_p}%"
+    if {caseview::%{_id}%} is set:
+        stop
+    set {caseview::%{_id}%} to true
+
+    # decide the winner first, then build a reel that lands on it
+    set {_wr} to rarityRoll()
+    set {_win} to dropFor({_wr})
+    loop 40 times:
+        if loop-number is 35:
+            set {_reel::35} to {_win}
+        else:
+            set {_reel::%loop-number%} to dropFor(rarityRoll())
+    set {case::%{_id}%} to {_win}
+
+    # build the GUI
+    open chest inventory with 3 rows named "{@title}" to {_p}
+    loop 27 times:
+        set slot (loop-number - 1) of {_p}'s current inventory to gray stained glass pane named " "
+    set slot 4 of {_p}'s current inventory to red stained glass pane named "&c&lv"
+    set slot 22 of {_p}'s current inventory to red stained glass pane named "&c&l^"
+
+    # spin: 31 steps, each one slower than the last
+    loop 31 times:
+        if {_p} is not online:
+            stop
+        if {case::%{_id}%} is not set:
+            stop
+        set {_o} to loop-number
+        loop 9 times:
+            set {_idx} to {_o} + loop-number - 1
+            set slot (8 + loop-number) of {_p}'s current inventory to {_reel::%{_idx}%}
+        play sound "ui.button.click" with volume 0.6 to {_p}
+        set {_w} to floor(({_o} * {_o}) / 110 + 1)
+        wait {_w} ticks
+
+    # landed
+    if {case::%{_id}%} is not set:
+        stop
+    delete {case::%{_id}%}
+    give {_win} to {_p}
+    set slot 4 of {_p}'s current inventory to paneFor({_wr})
+    set slot 22 of {_p}'s current inventory to paneFor({_wr})
+    play sound "entity.player.levelup" with volume 1 to {_p}
+    send "{@prefix} &7You unboxed: &f%name of {_win}%" to {_p}
+    if {_wr} >= 4:
+        strike lightning effect at location of {_p}
+        broadcast "{@prefix} &f%{_p}% &7just unboxed %name of {_win}%&7!"
+
+    wait 2 seconds
+    if {caseview::%{_id}%} is set:
+        close {_p}'s inventory
+
+# ----------------------- safety handlers ---------------------
+
+# no stealing items out of the GUI
+on inventory click:
+    {caseview::%uuid of player%} is set
+    cancel event
+
+# closing early still gives the prize (and stops the animation)
+on inventory close:
+    set {_id} to "%uuid of player%"
+    {caseview::%{_id}%} is set
+    delete {caseview::%{_id}%}
+    if {case::%{_id}%} is set:
+        give {case::%{_id}%} to player
+        send "{@prefix} &7You unboxed: &f%name of {case::%{_id}%}%" to player
+        delete {case::%{_id}%}

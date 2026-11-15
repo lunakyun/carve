@@ -190,6 +190,8 @@ pub struct ScriptTable {
     pub file_info: Vec<FileInfo>,
     pub files: usize,
     pub triggers: usize,
+    /// Every compiled body (triggers, functions, defaults), for load-time checks.
+    pub(crate) codes: Vec<Arc<crate::compile::Code>>,
 }
 
 impl ScriptTable {
@@ -486,6 +488,10 @@ pub struct Engine {
     sources: BTreeMap<String, String>,
     /// Errors of the last load or reload.
     pub errors: Vec<ScriptError>,
+    /// Warnings of the last load or reload: lines that load but this host can't do.
+    pub warnings: Vec<ScriptError>,
+    /// What the host can't do, and why (see [`Engine::set_unsupported`]).
+    unsupported: Vec<(crate::support::Feature, String)>,
     /// Per-trigger run times while `/carve timings on`.
     pub timings: Option<BTreeMap<String, Timing>>,
     /// SkBee-style bounds (see `skbee_bound`).
@@ -511,11 +517,15 @@ fn build_table(files: &[(String, String)]) -> (ScriptTable, Vec<ScriptError>) {
     let compiled = compile_all(files);
     let mut errors = compiled.errors;
     table.functions = compiled.functions;
+    table.codes = table.functions.iter().flatten().map(|f| f.code.clone()).collect();
     table.var_defaults = compiled
         .var_defaults
         .into_iter()
         .map(|(p, t)| (p, Arc::new(t)))
         .collect();
+    table
+        .codes
+        .extend(table.var_defaults.iter().map(|(_, t)| t.code.clone()));
     for (name, trigs) in compiled.files {
         table.files += 1;
         let mut info = FileInfo {
@@ -544,6 +554,7 @@ fn build_table(files: &[(String, String)]) -> (ScriptTable, Vec<ScriptError>) {
         table.file_info.push(info);
         for t in trigs {
             table.triggers += 1;
+            table.codes.push(t.code.clone());
             let t = Arc::new(t);
             match &t.kind {
                 TriggerKind::Event(k) => table.events.entry(*k).or_default().push(t.clone()),
@@ -592,6 +603,8 @@ impl Engine {
             rng: 0,
             sources: BTreeMap::new(),
             errors: Vec::new(),
+            warnings: Vec::new(),
+            unsupported: Vec::new(),
             timings: None,
             bounds: crate::skbee_bound::Bounds::default(),
             boards: Default::default(),
@@ -688,6 +701,8 @@ impl Engine {
     /// reported and left out, everything that parsed is used.
     pub fn load(&mut self, files: &[(String, String)]) -> (LoadSummary, Vec<ScriptError>) {
         let (table, errors) = build_table(files);
+        self.warnings = crate::support::scan(&table.codes, &self.unsupported);
+        crate::error::fill_code(&mut self.warnings, files);
         self.sources = files.iter().cloned().collect();
         self.pending_defaults = !table.var_defaults.is_empty();
         self.table = Arc::new(table);
@@ -699,6 +714,12 @@ impl Engine {
     /// Runs that are waiting keep the code they started with.
     pub fn reload(&mut self, files: &[(String, String)]) -> (LoadSummary, Vec<ScriptError>) {
         self.load(files)
+    }
+
+    /// Tell the engine what this host can't do. Each load then warns at every
+    /// line that uses one of these (see [`Engine::warnings`]).
+    pub fn set_unsupported(&mut self, list: Vec<(crate::support::Feature, String)>) {
+        self.unsupported = list;
     }
 
     pub fn pending_waits(&self) -> usize {
@@ -1468,8 +1489,17 @@ impl Engine {
                 Ok(crate::w4_skbee_raytrace_world::check(r, &a, b.as_ref(), host))
             }
             Cond::PlayerFlag { player, flag, negate } => {
-                let p = self.eval(player, ex, host)?;
-                let Some(p) = online(&p, &mut ex.seen, host) else {
+                let v = self.eval(player, ex, host)?;
+                let Some(p) = online(&v, &mut ex.seen, host) else {
+                    // Like Skript, false either way; but say why instead of failing silently.
+                    host.log(
+                        LogLevel::Warn,
+                        &format!(
+                            "'is {}' checked for {}, which is not an online player, so it is false",
+                            flag.name(),
+                            v
+                        ),
+                    );
                     return Ok(false);
                 };
                 Ok(host.player_flag(&p, *flag) != *negate)

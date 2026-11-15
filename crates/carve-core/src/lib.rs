@@ -42,6 +42,7 @@ pub mod skbee_text;
 pub mod skbee_utilities;
 pub mod sounds;
 pub mod structures;
+pub mod support;
 pub mod text_case_substring;
 pub mod text_join_split;
 pub mod time_dates;
