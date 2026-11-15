@@ -2884,6 +2884,12 @@ impl CommandHandler for AdminCommand {
         };
         let out = with_state(&server, Some(&sender), |st, host| {
             let allowed = |node: &str| sender.has_permission(&server, node);
+            if self.sub == "reload"
+                && (sender.as_player().is_none() || allowed(ADMIN_PERM) || allowed("carve:reload"))
+            {
+                // The old scripts see `on unload` before they are replaced.
+                w6_chunk1::fire_unload_here(st, host, false);
+            }
             let mut store = DirStore(st.scripts_dir());
             let env = carve_core::admin::AdminEnv {
                 sender: recipient,

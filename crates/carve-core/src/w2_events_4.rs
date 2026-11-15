@@ -50,6 +50,8 @@ pub enum ExtEvent {
     WorldSave,
     WorldUnload,
     ZombieBreakDoor,
+    /// Any mob that breaks a door (`on entity break door`).
+    EntityBreakDoor,
     /// `on placeholder request for prefix "x"` (see `placeholders`).
     PlaceholderRequest,
     /// `on preparing craft` (see `w5_chunk1`).
@@ -151,8 +153,8 @@ const NAMES: &[(&str, ExtEvent)] = &[
     ("world save", ExtEvent::WorldSave),
     ("world unload", ExtEvent::WorldUnload),
     ("zombie break door", ExtEvent::ZombieBreakDoor),
-    ("entity break door", ExtEvent::ZombieBreakDoor),
-    ("break door", ExtEvent::ZombieBreakDoor),
+    ("entity break door", ExtEvent::EntityBreakDoor),
+    ("break door", ExtEvent::EntityBreakDoor),
     ("placeholder request", ExtEvent::PlaceholderRequest),
     ("player pickup arrow", ExtEvent::PickupArrow),
     ("pickup arrow", ExtEvent::PickupArrow),
@@ -255,7 +257,7 @@ impl ExtEvent {
             WeatherChange | WeatherToRain | WeatherToClear => &[r!("world"), r!("weather")],
             WorldInit | WorldLoad | WorldUnload => &[r!("world")],
             WorldSave => &[r!("world")],
-            ZombieBreakDoor => &[r!("entity"), r!("block")],
+            ZombieBreakDoor | EntityBreakDoor => &[r!("entity"), r!("block")],
             PlaceholderRequest => &[r!("identifier"), w!("result"), r!("prefix")],
             PickupArrow => &[r!("entity")],
             Riptide => &[r!("item")],

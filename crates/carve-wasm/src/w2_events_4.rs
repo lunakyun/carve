@@ -23,6 +23,11 @@ trait ExtAccess: FromIntoEvent {
     /// Take values changed by `set event-...` back into the event.
     fn apply(_d: &mut EventData<Self>, _out: &[(u8, Value)]) {}
     fn cancel(_d: &mut EventData<Self>) {}
+    /// Whether this kind should run for this event (`on zombie break door`
+    /// only runs for zombies).
+    fn pass(_st: &mut State, _host: &mut WasmHost<'_>, _d: &EventData<Self>, _k: ExtEvent) -> bool {
+        true
+    }
 }
 
 struct OnExt<E>(PhantomData<fn() -> E>);
@@ -42,6 +47,9 @@ impl<E: ExtAccess> EventHandler<E> for OnExt<E> {
             let mut outs = Vec::new();
             for (k, on) in [(Some(k1), a), (k2, b)] {
                 let (Some(k), true) = (k, on) else { continue };
+                if !E::pass(st, host, &data, k) {
+                    continue;
+                }
                 let c = core_ev::ctx(player.clone(), vals.clone());
                 let mut th = TickHost {
                     inner: host,
@@ -647,18 +655,29 @@ ext!(
     build = |_st, _host, d| (None, vec![Value::World(d.world_name.clone())])
 );
 
-ext!(
-    EntityBreakDoorEvent,
-    ExtEvent::ZombieBreakDoor,
-    cancel = can!(),
-    build = |st, host, d| (
-        None,
-        vec![
-            ent(st, host, d.entity_id),
-            block(d.block_pos.x, d.block_pos.y, d.block_pos.z, None),
-        ]
-    )
-);
+impl ExtAccess for EntityBreakDoorEvent {
+    fn kinds(_d: &EventData<Self>) -> (ExtEvent, Option<ExtEvent>) {
+        (ExtEvent::ZombieBreakDoor, Some(ExtEvent::EntityBreakDoor))
+    }
+    fn build(st: &mut State, host: &mut WasmHost<'_>, d: &EventData<Self>) -> Built {
+        (
+            None,
+            vec![
+                ent(st, host, d.entity_id),
+                block(d.block_pos.x, d.block_pos.y, d.block_pos.z, None),
+            ],
+        )
+    }
+    fn cancel(d: &mut EventData<Self>) {
+        d.cancelled = true;
+    }
+    fn pass(_st: &mut State, host: &mut WasmHost<'_>, d: &EventData<Self>, k: ExtEvent) -> bool {
+        k != ExtEvent::ZombieBreakDoor
+            || host
+                .entity_by_id(d.entity_id)
+                .is_some_and(|e| carve_core::w6_chunk1::is_zombie_kind(&e.kind))
+    }
+}
 
 // ---------- registration and the clock ----------
 

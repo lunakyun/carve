@@ -18,6 +18,15 @@ on jump:
 on tool change:
     send "w6:tool %event-item% / %past event-item%" to player
 
+on redstone:
+    broadcast "w6:redstone %event-location% %event-number%"
+
+on piston retract:
+    broadcast "w6:pistonr %event-text% %event-location%"
+
+on spectate:
+    broadcast "w6:spectate %type of event-entity%"
+
 on pressure plate:
     broadcast "w6:plate %event-location% %event-power%"
 

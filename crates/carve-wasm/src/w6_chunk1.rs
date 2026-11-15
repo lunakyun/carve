@@ -444,12 +444,15 @@ fn poll_spectate(server: &Server, st: &mut State, host: &mut WasmHost<'_>) {
 
 /// Run `on unload` and `on server stop` triggers (the plugin is unloading).
 pub(crate) fn fire_unload(server: &Server, stopping: bool) {
-    with_state(server, None, |st, host| {
-        fire(st, host, ExtEvent::ScriptUnload, None, Vec::new());
-        if stopping {
-            fire(st, host, ExtEvent::ServerStop, None, Vec::new());
-        }
-    });
+    with_state(server, None, |st, host| fire_unload_here(st, host, stopping));
+}
+
+/// Same, inside a state that is already open (`/carve reload`).
+pub(crate) fn fire_unload_here(st: &mut State, host: &mut WasmHost<'_>, stopping: bool) {
+    fire(st, host, ExtEvent::ScriptUnload, None, Vec::new());
+    if stopping {
+        fire(st, host, ExtEvent::ServerStop, None, Vec::new());
+    }
 }
 
 // ---------- registration ----------

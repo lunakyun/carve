@@ -7,6 +7,27 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Added (Skript parity, wave 6 chunk 1)
+
+- New events: `on jump`, `on player chunk enter`, `on step on <block>`,
+  `on pressure plate`, `on experience spawn`, `on armor change`, `on spectate`,
+  `on world border bounds change`, `on world border center change`,
+  `on unload`, `on server stop`, `on entity break door`, and (not yet verified
+  in-game) `on player pickup arrow`, `on riptide` and `on projectile collide`.
+  See [the wave 6 page](docs/syntax/w6-chunk1.md).
+- Event values: `event-location` for leaves decay, lightning, pistons, portal
+  create and redstone; `event-entity` for leash, unleash, love mode, combust and
+  bucket catch; `event-items` for block drop and piglin barter; `event-item`
+  and `past event-item` for tool change; `player` for bell ring.
+- `set event-boolean to false` in `on can build check`.
+- `on spawn change` also runs for player spawn points; `on shoot` also runs for
+  players' arrows; `on zombie break door` only runs for zombies.
+
+### Fixed
+
+- Several events were marked blocked in the parity checklist for reasons that
+  turned out to be wrong; each was re-checked against the plugin API.
+
 ## [0.2.0] - 2026-11-15
 
 ### Changed

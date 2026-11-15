@@ -73,12 +73,12 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 ## Events (186)
 
 - 🟡 At Time — `at 18:00:`, `at 6pm:`, `at noon:`; first world only, no `in world`
-- ⛔ On Anvil Damage — Pumpkin has no anvil damage event
+- ⛔ On Anvil Damage — Pumpkin has no anvil damage event (checked event.wit v0.1 and v0.2 and the server source: only `prepare-anvil-event-data` exists)
 - 🟡 On Anvil Prepare — `event-text` (rename), `event-number` (cost); no result item, can't cancel
 - ⛔ On AoE Cloud Effect — Pumpkin never fires the area effect cloud event
 - ✅ On Arm Swing — `event-text` is the animation type
-- ⛔ On Armor Change — no armor change event in the plugin API
-- ⛔ On Attempt Attack — no pre-attack event in the plugin API
+- ✅ On Armor Change — `on armor change` (`player`, `event-slot` as `helmet`/`chestplate`/`leggings`/`boots`, `event-item`, `past event-item`); no event exists, so Carve compares the four armor slots of every player every 4 ticks (about 0.2 s late) and only when a script uses it
+- ⛔ On Attempt Attack — protocol 26.3 sends attacks as their own `s-attack` packet and Pumpkin fires no plugin event for it (`player-interact-entity` only covers old-style attacks); the only way in is a packet event, which needs `packet-received-event`, which panics inside Pumpkin 0.2.2 when it decodes a packet (`TryFromIntError` in pumpkin-wasm-host-v0_1 generated_packets.rs:1114, the server crashes right after a player joins)
 - ⛔ On Bat Toggle Sleep — Pumpkin never fires it
 - ⛔ On Beacon Change Effect — Pumpkin has no beacon events
 - ⛔ On Beacon Effect — Pumpkin has no beacon events
@@ -86,9 +86,9 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ On Bed Enter — `event-location` is the bed
 - ✅ On Bed Leave — can't be cancelled
 - ⛔ On Bell Resonate — Pumpkin never fires it
-- 🟡 On Bell Ring — `event-location`, `event-number` (entity id), `event-text` (direction); no player
+- ✅ On Bell Ring — `event-location`, `event-number` (entity id), `event-text` (direction) and `player` (the ringer, when the bell was rung by a player); verified in-game
 - ✅ On Block Damage — `event-location`, `event-boolean` (instant break)
-- 🟡 On Block Drop — first dropped item as `event-item`, stack count as `event-number`
+- ✅ On Block Drop — `event-item` (first stack), `event-items` (all stacks), `event-number` (stack count), `event-location`, `event-world` and `player` when a player broke it; verified in-game (it also fires for blocks dropped by world generation)
 - ✅ On Block Fertilize — `event-number` is the changed block count
 - ✅ On Block Growth — `event-block` new, `event-old-block` old
 - 🟡 On Book Edit — `event-text` title, `event-number` slot, `event-pages` joined by new lines
@@ -98,17 +98,17 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ On Brewing Fuel — `event-number` is the fuel power
 - ✅ On Brewing Start — `event-number` is the brewing time in ticks
 - ✅ On Broadcast — `event-text` message, `event-sender`; no player
-- 🟡 On Bucket Catch Entity — `event-item` bucket, `event-number` entity id
+- 🟡 On Bucket Catch Entity — `event-item` (bucket), `event-number` and `event-entity` (the caught mob); the entity value is not verified in-game
 - ✅ On Bucket Empty — `event-location`, `event-item`
 - ✅ On Bucket fill — `event-location`, `event-item`
 - ✅ On Burn — `event-block` burned, `event-igniting-block`
-- 🟡 On Can Build Check — cancel means not buildable; no `set` of the boolean
+- ✅ On Can Build Check — `event-block`, `event-existing-block`, `event-boolean`; `set event-boolean to false` (or `event-buildable`) stops the block, `cancel event` does too; verified in-game
 - ✅ On Chat — `message`, cancellable
 - ✅ On Chunk Generate — `event-chunk-x`, `event-chunk-z`
 - ⛔ On Chunk Load — Pumpkin never fires the chunk load event
 - ✅ On Chunk Unload — `event-chunk-x`, `event-chunk-z`
 - 🟡 On Click — left/right, `with`/`on` filters; no entity clicks
-- 🟡 On Combust — `event-number` entity id, `event-timespan`; the entity is not a value yet
+- ✅ On Combust — `event-number` (entity id), `event-timespan` and `event-entity`; verified in-game with a cow standing in fire (scripts that ignite things themselves, like `ignite`, cannot trigger it: Carve skips events fired while a script runs)
 - ✅ On Command ⭐ — `on command ["name"]`, `command`, `full command`; can be cancelled
 - ✅ On Connect — cancel refuses the login
 - 🟡 On Consume ⭐ — runs when the player starts eating or drinking (Pumpkin fires it on use, not when the item is used up); cancel stops the use
@@ -122,18 +122,18 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ On Elytra Boost — `event-number` is the firework entity id
 - ✅ On Enchant — values: `enchanted item`, `enchantment cost`, `enchant option`
 - ✅ On Enchant Prepare — `bookshelf count`, `enchanted item`
-- ⛔ On Enderman Enrage — Pumpkin has no enderman anger event
+- ⬜ On Enderman Enrage — possible: Pumpkin's mob target event (`entity-target`) fired by the enderman goal, filtered to endermen that target a player; not started
 - ✅ On Enderman/Sheep/Silverfish/Falling Block — also `on entity change block`; `new block`, `block x/y/z`
 - ✅ On Entity Breed — `father id`, `mother id`, `child id`; no player
 - ✅ On Entity Dismount — `player` is set when a player dismounts; `vehicle id`
 - ⛔ On Entity Jump — Pumpkin has no entity jump event
 - ✅ On Entity Mount — `player` is set when a player mounts; `vehicle id`
 - ✅ On Entity Potion Effect — `effect name`, `effect duration`, `effect amplifier`
-- 🟡 On Entity Shoot Bow — wired; Pumpkin only fires it for mobs, not for players' bows
+- 🟡 On Entity Shoot Bow — fires for mobs from Pumpkin's bow goals; players' shots come from the arrow launch event (`on shoot`, `event-entity` is the shooter, `event-projectile`); the player path is not verified in-game (the test client can't hold and release a bow)
 - ✅ On Entity Transform — `transform reason`, `new entity id`
 - ✅ On Experience Change — `experience amount`
 - 🟡 On Experience Cooldown Change — wired; Pumpkin never fires this event yet
-- ⛔ On Experience Spawn — Pumpkin has no experience orb spawn event
+- ✅ On Experience Spawn — `on experience spawn` (`event-location`, `event-entity`); Pumpkin 0.2.2 sends the numeric registry id in the entity spawn event, so Carve matches id 50 for the orb; verified in-game
 - ✅ On Explode — entity and block explosions; `explosion yield`, `explosion x/y/z`
 - ✅ On Explosion Prime — `explosion radius`, `explosion fire`
 - 🟡 On Fade — wired; Pumpkin never fires block fade yet
@@ -160,7 +160,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ On Inventory Item Move — hopper moves; `moved item`, `moved amount`
 - ✅ On Inventory Open
 - ✅ On Inventory Pickup — hopper pickups; `picked up item`
-- ⛔ On Inventory Slot Change — Pumpkin has no slot change event
+- ⬜ On Inventory Slot Change — possible: compare each player's inventory slots on a throttled tick (inventory click, drag, pickup and close events can trigger a rescan); not started, costs more than an event
 - ✅ On Item Break — `broken item`; can't be cancelled
 - ✅ On Item Damage — `damaged item`, `item damage amount`
 - ✅ On Item Despawn — `event-entity` (entity id)
@@ -168,77 +168,77 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ On Item Merge — `merge target id`
 - ✅ On Item Spawn — `spawned item`, `block x/y/z`
 - ✅ On Join
-- ⛔ On Jump — Pumpkin has no jump event; `on player input` sees the jump bit (16) but there are no bit operators yet
+- ✅ On Jump — `on jump` (`player`): a rising edge of the jump bit (16) in the player input, so it fires once per press; players only (no mob jump event); verified in-game
 - ✅ On Kick — `on kick` — `player`, `event-text` (reason); can be cancelled
 - ✅ On Language Change — `on language change` — `player`, `event-text` (new locale)
-- 🟡 On Leash / Unleash — `on leash` (player) and `on unleash` (`event-text` reason); the leashed entity is not exposed
-- 🟡 On Leaves Decay — `on leaves decay` — can be cancelled; no block position value yet
+- 🟡 On Leash / Unleash — `on leash` (`player`, `event-entity` the leashed mob; verified in-game) and `on unleash` (`event-text` reason, `event-entity`; not verified in-game)
+- 🟡 On Leaves Decay — `on leaves decay` can be cancelled; `event-location` is wired but not verified in-game (decay needs a random tick)
 - ✅ On Level Change
-- 🟡 On Lightning Strike — `on lightning strike` — can be cancelled; no position value yet; Pumpkin fires it only for plugin lightning (Carve's `strike lightning`, then after the script and not cancellable) and skeleton traps
+- 🟡 On Lightning Strike — `on lightning strike` can be cancelled; `event-location` works for lightning from Carve's `strike lightning` (verified in-game, runs after the script and can't be cancelled); Pumpkin fires its own event only for plugin lightning and skeleton traps
 - 🟡 On Loot Generate — `on loot generate` — `event-text` is the loot table; loot items are not exposed
-- 🟡 On Love Mode Enter — `on love mode enter` — `player` (the feeder, if a player), `event-number` (ticks in love)
+- ✅ On Love Mode Enter — `player` (the feeder), `event-number` (ticks in love) and `event-entity` (the animal); verified in-game
 - 🟡 On Move / Rotate ⭐ — `on move`, `event-location`, `past event-location`; only when the block changes, no rotate; a restart is needed after adding the first `on move`
-- ⛔ On Move On — no block-stepped-on event in Pumpkin; use `on move` plus a block check
+- ✅ On Move On — `on step on <block>` (also `walk on`, `move on`): runs when the player moves onto a different block that is `<block>`; `event-block`, `event-location`; verified in-game; needs a restart after adding the first one (like `on move`)
 - ⛔ On Pathfind — Pumpkin has no pathfind event
-- ⛔ On Physics — Pumpkin's block physics event is too hot to bridge to scripts
+- ⬜ On Physics — possible: `block-physics-event-data` is fired by Pumpkin; register it only when a script uses `on physics` (very high volume); not started
 - 🟡 On Pick Up ⭐ — no `event-item` (Pumpkin 0.2.2 sends the entity type id, not the item); cancelling has no effect, the item is already in the inventory
 - ⛔ On Pig Zap — Pumpkin never fires its pig zap event
-- 🟡 On Piglin Barter — `on piglin barter` — can be cancelled; barter items are not exposed
-- 🟡 On Piston Extend — `on piston extend` — `event-text` is the direction; no position value yet
-- 🟡 On Piston Retract — `on piston retract` — `event-text` is the direction; no position value yet
+- 🟡 On Piglin Barter — `on piglin barter` can be cancelled; `event-item` (input), `event-items` (drops), also `barter input` and `barter drops`; not verified in-game (needs a barter)
+- ✅ On Piston Extend — `event-text` is the direction and `event-location` the piston; verified in-game
+- ✅ On Piston Retract — `event-text` is the direction and `event-location` the piston; verified in-game
 - ✅ On Place
 - ✅ On Placeholder Request — `on placeholder request for prefix "shop":` with `the identifier` and `set the result to ...` (docs/placeholders.md)
-- ⛔ On Player Chunk Enter — no chunk enter event for players in Pumpkin's plugin API
-- ⛔ On Player Chunk Enters — no chunk enter event for players in Pumpkin's plugin API
-- ⛔ On Player Deep Sleep — Pumpkin has bed enter/leave but no deep sleep event
+- ✅ On Player Chunk Enter — `on player chunk enter` (`event-chunk-x`, `event-chunk-z`, `event-previous-chunk-x`, `event-previous-chunk-z`): compares the chunk of the old and new position of each move; verified in-game; needs a restart after adding the first one
+- ✅ On Player Chunk Enters — same event as `on player chunk enter` (`on player chunk enters`, `on player enters chunk`); verified in-game
+- ⬜ On Player Deep Sleep — possible as an approximation: check 100 ticks after a bed enter that the player is still in bed; not started
 - ✅ On Player GameMode Change
 - ✅ On Player Input — `on player input` — `event-text` is the input bits, `event-number` the same as a number (1 forward, 2 back, 4 left, 8 right, 16 jump, 32 sneak, 64 sprint)
 - ⛔ On Player Pick Item — Pumpkin has no pick item event
-- ⛔ On Player Pickup Arrow — Pumpkin has no arrow pickup event
-- ⛔ On Player Trade — Pumpkin only has trade select, not trade complete
+- 🟡 On Player Pickup Arrow — `on player pickup arrow` (`player`, `event-entity` the arrow, can be cancelled) is wired to Pumpkin's real pickup event; not verified in-game (needs an arrow stuck in the ground)
+- ⬜ On Player Trade — possible as an approximation: an inventory click on result slot 2 of a merchant window; not started
 - ✅ On Player World Change — `on world change`, `event-world`, `past event-world`; the nether and end are named `minecraft:the_nether` and `minecraft:the_end`
 - ✅ On Portal — `on portal` — `player` when the entity is a player
-- 🟡 On Portal Create — `on portal create` — `event-text` is the portal type; no position value yet
+- 🟡 On Portal Create — `on portal create` — `event-text` is the portal type and `event-location` the position; not verified in-game
 - ✅ On Portal Enter — `on portal enter` — `player` when the entity is a player
 - ✅ On Prepare Craft — `on preparing craft`, `event-item` (result) and `event-recipe`; cancellable
-- ⛔ On Pressure Plate / Trip — no pressure plate event in the plugin API; `on redstone` sees the power change
-- ⛔ On Projectile Collide — no projectile collide event in Pumpkin (see On Projectile Hit)
+- 🟡 On Pressure Plate / Trip — `on pressure plate` (also `trip`, `pressure plate press`): `event-location`, `event-power`, can be cancelled; verified in-game for plates; tripwires fire no event in Pumpkin
+- 🟡 On Projectile Collide — `on projectile collide` (`event-entity` the projectile, `event-hit-entity`, `event-location`) runs when an arrow hits an entity; not verified in-game; other projectiles fire no hit event
 - 🟡 On Projectile Hit ⭐ — no projectile type
 - ✅ On Quit — player still known until the first wait
 - ⛔ On Ready Arrow — Pumpkin has no ready arrow event
-- 🟡 On Redstone — `on redstone` — `event-number` is the new power; no position value yet
+- 🟡 On Redstone — `on redstone` — `event-number` is the new power and `event-location` the block; verified in-game; the server only fires it for pressure plates
 - 🟡 On Region Enter/Leave — Carve bounds: `on bound enter` and `on bound exit` (see syntax/skbee-bound.md); no WorldGuard regions
 - ✅ On Resource Pack Request Response — `on resource pack response` — `player`, `event-text` (status)
 - ✅ On Respawn
 - ✅ On Resurrect Attempt — `on resurrect attempt` — `player` when the entity is a player; can be cancelled
-- ⛔ On Riptide — Pumpkin has no riptide event
-- 🟡 On Script Load/Unload — `on load` only
+- 🟡 On Riptide — `on riptide` (`player`, `event-item`, can be cancelled) is wired to Pumpkin's real riptide event; not verified in-game (needs a riptide trident)
+- ✅ On Script Load/Unload — `on load` and `on unload` (also `on script unload`); unload runs when the server stops and before `/carve reload`; verified in-game
 - ✅ On Send Command List — `on send command list` — `player`, `event-text` (command); can be cancelled
 - ✅ On Server List Ping — `on server list ping:`; `event-motd`, `event-max-players`, `event-players` can be set
-- 🟡 On Server Start/Stop — `on load` runs at start; no stop
+- ✅ On Server Start/Stop — `on load` / `on server start` and `on server stop` (also `server shutdown`); stop runs from the plugin unload, verified in-game
 - 🟡 On Sheep Regrow Wool — wired, but Pumpkin does not fire this event yet
-- 🟡 On Shoot — `on shoot:`; Pumpkin fires it only for mob bows and crossbows
+- 🟡 On Shoot — `on shoot:` for mobs' bows and, through the arrow launch event, for players (`event-entity` the shooter, `event-projectile`); the player path is not verified in-game
 - ✅ On Sign Change — `on sign change:`; `event-line-1` to `event-line-4` can be set
 - 🟡 On Slime Split — wired, but Pumpkin does not fire this event yet
 - ✅ On Smelt — `on smelt:`; `event-source`, `event-result`, `event-block`
 - ✅ On Sneak Toggle ⭐
 - ✅ On Spawn ⭐
-- 🟡 On Spawn Change — `on spawn change:`; Pumpkin fires it only for `/setworldspawn`
-- ⛔ On Spectate — the plugin API has no such event
+- ✅ On Spawn Change — `on spawn change:` runs for `/setworldspawn` (world) and for a player's spawn point (`/spawnpoint`, beds): `event-world`, `event-new-location`; verified in-game
+- ✅ On Spectate — `on spectate` (`player`, `event-entity` the target): no event exists, so Carve checks the camera of every player every 2 ticks while a script uses it; verified in-game
 - ✅ On Sponge Absorb — `on sponge absorb:`
 - 🟡 On Spread — `on spread:`; Pumpkin fires it for fire spreading only
 - ✅ On Sprint Toggle
 - ✅ On Start Smelt — `on start smelt:`; `event-time` can be set
-- ⛔ On Stonecutter Recipe Select — the plugin API has no such event
-- ⛔ On Stop Using Item — the plugin API has no such event
+- ⛔ On Stonecutter Recipe Select — the button click arrives only as a packet (`s-container-button-click`); needs `packet-received-event`, which panics inside Pumpkin 0.2.2 when it decodes a packet (`TryFromIntError` in pumpkin-wasm-host-v0_1 generated_packets.rs:1114, the server crashes right after a player joins)
+- ⛔ On Stop Using Item — the release arrives only as a packet (`s-player-action`, status 5); needs `packet-received-event`, which panics inside Pumpkin 0.2.2 when it decodes a packet (`TryFromIntError` in pumpkin-wasm-host-v0_1 generated_packets.rs:1114, the server crashes right after a player joins)
 - ✅ On Swim Toggle — `on swim toggle:`; `player` when a player swims, `event-swimming`
 - ✅ On System Time — `at 14:30 in real time:` (clock is UTC)
 - ✅ On Tame — `on tame:`; `player` is the new owner
 - ✅ On Target — `on target:`; `event-entity`, `event-target`
 - ✅ On Teleport ⭐ — `on teleport`, `event-location`, `past event-location`; can be cancelled
 - ✅ On Throwing of an Egg — `on throwing of an egg:`; `event-hatching` and `event-hatches` can be set
-- 🟡 On Tool Change — `on tool change:`; gives the hotbar slots only, not the items
-- ⛔ On Unknown Command Execution — the plugin API has no such event
+- ✅ On Tool Change — `on tool change:` — `event-previous-slot`, `event-new-slot`, `event-item` (the new tool) and `past event-item`; verified in-game
+- ⛔ On Unknown Command Execution — only visible as the unknown-command chat message, which needs a packet event: needs `packet-received-event`, which panics inside Pumpkin 0.2.2 when it decodes a packet (`TryFromIntError` in pumpkin-wasm-host-v0_1 generated_packets.rs:1114, the server crashes right after a player joins)
 - 🟡 On Vault Display Item — wired, but Pumpkin does not fire this event yet
 - ✅ On Vehicle Collision — `on vehicle collision:`; `event-entity` or `event-block`
 - ✅ On Vehicle Create — `on vehicle create:`
@@ -249,14 +249,14 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ On Vehicle Move — `on vehicle move:`; `event-from`, `event-to`
 - 🟡 On Villager Career Change — wired, but Pumpkin does not fire this event yet
 - ✅ On Weather Change — `on weather change:` and `on weather change to rain:` / `to clear:`; Pumpkin fires it only for plugin weather changes, so Carve fires it after `set weather` (not cancellable then)
-- ⛔ On World Border Bounds Change — the plugin API has no world border events
-- ⛔ On World Border Bounds Finish Change — the plugin API has no world border events
-- ⛔ On World Border Center Change — the plugin API has no world border events
+- ✅ On World Border Bounds Change — `on world border bounds change` (`event-world`, `event-old-size`, `event-new-size`): no event exists, so Carve compares the target size of every world each tick while a script uses it; verified in-game
+- ⛔ On World Border Bounds Finish Change — Pumpkin never reports the end of a transition: `get-target-speed` is not updated by `/worldborder set ... <time>` or `set-diameter`, and the server does not lerp (only the client does), so the duration is unknown
+- ✅ On World Border Center Change — `on world border center change` (`event-world`, `event-old-x`, `event-old-z`, `event-new-x`, `event-new-z`): polled like the bounds change; verified in-game
 - ✅ On World Init — `on world init:`
 - ✅ On World Load — `on world load:`
 - ✅ On World Save — `on world save:`
 - ✅ On World Unload — `on world unload:`
-- 🟡 On Zombie Break Door — `on zombie break door:`; runs for any mob that breaks a door
+- 🟡 On Zombie Break Door — `on zombie break door:` runs for zombie, husk, drowned and zombie villager; `on entity break door` runs for any mob; the real break-door event is wired but not verified in-game
 - ✅ Periodical — `every 5 seconds:`
 
 ## Effects (154)

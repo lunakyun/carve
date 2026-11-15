@@ -104,6 +104,8 @@ t.run(async () => {
   await bot.walkTo(8.5, 101, 0.5)
   const plate = await since(s, /w6:plate /, 5000)
   t.check('pressure plate: location and power', !!plate && /8/.test(plate) && /15/.test(plate), plate || 'no event')
+  const red = await since(s, /w6:redstone /, 2000)
+  t.check('redstone: event-location of the plate and the new power', !!red && /x: 8/.test(red) && /15/.test(red), red || 'no event')
   await bot.walkTo(0.5, 101, 0.5)
 
   // ---- spawn change ----
@@ -181,6 +183,10 @@ t.run(async () => {
   srv.console('setblock 14 101 8 minecraft:piston')
   const piston = await since(s, /w6:piston /, 3000)
   t.check('piston extend: location', !!piston && /14/.test(piston), piston || 'no event')
+  s = Date.now()
+  srv.console('setblock 14 101 9 minecraft:air')
+  const pistonr = await since(s, /w6:pistonr /, 4000)
+  t.check('piston retract: location', !!pistonr && /14/.test(pistonr), pistonr || 'no event')
 
   // ---- combust with the entity: a cow standing in fire ----
   srv.console('kill @e[type=cow]')
@@ -220,6 +226,24 @@ t.run(async () => {
   if (cow2) bot.interact(cow2.entityId)
   const love = await since(s, /w6:love /)
   t.check('love mode enter: event-entity and ticks', !!love && /cow/.test(love), love || 'no event')
+
+  // ---- spectate (polled camera) ----
+  srv.console(`gamemode spectator ${NAME}`)
+  await sleep(800)
+  srv.console('kill @e[type=cow]')
+  cs = Date.now()
+  srv.console('summon minecraft:cow 3.5 101 3.5')
+  await bot.waitPacket('add_entity', (d) => d.type === 'cow', 5000, cs)
+  s = Date.now()
+  srv.console(`spectate @e[type=cow,limit=1] ${NAME}`)
+  const spec = await since(s, /w6:spectate /, 4000)
+  t.check('spectate: event-entity is the cow', !!spec && /cow/.test(spec), spec || 'no event')
+  srv.console(`gamemode survival ${NAME}`)
+
+  // ---- unload on reload ----
+  let rm = srv.mark()
+  srv.console('carve reload')
+  t.check('on unload runs before /carve reload', !!await srv.waitLog(/w6:unload/, 4000, rm))
 
   // ---- unload and stop ----
   const mark = srv.mark()
