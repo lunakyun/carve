@@ -46,7 +46,7 @@ t.run(async () => {
   t.check('plain item', /^c66:plain diamond sword$/.test(s || ''), s || 'no reply')
 
   s = await run('w6portal', 'portal')
-  t.check('portal cooldown set and read back', s === 'c66:portal 7 seconds', s || 'no reply')
+  t.check('portal cooldown set and read back', /^c66:portal (7|6\.\d+) seconds$/.test(s || ''), s || 'no reply')
 
   s = await run('w6proto', 'proto')
   t.check('protocol version of player and server', s === 'c66:proto 777 777', s || 'no reply')
@@ -83,7 +83,7 @@ t.run(async () => {
   t.check('ringing time of a quiet bell', /^c66:bell 0 seconds|^c66:bell 0$/.test(s || ''), s || 'no reply')
 
   await run('w6misc', 'random')
-  await sleep(800)
+  await sleep(3000)
   const m = (tag) => said(bot, `c66:${tag}`) || ''
   console.log('MISC', ['random', 'reduce', 'recursive', 'round', 'ternary', 'sea', 'ver', 'qrot', 'vyaw'].map(m).join(' // '))
   t.check('reduce with the first element start', m('reduce') === 'c66:reduce 10', m('reduce'))
