@@ -238,6 +238,8 @@ pub enum Expr {
     Gap(Box<crate::gaps::GapExpr>),
     /// Potion effects, particles, queues and more (see `w5_chunk5`).
     W5c5(Box<crate::w5_chunk5::Node>),
+    /// Scale, targets, text displays, sea pickles, borders, ... (see `w5_chunk6`).
+    C6(Box<crate::w5_chunk6::Node>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -473,6 +475,7 @@ impl Expr {
             Expr::Rtw(n) => n.ty,
             Expr::W5c5(n) => n.ty,
             Expr::W5c3(n) => n.ty(),
+            Expr::C6(n) => n.ty,
             Expr::Gap(g) => g.ty(),
             Expr::Items(_) => Ty::List,
             Expr::Bound(b) => b.ty(),
@@ -850,6 +853,11 @@ impl P<'_> {
                 continue;
             }
             if let Some((ne, np)) = crate::w2_expressions_5::possessive(self.toks, self.pos + 1, &e) {
+                e = ne;
+                self.pos = np;
+                continue;
+            }
+            if let Some((ne, np)) = crate::w5_chunk6::possessive(self.toks, self.pos + 1, &e) {
                 e = ne;
                 self.pos = np;
                 continue;
@@ -1687,6 +1695,9 @@ impl P<'_> {
                     return Ok(e);
                 }
                 if let Some(e) = self.w5c3_head(&lw)? {
+                    return Ok(e);
+                }
+                if let Some(e) = self.c6_head(&lw)? {
                     return Ok(e);
                 }
                 if let Some(e) = self.t1_head(&lw)? {

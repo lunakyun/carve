@@ -1114,4 +1114,24 @@ pub trait Host {
     fn set_quit_message(&mut self, text: &str) {
         self.set_join_message(text);
     }
+
+    /// A question from `w5_chunk6` (scale, targets, text displays, borders, boss bars).
+    fn c6_get(&mut self, _q: crate::w5_chunk6::Get<'_>) -> Option<crate::value::Value> {
+        None
+    }
+
+    /// A change from `w5_chunk6`. Returns whether it was done.
+    fn c6_set(&mut self, _s: crate::w5_chunk6::Set<'_>) -> bool {
+        false
+    }
+
+    /// The display entity the last `spawn_display` made, taken once.
+    fn last_display(&mut self) -> Option<EntityRef> {
+        None
+    }
+
+    /// Block id, state id and the block's first state id at a position.
+    fn c6_block_state(&mut self, _at: &BlockPos) -> Option<crate::w5_chunk6::BlockState> {
+        None
+    }
 }

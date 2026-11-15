@@ -693,6 +693,10 @@ impl Engine {
             *t = t.chars().take(MAX_TEXT).collect();
         }
         host.spawn_display(&s);
+        // `last spawned entity` is the display, when the host can name it (`w5_chunk6`).
+        if let Some(e) = host.last_display() {
+            ex.last_entity = Some(Box::new(e));
+        }
         Ok(())
     }
 }

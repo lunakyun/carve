@@ -963,6 +963,8 @@ pub enum ItemComp {
     Rarity,
     GlintOverride,
     ItemModel,
+    /// Enchantments kept in an enchanted book (`w5_chunk6`).
+    StoredEnchantments,
 }
 
 const RARITIES: [&str; 4] = ["common", "uncommon", "rare", "epic"];
@@ -1002,6 +1004,7 @@ impl ItemComp {
             ItemComp::Rarity => "rarity",
             ItemComp::GlintOverride => "glint override",
             ItemComp::ItemModel => "item model",
+            ItemComp::StoredEnchantments => "stored enchantments",
         }
     }
 
@@ -1018,6 +1021,7 @@ impl ItemComp {
                 .and_then(|n| RARITIES.get(n as usize))
                 .map_or(Value::None, |r| Value::Text((*r).into())),
             ItemComp::GlintOverride => b.first().map_or(Value::None, |x| Value::Bool(*x != 0)),
+            ItemComp::StoredEnchantments => crate::w5_chunk6::stored_decode(b),
             ItemComp::ItemModel => {
                 let Some(n) = get_varint(b, &mut at) else {
                     return Value::None;
@@ -1067,6 +1071,7 @@ impl ItemComp {
                     .ok_or_else(|| format!("rarity must be common, uncommon, rare or epic, not '{t}'"))?;
                 put_varint(i as u32, &mut out);
             }
+            ItemComp::StoredEnchantments => return crate::w5_chunk6::stored_encode(v).map(Some),
             ItemComp::GlintOverride => match v {
                 Value::Bool(b) => out.push(u8::from(*b)),
                 _ => return Err(bad()),
@@ -1103,6 +1108,7 @@ impl ItemComp {
                 ItemComp::GlintOverride
             }
             ["unbreakable"] => ItemComp::Unbreakable,
+            ["stored", "enchantments" | "enchants" | "enchantment"] => ItemComp::StoredEnchantments,
             _ => return None,
         })
     }
@@ -1240,7 +1246,7 @@ fn may_head(toks: &[Tok], i: usize) -> bool {
         3 => any(&["nbt", "int", "tag", "max"]),
         4 => any(&["byte", "long", "text", "bool", "list", "item", "snbt"]),
         5 => any(&["short", "float", "glint"]),
-        6 => any(&["double", "string", "custom", "rarity"]),
+        6 => any(&["double", "string", "custom", "rarity", "stored"]),
         7 => any(&["integer", "boolean"]),
         8 => any(&["compound"]),
         11 => any(&["enchantment", "unbreakable"]),
@@ -1385,6 +1391,7 @@ pub fn expr_ty(n: &NbtExpr) -> Ty {
     match n {
         NbtExpr::Snbt(_) => Ty::Text,
         NbtExpr::Keys(_) => Ty::List,
+        NbtExpr::Comp(ItemComp::StoredEnchantments, _) => Ty::List,
         _ => Ty::Object,
     }
 }

@@ -29,6 +29,16 @@ fn item_mode(name: &str) -> ItemDisplayMode {
     }
 }
 
+thread_local! {
+    /// The display `spawn` made last, for `last spawned entity`.
+    static LAST: std::cell::RefCell<Option<carve_core::EntityRef>> = const { std::cell::RefCell::new(None) };
+}
+
+/// The display spawned since the last call, if any.
+pub fn take_last() -> Option<carve_core::EntityRef> {
+    LAST.with(|l| l.borrow_mut().take())
+}
+
 /// Spawn the display and fill it in. `Err` is a message for the log.
 pub fn spawn(
     world: &World,
@@ -49,6 +59,12 @@ pub fn spawn(
         DisplayKind::Item => EntityType::ItemDisplay,
     };
     let entity = world.spawn_entity(kind, (d.at.x, d.at.y, d.at.z));
+    LAST.with(|l| {
+        *l.borrow_mut() = Some(carve_core::EntityRef {
+            uuid: pumpkin_plugin_api::uuid::to_string(entity.get_uuid()),
+            kind: crate::ents::entity_name(entity.get_type()).to_string(),
+        })
+    });
     let base = entity.as_display().ok_or("spawned entity is not a display")?;
     if let Some(b) = d.billboard {
         base.set_billboard(billboard(b));

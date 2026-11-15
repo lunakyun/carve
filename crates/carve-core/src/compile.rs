@@ -365,6 +365,8 @@ pub enum Effect {
     W5c5(Box<crate::w5_chunk5::W5Effect>),
     /// Barter drop changes (`w5_chunk3`).
     W5c3(Box<crate::w5_chunk3::W5Effect>),
+    /// Changes of `w5_chunk6` expressions (scale, target, sea pickles, ...).
+    C6(Box<crate::w5_chunk6::C6Effect>),
     SetHealth(Expr, Expr),
     SetGamemode(Expr, Expr),
     /// Experience change; the two expressions are in pattern order.
@@ -1595,6 +1597,17 @@ impl Cx<'_> {
                 self.err(num, msg);
                 return;
             }
+        }
+        match crate::w5_chunk6::parse_effect(&toks, &self.env) {
+            Some(Ok(eff)) => {
+                self.emit(Instr::Eff(eff), num);
+                return;
+            }
+            Some(Err(msg)) => {
+                self.err(num, msg);
+                return;
+            }
+            None => {}
         }
         if self.env.has_attacker {
             match crate::combat::parse_effect(&toks, &self.env) {
