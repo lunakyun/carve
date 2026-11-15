@@ -55,6 +55,26 @@ doesn't take the others down.
 node tests/ingame/areas/smoke.js
 ```
 
+**Everything at once.** `node tests/ingame/all.js` runs every area and then
+`run.js`, one after another, and prints a pass/fail/skip table plus every
+failed check. Name suites to run only those (`node tests/ingame/all.js combat
+run`). If `.test/server` doesn't exist and `CARVE_SERVER_DIR` isn't set,
+`run.js` uses the template server.
+
+Checks per area (2026-11-15):
+
+| Area | Port | Checks | Skipped (Pumpkin limits) |
+|---|--:|--:|--:|
+| smoke | 25570 | 16 | 0 |
+| events | 25571 | 72 | 1 |
+| combat | 25572 | 58 | 1 |
+| items | 25573 | 90 | 3 |
+| world | 25574 | 114 | 1 |
+| player | 25575 | 162 | 2 |
+| language | 25576 | 218 | 0 |
+| `run.js` | 25565 | 68 | 0 |
+| **all** | | **798** | **8** |
+
 **Ports.** Area number `i` uses Java port `25570 + i` (smoke is 0, so
 25570). The harness turns off Bedrock, query, management and LAN broadcast
 and moves their addresses off the Java port, so several servers can run at

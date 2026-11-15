@@ -250,6 +250,9 @@ impl WasmHost<'_> {
     pub fn sb_sidebar_remove(&mut self, p: &PlayerRef) {
         SB.with(|s| s.borrow_mut().sidebars.remove(&p.uuid));
         if let Some(java) = self.get(p).and_then(Player::as_java) {
+            // reset_scoreboard only forgets the board server side; removing the
+            // objective is what tells the client to hide the sidebar.
+            java.get_scoreboard().remove_objective(OBJECTIVE);
             java.reset_scoreboard();
         }
     }

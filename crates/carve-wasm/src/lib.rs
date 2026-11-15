@@ -440,7 +440,13 @@ impl WasmHost<'_> {
 
     fn kill(&mut self, p: &PlayerRef) {
         if let Some(pl) = self.get(p) {
+            let alive = pl.get_health() > 0.0;
             pl.kill();
+            // Pumpkin fires the death event while this script holds the state.
+            if alive {
+                self.late
+                    .push((EventKind::Death, carve_core::EventCtx::player(p.clone())));
+            }
         }
     }
 
@@ -1271,7 +1277,16 @@ impl WasmHost<'_> {
     }
 
     fn ip(&mut self, p: &PlayerRef) -> Option<String> {
-        self.get(p).map(|pl| pl.get_ip())
+        // Pumpkin gives "ip:port"; Skript's ip has no port.
+        self.get(p).map(|pl| {
+            let ip = pl.get_ip();
+            match ip.rsplit_once(':') {
+                Some((host, port)) if port.bytes().all(|b| b.is_ascii_digit()) => {
+                    host.trim_start_matches('[').trim_end_matches(']').to_string()
+                }
+                _ => ip,
+            }
+        })
     }
 
     fn player_count(&mut self) -> f64 {

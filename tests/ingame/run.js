@@ -182,8 +182,10 @@ async function phase1 (srv) {
   check('variable survives reload', !!await tester.waitFor(has('system', 't:counter 2'), 4000, t))
 
   fs.writeFileSync(path.join(SCRIPTS, 'broken.carve'), 'on join:\n    blorp the player\n')
+  const since = Date.now()
   const err = await reload(tester, 'while reloading')
-  const errLine = err && tester.log.find((e) => e.t >= err.t && has(null, ['Line 2:', '(broken.carve)'])(e))
+  // The error lines can come before or after the summary line.
+  const errLine = err && await tester.waitFor(has(null, ['Line 2:', '(broken.carve)']), 4000, since)
   check('broken reload reports file:line', !!err && !!errLine)
   t = Date.now()
   tester.command('tvar')
