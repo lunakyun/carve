@@ -74,6 +74,7 @@ mod w5_chunk5;
 mod w5_chunk6;
 mod w6_chunk1;
 mod w6_chunk5;
+mod w6_chunk6;
 mod w6_chunk7;
 
 const SCRIPTS_DIR: &str = "scripts";
@@ -1876,6 +1877,14 @@ impl Host for TickHost<'_, '_> {
 
     fn w5c3(&mut self, q: carve_core::w5_chunk3::Q<'_>) -> Option<Value> {
         self.inner.w5c3(q)
+    }
+
+    fn w6c6_get(&mut self, q: carve_core::w6_chunk6::Get<'_>) -> Option<Value> {
+        self.inner.w6c6_get_impl(q)
+    }
+
+    fn w6c6_set(&mut self, s: carve_core::w6_chunk6::Set<'_>) -> bool {
+        self.inner.w6c6_set_impl(s)
     }
 
     fn c6_get(&mut self, q: carve_core::w5_chunk6::Get<'_>) -> Option<Value> {

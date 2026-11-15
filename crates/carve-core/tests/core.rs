@@ -1360,6 +1360,16 @@ fn value_call_that_waits_is_an_error() {
 
 #[test]
 fn recursion_works_and_is_limited() {
+    // Debug frames of the evaluator are large; the 64-level guard needs more than the 2 MB test thread.
+    std::thread::Builder::new()
+        .stack_size(32 << 20)
+        .spawn(recursion_body)
+        .unwrap()
+        .join()
+        .unwrap();
+}
+
+fn recursion_body() {
     let out = join(
         "function fact(n: number) :: number:\n    if {_n} <= 1:\n        return 1\n    return {_n} * fact({_n} - 1)\non join:\n    send \"%fact(10)%\"\n",
     );

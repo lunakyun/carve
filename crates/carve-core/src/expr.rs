@@ -244,6 +244,8 @@ pub enum Expr {
     C6(Box<crate::w5_chunk6::Node>),
     /// Block properties, element ranges, dequeue, ... (see `w6_chunk4`).
     W6C4(Box<crate::w6_chunk4::Node>),
+    /// Wave 6 chunk 6: portal cooldown, protocol version, sign text, ... (see `w6_chunk6`).
+    Z6(Box<crate::w6_chunk6::Node>),
     /// Block data, block spheres, books, borders, attributes, ... (see `w5_chunk4`).
     C4(Box<crate::w5_chunk4::Node>),
 }
@@ -484,6 +486,7 @@ impl Expr {
             Expr::W5c3(n) => n.ty(),
             Expr::C6(n) => n.ty,
             Expr::W6C4(n) => n.ty,
+            Expr::Z6(n) => n.ty,
             Expr::Gap(g) => g.ty(),
             Expr::C4(n) => n.ty,
             Expr::Items(_) => Ty::List,
@@ -733,6 +736,7 @@ impl P<'_> {
         e = self.w5c5_post(e)?;
         e = self.w6c5_post(e)?;
         e = self.w5c4_post(e)?;
+        e = self.z6_post(e)?;
         // `5 minutes ago`, `2 hours later`
         if let Some(Tok::Word(w)) = self.toks.get(self.pos)
             && (w.eq_ignore_ascii_case("ago") || w.eq_ignore_ascii_case("later"))
@@ -1685,6 +1689,9 @@ impl P<'_> {
                 if let Some(span) = self.span_literal(n) {
                     return Ok(span);
                 }
+                if let Some(t) = self.z6_times(n) {
+                    return Ok(t);
+                }
                 if let Some((e, np)) = crate::w2_expressions_1::angle_suffix(self.toks, self.pos, n) {
                     self.pos = np;
                     return Ok(e);
@@ -1743,6 +1750,9 @@ impl P<'_> {
                     return Ok(e);
                 }
                 if let Some(e) = self.c6_head(&lw)? {
+                    return Ok(e);
+                }
+                if let Some(e) = self.z6_head(&lw)? {
                     return Ok(e);
                 }
                 if let Some(e) = self.t1_head(&lw)? {

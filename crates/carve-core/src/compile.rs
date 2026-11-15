@@ -373,6 +373,8 @@ pub enum Effect {
     C6(Box<crate::w5_chunk6::C6Effect>),
     /// Changes of `w6_chunk4` block properties.
     W6C4(Box<crate::w6_chunk4::W6Eff>),
+    /// Changes of `w6_chunk6` (portal cooldown, whitelist, rotation, ...).
+    Z6(Box<crate::w6_chunk6::W6Fx>),
     /// Effects of `w5_chunk1` (cooldowns, drops, creepers, leashes, ...).
     W5c1(Box<crate::w5_chunk1::Fx>),
     SetHealth(Expr, Expr),
@@ -1651,6 +1653,17 @@ impl Cx<'_> {
             }
         }
         match crate::w6_chunk4::parse_effect(&toks, &self.env) {
+            Some(Ok(eff)) => {
+                self.emit(Instr::Eff(eff), num);
+                return;
+            }
+            Some(Err(msg)) => {
+                self.err(num, msg);
+                return;
+            }
+            None => {}
+        }
+        match crate::w6_chunk6::parse_effect(&toks, &self.env) {
             Some(Ok(eff)) => {
                 self.emit(Instr::Eff(eff), num);
                 return;
