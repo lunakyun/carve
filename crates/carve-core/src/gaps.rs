@@ -218,6 +218,8 @@ pub enum GapEff {
         inv: Expr,
         to: Expr,
     },
+    /// A line that is read but cannot do anything here (a warning says so).
+    NoOp,
     /// `clear {_gui}`; on a variable that holds no inventory it deletes it.
     Clear(Expr),
     Held {
@@ -548,6 +550,20 @@ fn lore_line(toks: &[Tok], to: usize, env: &Env) -> Result<Option<GapEff>, Strin
         return Ok(None);
     }
     let body = strip_parens_all(body);
+    let body = match body {
+        [t, rest @ ..] if is(Some(t), "the") => rest,
+        b => b,
+    };
+    // `the item's lore` in `on drop`: Pumpkin's drop event carries no item stack to change.
+    if let [t] = body
+        && (is(Some(t), "item") || is(Some(t), "event-item"))
+        && env.event_vals & crate::events_items::EventVal::Item.bit() != 0
+    {
+        crate::error::compile_warn(
+            "this does nothing on this server: the event does not let a script change the item",
+        );
+        return Ok(Some(GapEff::NoOp));
+    }
     let Some(who) = held(body, env) else {
         return Ok(None);
     };

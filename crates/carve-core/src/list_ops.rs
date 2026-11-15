@@ -310,6 +310,10 @@ pub(crate) fn parse_filter(toks: &[Tok], env: &Env) -> Result<Cond, String> {
     }
     let toks: Vec<Tok> = toks
         .iter()
+        .enumerate()
+        // `player input` is just `input`.
+        .filter(|(i, t)| !(t.is_lit("player") && toks.get(i + 1).is_some_and(|n| n.is_lit("input"))))
+        .map(|(_, t)| t)
         .map(|t| match t {
             Tok::Word(w) if w.eq_ignore_ascii_case("input") => Tok::Var(INPUT_KEY.into()),
             t => t.clone(),
@@ -318,9 +322,22 @@ pub(crate) fn parse_filter(toks: &[Tok], env: &Env) -> Result<Cond, String> {
     let mut ors = Vec::new();
     for or_part in toks.split(|t| t.is_lit("or")) {
         let mut ands = Vec::new();
-        for and_part in or_part.split(|t| t.is_lit("and")) {
-            ands.push(filter_atom(and_part, env)?);
+        // The `and` of `distance between a and b` is not a split.
+        let mut start = 0;
+        let mut between = false;
+        for (i, t) in or_part.iter().enumerate() {
+            if t.is_lit("between") {
+                between = true;
+            } else if t.is_lit("and") {
+                if between {
+                    between = false;
+                    continue;
+                }
+                ands.push(filter_atom(or_part.get(start..i).unwrap_or_default(), env)?);
+                start = i + 1;
+            }
         }
+        ands.push(filter_atom(or_part.get(start..).unwrap_or_default(), env)?);
         ors.push(if ands.len() == 1 {
             ands.remove(0)
         } else {

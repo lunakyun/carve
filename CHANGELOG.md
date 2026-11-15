@@ -40,6 +40,13 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
     loads with a warning and never runs.
   - `draw 100 cloud at ... with offset vector(...) with extra 0`.
 
+- Events without a player: `event-world` and `world is "x"` in `on explode`,
+  `on redstone change`, `on spawn` and the like, `event-block's world`,
+  `the entity` / `creature` and `the entity's vehicle` in `on spawn`,
+  `on rightclick on a creature` / `on a zombie or a villager` (new
+  `entity click` event), `event-block's type`, and `set Nth line of the item's
+  lore` in `on drop` (read with a warning; Pumpkin gives no item to change).
+
 ### Changed
 
 - `console` works inside functions.

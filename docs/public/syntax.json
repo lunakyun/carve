@@ -1395,6 +1395,19 @@
     },
     {
       "category": "event",
+      "description": "",
+      "example": "",
+      "id": "on_entity_click",
+      "name": "on entity click",
+      "page": "",
+      "patterns": [
+        "on entity click"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "event",
       "description": "A block of named constants, used as `{@name}` anywhere in the same file.",
       "example": "options:\n    prefix: &8[&6Shop&8]&r\non join:\n    send \"{@prefix} Welcome\" to player",
       "id": "options",

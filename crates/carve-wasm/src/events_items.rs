@@ -5,7 +5,8 @@ use super::*;
 use carve_core::{EvPos, EventExtra};
 use pumpkin_plugin_api::events::{
     CraftItemEvent, CreatureSpawnEvent, EntityPickupItemEvent, PlayerDropItemEvent,
-    PlayerGamemodeChangeEvent, PlayerItemConsumeEvent, PlayerLevelChangeEvent, ProjectileHitEvent,
+    PlayerGamemodeChangeEvent, PlayerInteractEntityEvent, PlayerItemConsumeEvent, PlayerLevelChangeEvent,
+    ProjectileHitEvent,
 };
 
 /// `minecraft:stone` -> `stone`.
@@ -102,6 +103,7 @@ impl EventAccess for CreatureSpawnEvent {
         let (x, y, z) = d.position;
         let extra = EventExtra {
             entity: Some(short(&d.entity_type)),
+            entity_id: Some(d.entity_id),
             location: Some(EvPos {
                 x,
                 y,
@@ -148,6 +150,48 @@ impl EventHandler<EntityPickupItemEvent> for OnPickUp {
             };
             st.engine
                 .fire(EventKind::PickUp, EventCtx::with_extra(p, extra), &mut th)
+                .cancelled
+        });
+        if cancelled == Some(true) {
+            data.cancelled = true;
+        }
+        data
+    }
+}
+
+/// A player right-clicks an entity: `on rightclick on a creature`.
+struct OnEntityClick;
+
+impl EventHandler<PlayerInteractEntityEvent> for OnEntityClick {
+    fn handle(
+        &self,
+        server: Server,
+        mut data: EventData<PlayerInteractEntityEvent>,
+    ) -> EventData<PlayerInteractEntityEvent> {
+        // One click sends `Interact` and `InteractAt`; only the first counts.
+        if format!("{:?}", data.action) != "Interact" {
+            return data;
+        }
+        let cancelled = with_state(&server, None, |st, host| {
+            if !st.engine.table().has_event(EventKind::EntityClick) {
+                return false;
+            }
+            let kind = host.entity_by_id(data.entity_id).map(|e| e.kind);
+            let extra = EventExtra {
+                entity: kind,
+                entity_id: Some(data.entity_id),
+                ..Default::default()
+            };
+            let mut th = TickHost {
+                inner: host,
+                hs: &mut st.hs,
+            };
+            st.engine
+                .fire(
+                    EventKind::EntityClick,
+                    EventCtx::with_extra(player_ref(&data.player), extra),
+                    &mut th,
+                )
                 .cancelled
         });
         if cancelled == Some(true) {
@@ -212,6 +256,18 @@ pub fn register(context: &Context, table: &carve_core::engine::ScriptTable) {
         plog(
             ApiLevel::Error,
             &format!("could not listen to pick up events: {e}"),
+        );
+    }
+    if table.has_event(EventKind::EntityClick)
+        && let Err(e) = context.register_event_handler::<PlayerInteractEntityEvent, _>(
+            OnEntityClick,
+            EventPriority::Normal,
+            true,
+        )
+    {
+        plog(
+            ApiLevel::Error,
+            &format!("could not listen to entity click events: {e}"),
         );
     }
     if let Err(e) =

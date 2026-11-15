@@ -40,6 +40,10 @@ pub enum TextOp {
     MenuTitle,
     /// `arguments` in `on command`: the full command without its name. Args: full command, name.
     CommandArgs,
+    /// `event-world` in events with no player: the world of the event.
+    EventWorld,
+    /// `the entity` in `on spawn` and `on rightclick on <entity>`: the real entity.
+    EventEntity,
     /// `victim` in `on damage`: the player or the hurt entity.
     Victim,
 }
@@ -62,7 +66,8 @@ impl TextOp {
             | TextOp::CommandArgs => Ty::Text,
             TextOp::CharsBetween { .. } | TextOp::ChatRecipients => Ty::List,
             TextOp::Offset(..) | TextOp::Facing(..) | TextOp::CompassTarget => Ty::Location,
-            TextOp::Victim => Ty::Object,
+            TextOp::Victim | TextOp::EventEntity => Ty::Object,
+            TextOp::EventWorld => Ty::World,
             TextOp::Difference => match (args.first().map(|a| a.ty(env)), args.get(1).map(|a| a.ty(env))) {
                 (Some(Ty::Number), Some(Ty::Number)) => Ty::Number,
                 (Some(Ty::Date | Ty::Timespan), Some(Ty::Date | Ty::Timespan)) => Ty::Timespan,

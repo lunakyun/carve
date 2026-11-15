@@ -7,7 +7,7 @@ editLink: false
 
 # Events
 
-Events and other top-level lines: what starts a trigger. 168 entries. Search all of them on the [reference home](./index.md).
+Events and other top-level lines: what starts a trigger. 169 entries. Search all of them on the [reference home](./index.md).
 
 In a pattern, `%type%` is a value, `[...]` is optional and `(a|b)` means one of the words.
 
@@ -1204,6 +1204,16 @@ Since **unreleased** · Guide: [events-movement](../syntax/events-movement.md)
 
 ```carve
 on at time
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## on entity click {#on_entity_click}
+
+```carve
+on entity click
 ```
 
 _No description yet._

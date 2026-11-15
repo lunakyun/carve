@@ -35,6 +35,8 @@ pub enum EventKind {
     Consume,
     ProjectileHit,
     MobSpawn,
+    /// A player right-clicks an entity (`on rightclick on a creature`).
+    EntityClick,
     GamemodeChange,
     Craft,
     LevelChange,
@@ -84,6 +86,7 @@ impl EventKind {
             EventKind::Consume => "consume",
             EventKind::ProjectileHit => "projectile hit",
             EventKind::MobSpawn => "mob spawn",
+            EventKind::EntityClick => "entity click",
             EventKind::GamemodeChange => "gamemode change",
             EventKind::Craft => "craft",
             EventKind::LevelChange => "level change",
@@ -3174,6 +3177,21 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                     ));
                 continue;
             };
+            // `on rightclick on a creature` / `on rightclick on a zombie or a cow`: a click on an
+            // entity, not on a block.
+            let mut k = k;
+            if matches!(k, EventKind::Click | EventKind::RightClick)
+                && let Some(pos) = filters
+                    .iter()
+                    .position(|(w, t)| *w == "on" && crate::events_items::is_entity_click_filter(t))
+            {
+                k = EventKind::EntityClick;
+                if crate::events_items::entity_filter_is_generic(&filters[pos].1) {
+                    filters.remove(pos);
+                } else {
+                    filters[pos].0 = "entity";
+                }
+            }
             if filters.iter().any(|(w, _)| !crate::events_items::filter_ok(k, w)) {
                 errors.push(ScriptError::new(
                     file,

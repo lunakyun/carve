@@ -38,6 +38,34 @@ impl Engine {
                         .collect(),
                 )
             }
+            TextOp::EventWorld => {
+                let from_extra = ex
+                    .ctx
+                    .extra
+                    .as_deref()
+                    .and_then(|x| x.location.as_ref())
+                    .and_then(|p| p.world.clone());
+                let from_ev = ex.ctx.ev.iter().find_map(|v| match v {
+                    Value::Location { world: Some(w), .. } => Some(w.clone()),
+                    _ => None,
+                });
+                let mut world = from_extra.or(from_ev);
+                if world.is_none()
+                    && let Some(p) = ex.ctx.player.clone()
+                {
+                    world = host.player_location(&p).map(|l| l.3);
+                }
+                // Events like `on explode` do not say which world: the main one is the best guess.
+                if world.is_none() {
+                    world = host.default_world();
+                }
+                world.map_or(Value::None, Value::World)
+            }
+            TextOp::EventEntity => {
+                let id = ex.ctx.extra.as_deref().and_then(|x| x.entity_id);
+                id.and_then(|id| host.entity_by_id(id))
+                    .map_or(Value::None, Value::Entity)
+            }
             TextOp::CommandArgs => {
                 let (Some(full), Some(name)) = (arg(0), arg(1)) else {
                     return Ok(Value::None);

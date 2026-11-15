@@ -149,14 +149,37 @@ on food bar change:                   # same as 'on food level change'
 on tab complete of "/cmd":            # read, but never runs (a warning)
 ```
 
+## Events without a player
+
+```
+on explode:
+    world is "world"                  # event-world
+on redstone change:
+    if event-block's world is "world":
+on spawn of a skeleton:
+    kill the entity's vehicle         # the entity: the spawned mob
+    kill the entity
+on rightclick on a creature:          # any entity; or name kinds: a zombie or a villager
+    make player ride creature         # creature: the clicked entity
+```
+
+- `event-world` is the place of the event when the host knows it (`on spawn`,
+  `on redstone change`), else the player's world, else the main world. Pumpkin
+  does not say the world for `on explode` and `on form`, so there it is the
+  main world.
+- `the entity` (also `creature`) is the real entity in `on spawn` and in a
+  click on an entity. `event-entity` stays the entity's type as text.
+- `on rightclick on <entity>` listens to a new `entity click` event. It
+  fires on the first (`interact`) packet of a right click.
+- `the entity's vehicle` is `vehicle of the entity`.
+- `set 1st line of the item's lore to ...` in `on drop` is read, but does
+  nothing (a warning says so): the drop event gives no item to change.
+
 ## Not built
 
 - `set data value of ...` (1.8 only; modern Skript has no data values).
 - `on tab complete of "/cmd"` does nothing: Pumpkin plugins cannot change
   command completions.
-- `event-world` and `world is ...` in events that have no player or block
-  (`on explode`, `on redstone change`).
-- `the entity` / `vehicle of the entity` in `on spawn of ...`, and
-  `on rightclick on a creature`.
-- `arguments` in `on command`.
+- `item is frosted ice` in `on form`: the form event only gives the position,
+  not the new block.
 - `format slot`, `create a gui`, YAML and other addon syntax.

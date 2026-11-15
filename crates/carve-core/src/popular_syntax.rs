@@ -474,6 +474,16 @@ fn all_set(head: &[Tok], want: bool, env: &Env) -> Option<Cond> {
 
 // ---------- expressions ----------
 
+impl Env {
+    /// Is this an event that happens somewhere (`on explode`), so `event-world`
+    /// means something even with no player? `every` and `at` triggers and
+    /// `on load` happen nowhere in particular.
+    pub(crate) fn event_world_ok(&self) -> bool {
+        let n = self.trigger_name.as_str();
+        !(n.starts_with("'every") || n.starts_with("'at ") || n == "'on load'" || n.starts_with("command"))
+    }
+}
+
 impl crate::expr::P<'_> {
     /// Expression heads of this module. `self.pos` is after the first word `lw`.
     pub(crate) fn popular_head(&mut self, lw: &str) -> Result<Option<Expr>, String> {
@@ -494,6 +504,32 @@ impl crate::expr::P<'_> {
                 Ok(Some(Expr::TextDirections(Box::new(
                     crate::expr_text_directions::TextExpr {
                         op: crate::expr_text_directions::TextOp::MenuTitle,
+                        args: Vec::new(),
+                    },
+                ))))
+            }
+            // `event-block` in events that only know where it happened (`on redstone change`).
+            "event-block"
+                if !self.env.in_function
+                    && !self.env.has_block
+                    && crate::events_blocks_players::field_index(self.env.ev_fields, "event-block")
+                        .is_none() =>
+            {
+                Ok(
+                    crate::events_blocks_players::field_index(self.env.ev_fields, "event-location")
+                        .map(|f| Expr::ExtVal(f.0)),
+                )
+            }
+            // `the entity` in `on spawn` and `on rightclick on <entity>`: the entity itself.
+            "entity" | "creature"
+                if !self.env.in_function
+                    && self.env.event_vals & crate::events_items::EventVal::Entity.bit() != 0
+                    && !at(self, 0, "from")
+                    && !at(self, 0, "type") =>
+            {
+                Ok(Some(Expr::TextDirections(Box::new(
+                    crate::expr_text_directions::TextExpr {
+                        op: crate::expr_text_directions::TextOp::EventEntity,
                         args: Vec::new(),
                     },
                 ))))

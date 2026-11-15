@@ -69,6 +69,11 @@ fn node(op: Op, args: Vec<Expr>, ty: Ty) -> Expr {
     Expr::Quaternions(Box::new(Node { op, args, ty }))
 }
 
+/// `<entity>'s vehicle`: what the entity rides, like `vehicle of <entity>`.
+pub(crate) fn vehicle_of(e: Expr) -> Expr {
+    node(Op::Vehicle, vec![e], Ty::Object)
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Comp {
     X,

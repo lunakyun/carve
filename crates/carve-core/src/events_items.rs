@@ -28,6 +28,8 @@ pub struct EventExtra {
     pub item: Option<(String, u32)>,
     /// Entity type id without `minecraft:` (`zombie`).
     pub entity: Option<String>,
+    /// Server entity id of the entity (spawn and entity click events).
+    pub entity_id: Option<i32>,
     pub location: Option<EvPos>,
     pub reason: Option<String>,
     pub old_mode: Option<String>,
@@ -55,7 +57,7 @@ pub enum EventVal {
 }
 
 impl EventVal {
-    fn bit(self) -> u16 {
+    pub(crate) fn bit(self) -> u16 {
         1 << (self as u16)
     }
 
@@ -81,6 +83,7 @@ pub fn mask(k: EventKind) -> u16 {
         EventKind::Drop | EventKind::PickUp | EventKind::Consume => &[Item],
         EventKind::ProjectileHit => &[Location, HitPlayer],
         EventKind::MobSpawn => &[Entity, Location, Reason],
+        EventKind::EntityClick => &[Entity],
         EventKind::GamemodeChange => &[OldMode, NewMode],
         EventKind::Craft => &[Recipe, Item],
         EventKind::LevelChange => &[OldLevel, NewLevel],
@@ -98,6 +101,9 @@ pub fn parse_kind(s: &str) -> Option<EventKind> {
         "consume" | "eat" | "drink" | "item consume" | "player consume" => EventKind::Consume,
         "projectile hit" | "projectile land" => EventKind::ProjectileHit,
         "mob spawn" | "spawn" | "creature spawn" | "entity spawn" => EventKind::MobSpawn,
+        "entity click" | "entity rightclick" | "entity right click" | "click on entity" => {
+            EventKind::EntityClick
+        }
         "gamemode change" | "game mode change" | "player gamemode change" | "player game mode change" => {
             EventKind::GamemodeChange
         }
@@ -136,6 +142,34 @@ pub fn split_filter(ev: &str) -> (&str, Option<(&'static str, String)>) {
     (ev, None)
 }
 
+const GENERIC_ENTITY: &[&str] = &["creature", "mob", "animal", "entity", "living entity", "monster"];
+
+fn entity_parts(text: &str) -> Vec<&str> {
+    text.split(" or ")
+        .map(str::trim)
+        .map(|p| {
+            ["a ", "an ", "any "]
+                .iter()
+                .find_map(|a| p.strip_prefix(a))
+                .unwrap_or(p)
+        })
+        .collect()
+}
+
+/// `a creature`, `zombie or a cow`: names of entities, none of them an item or block.
+pub fn is_entity_click_filter(text: &str) -> bool {
+    entity_parts(text).iter().all(|p| {
+        let id = p.replace(' ', "_");
+        GENERIC_ENTITY.contains(p)
+            || (crate::entities::kind_of(&id).is_some() && !crate::items::is_known(&id))
+    })
+}
+
+/// Does the filter name any entity at all (`a creature`)? Then it filters nothing.
+pub fn entity_filter_is_generic(text: &str) -> bool {
+    entity_parts(text).iter().any(|p| GENERIC_ENTITY.contains(p))
+}
+
 /// Whether `on <kind> <filter>` is allowed for this filter kind.
 pub fn filter_ok(k: EventKind, what: &str) -> bool {
     match what {
@@ -148,7 +182,7 @@ pub fn filter_ok(k: EventKind, what: &str) -> bool {
                 | EventKind::Break
                 | EventKind::Place
         ),
-        "entity" => k == EventKind::MobSpawn,
+        "entity" => matches!(k, EventKind::MobSpawn | EventKind::EntityClick),
         "victim" => matches!(k, EventKind::Damage | EventKind::Death),
         "mode" => k == EventKind::GamemodeChange,
         "prefix" => k == EventKind::WorldVehicles(crate::events_world_vehicles::ExtEvent::PlaceholderRequest),

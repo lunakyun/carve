@@ -462,6 +462,7 @@ impl Engine {
                     return Err(format!("slot {s} is outside this inventory"));
                 }
             }
+            GapEff::NoOp => {}
             GapEff::Open { inv, to } => {
                 let inv = self.as_inv(inv, ex, host)?;
                 if let (Some(inv), Some(p)) = (inv, self.player(to, ex, host)?) {

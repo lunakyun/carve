@@ -60,6 +60,9 @@ impl Host for Mock {
     fn has_permission(&mut self, _: &PlayerRef, _: &str) -> bool {
         self.perms
     }
+    fn default_world(&mut self) -> Option<String> {
+        Some("world".into())
+    }
     fn world_names(&mut self) -> Vec<String> {
         vec!["world".into(), "world_nether".into()]
     }
@@ -552,6 +555,78 @@ fn mob_spawner_arguments_and_potion_effect_lists() {
         "on rightclick on a mob spawner:\n    stop\non command:\n    command is \"mv\" or \"mvm\"\n    arguments is \"set spawn\" or \"setspawn\"\n    send \"%arguments%\"\non join:\n    add potion effect of speed 3 without particles for 5 seconds to potion effects of event-player\n    remove speed from potion effects of event-player\n"
     )
     .is_empty());
+}
+
+#[test]
+fn event_world_in_events_without_a_player() {
+    assert!(errors_of(
+        "on explode:\n    world is \"world\"\n    if event-world is not \"x\":\n        stop\non redstone change:\n    if event-block's world is \"x\":\n        stop\non spawn of a skeleton:\n    world is \"world\" or \"world_nether\"\n    send \"%event-world%\" to console\n"
+    )
+    .is_empty());
+    // `every` has no place, so no world.
+    assert!(!errors_of("every 5 seconds:\n    send \"%event-world%\" to console\n").is_empty());
+}
+
+#[test]
+fn event_world_reads_the_event_place_or_the_main_world() {
+    let mut h = Mock::default();
+    let mut e = engine(
+        "on explode:\n    send \"w=%event-world%\" to console\non spawn of a zombie:\n    send \"s=%event-world% %event-entity%\" to console\n",
+    );
+    e.fire(
+        EventKind::Game(carve_core::events_game::Ev::Explode),
+        EventCtx::console(),
+        &mut h,
+    );
+    let extra = EventExtra {
+        entity: Some("zombie".into()),
+        entity_id: Some(5),
+        location: Some(EvPos {
+            x: 1.0,
+            y: 2.0,
+            z: 3.0,
+            world: Some("nether".into()),
+        }),
+        ..Default::default()
+    };
+    e.fire(EventKind::MobSpawn, EventCtx::console_with_extra(extra), &mut h);
+    assert_eq!(h.take(), ["send console w=world", "send console s=nether zombie"]);
+}
+
+#[test]
+fn where_filter_with_distance_between() {
+    assert!(errors_of(
+        "on redstone change:\n    loop all players where [distance between input's location and event-location is smaller than 1]:\n        stop\n"
+    )
+    .is_empty());
+}
+
+#[test]
+fn spawn_entity_and_vehicle() {
+    assert!(errors_of(
+        "on spawn of a skeleton:\n    wait 1 tick\n    vehicle of the entity is a skeleton horse\n    kill the entity's vehicle\n    kill the entity\n    send \"%event-entity% %the entity%\"\n"
+    )
+    .is_empty());
+}
+
+#[test]
+fn rightclick_on_an_entity() {
+    let (e, errs) = load(
+        "on rightclick on a creature:\n    send \"any\" to player\non rightclick on a zombie or a villager:\n    send \"z\" to player\non rightclick on a chest:\n    send \"chest\" to player\n",
+    );
+    assert!(errs.is_empty(), "{errs:?}");
+    let _ = e;
+}
+
+#[test]
+fn item_lore_line_in_drop_is_read_with_a_warning() {
+    let (e, errs) = load("on drop:\n    set the 1st line of the item's lore to \"x\"\n");
+    assert!(errs.is_empty(), "{errs:?}");
+    assert!(
+        e.warnings.iter().any(|w| w.msg.contains("does nothing")),
+        "{:?}",
+        e.warnings
+    );
 }
 
 #[test]

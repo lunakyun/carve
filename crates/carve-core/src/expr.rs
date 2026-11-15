@@ -988,7 +988,13 @@ impl P<'_> {
                 }));
                 continue;
             }
-            if lw == "type" && matches!(e.ty(self.env), Ty::Object | Ty::Player) {
+            if lw == "vehicle" && matches!(e.ty(self.env), Ty::Object | Ty::Player) {
+                // `the entity's vehicle`
+                self.pos += 2;
+                e = crate::quaternions_protocol::vehicle_of(e);
+                continue;
+            }
+            if lw == "type" && matches!(e.ty(self.env), Ty::Object | Ty::Player | Ty::Location) {
                 // `loop-entity's type`: the entity type, like `type of loop-entity`.
                 self.pos += 2;
                 e = crate::entities::type_of_expr(e);
@@ -2123,7 +2129,7 @@ impl P<'_> {
                         if (lw == "world"
                             || !self.env.ev_fields.iter().any(|f| f.0.starts_with("event-past-")))
                             && !self.env.in_function
-                            && !self.env.no_player
+                            && (!self.env.no_player || self.env.event_world_ok())
                             && self
                                 .env
                                 .world_event
@@ -2136,7 +2142,11 @@ impl P<'_> {
                             && !matches!(self.peek(), Some(Tok::Str(_) | Tok::Sym("(" | "'s")))
                             && !matches!(self.peek(), Some(t) if t.is_lit("of")) =>
                     {
-                        self.prop(Prop::World, Expr::Player)
+                        if self.env.no_player {
+                            Ok(Self::textdir_op(TextOp::EventWorld, Vec::new()))
+                        } else {
+                            self.prop(Prop::World, Expr::Player)
+                        }
                     }
                     "me" | "myself" if self.env.in_function => {
                         Err("'me' doesn't exist inside a function; pass the player as a parameter".into())

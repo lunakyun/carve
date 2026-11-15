@@ -307,7 +307,10 @@ fn all_of(toks: &[Tok], s: usize, env: &Env) -> Parsed {
     let m = pos_of(toks, s + 1, &["in", "within"]);
     let word_end = {
         let mut e = s + 1;
-        while toks.get(e).is_some_and(|t| matches!(t, Tok::Word(_))) {
+        while toks
+            .get(e)
+            .is_some_and(|t| matches!(t, Tok::Word(_)) && !is(t, "where") && !is(t, "except"))
+        {
             e += 1;
         }
         e
