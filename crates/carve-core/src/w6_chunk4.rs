@@ -199,7 +199,7 @@ impl P<'_> {
         self.toks.get(self.pos + n)
     }
 
-    fn x6_lit(&self, n: usize, w: &str) -> bool {
+    pub(crate) fn x6_lit(&self, n: usize, w: &str) -> bool {
         is(self.x6_at(n), w)
     }
 

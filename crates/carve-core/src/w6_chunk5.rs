@@ -305,13 +305,6 @@ pub fn human_span_expr(e: Expr) -> Expr {
 }
 
 impl P<'_> {
-    fn x6_lit(&self, off: usize, w: &str) -> bool {
-        if self.pos + off >= self.toks.len() {
-            self.hit_end.set(true);
-        }
-        matches!(self.toks.get(self.pos + off), Some(t) if t.is_lit(w))
-    }
-
     /// `of <operand>` with the `of` at `self.pos`.
     fn x6_of(&mut self) -> Result<Expr, String> {
         self.pos += 1;
