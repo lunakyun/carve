@@ -85,6 +85,8 @@ pub enum Value {
     Border(String),
     /// The result of `ray trace ...`. Not saved in global variables.
     Ray(Box<crate::w4_skbee_raytrace_world::RayHit>),
+    /// A chest inventory built by a script (`chest inventory with 3 rows`).
+    Inventory(Box<crate::gaps::InvVal>),
 }
 
 /// A handle to an entity. Looked up through the host on every use, so a
@@ -115,6 +117,7 @@ impl Value {
             Value::Nbt(_) => "nbt compound",
             Value::Entity(_) => "entity",
             Value::Ray(_) => "ray trace result",
+            Value::Inventory(_) => "inventory",
             v => crate::types_1::type_name(v),
         }
     }
@@ -170,6 +173,7 @@ impl Value {
                     && (aw.is_none() || bw.is_none() || aw == bw)
             }
             (Value::Entity(a), Value::Entity(b)) => a.uuid == b.uuid,
+            (Value::Inventory(a), Value::Inventory(b)) => a.same(b),
             (
                 Value::Chunk {
                     world: aw,
@@ -279,6 +283,7 @@ impl Value {
                 push_num(out, *z);
             }
             Value::Timespan { millis } => crate::timespans::push_span(out, *millis),
+            Value::Inventory(i) => i.push_to(out),
             Value::Nbt(c) => c.push_snbt(out),
             Value::Enum(_)
             | Value::Color { .. }

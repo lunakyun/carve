@@ -298,6 +298,7 @@ impl LoopFrame {
 
 /// `a, b and c`, like Skript prints a list.
 mod ext_eval;
+mod gaps_eval;
 mod list_eval;
 mod structures_rt;
 pub(crate) use structures_rt::ERROR_KEY;
@@ -1442,6 +1443,7 @@ impl Engine {
                         .is_some_and(|hit| hit != r.negate),
                 )
             }
+            Cond::Gap(g) => self.gap_cond(g, ex, host),
             Cond::Rtw(r) => {
                 let a = self.eval(&r.a, ex, host)?;
                 let b = match &r.b {
@@ -1925,6 +1927,7 @@ impl Engine {
                 None => crate::combat::attacker(&mut ex.ctx, host),
             },
             Expr::Inv(i) => self.inv_expr(i, ex, host)?,
+            Expr::Gap(g) => self.gap_expr(g, ex, host)?,
             Expr::ExtVal(i) => ex.ctx.ev.get(usize::from(*i)).cloned().unwrap_or(Value::None),
             Expr::ClickedBlock => match &ex.ctx.block {
                 Some(b) => Value::Item {
@@ -1941,6 +1944,9 @@ impl Engine {
                 let v = self.eval(inner, ex, host)?;
                 if matches!(v, Value::Item { .. }) {
                     return Ok(crate::item_meta::info(crate::item_meta::ItemInfo::Name, &v));
+                }
+                if let Value::Inventory(i) = &v {
+                    return Ok(Value::Text(i.title.clone()));
                 }
                 if let Value::Entity(e) = &v {
                     // Like Skript: the custom name, else the type.
@@ -2628,6 +2634,7 @@ impl Engine {
             Effect::World(w) => self.world_effect(w, ex, host)?,
             Effect::Block(b) => self.block_effect(b, ex, host)?,
             Effect::Inv(i) => self.inv_effect(i, ex, host)?,
+            Effect::Gap(g) => self.gap_effect(g, ex, host)?,
             Effect::Bound(b) => self.bound_effect(b, ex, host)?,
             Effect::Wt(w) => self.wt_effect(w, ex, host)?,
             Effect::Sb(s) => self.sb_effect(s, ex, host)?,

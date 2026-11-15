@@ -27,6 +27,15 @@ fn compare(a: &Value, b: &Value) -> Ordering {
     }
 }
 
+/// Times and dates sort by their number, everything else as `compare` does.
+fn sort_key(v: Value) -> Value {
+    match v {
+        Value::Timespan { millis } | Value::Date(millis) => Value::Num(millis as f64),
+        Value::Bool(b) => Value::Num(f64::from(u8::from(b))),
+        other => other,
+    }
+}
+
 impl Engine {
     pub(super) fn eval_list(
         &mut self,
@@ -57,6 +66,7 @@ impl Engine {
                 v.sort_by(compare);
                 v
             }
+            ListSrc::SortedBy(i, key) => self.sorted_by(i, key, ex, host)?,
             ListSrc::SortedAlpha(i) => {
                 let mut v = self.eval_list(i, ex, host)?;
                 v.sort_by_cached_key(|x| x.to_string().to_lowercase());
@@ -103,6 +113,42 @@ impl Engine {
                 out
             }
         })
+    }
+
+    /// `sorted {x::*} by <key>`: `input` is each item while the key runs.
+    /// Items whose key is `<none>` go last, in their old order.
+    fn sorted_by(
+        &mut self,
+        i: &ListSrc,
+        key: &crate::expr::Expr,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<Vec<Value>, String> {
+        let items = self.eval_list(i, ex, host)?;
+        let saved = ex.locals.get(INPUT_KEY).cloned();
+        let mut keyed = Vec::with_capacity(items.len());
+        let mut failed = None;
+        for it in items {
+            ex.locals.set(INPUT_KEY, it.clone());
+            match self.eval(key, ex, host) {
+                Ok(k) => keyed.push((sort_key(k), it)),
+                Err(e) => {
+                    failed = Some(e);
+                    break;
+                }
+            }
+        }
+        ex.locals.set(INPUT_KEY, saved.unwrap_or(Value::None));
+        if let Some(e) = failed {
+            return Err(e);
+        }
+        keyed.sort_by(|(a, _), (b, _)| match (a, b) {
+            (Value::None, Value::None) => Ordering::Equal,
+            (Value::None, _) => Ordering::Greater,
+            (_, Value::None) => Ordering::Less,
+            _ => compare(a, b),
+        });
+        Ok(keyed.into_iter().map(|(_, v)| v).collect())
     }
 
     /// Fisher-Yates.

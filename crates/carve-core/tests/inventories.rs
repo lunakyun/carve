@@ -143,6 +143,7 @@ fn click_ctx(slot: i32, item: Option<(&str, u32)>) -> EventCtx {
         slot,
         item: item.map(|(i, n)| (i.to_string(), n)),
         click: "shift left".into(),
+        menu: None,
     }));
     c
 }

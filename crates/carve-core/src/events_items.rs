@@ -120,7 +120,7 @@ pub fn split_filter(ev: &str) -> (&str, Option<(&'static str, String)>) {
         let rest = ev.get(i + marker.len()..).unwrap_or("").trim();
         let right_base = match what {
             "entity" => base.ends_with("spawn"),
-            "victim" => base == "damage",
+            "victim" => base == "damage" || base == "death",
             _ => base.ends_with("change") && base.contains("game"),
         };
         if right_base && !rest.is_empty() {
@@ -135,7 +135,7 @@ pub fn filter_ok(k: EventKind, what: &str) -> bool {
     match what {
         "with" | "on" => matches!(k, EventKind::Click | EventKind::RightClick | EventKind::LeftClick),
         "entity" => k == EventKind::MobSpawn,
-        "victim" => k == EventKind::Damage,
+        "victim" => matches!(k, EventKind::Damage | EventKind::Death),
         "mode" => k == EventKind::GamemodeChange,
         "prefix" => k == EventKind::Ext4(crate::w2_events_4::ExtEvent::PlaceholderRequest),
         "command" => k == EventKind::Mv(crate::w4_events_movement::MvEvent::Command),

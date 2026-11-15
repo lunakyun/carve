@@ -16,6 +16,7 @@ pub mod events_items;
 pub mod expr;
 pub mod fx_names;
 pub mod gamemode;
+pub mod gaps;
 pub mod hashing;
 pub mod health_food;
 pub mod host;

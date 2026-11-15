@@ -245,6 +245,8 @@ pub enum Cond {
     Rare4(Box<crate::w4_conditions_1::W4Cond>),
     /// Tag and loaded checks (`w4_skbee_raytrace_world`).
     Rtw(Box<crate::w4_skbee_raytrace_world::RtwCond>),
+    /// `{_gui} contains diamond` (see `gaps`).
+    Gap(Box<crate::gaps::GapCond>),
     HasPerm {
         player: Expr,
         node: Expr,
@@ -406,6 +408,8 @@ pub enum Effect {
     Block(Box<crate::block_ops::BlockFx>),
     /// Chest menus, slots, clear, add and remove items.
     Inv(Box<crate::inventories::InvEff>),
+    /// Inventory values, held item edits and the other `gaps` effects.
+    Gap(Box<crate::gaps::GapEff>),
     /// Create, delete and change bounds.
     Bound(Box<crate::skbee_bound::BoundEff>),
     /// Time, weather, game rule and difficulty changes.
@@ -1264,6 +1268,12 @@ impl Cx<'_> {
         if let Some(e) = crate::entities::parse_list(&toks, &self.env) {
             return Some((LoopSrc::Items(ListSrc::One(e)), LoopKind::List));
         }
+        // `loop items in {_gui}:`
+        if toks.first().is_some_and(|t| t.is_lit("items") || t.is_lit("all"))
+            && let Ok(e @ Expr::Gap(_)) = parse_expr(&toks, &self.env)
+        {
+            return Some((LoopSrc::Items(ListSrc::One(e)), LoopKind::List));
+        }
         if crate::list_ops::looks_like_list_op(&toks, &self.env) {
             return match crate::list_ops::parse_src_all(&toks, &self.env, true) {
                 Ok(s) => Some((LoopSrc::Items(s), LoopKind::List)),
@@ -1382,6 +1392,9 @@ impl Cx<'_> {
     }
 
     fn single_cond(&self, toks: &[Tok]) -> Option<Cond> {
+        if let Some(c) = crate::gaps::parse_cond(toks, &self.env) {
+            return Some(c);
+        }
         if let Some(c) = crate::inventories::parse_cond(toks, &self.env) {
             return Some(c);
         }
@@ -1538,6 +1551,17 @@ impl Cx<'_> {
         };
         if self.call_stmt(num, &toks) {
             return;
+        }
+        match crate::gaps::parse_effect(&toks, &self.env) {
+            Ok(Some(eff)) => {
+                self.emit(Instr::Eff(eff), num);
+                return;
+            }
+            Ok(None) => {}
+            Err(msg) => {
+                self.err(num, msg);
+                return;
+            }
         }
         if self.env.has_attacker {
             match crate::combat::parse_effect(&toks, &self.env) {

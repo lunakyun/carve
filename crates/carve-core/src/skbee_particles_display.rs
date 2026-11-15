@@ -124,13 +124,18 @@ fn one_or_three(toks: &[Tok], env: &Env) -> Option<Box<[Expr; 3]>> {
 fn color_src(toks: &[Tok], env: &Env) -> Option<ColorSrc> {
     let (first, rest) = toks.split_first()?;
     if is(first, "rgb") {
-        return Some(ColorSrc::Rgb(triple(rest, env)?));
+        // `rgb 255, 0, 0` or the color function `rgb(255, 0, 0)`.
+        let inner = match rest {
+            [open, mid @ .., close] if is(open, "(") && is(close, ")") => mid,
+            r => r,
+        };
+        return Some(ColorSrc::Rgb(triple(inner, env)?));
     }
     // A bare word like `red` or `dark_red`.
     if let [Tok::Word(w)] = toks {
         return Some(ColorSrc::Text(lit_text(&w.to_ascii_lowercase())));
     }
-    expr_of(toks, env, &[Ty::Text]).map(ColorSrc::Text)
+    expr_of(toks, env, &[Ty::Text, Ty::T1(crate::types_1::T_COLOR)]).map(ColorSrc::Text)
 }
 
 /// Words joined with `_` (`dark red` to `dark_red`), lowercase.

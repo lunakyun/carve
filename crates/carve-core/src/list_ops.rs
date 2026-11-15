@@ -21,6 +21,8 @@ pub enum ListSrc {
     /// `a, b and c` where each part is a list or a value.
     Concat(Vec<ListSrc>),
     Sorted(Box<ListSrc>),
+    /// `sorted {x::*} by <expression with input>`.
+    SortedBy(Box<ListSrc>, Box<Expr>),
     /// `alphabetically sorted list`: everything compared as text, ignoring case.
     SortedAlpha(Box<ListSrc>),
     Reversed(Box<ListSrc>),
@@ -205,6 +207,10 @@ impl Cur<'_> {
                     }
                     let (inner, np) = self.concat(p)?;
                     let b = Box::new(inner);
+                    if lw == "sorted" && self.toks.get(np).is_some_and(|t| t.is_lit("by")) {
+                        let (key, np) = parse_sum_at(self.toks, np + 1, self.env)?;
+                        return Ok((ListSrc::SortedBy(b, Box::new(key)), np));
+                    }
                     Ok((
                         match lw {
                             "sorted" => ListSrc::Sorted(b),

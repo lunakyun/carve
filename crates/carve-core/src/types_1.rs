@@ -82,6 +82,8 @@ const fn def(
 }
 
 /// Type ids above the named-value types.
+/// Inventory values (see `gaps`).
+pub const T_INVENTORY: u8 = 249;
 pub const T_COLOR: u8 = 250;
 pub const T_QUATERNION: u8 = 251;
 pub const T_TIMEPERIOD: u8 = 252;
@@ -818,6 +820,7 @@ fn type_id_exact(name: &str) -> Option<u8> {
     let n = norm_name(name);
     match n.as_str() {
         "color" | "colour" => return Some(T_COLOR),
+        "inventory" => return Some(T_INVENTORY),
         "quaternion" => return Some(T_QUATERNION),
         "timeperiod" | "time period" => return Some(T_TIMEPERIOD),
         "chunk" => return Some(T_CHUNK),
@@ -853,6 +856,7 @@ pub fn ty_from_name(name: &str) -> Option<Ty> {
 pub fn ty_name(id: u8) -> &'static str {
     match id {
         T_COLOR => "color",
+        T_INVENTORY => "inventory",
         T_QUATERNION => "quaternion",
         T_TIMEPERIOD => "timeperiod",
         T_CHUNK => "chunk",
@@ -945,7 +949,7 @@ fn lit_value(l: Lit) -> (Value, Ty) {
 pub fn parse_text(ty: u8, text: &str) -> Value {
     match ty {
         T_COLOR => parse_color(text).map_or(Value::None, |(r, g, b)| Value::Color { r, g, b }),
-        T_QUATERNION | T_TIMEPERIOD | T_CHUNK | T_QUEUE | T_BORDER => Value::None,
+        T_QUATERNION | T_TIMEPERIOD | T_CHUNK | T_QUEUE | T_BORDER | T_INVENTORY => Value::None,
         _ => {
             let Some(d) = ENUMS.get(usize::from(ty)) else {
                 return Value::None;

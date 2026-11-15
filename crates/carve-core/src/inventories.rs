@@ -15,13 +15,16 @@ use crate::lexer::Tok;
 use crate::value::Value;
 
 /// What the clicked inventory slot held, for `on inventory click`.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct InvClick {
     pub slot: i32,
     /// Item id (no `minecraft:`) and amount, `None` for an empty slot.
     pub item: Option<(String, u32)>,
     /// `left`, `right`, `shift left`, ...
     pub click: String,
+    /// The open Carve menu: inventory id (0 if it was not built from a
+    /// value), title and rows. `None` for other windows.
+    pub menu: Option<(u64, String, u8)>,
 }
 
 /// Which inventory a line talks about.

@@ -26,6 +26,8 @@ pub enum EntFx {
         kind: String,
         count: Option<Expr>,
         at: Option<Expr>,
+        /// `spawn a zombie named "Bob"`
+        name: Option<Expr>,
     },
     Kill(Expr),
     Remove(Expr),
@@ -397,8 +399,21 @@ pub fn parse_effect(toks: &[Tok], env: &Env) -> Result<Option<Effect>, String> {
 }
 
 fn spawn(toks: &[Tok], env: &Env) -> Result<Option<EntFx>, String> {
+    // `named "x"` before or after `at <place>`.
+    let named_i = pos_of(toks, 2, &["named", "called"]);
     let at_i = pos_of(toks, 1, &["at", "on", "near"]);
-    let mut head = toks.get(1..at_i.unwrap_or(toks.len())).unwrap_or_default();
+    let custom = match named_i {
+        Some(n) => {
+            let end = at_i.filter(|a| *a > n).unwrap_or(toks.len());
+            Some(sub(toks, n + 1, end, env)?)
+        }
+        None => None,
+    };
+    let at_end = named_i
+        .filter(|n| at_i.is_some_and(|a| a < *n))
+        .unwrap_or(toks.len());
+    let head_end = [at_i, named_i].into_iter().flatten().min().unwrap_or(toks.len());
+    let mut head = toks.get(1..head_end).unwrap_or_default();
     while head
         .first()
         .is_some_and(|t| is(t, "a") || is(t, "an") || is(t, "the"))
@@ -423,7 +438,7 @@ fn spawn(toks: &[Tok], env: &Env) -> Result<Option<EntFx>, String> {
         return Err("a script can't spawn a player".into());
     }
     let at = match at_i {
-        Some(i) => Some(sub(toks, i + 1, toks.len(), env)?),
+        Some(i) => Some(sub(toks, i + 1, at_end, env)?),
         None if env.no_player || env.in_function => {
             return Err("spawn needs 'at <location>' here, there is no player".into());
         }
@@ -433,6 +448,7 @@ fn spawn(toks: &[Tok], env: &Env) -> Result<Option<EntFx>, String> {
         kind: kind.to_string(),
         count,
         at,
+        name: custom,
     }))
 }
 
@@ -696,7 +712,16 @@ impl Engine {
     #[inline(never)]
     pub(crate) fn ent_effect(&mut self, f: &EntFx, ex: &mut Exec, host: &mut dyn Host) -> Result<(), String> {
         match f {
-            EntFx::Spawn { kind, count, at } => {
+            EntFx::Spawn {
+                kind,
+                count,
+                at,
+                name,
+            } => {
+                let name = match name {
+                    Some(n) => Some(self.text(n, ex, host)?),
+                    None => None,
+                };
                 let n = self
                     .ent_num(count, 1.0, MAX_SPAWN, ex, host)?
                     .clamp(0.0, MAX_SPAWN) as u32;
@@ -709,6 +734,9 @@ impl Engine {
                 };
                 for _ in 0..n {
                     if let Some(e) = host.spawn_entity(kind, &pos) {
+                        if let Some(n) = &name {
+                            host.set_entity_name(&e, Some(n));
+                        }
                         ex.last_entity = Some(Box::new(e));
                     }
                 }

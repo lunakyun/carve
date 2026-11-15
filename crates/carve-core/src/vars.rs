@@ -71,6 +71,8 @@ impl Variables {
                 Value::Timespan { millis } => json!({"timespan": millis}),
                 Value::Nbt(c) => json!({"nbt": c.to_snbt()}),
                 Value::Vector { x, y, z } => json!({"vector": {"x": x, "y": y, "z": z}}),
+                Value::Inventory(i) if i.viewer.is_none() => i.to_json(),
+                Value::Inventory(_) => continue,
                 other => match crate::types_1::to_json(other) {
                     Some(j) => j,
                     None => continue,
@@ -155,6 +157,9 @@ fn object_value(o: &Map<String, Json>) -> Option<Value> {
     }
     if let Some(ms) = o.get("timespan").and_then(Json::as_i64) {
         return Some(Value::Timespan { millis: ms });
+    }
+    if let Some(v) = crate::gaps::InvVal::from_json(o) {
+        return Some(v);
     }
     if let Some(v) = crate::types_1::from_json(o) {
         return Some(v);

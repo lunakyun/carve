@@ -1032,4 +1032,60 @@ pub trait Host {
     fn chunk_loaded(&mut self, _world: &str, _x: i32, _z: i32) -> Option<bool> {
         None
     }
+
+    // ---- inventory values and held items (see `gaps`) ----
+
+    /// Open a chest menu built from an inventory value. The default opens a
+    /// plain chest and fills it slot by slot, without names or lore.
+    fn open_inventory(&mut self, player: &PlayerRef, inv: &crate::gaps::InvVal) {
+        self.open_chest(player, inv.rows, &inv.title);
+        for (i, v) in inv.slots.iter().enumerate() {
+            if let crate::value::Value::Item { id, count, .. } = v {
+                self.inv_set(player, true, i as i64, Some((id, *count)));
+            }
+        }
+    }
+
+    /// A slot of the inventory value `id` changed: update the open menus
+    /// that show it.
+    fn menu_update(&mut self, _id: u64, _slot: u32, _item: &crate::value::Value) {}
+
+    /// Set a slot of the menu the player has open. `item` is an item value or
+    /// `<none>`. The default drops names and lore.
+    fn menu_set(&mut self, player: &PlayerRef, slot: u32, item: &crate::value::Value) {
+        let it = match item {
+            crate::value::Value::Item { id, count, .. } => Some((id.as_str(), *count)),
+            _ => None,
+        };
+        self.inv_set(player, true, i64::from(slot), it);
+    }
+
+    /// Replace the name, lore and enchantments of the item in the player's
+    /// main hand. False when this server can't.
+    fn set_held_item_meta(&mut self, _player: &PlayerRef, _meta: &crate::item_meta::ItemMeta) -> bool {
+        false
+    }
+
+    /// The items in a player's inventory (slots 0 to 40), with names and lore
+    /// when the server gives them.
+    fn inv_items(&mut self, player: &PlayerRef) -> Vec<crate::value::Value> {
+        (0..=40)
+            .filter_map(|s| self.inv_get(player, false, s))
+            .map(|(id, count)| crate::value::Value::Item {
+                id,
+                count,
+                meta: None,
+            })
+            .collect()
+    }
+
+    /// Yaw and pitch of an entity or player, in degrees.
+    fn entity_rotation(&mut self, _e: &EntityRef) -> Option<(f64, f64)> {
+        None
+    }
+
+    /// `set quit message to` in `on quit`.
+    fn set_quit_message(&mut self, text: &str) {
+        self.set_join_message(text);
+    }
 }

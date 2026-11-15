@@ -736,6 +736,25 @@ pub mod regex {
         pub fn find(&self, text: &str) -> Result<bool, String> {
             self.run(text, false)
         }
+
+        /// The first match starting at or after `from`, as char positions.
+        pub fn find_span(&self, t: &[char], from: usize) -> Result<Option<(usize, usize)>, String> {
+            self.steps.set(0);
+            for s in from..=t.len() {
+                let mut end = None;
+                let hit = self.m(&self.root, t, s, &mut |e| {
+                    end = Some(e);
+                    true
+                });
+                if self.steps.get() > STEP_LIMIT {
+                    return Err("regex is too complex for this text".into());
+                }
+                if let (true, Some(e)) = (hit, end) {
+                    return Ok(Some((s, e)));
+                }
+            }
+            Ok(None)
+        }
     }
 }
 

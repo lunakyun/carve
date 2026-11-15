@@ -232,6 +232,8 @@ pub enum Expr {
     T1(Box<crate::types_1::Node>),
     /// Ray tracing, chunks and tags (see `w4_skbee_raytrace_world`).
     Rtw(Box<crate::w4_skbee_raytrace_world::Node>),
+    /// Inventory values, `items in`, regex replace (see `gaps`).
+    Gap(Box<crate::gaps::GapExpr>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -465,6 +467,7 @@ impl Expr {
             Expr::W4F(n) => n.f.ty(),
             Expr::T1(n) => n.ty,
             Expr::Rtw(n) => n.ty,
+            Expr::Gap(g) => g.ty(),
             Expr::Items(_) => Ty::List,
             Expr::Bound(b) => b.ty(),
             Expr::Sb(s) => s.ty(),
@@ -793,6 +796,13 @@ impl P<'_> {
                 return Err("expected a property after 's, like player's location".into());
             };
             let lw = w.to_ascii_lowercase();
+            if let Some(unit) = crate::gaps::span_unit(&lw)
+                && matches!(e.ty(self.env), Ty::Timespan | Ty::Object)
+            {
+                self.pos += 2;
+                e = Expr::SpanPart(unit, false, Box::new(e));
+                continue;
+            }
             if (lw == "targeted" || lw == "target")
                 && matches!(self.toks.get(self.pos + 2), Some(t) if t.is_lit("block"))
             {
@@ -1174,6 +1184,11 @@ impl P<'_> {
             self.pos += 1;
             all = false;
         }
+        let at = self.pos;
+        if let Some(r) = self.regex_replaced(e.clone(), all) {
+            return r;
+        }
+        self.pos = at;
         if let Ok(from) = self.primary_base()
             && matches!(self.peek(), Some(t) if t.is_lit("replaced"))
         {
@@ -1653,6 +1668,9 @@ impl P<'_> {
             }
             Tok::Word(w) => {
                 let lw = w.to_ascii_lowercase();
+                if let Some(e) = self.gaps_head(&lw)? {
+                    return Ok(e);
+                }
                 if let Some(e) = self.rtw_head(&lw)? {
                     return Ok(e);
                 }
@@ -1846,7 +1864,7 @@ impl P<'_> {
                     )),
                     "me" | "myself" => Ok(Expr::Player),
                     "player" => Ok(Expr::Player),
-                    "victim" if self.env.has_damage && self.env.has_attacker && !self.env.in_function => {
+                    "victim" if self.env.has_attacker && !self.env.in_function => {
                         Ok(Self::x2(W2Op::Victim, Vec::new()))
                     }
                     "victim" if self.env.has_damage || self.env.has_attacker => Ok(Expr::Player),
@@ -2259,7 +2277,7 @@ impl P<'_> {
                         if t == Ty::Item {
                             return Ok(Expr::ItemInfo(crate::item_meta::ItemInfo::Name, Box::new(inner)));
                         }
-                        if !(t == Ty::Player || t == Ty::Object) {
+                        if !(t == Ty::Player || t == Ty::Object || t == crate::gaps::INV_TY) {
                             return Err(format!("'name of' needs a player or an item, got {}", t.name()));
                         }
                         Ok(Expr::NameOf(Box::new(inner)))
@@ -3300,7 +3318,7 @@ impl P<'_> {
     /// `None` when it is a single plain value (not a list at all).
     fn try_agg(&mut self, agg: Agg) -> Option<Result<Expr, String>> {
         match parse_src_at(self.toks, self.pos, self.env, false) {
-            Ok((ListSrc::One(e), _)) if agg == Agg::Size && !matches!(e, Expr::X2(_)) => None,
+            Ok((ListSrc::One(e), _)) if agg == Agg::Size && !matches!(e, Expr::X2(_) | Expr::Gap(_)) => None,
             Ok((s, end)) => {
                 self.pos = end;
                 Some(Ok(Expr::ListAgg(agg, Box::new(s))))
