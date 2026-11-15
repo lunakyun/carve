@@ -1,0 +1,323 @@
+# Wave 5 chunk 2 area: conditions. Every command answers with "k:<tag> ..."
+# and yes/no words the test reads.
+
+on join:
+    if player has played before:
+        send "k:joined played=yes" to player
+    else:
+        send "k:joined played=no" to player
+
+command /kpick:
+    trigger:
+        set {_a} to "no"
+        if player can pick up items:
+            set {_a} to "yes"
+        set {_b} to "no"
+        if player can't pick up items:
+            set {_b} to "yes"
+        send "k:pick can=%{_a}% cant=%{_b}%" to player
+
+command /khide <text>:
+    trigger:
+        loop all players:
+            if name of loop-player is "Other":
+                set {_o} to loop-player
+        if arg-1 is "on":
+            hide {_o} from player
+        else:
+            reveal {_o} to player
+        set {_a} to "no"
+        if player can see {_o}:
+            set {_a} to "yes"
+        send "k:hide %arg-1% see=%{_a}%" to player
+
+command /kchat:
+    trigger:
+        set {_c} to "no"
+        if player can see chat colors:
+            set {_c} to "yes"
+        set {_m} to "no"
+        if player can see messages:
+            set {_m} to "yes"
+        set {_f} to "no"
+        if player has chat filtering:
+            set {_f} to "yes"
+        set {_w} to "no"
+        if player has client weather:
+            set {_w} to "yes"
+        if player doesn't have client weather:
+            set {_w} to "%{_w}%,neg"
+        send "k:chat colors=%{_c}% messages=%{_m}% filter=%{_f}% weather=%{_w}%" to console
+        send "k:chat colors=%{_c}% messages=%{_m}% filter=%{_f}% weather=%{_w}%" to player
+
+command /kanchor:
+    trigger:
+        set {_a} to "no"
+        if respawn anchors work in world "world":
+            set {_a} to "yes"
+        set {_b} to "no"
+        if respawn anchors don't work in world "world":
+            set {_b} to "yes"
+        send "k:anchor work=%{_a}% dont=%{_b}%" to player
+
+command /kmobs:
+    trigger:
+        spawn an enderman at location(20, 101, 20)
+        set {ender} to last spawned entity
+        spawn a sheep at location(22, 101, 20)
+        set {sheep} to last spawned entity
+        set {_s} to "no"
+        if {ender} has been stared at:
+            set {_s} to "yes"
+        if {ender} hasn't been stared at:
+            set {_s} to "%{_s}%,neg"
+        set {_h} to "no"
+        if {sheep} is sheared:
+            set {_h} to "yes"
+        if {sheep} is not sheared:
+            set {_h} to "%{_h}%,neg"
+        set {_ai} to "no"
+        if {sheep} has ai:
+            set {_ai} to "yes"
+        set {_noai} to "no"
+        if {sheep} doesn't have ai:
+            set {_noai} to "yes"
+        send "k:mobs stared=%{_s}% sheared=%{_h}% ai=%{_ai}% noai=%{_noai}%" to player
+
+command /kwet <text>:
+    trigger:
+        if arg-1 is "on":
+            set block at player to water
+        else:
+            set block at player to air
+        wait 10 ticks
+        set {_w} to "no"
+        if player is wet:
+            set {_w} to "yes"
+        set {_l} to "no"
+        if player is in liquid:
+            set {_l} to "yes"
+        set {_d} to "no"
+        if player is not wet:
+            set {_d} to "yes"
+        send "k:wet %arg-1% wet=%{_w}% liquid=%{_l}% dry=%{_d}%" to player
+
+command /ksign:
+    trigger:
+        set block at location(10, 101, 10) to oak sign
+        send "k:sign" to player
+
+command /kglow:
+    trigger:
+        set {_g} to "no"
+        if location(10, 101, 10) has glowing text:
+            set {_g} to "yes"
+        set {_n} to "no"
+        if location(10, 101, 10) doesn't have glowing text:
+            set {_n} to "yes"
+        send "k:glow has=%{_g}% hasnt=%{_n}%" to player
+
+command /kcool:
+    trigger:
+        set item cooldown of ender pearl for player to 5 seconds
+        set {_a} to "no"
+        if player has cooldown on ender pearl:
+            set {_a} to "yes"
+        set {_b} to "no"
+        if player has item cooldown on diamond:
+            set {_b} to "yes"
+        set {_c} to "no"
+        if player doesn't have cooldown on diamond:
+            set {_c} to "yes"
+        send "k:cool pearl=%{_a}% diamond=%{_b}% nodiamond=%{_c}%" to player
+
+command /klos <text>:
+    trigger:
+        set {_t} to location(0.5, 106.5, 0.5)
+        if arg-1 is "block":
+            set block at location(0, 104, 0) to stone
+        else:
+            set block at location(0, 104, 0) to air
+        set {_a} to "no"
+        if player has line of sight to {_t}:
+            set {_a} to "yes"
+        set {_b} to "no"
+        if player doesn't have line of sight to {_t}:
+            set {_b} to "yes"
+        send "k:los %arg-1% sight=%{_a}% blocked=%{_b}%" to player
+
+command /kcontains:
+    trigger:
+        give 3 stone to player
+        wait 5 ticks
+        set {_l::*} to 1, 2 and 3
+        set {_r} to ""
+        if "abcdef" contains "cd":
+            set {_r} to "%{_r}%t"
+        if {_l::*} contains 2:
+            set {_r} to "%{_r}%l"
+        if {_l::*} doesn't contain 7:
+            set {_r} to "%{_r}%n"
+        if player's inventory contains stone:
+            set {_r} to "%{_r}%i"
+        send "k:contains %{_r}%" to player
+
+on damage of player:
+    set {_r} to ""
+    if damage was caused by fall:
+        set {_r} to "%{_r}%fall"
+    if the damage wasn't caused by fall:
+        set {_r} to "%{_r}%notfall"
+    if damage is caused by lava:
+        set {_r} to "%{_r}%,lava"
+    if damage was caused by "drowning":
+        set {_r} to "%{_r}%,drown"
+    send "k:dmg cause=%damage cause% r=%{_r}%" to player
+
+command /kegg:
+    trigger:
+        set slot 0 of player's inventory to 16 eggs
+        send "k:egg ready" to player
+
+on throwing of an egg:
+    set {_w} to "no"
+    if the egg will hatch:
+        set {_w} to "yes"
+    set {_n} to "no"
+    if the egg won't hatch:
+        set {_n} to "yes"
+    send "k:eggthrow will=%{_w}% wont=%{_n}% ev=%event-hatching%" to player
+
+command /kbee:
+    trigger:
+        set block at location(12, 101, 10) to beehive
+        wait 5 ticks
+        set {_f} to "no"
+        if entity storage of location(12, 101, 10) is full:
+            set {_f} to "yes"
+        set {_n} to "no"
+        if the entity storage of location(12, 101, 10) is not full:
+            set {_n} to "yes"
+        set {_s} to "no"
+        if entity storage of location(14, 101, 10) is full:
+            set {_s} to "yes"
+        if entity storage of location(14, 101, 10) is not full:
+            set {_s} to "%{_s}%,neg"
+        send "k:bee full=%{_f}% notfull=%{_n}% stone=%{_s}%" to player
+
+command /kequip:
+    trigger:
+        set {_r} to ""
+        if diamond helmet can be dispensed:
+            set {_r} to "%{_r}%d"
+        if diamond helmet can swap equipment:
+            set {_r} to "%{_r}%s"
+        if carved pumpkin can't swap equipment:
+            set {_r} to "%{_r}%S"
+        if diamond helmet will lose durability when the wearer is hurt:
+            set {_r} to "%{_r}%l"
+        if elytra won't lose durability:
+            set {_r} to "%{_r}%L"
+        if saddle can be sheared off:
+            set {_r} to "%{_r}%h"
+        if diamond helmet can't be sheared off:
+            set {_r} to "%{_r}%H"
+        if saddle can be equipped on entities:
+            set {_r} to "%{_r}%e"
+        if diamond helmet cannot be equipped on entities:
+            set {_r} to "%{_r}%E"
+        if stone can't be dispensed:
+            set {_r} to "%{_r}%x"
+        send "k:equip %{_r}%" to player
+
+command /kbar:
+    trigger:
+        create bossbar "kb" with title "k" with color red
+        add darken sky flag to bossbar "kb"
+        set {_r} to ""
+        if bossbar "kb" has darken sky flag:
+            set {_r} to "%{_r}%sky"
+        if bossbar "kb" has fog flag:
+            set {_r} to "%{_r}%,fog"
+        if bossbar "kb" doesn't have the fog flag:
+            set {_r} to "%{_r}%,nofog"
+        if bossbar "kb" has the flag boss music:
+            set {_r} to "%{_r}%,music"
+        send "k:bar %{_r}%" to player
+        remove bossbar "kb"
+
+command /ktip:
+    trigger:
+        set {_r} to ""
+        if tooltip of diamond sword is shown:
+            set {_r} to "%{_r}%shown"
+        if the additional tooltip of diamond sword is hidden:
+            set {_r} to "%{_r}%,hidden"
+        if diamond sword has an entire tooltip:
+            set {_r} to "%{_r}%,entire"
+        send "k:tip %{_r}%" to player
+
+command /kchest:
+    trigger:
+        set block at location(16, 101, 10) to chest
+        send "k:chest" to player
+
+command /kloot:
+    trigger:
+        set {_a} to "no"
+        if location(16, 101, 10) has a loot table:
+            set {_a} to "yes"
+        set {_b} to "no"
+        if location(16, 101, 10) doesn't have a loot table:
+            set {_b} to "yes"
+        send "k:loot has=%{_a}% hasnt=%{_b}%" to player
+
+command /kmeta:
+    trigger:
+        set {_r} to ""
+        if player has metadata "km":
+            set {_r} to "%{_r}%early"
+        set metadata value "km" of player to 5
+        if player has metadata value "km":
+            set {_r} to "%{_r}%md"
+        if player doesn't have metadata "other":
+            set {_r} to "%{_r}%,noother"
+        set persistent data value "kp" of player to "x"
+        if player has persistent data tag "kp":
+            set {_r} to "%{_r}%,pd"
+        delete persistent data value "kp" of player
+        if player doesn't have persistent data tag "kp":
+            set {_r} to "%{_r}%,pdgone"
+        send "k:meta %{_r}%" to player
+
+command /ktool:
+    trigger:
+        set block at location(18, 101, 10) to obsidian
+        set {_r} to ""
+        if diamond pickaxe is the preferred tool for location(18, 101, 10):
+            set {_r} to "%{_r}%dia"
+        if iron pickaxe is not the preferred tool for location(18, 101, 10):
+            set {_r} to "%{_r}%,noiron"
+        if stick is preferred tool for dirt:
+            set {_r} to "%{_r}%,dirt"
+        if stick isn't the preferred tool for stone:
+            set {_r} to "%{_r}%,nostone"
+        if wooden pickaxe is location(18, 101, 10)'s preferred tool:
+            set {_r} to "%{_r}%,wrong"
+        send "k:tool %{_r}%" to player
+
+command /kresp:
+    trigger:
+        spawn an interaction at location(24, 101, 20)
+        set {inter} to last spawned entity
+        send "k:respawned %type of {inter}%" to player
+
+command /kresp2:
+    trigger:
+        set {_a} to "no"
+        if {inter} is responsive:
+            set {_a} to "yes"
+        set {_b} to "no"
+        if {inter} isn't responsive:
+            set {_b} to "yes"
+        send "k:resp is=%{_a}% isnt=%{_b}% type=%type of {inter}%" to player
