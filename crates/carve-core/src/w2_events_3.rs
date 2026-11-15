@@ -8,6 +8,8 @@
 //! * `event-number` is the number value (repair amount, new redstone
 //!   power, ...). It shares the slot of `damage`.
 
+use crate::expr::Ty;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Ev3 {
     Kick,
@@ -141,5 +143,24 @@ impl Ev3 {
 
     pub fn all() -> impl Iterator<Item = Ev3> {
         ROWS.iter().map(|r| r.0)
+    }
+
+    /// The `event-...` values of the event, in the order the host fills
+    /// `EventCtx::ev`.
+    pub fn fields(self) -> &'static [(&'static str, Ty)] {
+        const LOC: &[(&str, Ty)] = &[("event-location", Ty::Location)];
+        const ENT: &[(&str, Ty)] = &[("event-entity", Ty::Object)];
+        const BARTER: &[(&str, Ty)] = &[("event-item", Ty::Item), ("event-items", Ty::List)];
+        match self {
+            Ev3::LeavesDecay
+            | Ev3::LightningStrike
+            | Ev3::PistonExtend
+            | Ev3::PistonRetract
+            | Ev3::PortalCreate
+            | Ev3::Redstone => LOC,
+            Ev3::LoveModeEnter | Ev3::Leash | Ev3::Unleash => ENT,
+            Ev3::PiglinBarter => BARTER,
+            _ => &[],
+        }
     }
 }

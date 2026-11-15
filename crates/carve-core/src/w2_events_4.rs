@@ -54,6 +54,23 @@ pub enum ExtEvent {
     PlaceholderRequest,
     /// `on preparing craft` (see `w5_chunk1`).
     PrepareCraft,
+    // Wave 6 chunk 1 (see `w6_chunk1`).
+    PickupArrow,
+    Riptide,
+    AttemptAttack,
+    ExperienceSpawn,
+    ProjectileCollide,
+    PressurePlate,
+    ChunkEnter,
+    StepOn,
+    Jump,
+    BorderBounds,
+    BorderFinish,
+    BorderCenter,
+    ArmorChange,
+    Spectate,
+    ScriptUnload,
+    ServerStop,
 }
 
 /// One named value of an event. Writable ones can be changed with `set`.
@@ -139,6 +156,45 @@ const NAMES: &[(&str, ExtEvent)] = &[
     ("entity break door", ExtEvent::ZombieBreakDoor),
     ("break door", ExtEvent::ZombieBreakDoor),
     ("placeholder request", ExtEvent::PlaceholderRequest),
+    ("player pickup arrow", ExtEvent::PickupArrow),
+    ("pickup arrow", ExtEvent::PickupArrow),
+    ("arrow pickup", ExtEvent::PickupArrow),
+    ("riptide", ExtEvent::Riptide),
+    ("player riptide", ExtEvent::Riptide),
+    ("attempt attack", ExtEvent::AttemptAttack),
+    ("player attempt attack", ExtEvent::AttemptAttack),
+    ("experience spawn", ExtEvent::ExperienceSpawn),
+    ("xp spawn", ExtEvent::ExperienceSpawn),
+    ("exp spawn", ExtEvent::ExperienceSpawn),
+    ("projectile collide", ExtEvent::ProjectileCollide),
+    ("pressure plate", ExtEvent::PressurePlate),
+    ("pressure plate press", ExtEvent::PressurePlate),
+    ("trip", ExtEvent::PressurePlate),
+    ("pressure plate trip", ExtEvent::PressurePlate),
+    ("player chunk enter", ExtEvent::ChunkEnter),
+    ("player chunk enters", ExtEvent::ChunkEnter),
+    ("chunk enter", ExtEvent::ChunkEnter),
+    ("player enters chunk", ExtEvent::ChunkEnter),
+    ("step on", ExtEvent::StepOn),
+    ("walk on", ExtEvent::StepOn),
+    ("move on", ExtEvent::StepOn),
+    ("jump", ExtEvent::Jump),
+    ("player jump", ExtEvent::Jump),
+    ("world border bounds change", ExtEvent::BorderBounds),
+    ("border bounds change", ExtEvent::BorderBounds),
+    ("world border bounds finish change", ExtEvent::BorderFinish),
+    ("border bounds finish change", ExtEvent::BorderFinish),
+    ("world border center change", ExtEvent::BorderCenter),
+    ("border center change", ExtEvent::BorderCenter),
+    ("armor change", ExtEvent::ArmorChange),
+    ("armour change", ExtEvent::ArmorChange),
+    ("player armor change", ExtEvent::ArmorChange),
+    ("spectate", ExtEvent::Spectate),
+    ("player spectate", ExtEvent::Spectate),
+    ("unload", ExtEvent::ScriptUnload),
+    ("script unload", ExtEvent::ScriptUnload),
+    ("server stop", ExtEvent::ServerStop),
+    ("server shutdown", ExtEvent::ServerStop),
 ];
 
 impl ExtEvent {
@@ -168,7 +224,7 @@ impl ExtEvent {
             ],
             PrepareCraft => &[r!("item"), r!("recipe")],
             SheepRegrowWool => &[r!("entity")],
-            Shoot => &[r!("entity"), r!("weapon"), r!("force")],
+            Shoot => &[r!("entity"), r!("weapon"), r!("force"), r!("projectile")],
             SignChange => &[
                 r!("block"),
                 w!("line-1"),
@@ -187,7 +243,12 @@ impl ExtEvent {
             Tame => &[r!("entity"), r!("owner")],
             Target => &[r!("entity"), r!("target")],
             EggThrow => &[w!("hatching"), w!("hatches"), r!("hatch-type")],
-            ToolChange => &[r!("previous-slot"), r!("new-slot")],
+            ToolChange => &[
+                r!("previous-slot"),
+                r!("new-slot"),
+                r!("item"),
+                r!("previous-item"),
+            ],
             VaultDisplayItem => &[r!("block"), r!("world"), r!("item")],
             VehicleCollision => &[r!("vehicle"), r!("entity"), r!("block")],
             VehicleCreate => &[r!("vehicle")],
@@ -202,6 +263,25 @@ impl ExtEvent {
             WorldSave => &[r!("world")],
             ZombieBreakDoor => &[r!("entity"), r!("block")],
             PlaceholderRequest => &[r!("identifier"), w!("result"), r!("prefix")],
+            PickupArrow => &[r!("entity")],
+            Riptide => &[r!("item")],
+            AttemptAttack => &[r!("entity")],
+            ExperienceSpawn => &[r!("entity"), r!("location")],
+            ProjectileCollide => &[r!("entity"), r!("hit-entity"), r!("location")],
+            PressurePlate => &[r!("location"), r!("power")],
+            ChunkEnter => &[
+                r!("chunk-x"),
+                r!("chunk-z"),
+                r!("previous-chunk-x"),
+                r!("previous-chunk-z"),
+            ],
+            StepOn => &[r!("block"), r!("location")],
+            Jump => &[],
+            BorderBounds | BorderFinish => &[r!("world"), r!("old-size"), r!("new-size")],
+            BorderCenter => &[r!("world"), r!("old-x"), r!("old-z"), r!("new-x"), r!("new-z")],
+            ArmorChange => &[r!("slot"), r!("item"), r!("previous-item")],
+            Spectate => &[r!("entity")],
+            ScriptUnload | ServerStop => &[],
         }
     }
 
@@ -215,7 +295,24 @@ impl ExtEvent {
         use ExtEvent::*;
         !matches!(
             self,
-            ServerListPing | SystemTime(_) | SpawnChange | WorldInit | WorldLoad | PlaceholderRequest
+            ServerListPing
+                | SystemTime(_)
+                | SpawnChange
+                | WorldInit
+                | WorldLoad
+                | PlaceholderRequest
+                | ExperienceSpawn
+                | PressurePlate
+                | ChunkEnter
+                | StepOn
+                | Jump
+                | BorderBounds
+                | BorderFinish
+                | BorderCenter
+                | ArmorChange
+                | Spectate
+                | ScriptUnload
+                | ServerStop
         )
     }
 
@@ -235,6 +332,14 @@ impl ExtEvent {
                 | VehicleEnter
                 | VehicleExit
                 | PrepareCraft
+                | PickupArrow
+                | Riptide
+                | AttemptAttack
+                | ChunkEnter
+                | StepOn
+                | Jump
+                | ArmorChange
+                | Spectate
         )
     }
 }

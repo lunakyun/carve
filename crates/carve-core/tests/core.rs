@@ -273,7 +273,7 @@ fn type_errors_are_reported() {
 #[test]
 fn structural_errors() {
     assert!(
-        errors_of("on jump:\n    send \"x\"\n")[0]
+        errors_of("on frobnicate:\n    send \"x\"\n")[0]
             .msg
             .contains("unknown event")
     );

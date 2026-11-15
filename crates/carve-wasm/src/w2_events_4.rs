@@ -440,10 +440,24 @@ ext!(
     PlayerItemHeldEvent,
     ExtEvent::ToolChange,
     cancel = can!(),
-    build = |_st, _host, d| (
-        Some(player_ref(&d.player)),
-        vec![num(d.previous_slot), num(d.new_slot)]
-    )
+    build = |_st, _host, d| {
+        let held = |slot: u8| {
+            d.player
+                .get_inventory()
+                .as_inventory()
+                .get_item(u32::from(slot))
+                .map_or(Value::None, |s| crate::gaps::value_of(&s))
+        };
+        (
+            Some(player_ref(&d.player)),
+            vec![
+                num(d.previous_slot),
+                num(d.new_slot),
+                held(d.new_slot),
+                held(d.previous_slot),
+            ],
+        )
+    }
 );
 
 ext!(
