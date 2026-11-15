@@ -173,7 +173,7 @@ fn numbers_too_big() {
     assert!(
         h.logs
             .iter()
-            .any(|(l, m)| *l == LogLevel::Error && m.contains("million")),
+            .any(|(l, m)| *l == LogLevel::Error && m.contains("too many numbers")),
         "{:?}",
         h.logs
     );

@@ -34,14 +34,24 @@ pub fn split_text(text: &str, sep: &str) -> Vec<Value> {
 
 /// Replace `from` by `to` (exact, case sensitive): every match, or only the
 /// first. An empty `from` changes nothing.
-pub fn replace_text(text: &str, from: &str, to: &str, all: bool) -> String {
+pub fn replace_text(text: &str, from: &str, to: &str, all: bool) -> Result<String, String> {
     if from.is_empty() {
-        return text.to_string();
+        return Ok(text.to_string());
     }
     if all {
-        text.replace(from, to)
+        // Work out the size first: `text.replace` would build it before we could say no.
+        if to.len() > from.len() {
+            let hits = text.matches(from).count();
+            if text.len() + hits * (to.len() - from.len()) > crate::engine::MAX_TEXT_BYTES {
+                return Err(format!(
+                    "this replace would make a text longer than {} characters",
+                    crate::engine::MAX_TEXT_BYTES
+                ));
+            }
+        }
+        Ok(text.replace(from, to))
     } else {
-        text.replacen(from, to, 1)
+        Ok(text.replacen(from, to, 1))
     }
 }
 

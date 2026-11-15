@@ -5,7 +5,7 @@
 mod w2_events_4;
 
 use std::collections::BTreeSet;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use carve_core::block_ops::BlockPos;
 use carve_core::health_food::Vital;
@@ -245,6 +245,7 @@ fn with_state<R>(
         server,
         reply,
         deferred: Vec::new(),
+        origin: None,
         failures: Vec::new(),
         players: Vec::new(),
         late: Vec::new(),
@@ -264,7 +265,44 @@ fn with_state<R>(
     for f in std::mem::take(&mut host.failures) {
         plog(ApiLevel::Warn, &f);
     }
-    for (who, cmd) in std::mem::take(&mut host.deferred) {
+    run_deferred(server, std::mem::take(&mut host.deferred));
+    let late = std::mem::take(&mut host.late);
+    if !late.is_empty() {
+        fire_late(server, late);
+    }
+    Some(result)
+}
+
+/// Run the commands a script queued. A command can start a script that queues
+/// the same command again, so the nesting is capped, and so is the number of
+/// commands one run may queue.
+fn run_deferred(server: &Server, list: Vec<Deferred>) {
+    use std::sync::atomic::{AtomicU8, Ordering};
+    static DEPTH: AtomicU8 = AtomicU8::new(0);
+    let at = |o: &Option<(Arc<str>, usize)>| o.as_ref().map_or(String::new(), |(f, l)| format!("{f}:{l}: "));
+    let mut n = 0;
+    for (who, cmd, origin) in list {
+        n += 1;
+        if n > MAX_DEFERRED {
+            plog(
+                ApiLevel::Error,
+                &format!(
+                    "{}script stopped queuing commands: more than {MAX_DEFERRED} in one run",
+                    at(&origin)
+                ),
+            );
+            break;
+        }
+        if DEPTH.load(Ordering::Relaxed) >= MAX_COMMAND_DEPTH {
+            plog(
+                ApiLevel::Error,
+                &format!(
+                    "{}command '{cmd}' skipped: commands started by scripts nest more than {MAX_COMMAND_DEPTH} levels deep (does it run itself?)",
+                    at(&origin)
+                ),
+            );
+            continue;
+        }
         let sender = who
             .and_then(|u| uuid::parse(&u))
             .and_then(|id| server.get_player_by_uuid(id))
@@ -272,13 +310,10 @@ fn with_state<R>(
                 pumpkin_plugin_api::server::CommandSender::Console,
                 pumpkin_plugin_api::server::CommandSender::Player,
             );
+        DEPTH.fetch_add(1, Ordering::Relaxed);
         server.execute_command(&cmd, sender);
+        DEPTH.fetch_sub(1, Ordering::Relaxed);
     }
-    let late = std::mem::take(&mut host.late);
-    if !late.is_empty() {
-        fire_late(server, late);
-    }
-    Some(result)
 }
 
 /// Fire the events a script's own effects started. Pumpkin fires them while
@@ -293,8 +328,17 @@ fn fire_late(server: &Server, late: Vec<(EventKind, carve_core::EventCtx)>) {
         return;
     }
     DEPTH.fetch_add(1, Ordering::Relaxed);
+    if late.len() > MAX_LATE_EVENTS {
+        plog(
+            ApiLevel::Warn,
+            &format!(
+                "a script started {} events at once; only the first {MAX_LATE_EVENTS} run",
+                late.len()
+            ),
+        );
+    }
     with_state(server, None, |st, host| {
-        for (kind, ctx) in late {
+        for (kind, ctx) in late.into_iter().take(MAX_LATE_EVENTS) {
             if st.engine.table().has_event(kind) {
                 let mut th = TickHost {
                     inner: host,
@@ -307,12 +351,23 @@ fn fire_late(server: &Server, late: Vec<(EventKind, carve_core::EventCtx)>) {
     DEPTH.fetch_sub(1, Ordering::Relaxed);
 }
 
+/// A command a script queued: who runs it (None: console), the command, and the script line.
+type Deferred = (Option<String>, String, Option<(Arc<str>, usize)>);
+
+/// Most commands one script run may queue, and how deep queued commands may start more.
+const MAX_DEFERRED: usize = 256;
+const MAX_COMMAND_DEPTH: u8 = 6;
+/// Most events one script run may start through its own effects (explosions, teleports).
+const MAX_LATE_EVENTS: usize = 64;
+
 struct WasmHost<'a> {
     server: &'a Server,
     /// The sender of the command being run, for console replies.
     reply: Option<&'a CommandSender>,
     /// Queued commands: the player uuid to run as (None: console), and the command.
-    deferred: Vec<(Option<String>, String)>,
+    deferred: Vec<Deferred>,
+    /// The script line of the effect that runs now.
+    origin: Option<(Arc<str>, usize)>,
     /// Why calls could not be done, for the engine to log with the script line.
     failures: Vec<String>,
     /// Player handles looked up during this `with_state` call, by UUID.
@@ -471,11 +526,13 @@ impl WasmHost<'_> {
     }
 
     fn execute_command(&mut self, command: &str) {
-        self.deferred.push((None, command.to_string()));
+        self.deferred
+            .push((None, command.to_string(), self.origin.clone()));
     }
 
     fn execute_command_as(&mut self, p: &PlayerRef, command: &str) {
-        self.deferred.push((Some(p.uuid.clone()), command.to_string()));
+        self.deferred
+            .push((Some(p.uuid.clone()), command.to_string(), self.origin.clone()));
     }
 
     fn send_console(&mut self, msg: &str) {
@@ -1354,6 +1411,7 @@ impl WasmHost<'_> {
         self.deferred.push((
             None,
             format!("whitelist {} {name}", if on { "add" } else { "remove" }),
+            self.origin.clone(),
         ));
     }
 
@@ -2031,6 +2089,10 @@ impl Host for TickHost<'_, '_> {
     }
 
     sb::sb_host_methods!();
+
+    fn effect_at(&mut self, file: &Arc<str>, line: usize) {
+        self.inner.origin = Some((file.clone(), line));
+    }
 
     fn schedule_wait(&mut self, ticks: u64, token: u64) {
         self.hs.pending.push((self.hs.tick + ticks, token));

@@ -72,10 +72,11 @@ Checks per area (2026-11-15):
 | world | 25574 | 114 | 1 |
 | player | 25575 | 162 | 2 |
 | language | 25576 | 218 | 0 |
+| freeze | 25660 | 81 | 0 |
 | case-chest | 25640 | 21 | 1 |
 | api-store | 25650 | 62 | 0 |
 | `run.js` | 25565 | 68 | 0 |
-| **all** | | **819** | **9** |
+| **all** | | **900** | **9** |
 
 **Ports.** Area number `i` uses Java port `25570 + i` (smoke is 0, so
 25570). The harness turns off Bedrock, query, management and LAN broadcast

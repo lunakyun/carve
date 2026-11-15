@@ -37,7 +37,23 @@ fn sort_key(v: Value) -> Value {
 }
 
 impl Engine {
+    /// The items of a list expression. Each list takes half its length off the
+    /// instruction budget, so a huge list stops the script instead of the server.
     pub(super) fn eval_list(
+        &mut self,
+        s: &ListSrc,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<Vec<Value>, String> {
+        let v = self.eval_list_inner(s, ex, host)?;
+        // A single expression such as `all entities` asks the host: that costs
+        // more than adding up what is already in memory.
+        let base = if matches!(s, ListSrc::One(_)) { 50 } else { 0 };
+        self.charge(base + v.len() / 2)?;
+        Ok(v)
+    }
+
+    fn eval_list_inner(
         &mut self,
         s: &ListSrc,
         ex: &mut Exec,

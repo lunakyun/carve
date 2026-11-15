@@ -760,6 +760,7 @@ impl Engine {
                 let Some(pos) = self.ent_pos(at, ex, host)? else {
                     return Ok(());
                 };
+                self.charge(n as usize * crate::engine::SPAWN_COST)?;
                 for _ in 0..n {
                     if let Some(e) = host.spawn_entity(kind, &pos) {
                         if let Some(n) = &name {

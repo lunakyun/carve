@@ -891,6 +891,12 @@ pub fn regex_replace_text(text: &str, pattern: &str, with: &str, all: bool) -> R
         };
         out.extend(t.get(at..s).unwrap_or_default());
         out.push_str(with);
+        if out.len() > crate::engine::MAX_TEXT_BYTES {
+            return Err(format!(
+                "this replace would make a text longer than {} characters",
+                crate::engine::MAX_TEXT_BYTES
+            ));
+        }
         if e == s {
             // An empty match: keep one character so the loop moves on.
             if let Some(c) = t.get(s) {

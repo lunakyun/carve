@@ -20,6 +20,11 @@ impl Line {
     }
 }
 
+/// Longest script line. Reading a line takes more than linear time.
+pub const MAX_LINE_BYTES: usize = 8000;
+/// How deep sections may nest. The compiler and the runner recurse per level.
+pub const MAX_BLOCK_DEPTH: usize = 32;
+
 #[derive(Clone, Copy, PartialEq)]
 enum Unit {
     Tab,
@@ -36,6 +41,14 @@ pub fn parse_blocks(file: &str, src: &str) -> (Vec<Line>, Vec<ScriptError>) {
         let raw = raw.trim_start_matches('\u{feff}');
         let line = strip_comment(raw).trim_end();
         if line.trim().is_empty() {
+            continue;
+        }
+        if line.len() > MAX_LINE_BYTES {
+            errors.push(ScriptError::new(
+                file,
+                num,
+                format!("this line is longer than {MAX_LINE_BYTES} characters, it is left out"),
+            ));
             continue;
         }
         let indent: String = line.chars().take_while(|c| *c == ' ' || *c == '\t').collect();
@@ -95,6 +108,14 @@ pub fn parse_blocks(file: &str, src: &str) -> (Vec<Line>, Vec<ScriptError>) {
     let mut kept: Vec<(usize, usize, String)> = Vec::with_capacity(flat.len());
     for item in flat {
         let (level, num, _) = &item;
+        if *level > MAX_BLOCK_DEPTH {
+            errors.push(ScriptError::new(
+                file,
+                *num,
+                format!("sections are nested more than {MAX_BLOCK_DEPTH} levels deep, this line is left out"),
+            ));
+            continue;
+        }
         let allowed = match kept.last() {
             None => 0,
             Some((pl, _, pt)) => {

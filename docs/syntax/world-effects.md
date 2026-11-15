@@ -29,7 +29,7 @@ create explosion of force 3 at player
 create an explosion with power 2 with fire at location(0, 70, 0)
 ```
 
-The default force is 3. The most you can ask for is 100. The explosion breaks
+The default force is 3. The most you can ask for is 32 (a bigger number is cut to 32, because a huge blast can stall the server for seconds). The explosion breaks
 blocks like TNT does.
 
 ## Particles

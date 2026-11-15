@@ -325,6 +325,11 @@ pub mod regex {
 
     const STEP_LIMIT: usize = 200_000;
     const MAX_REPEAT: usize = 1000;
+    /// Longest pattern, in characters. Patterns nest as deep as they are long.
+    const MAX_PATTERN: usize = 2000;
+    /// Most rounds of a repeated group. Each round is a deeper call, and the
+    /// plugin has a small stack.
+    const MAX_GROUP_ROUNDS: usize = 300;
 
     #[derive(Debug, Clone)]
     enum Node {
@@ -590,7 +595,10 @@ pub mod regex {
                 Some(rest) => (rest, true),
                 None => (src, false),
             };
-            let chars: Vec<char> = body.chars().collect();
+            let chars: Vec<char> = body.chars().take(MAX_PATTERN + 1).collect();
+            if chars.len() > MAX_PATTERN {
+                return Err(format!("pattern is longer than {MAX_PATTERN} characters"));
+            }
             let mut p = Parser { c: &chars, i: 0 };
             let root = p.alt(0)?;
             if p.i < chars.len() {
@@ -686,6 +694,10 @@ pub mod regex {
             k: &mut dyn FnMut(usize) -> bool,
         ) -> bool {
             if !self.tick() {
+                return false;
+            }
+            if count > MAX_GROUP_ROUNDS {
+                self.steps.set(STEP_LIMIT + 1);
                 return false;
             }
             let more = |this: &Self, k: &mut dyn FnMut(usize) -> bool| {

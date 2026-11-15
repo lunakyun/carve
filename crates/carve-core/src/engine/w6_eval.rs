@@ -51,7 +51,10 @@ impl Engine {
                 let t = self.text(e, ex, host)?;
                 let n = self.num(n, ex, host)?;
                 match crate::w2_expressions_6::repeat(&t, n) {
-                    Some(s) => Value::Text(s),
+                    Some(s) => {
+                        self.charge(s.len() / 64)?;
+                        Value::Text(s)
+                    }
                     None => {
                         return Err(format!(
                             "'repeated' would make a text longer than {} characters",

@@ -34,8 +34,11 @@ impl Engine {
                 };
                 let step = if end >= start { 1.0 } else { -1.0 };
                 let count = ((end - start).abs() + 1e-9).floor() + 1.0;
-                if count > w5::MAX_NUMBERS {
-                    return Err("numbers from <a> to <b> would make more than a million numbers".into());
+                if count > w5::MAX_NUMBERS.min(2.0 * self.budget as f64) {
+                    return Err(format!(
+                        "numbers from <a> to <b> would make too many numbers (at most {} in one run)",
+                        (2 * self.max_instructions).min(w5::MAX_NUMBERS as usize)
+                    ));
                 }
                 let mut out = Vec::with_capacity(count as usize);
                 let mut i = 0.0;

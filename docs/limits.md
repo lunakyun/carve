@@ -105,6 +105,36 @@ Carve itself. For the full feature-by-feature status, see the
 - When a command run from the console reaches a `wait`, messages sent to the
   console after the wait go to the server log.
 
+## Limits that keep the server safe
+
+A script that goes over one of these is stopped (or the value is refused) and
+the server logs an error with the script file and line. The server keeps
+running. Nothing here changes a script that stays within normal use.
+
+| What | Limit |
+|---|---|
+| Instructions per run slice (between two `wait`s) | 100,000. Loops, `while`, nested loops and function calls all count. |
+| Lists made by an expression (`numbers from 1 to n`, `sorted`, `shuffled`, `all entities`, `blocks in ...`) | Each one takes half its length off the 100,000 budget, so about 200,000 items at most, and fewer if the run did other work. |
+| Looping over a list | Takes half the list's length off the budget. |
+| Text | At most 1,048,576 characters (1 MiB) from one text, `repeated`, `replace` or `join`. A text of more than 4 KB also costs budget (1 per 64 characters) each time it is built, set or added to a list. |
+| Spawning | At most 100 per `spawn` effect; each entity costs 200 of the budget, so about 500 per run slice. |
+| Explosions, lightning, particles, other world effects | 250 of the budget each. Explosion power is cut to 32, particle counts to 1,000. |
+| Expressions that ask the server for a list (`all entities`) | 50 of the budget per use, plus half the list's length. |
+| Setting blocks, commands, `give`, entity and admin effects | 50 of the budget each. |
+| Time spent in actions | 200 ms per run slice (`max_slice_ms`). A run that spends longer on the server's own work (spawning, blocks, commands) stops. |
+| Commands queued by one run (`execute console command`, `make player execute command`) | 256. |
+| Commands that start scripts that queue commands again | 6 levels deep. `make player execute command "/same"` stops at the sixth. |
+| Events started by a script's own effects in one run | 64 are run, and the events they start nest at most 4 levels deep. |
+| Function calls inside each other | 64 levels (recursion too). |
+| Runs waiting at once | 5,000 per script file and 20,000 in all. A run that would wait past that stops. |
+| Length of one `wait` | One year. A longer wait is shortened. |
+| Regex | Patterns up to 2,000 characters, 200,000 matching steps, and a repeated group at most 300 rounds. The text can be long; a pattern that backtracks too much stops with "regex is too complex". |
+| `blocks in radius` | Radius 32. `blocks between a and b` gives at most 262,144 blocks. |
+| Script file size at load | A line longer than 8,000 characters, or sections nested more than 32 levels, is left out with an error. An expression of more than 1,000 tokens, or brackets and calls nested more than 48 deep, is refused. |
+
+`every` needs a period of at least one tick (`every 0 ticks` is a load error).
+`/carve run` uses the same limits.
+
 ## Plugin API v0.2
 
 Pumpkin is working on a plugin API v0.2. It is switched off in normal Pumpkin

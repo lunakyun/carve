@@ -1,4 +1,5 @@
 //! Expressions: literals, variables, text templates, event values, arithmetic.
+#![allow(clippy::missing_const_for_thread_local)]
 
 use std::cell::Cell;
 
@@ -540,6 +541,39 @@ pub(crate) fn parse_sum_at(toks: &[Tok], pos: usize, env: &Env) -> Result<(Expr,
     Ok((e, p.pos))
 }
 
+/// How deep brackets, calls and `-` signs may nest in one expression. Deeper
+/// nesting would overflow the stack of the plugin, which is small.
+pub const MAX_EXPR_DEPTH: usize = 48;
+/// Longest expression, in tokens.
+pub const MAX_EXPR_TOKENS: usize = 1000;
+
+thread_local! {
+    static NEST: Cell<usize> = const { Cell::new(0) };
+}
+
+/// Counts the nesting of the expression being parsed; leaves it again on drop.
+struct NestGuard;
+
+impl NestGuard {
+    fn enter() -> Result<NestGuard, String> {
+        NEST.with(|n| {
+            if n.get() >= MAX_EXPR_DEPTH {
+                return Err(format!(
+                    "expression is nested more than {MAX_EXPR_DEPTH} levels deep"
+                ));
+            }
+            n.set(n.get() + 1);
+            Ok(NestGuard)
+        })
+    }
+}
+
+impl Drop for NestGuard {
+    fn drop(&mut self) {
+        NEST.with(|n| n.set(n.get().saturating_sub(1)));
+    }
+}
+
 pub fn parse_expr(toks: &[Tok], env: &Env) -> Result<Expr, String> {
     parse_expr_span(toks, env).map_err(|(msg, _)| msg)
 }
@@ -550,6 +584,12 @@ pub fn parse_expr(toks: &[Tok], env: &Env) -> Result<Expr, String> {
 pub fn parse_expr_span(toks: &[Tok], env: &Env) -> Result<Expr, (String, bool)> {
     if toks.is_empty() {
         return Err(("missing expression".into(), true));
+    }
+    if toks.len() > MAX_EXPR_TOKENS {
+        return Err((
+            format!("expression is longer than {MAX_EXPR_TOKENS} tokens"),
+            false,
+        ));
     }
     let mut p = P {
         toks,
@@ -630,6 +670,7 @@ impl P<'_> {
 
     /// `a ? b ? c`: the lowest priority, below math.
     pub(crate) fn top(&mut self) -> Result<Expr, String> {
+        let _depth = NestGuard::enter()?;
         let mut e = self.sum()?;
         e = self.w6_ternary(e)?;
         while self.eat_sym("?") {
@@ -715,6 +756,7 @@ impl P<'_> {
 
     pub(crate) fn unary(&mut self) -> Result<Expr, String> {
         if self.eat_sym("-") {
+            let _depth = NestGuard::enter()?;
             let inner = self.unary()?;
             if inner.ty(self.env) == Ty::Vector {
                 return Ok(crate::w2_expressions_7::neg(inner));
@@ -1726,6 +1768,7 @@ impl P<'_> {
                 Ok(Expr::Var(var))
             }
             Tok::Sym("(") => {
+                let _depth = NestGuard::enter()?;
                 let e = self.sum()?;
                 if !self.eat_sym(")") {
                     return Err("missing ')'".into());

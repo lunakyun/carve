@@ -308,6 +308,7 @@ fn hundred_thousand_list_adds_are_fast() {
         "on join:\n    loop 100000 times:\n        add loop-number to {_l::*}\n        add loop-number to {g::*}\n    send \"%size of {_l::*}% %size of {g::*}% %{_l::100000}% %{g::99999}%\"\n",
     );
     e.max_instructions = 10_000_000;
+    e.max_slice_ms = 0;
     let start = Instant::now();
     let out = fire(&mut e);
     let took = start.elapsed();

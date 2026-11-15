@@ -19,6 +19,23 @@ use crate::vars::{Locals, Variables};
 pub const DEFAULT_MAX_INSTRUCTIONS: usize = 100_000;
 /// How deep functions may call each other (recursion included).
 pub const MAX_CALL_DEPTH: usize = 64;
+/// Longest text a script may build, in bytes.
+pub const MAX_TEXT_BYTES: usize = 1 << 20;
+/// Runs that may be waiting at once, in all scripts.
+pub const MAX_WAITS: usize = 20_000;
+/// Runs that may be waiting at once from one script file.
+pub const MAX_WAITS_PER_FILE: usize = 5_000;
+/// Longest `wait`, in ticks (a year). A longer wait is shortened to this.
+pub const MAX_WAIT_TICKS: u64 = 20 * 60 * 60 * 24 * 365;
+/// Milliseconds of host work (spawns, blocks, commands) one run slice may use
+/// before it is stopped. Zero turns the check off.
+pub const DEFAULT_MAX_SLICE_MS: u64 = 200;
+/// Instructions that an effect which spawns, builds or runs a command takes off the budget.
+pub const HEAVY_EFFECT_COST: usize = 50;
+/// The same for explosions, lightning, particles and other effects of the world.
+pub const WORLD_EFFECT_COST: usize = 250;
+/// Instructions each spawned entity takes off the budget (at most ~500 per run).
+pub const SPAWN_COST: usize = 200;
 /// Error text for "already reported, just stop".
 const SILENT: &str = "(reported)";
 pub const SAVE_DEBOUNCE_MS: u64 = 5_000;
@@ -466,6 +483,22 @@ fn may_fail(e: &Effect) -> bool {
     )
 }
 
+/// What an effect that changes the world or runs a command takes off the
+/// budget, besides its instruction (0 for the others). Time is checked after each.
+fn heavy_cost(e: &Effect) -> usize {
+    match e {
+        Effect::World(_) => WORLD_EFFECT_COST,
+        Effect::Ent(_)
+        | Effect::Block(_)
+        | Effect::C4(_)
+        | Effect::ConsoleCommand(_)
+        | Effect::ExecAs(..)
+        | Effect::Give(..)
+        | Effect::Admin(..) => HEAVY_EFFECT_COST,
+        _ => 0,
+    }
+}
+
 /// Resolve a value to an online player, or None.
 pub(crate) fn online(
     v: &Value,
@@ -503,6 +536,13 @@ pub struct Engine {
     dirty_since: Option<u64>,
     /// Instructions left in the current run slice (shared by function calls).
     budget: usize,
+    /// Host work of the slice runs from here (set at the first effect).
+    slice_t0: Option<std::time::Instant>,
+    fx_n: u32,
+    /// Longest host work of one run slice, in ms (0 = no limit).
+    pub max_slice_ms: u64,
+    /// Waiting runs by script file.
+    waits_by_file: HashMap<Arc<str>, usize>,
     /// xorshift state for `random`; seeded from the host clock on first use.
     rng: u64,
     /// Sources of the files that are loaded now, by file name.
@@ -621,6 +661,10 @@ impl Engine {
             caught_stash: String::new(),
             dirty_since: None,
             budget: 0,
+            slice_t0: None,
+            fx_n: 0,
+            max_slice_ms: DEFAULT_MAX_SLICE_MS,
+            waits_by_file: HashMap::new(),
             rng: 0,
             sources: BTreeMap::new(),
             errors: Vec::new(),
@@ -884,6 +928,9 @@ impl Engine {
     /// Continue a run that called `wait`.
     pub fn resume(&mut self, token: u64, host: &mut dyn Host) {
         if let Some(ex) = self.waits.remove(&token) {
+            if let Some(n) = self.waits_by_file.get_mut(&ex.root.file) {
+                *n = n.saturating_sub(1);
+            }
             self.start(ex, host);
         }
     }
@@ -893,6 +940,7 @@ impl Engine {
     fn start(&mut self, mut ex: Exec, host: &mut dyn Host) -> Option<bool> {
         let resumed = ex.waited;
         self.budget = self.max_instructions;
+        self.slice_t0 = None;
         let started = self.timings.as_ref().map(|_| std::time::Instant::now());
         let step = self.run(&mut ex, host, 0);
         if let (Some(t0), Some(map)) = (started, self.timings.as_mut()) {
@@ -907,12 +955,30 @@ impl Engine {
             Step::Done | Step::Returned(_) => {}
             Step::Wait(ticks) => {
                 let cancelled = ex.cancelled;
+                let waiting = self.waits_by_file.entry(ex.root.file.clone()).or_insert(0);
+                if self.waits.len() >= MAX_WAITS || *waiting >= MAX_WAITS_PER_FILE {
+                    let line = ex
+                        .code
+                        .lines
+                        .get(ex.pc.wrapping_sub(1))
+                        .copied()
+                        .unwrap_or(ex.code.line);
+                    host.log(
+                        LogLevel::Error,
+                        &format!(
+                            "{}:{}: script stopped: too many runs are waiting (at most {} per script file and {} in all)",
+                            ex.code.file, line, MAX_WAITS_PER_FILE, MAX_WAITS
+                        ),
+                    );
+                    return if resumed { None } else { Some(cancelled) };
+                }
+                *waiting += 1;
                 ex.waited = true;
                 ex.seen.clear();
                 let token = self.next_token;
                 self.next_token += 1;
                 self.waits.insert(token, ex);
-                host.schedule_wait(ticks, token);
+                host.schedule_wait(ticks.min(MAX_WAIT_TICKS), token);
                 return if resumed { None } else { Some(cancelled) };
             }
             Step::Abort => return None,
@@ -1279,6 +1345,11 @@ impl Engine {
                 })
             }
         };
+        match &items {
+            LoopItems::List(v) => self.charge(v.len() / 2)?,
+            LoopItems::Values(v) => self.charge(v.len() / 2)?,
+            LoopItems::Times(_) => {}
+        }
         ex.loops.push(LoopFrame { items, pos: 0 });
         Ok(())
     }
@@ -1648,6 +1719,12 @@ impl Engine {
                 Part::Lit(l) => out.push_str(l),
                 Part::Expr(e) => self.write(e, ex, host, out)?,
             }
+            if out.len() > MAX_TEXT_BYTES {
+                return Err(format!("this text is longer than {MAX_TEXT_BYTES} characters"));
+            }
+        }
+        if out.len() > 4096 {
+            self.charge(out.len() / 64)?;
         }
         Ok(())
     }
@@ -2133,7 +2210,15 @@ impl Engine {
             Expr::Join(v, sep) => {
                 let items = self.list_items(v, ex, host)?;
                 let sep = self.text(sep, ex, host)?;
-                Value::Text(crate::text_join_split::join_values(&items, &sep))
+                self.charge(items.len() / 2)?;
+                if sep.len().saturating_mul(items.len()) > MAX_TEXT_BYTES {
+                    return Err(format!(
+                        "this join would make a text longer than {MAX_TEXT_BYTES} characters"
+                    ));
+                }
+                let t = crate::text_join_split::join_values(&items, &sep);
+                self.charge(t.len() / 64)?;
+                Value::Text(t)
             }
             Expr::Split(..) => {
                 return Err("split makes a list: use 'set {x::*} to split ...' or 'loop split ...'".into());
@@ -2151,7 +2236,7 @@ impl Engine {
                 let t = self.text(t, ex, host)?;
                 let from = self.text(from, ex, host)?;
                 let to = self.text(to, ex, host)?;
-                Value::Text(crate::text_join_split::replace_text(&t, &from, &to, *all))
+                Value::Text(crate::text_join_split::replace_text(&t, &from, &to, *all)?)
             }
             Expr::Comp(f, args) => {
                 let mut vals = Vec::with_capacity(args.len());
@@ -2359,10 +2444,16 @@ impl Engine {
     ) -> Result<Option<u64>, String> {
         if let Effect::Set(v, val) = e {
             let val = self.eval(val, ex, host)?;
+            if let Value::Text(t) = &val
+                && t.len() > 4096
+            {
+                self.charge(t.len() / 64)?;
+            }
             let k = self.key(v, ex, host)?;
             self.store(v.local, &k, val, ex, host);
             return Ok(None);
         }
+        self.effect_gate(e, ex, host, line)?;
         let r = self.effect_rare(e, ex, host, line);
         // A call the host could not do says why, with this line. Variable and text
         // effects can't fail, so they skip the question.
@@ -2370,6 +2461,48 @@ impl Engine {
             self.report_failures(&ex.code.file, line, host);
         }
         r
+    }
+
+    /// Before an effect that is not a plain `set`: tell the host where it
+    /// comes from and stop a slice that has used too much time on host work.
+    #[inline]
+    fn effect_gate(&mut self, e: &Effect, ex: &Exec, host: &mut dyn Host, line: usize) -> Result<(), String> {
+        host.effect_at(&ex.code.file, line);
+        let cost = heavy_cost(e);
+        if cost > 0 {
+            self.charge(cost)?;
+        }
+        if self.max_slice_ms == 0 {
+            return Ok(());
+        }
+        self.fx_n = self.fx_n.wrapping_add(1);
+        // The clock starts at the first costly effect or the 16th effect, so a
+        // short run with a few messages never reads it.
+        if cost > 0 || self.fx_n & 15 == 0 {
+            let t0 = *self.slice_t0.get_or_insert_with(std::time::Instant::now);
+            if t0.elapsed().as_millis() as u64 >= self.max_slice_ms {
+                self.budget = 0;
+                return Err(format!(
+                    "script stopped: its actions took more than {} ms without a wait",
+                    self.max_slice_ms
+                ));
+            }
+        }
+        Ok(())
+    }
+
+    /// Take `n` instructions off the budget of the run slice for work done by
+    /// one expression (a list, a long text). Stops the script when it is used up.
+    pub(crate) fn charge(&mut self, n: usize) -> Result<(), String> {
+        if n >= self.budget {
+            self.budget = 0;
+            return Err(format!(
+                "this is too much work for one run (limit {} steps without a wait)",
+                self.max_instructions
+            ));
+        }
+        self.budget -= n;
+        Ok(())
     }
 
     #[inline(never)]
@@ -2569,6 +2702,11 @@ impl Engine {
             }
             Effect::ListAdd(v, x) | Effect::ListRemove(v, x) => {
                 let val = self.eval(x, ex, host)?;
+                if let Value::Text(t) = &val
+                    && t.len() > 4096
+                {
+                    self.charge(t.len() / 64)?;
+                }
                 let key = self.key(v, ex, host)?.into_owned();
                 let prefix = key.strip_suffix('*').unwrap_or(&key);
                 let add = matches!(e, Effect::ListAdd(..));
@@ -2806,7 +2944,7 @@ impl Engine {
                     self.vars.get_ref(&k).cloned()
                 };
                 if let Some(Value::Text(t)) = cur {
-                    let new = crate::text_join_split::replace_text(&t, &from, &to, *all);
+                    let new = crate::text_join_split::replace_text(&t, &from, &to, *all)?;
                     self.store(v.local, &k, Value::Text(new), ex, host);
                 }
             }
