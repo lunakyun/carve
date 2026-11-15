@@ -238,6 +238,8 @@ pub enum Expr {
     Gap(Box<crate::gaps::GapExpr>),
     /// Potion effects, particles, queues and more (see `w5_chunk5`).
     W5c5(Box<crate::w5_chunk5::Node>),
+    /// Parse kinds, loot values, item components (see `w6_chunk5`).
+    W6c5(Box<crate::w6_chunk5::Node>),
     /// Scale, targets, text displays, sea pickles, borders, ... (see `w5_chunk6`).
     C6(Box<crate::w5_chunk6::Node>),
     /// Block data, block spheres, books, borders, attributes, ... (see `w5_chunk4`).
@@ -476,6 +478,7 @@ impl Expr {
             Expr::T1(n) => n.ty,
             Expr::Rtw(n) => n.ty,
             Expr::W5c5(n) => n.ty,
+            Expr::W6c5(n) => n.ty,
             Expr::W5c3(n) => n.ty(),
             Expr::C6(n) => n.ty,
             Expr::Gap(g) => g.ty(),
@@ -725,6 +728,7 @@ impl P<'_> {
         let mut e = self.primary_base()?;
         e = self.w2e7_post(e)?;
         e = self.w5c5_post(e)?;
+        e = self.w6c5_post(e)?;
         e = self.w5c4_post(e)?;
         // `5 minutes ago`, `2 hours later`
         if let Some(Tok::Word(w)) = self.toks.get(self.pos)
@@ -760,6 +764,12 @@ impl P<'_> {
             && matches!(self.toks.get(self.pos + 1), Some(t) if t.is_lit("as"))
         {
             match self.toks.get(self.pos + 2) {
+                Some(_) if crate::w6_chunk5::parse_kind(self.toks, self.pos + 2).is_some() => {
+                    if let Some((k, n)) = crate::w6_chunk5::parse_kind(self.toks, self.pos + 2) {
+                        self.pos += 2 + n;
+                        e = crate::w6_chunk5::parsed(e, k);
+                    }
+                }
                 Some(t) if t.is_lit("number") || t.is_lit("integer") || t.is_lit("num") => {
                     self.pos += 3;
                     e = Expr::ParseNum(Box::new(e));
@@ -799,6 +809,11 @@ impl P<'_> {
             && matches!(e.ty(self.env), Ty::Date | Ty::Object)
         {
             self.pos += 1;
+            if let Some(n) = crate::w6_chunk5::human_readable(self.toks, self.pos) {
+                self.pos += n;
+                e = crate::w6_chunk5::human_span_expr(e);
+                continue;
+            }
             e = self.date_format(e)?;
         }
         // `player's location`, `player's world`, ...
@@ -1189,6 +1204,10 @@ impl P<'_> {
             && e.ty(self.env) == Ty::Timespan
         {
             self.pos += 1;
+            if let Some(n) = crate::w6_chunk5::human_readable(self.toks, self.pos) {
+                self.pos += n;
+                return Ok(crate::w6_chunk5::human_span_expr(e));
+            }
             return Ok(Expr::Ext(ExtFn::Clock, vec![e]));
         }
         Ok(e)
@@ -1717,6 +1736,9 @@ impl P<'_> {
                     return Ok(e);
                 }
                 if let Some(e) = self.w5c5_head(&lw)? {
+                    return Ok(e);
+                }
+                if let Some(e) = self.w6c5_head(&lw)? {
                     return Ok(e);
                 }
                 if let Some((e, end)) =

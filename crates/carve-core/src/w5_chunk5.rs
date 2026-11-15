@@ -24,6 +24,8 @@ use crate::world_effects::{FxPos, ParticleFx, effect_id};
 pub enum Obj {
     Potion(PotionVal),
     Particle(PartVal),
+    /// A loot table or loot context (`w6_chunk5`).
+    Loot(crate::w6_chunk5::Loot),
 }
 
 /// A potion effect: `potion effect of speed of tier 2 for 10 seconds`.
@@ -58,6 +60,7 @@ impl Obj {
         match self {
             Obj::Potion(_) => "potion effect",
             Obj::Particle(_) => "particle",
+            Obj::Loot(l) => l.type_name(),
         }
     }
 
@@ -81,6 +84,7 @@ impl Obj {
                     out.push_str(" without particles");
                 }
             }
+            Obj::Loot(l) => l.push_to(out),
             Obj::Particle(p) => {
                 out.push_str(&p.name.replace('_', " "));
                 out.push_str(" particle (count ");
@@ -342,7 +346,7 @@ pub fn effect_of(v: &Value) -> Option<&'static str> {
         Value::Text(t) => t.trim().to_ascii_lowercase().replace(' ', "_"),
         Value::W5(o) => match &**o {
             Obj::Potion(p) => p.effect.clone(),
-            Obj::Particle(_) => return None,
+            Obj::Particle(_) | Obj::Loot(_) => return None,
         },
         _ => return None,
     };
@@ -357,7 +361,7 @@ fn potion(v: &Value) -> Option<&PotionVal> {
     match v {
         Value::W5(o) => match &**o {
             Obj::Potion(p) => Some(p),
-            Obj::Particle(_) => None,
+            Obj::Particle(_) | Obj::Loot(_) => None,
         },
         _ => None,
     }
@@ -367,7 +371,7 @@ fn particle(v: &Value) -> Option<&PartVal> {
     match v {
         Value::W5(o) => match &**o {
             Obj::Particle(p) => Some(p),
-            Obj::Potion(_) => None,
+            Obj::Potion(_) | Obj::Loot(_) => None,
         },
         Value::Enum(e) if e.type_name() == "particle" => None,
         _ => None,

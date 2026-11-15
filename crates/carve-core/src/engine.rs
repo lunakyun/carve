@@ -2141,6 +2141,13 @@ impl Engine {
                 }
                 crate::w5_chunk5::apply(n.op, &vals, host)?
             }
+            Expr::W6c5(n) => {
+                let mut vals = Vec::with_capacity(n.args.len());
+                for a in &n.args {
+                    vals.push(self.eval(a, ex, host)?);
+                }
+                crate::w6_chunk5::apply(n.op, &vals, host)?
+            }
             Expr::W5c3(n) => self.eval_w5c3(n, ex, host)?,
             Expr::Rtw(n) => {
                 let mut vals = Vec::with_capacity(n.args.len());
