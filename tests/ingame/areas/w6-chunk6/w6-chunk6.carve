@@ -1,0 +1,114 @@
+# Wave 6 chunk 6 area: portal cooldown, protocol version, rotation maths,
+# vector components, N times, plain item, villager data, vehicle and passengers,
+# whitelist, world border add/remove, yaw/pitch, NBT block reads.
+# Every command reports back with a "c66:" message the test reads.
+
+command /w6pure:
+    trigger:
+        set {_q} to quaternion(0.5, 0.5, 0.5, 0.5)
+        send "c66:quat w=%w of {_q}% x=%x of {_q}% angle=%rotation angle of {_q}% axis=%rotation axis of {_q}%" to player
+        set {_v} to vector(1, 0, 0)
+        set {_r} to {_v} rotated around z by 90
+        send "c66:rot %x of {_r}% %y of {_r}% %z of {_r}%" to player
+        set x of {_v} to 5
+        add 2 to y of {_v}
+        remove 1 from z of {_v}
+        send "c66:vec %x of {_v}% %y of {_v}% %z of {_v}%" to player
+        set {_l::*} to 3 times
+        send "c66:times %size of {_l::*}% %{_l::3}%" to player
+        set {_i} to diamond sword
+        set {_p} to plain {_i}
+        send "c66:plain %{_p}%" to player
+
+command /w6portal:
+    trigger:
+        set portal cooldown of player to 7 seconds
+        send "c66:portal %portal cooldown of player%" to player
+
+command /w6proto:
+    trigger:
+        send "c66:proto %protocol version of player% %protocol version%" to player
+
+command /w6wl:
+    trigger:
+        send "c66:wl0 %whitelist enabled%" to player
+        set whitelist to true
+        send "c66:wl1 %whitelist enabled%" to player
+        set whitelist to false
+        set {_w::*} to whitelisted players
+        send "c66:wl2 %whitelist enabled% %size of {_w::*}%" to player
+
+command /w6yaw:
+    trigger:
+        set yaw of player to 90
+        send "c66:yaw %yaw of player%" to player
+        add 45 to yaw of player
+        send "c66:yaw2 %yaw of player%" to player
+        set pitch of player to 30
+        send "c66:pitch %pitch of player%" to player
+
+command /w6border:
+    trigger:
+        set world border size to 100
+        add 10 to world border size
+        remove 30 from world border size
+        send "c66:border %world border size%" to player
+
+command /w6villager:
+    trigger:
+        spawn a villager at location(4, 100, 4)
+        set {_v} to last spawned entity
+        send "c66:villager %villager level of {_v}% %villager experience of {_v}% %villager profession of {_v}%" to player
+
+command /w6ride:
+    trigger:
+        spawn a pig at location(0, 100, 3)
+        set {_p} to last spawned entity
+        execute console command "ride %name of player% mount %uuid of {_p}%"
+        wait 10 ticks
+        send "c66:vehicle %vehicle of player%" to player
+        set {_x::*} to passengers of {_p}
+        send "c66:passengers %size of {_x::*}% %{_x::1}%" to player
+
+command /w6nbt:
+    trigger:
+        set block at location(9, 100, 9) to oak sign
+        set {_s::*} to sign text of location(9, 100, 9)
+        send "c66:sign %size of {_s::*}%" to player
+        set block at location(10, 100, 9) to skeleton skull
+        send "c66:skull %skull owner of location(10, 100, 9)% %skull texture of location(10, 100, 9)%" to player
+        set block at location(11, 100, 9) to chest
+        send "c66:loot %loot table seed of location(11, 100, 9)%" to player
+        set block at location(12, 100, 9) to spawner
+        send "c66:spawner %spawner type of location(12, 100, 9)%" to player
+        set block at location(13, 100, 9) to bell
+        send "c66:bell %ringing time of location(13, 100, 9)%" to player
+
+command /w6spawn:
+    trigger:
+        set spawn of world "world" to location(7, 100, 7)
+        wait 10 ticks
+        send "c66:spawnat %spawn of world "world"%" to player
+
+
+command /w6misc:
+    trigger:
+        set {_l::*} to 1, 2, 3 and 4
+        send "c66:random %size of ({_l::*})%" to player
+        set {_s} to reduce {_l::*} with [reduced value + input]
+        send "c66:reduce %{_s}%" to player
+        set {_n::a::b} to 1
+        set {_n::c} to 2
+        set {_r::*} to recursive {_n::*}
+        send "c66:recursive %size of {_r::*}%" to player
+        send "c66:round %2.567 rounded to 2 decimal places% %round(2.5)% %floor(2.9)% %ceil(2.1)%" to player
+        set {_t1} to 1 if 2 > 1 else 3
+        set {_t2} to 1 if 2 < 1 else 3
+        send "c66:ternary %{_t1}% %{_t2}%" to player
+        send "c66:sea %sea level of world "world"% %simulation distance%" to player
+        send "c66:ver %server version% | %minecraft version% | %server version string%" to player
+        set {_q} to quaternion(1, 0, 0, 0) rotated around y by 180
+        send "c66:qrot %w of {_q}% %y of {_q}%" to player
+        set {_d} to vector(0, 0, 1)
+        set yaw of {_d} to 90
+        send "c66:vyaw %x of {_d}% %z of {_d}%" to player
