@@ -74,7 +74,7 @@ Text longer than 4000 characters is cut.
 
 ### Limits
 
-- Spawn only. Carve has no entity values yet, so you cannot change a display after it spawns. Set everything in the spawn line.
+- The new display is `last spawned entity`. Its scale, text alignment, line width and text opacity can be changed later (see [w5-chunk6](w5-chunk6.md)); set the rest in the spawn line.
 - Text displays work on every host (the default host runs `/summon`).
 - Block and item displays need the plugin API. The `/summon` command cannot fill them. In the Pumpkin plugin they work. On a host that only runs commands, Carve logs a warning.
 - Interpolation and rotation are not available yet.

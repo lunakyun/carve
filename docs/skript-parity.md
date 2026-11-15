@@ -387,7 +387,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Send Block Change — no fake block packet API
 - ✅ Send Resource Pack — `send resource pack "url" [with hash "sha1"] to %player%` (Java players)
 - ⛔ Shear — no shear API
-- ⛔ Shoot — no projectile launch API; the section is refused with an error
+- ⛔ Shoot — only the `shoot ...:` section form exists (see Sections); the plugin API cannot set a projectile owner
 - ⛔ Silence Entity — no silent flag in the plugin API
 - ✅ Sort — `sort {x::*}`, `in descending order`; no `by`
 - 🟡 Spawn ⭐ — `spawn [N] <mob> [named "x"] [at <place>]`; no NBT or mob-specific data
@@ -643,7 +643,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Blank Equippable Component — no item component builder in the plugin API
 - ✅ Block ⭐ — `block at <loc>`, `block below player`
 - ⛔ Block Break Speed — no block hardness data in the plugin API
-- ⬜ Block Data
+- ✅ Block Data — `block data of <block>` as text like `oak_log[axis=z]`; set it to change the block state
 - ⛔ Block Hardness — no block hardness data in the plugin API
 - ⛔ Block Sound — no block sound data in the plugin API
 - ⬜ Block Sphere
@@ -1013,19 +1013,19 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Rotation Axis/Angle — Carve has no vector or quaternion types
 - 🟡 Rounding — as functions, plus `n rounded to N decimal places`
 - ✅ Saturation — read, set, add, remove
-- ⬜ Scale
+- ✅ Scale — `scale of <entity>`: the scale attribute (0.0625 to 16); a vector for display entities; set, add, remove, reset
 - ⛔ Scoreboard Tags — no entity tag API in the plugin API
 - 🟡 Script — through `/carve`
 - 🟡 Script Command Cooldown Information — no cooldowns yet
 - ⛔ Script Command Suggestion Input — same Pumpkin crash
 - ⛔ Script Command Suggestions — Pumpkin 0.2.2 crashes on plugin tab completion
 - 🟡 Sea Level — `sea level of world "x"`, read only
-- ⬜ Sea Pickles
+- ✅ Sea Pickles — `[min|max] [sea] pickles of <block>`; set, add, remove, reset (clamped 1 to 4)
 - ⛔ Seed of Loot Table — no loot table data in the plugin API
-- ⬜ Sent Command List
+- ⛔ Sent Command List — Pumpkin has no event for the command tree sent to a client (its command send event is the typed command)
 - ⛔ Server Icon — the icon is only in the server list ping event, which Carve does not expose
-- ⬜ Sets
-- ⬜ Shooter
+- ✅ Sets — `all <type>s` / `every <type>` for the named-value types (difficulties, moon phases, boss bar styles...)
+- ✅ Shooter — `shooter` in `on shoot` (the mob that shot)
 - ✅ Shuffled List ⭐ — `shuffled {x::*}`
 - ⛔ Sign Text — block entities only expose custom data, not sign text
 - 🟡 Simulation Distance — `simulation distance`, read only
@@ -1033,19 +1033,19 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 Size of World Border — `world border size [of world]`, `set world border size to 500 over 30 seconds`; no add or remove
 - ⛔ Skull Owner — block entities only expose custom data, not skull data
 - ⛔ Skull Texture — block entities only expose custom data, not skull data
-- ⬜ Slot Index
+- ✅ Slot Index — `[raw|unique] index of <slot>` for `clicked slot` and `slot N of <inventory>`
 - ✅ Sorted List ⭐ — `sorted {x::*}`, `sorted {x::*} by <expression with input>`
-- ⬜ Source Block
+- ✅ Source Block — `source block` in `on spread`
 - 🟡 Spawn ⭐ — `spawn of world "x"` (a location); also `teleport player to spawn`; no setting it
-- ⬜ Spawn Egg Entity
-- ⬜ Spawn Reason
+- ✅ Spawn Egg Entity — `spawn egg entity of <item>`; set it to turn the item into another spawn egg
+- ✅ Spawn Reason — `spawn[ing] reason` in `on spawn`; Pumpkin only fires the event for spawn eggs, dispensers and buckets
 - ⛔ Spawner Type — spawner block entity is not exposed
 - ✅ Special Number — `pi`, `infinity`, `negative infinity`, `NaN`
-- ⬜ Spectator Target
+- ✅ Spectator Target — `spectator target of <player>`; set (any game mode) and reset
 - ⛔ Speed (walk and fly speed: no attribute API in the plugin API)
-- ⬜ Stored Enchantments
+- ✅ Stored Enchantments — `stored enchantments of player's tool` as texts like `sharpness 5`; set and delete; main hand only
 - ✅ String Colors — `&a` codes, `§a` codes and `<red>` tags in sent messages
-- ⬜ Style
+- ✅ Style — `style of bossbar "id"`
 - ✅ Substring ⭐ — `substring of x from a to b`, `first N characters of x`, `last N characters of x`, `character at index N of x`
 - ✅ Tab List Name — `<player>'s tab list name`, same as Player List Name
 - 🟡 Tablisted Players — all online players; Pumpkin cannot tell who is hidden from a player's tab list
@@ -1053,15 +1053,15 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Tag Namespaced Key — no tag registry in the plugin API
 - ✅ Tags Contents — `minecraft tag "logs"` lists the member blocks or items
 - ✅ Tags of X — `minecraft tags of oak log`
-- ⬜ Tamer
-- ⬜ Target
+- 🟡 Tamer — `tamer` in `on tame` compiles and reads the owner; the in-game test could not get Pumpkin to tame a wolf, so it is unverified
+- ✅ Target — `target of <mob>` (set, delete), `target of <player>` (the entity they look at), `target` in `on target`
 - ✅ Targeted Block ⭐ — `targeted block of player`
-- ⬜ Teleport Cause
-- ⬜ Temperature
+- ⛔ Teleport Cause — Pumpkin's teleport event carries no cause
+- ✅ Temperature — `temperature of <block>`: biome base temperature, lowered above y 80 like vanilla (no per-column noise)
 - 🟡 Ternary ⭐ — `a if <condition> else b`; the condition can be a comparison, `contains`, `starts with`, `is set`, joined with `and` / `or`
-- ⬜ Text Display Alignment
-- ⬜ Text Display Line Width
-- ⬜ Text Display Opacity
+- ✅ Text Display Alignment — `text alignment of <text display>`: left, center, right
+- ✅ Text Display Line Width — `line width of <text display>`; set, add, remove, reset (200)
+- ✅ Text Display Opacity — `text opacity of <text display>` 0 to 255; set, add, remove, reset
 - ⛔ Text Of — no text component values in Carve
 - ✅ Text Replacement ⭐ — `x with all "a" replaced with "b"`, `x with all regex "[0-9]" replaced with "_"`
 - ⛔ The Egg — needs entity values and an egg-throw trigger, which Carve does not have yet
@@ -1070,7 +1070,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Time Played — `time played of player`
 - ✅ Time Since/Until ⭐ — `time since {d}`, `time until {d}`
 - ✅ Timespan Details ⭐ — `minutes of {t}`, `total minutes of {t}`, `{t}'s minutes`
-- ⬜ Title
+- ✅ Title — `title of bossbar "id"` and of an inventory value (shows the next time it is opened)
 - ✅ Tool — main hand
 - ✅ Total Experience — `total experience of player`
 - 🟡 TPS (ticks per second) — `tps`, `server tps`, `mspt`; one current value, not the 1/5/15 minute averages
@@ -1114,20 +1114,20 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 Version String — `server version string`, `version string of server`; versions are plain text
 - 🟡 View Distance — `view distance of server`, `view distance of player`; read only
 - ✅ View Distance of Client — `client view distance of player`
-- ⬜ Viewers
+- ✅ Viewers — `viewers of <bossbar|inventory>`; add or remove players to show or open, hide or close
 - ⛔ Villager Level/Experience — the plugin API has no villager data
 - ⛔ Villager Profession — the plugin API has no villager data
 - ⛔ Villager Type — the plugin API has no villager data
 - ⛔ Warden Anger Level — the plugin API has no warden data
 - ⛔ Warden Most Angered At — the plugin API has no warden data
-- ⬜ Warning Distance of World Border
-- ⬜ Warning Time of World Border
+- ✅ Warning Distance of World Border — `world border warning distance [of <border>]`; set, add, remove, reset
+- ✅ Warning Time of World Border — `world border warning time [of <border>]` as a timespan; set, add, remove, reset
 - ✅ Weather ⭐ — `weather in world "w"`, `set weather to rain for 5 minutes`
 - 🟡 Whether — `whether a is b` with is, is not, is set, is not set, greater, less, at least, at most
 - 🟡 Whitelist — `add player to the whitelist`, `whitelist player`, `unwhitelist player`; no player list, no on/off
 - ⛔ With Fire Resistance — item components are not reachable from the plugin API
 - ✅ World — `world of`
-- ⬜ World Border
+- ✅ World Border — `world border [of <world|player|location>]`, `<x>'s world border`
 - ✅ World Environment — `environment of world "x"` (normal, nether, the end)
 - ✅ World from Name — `world "name"`
 - ⛔ World Seed — the plugin API cannot read the world seed
@@ -1148,9 +1148,9 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 For Each Loop — `loop {list::*}` works; no `for each` wording
 - 🟡 Locally Suppress Warning — accepted and ignored; Carve has no such warnings
 - ✅ Loop — times, lists, all players, values
-- ⬜ Shoot
+- 🟡 Shoot — `shoot <projectile> [from <entity>] [at speed <n>]:` spawns and launches it and runs the body with it; the plugin API cannot set the owner, so hits are not credited and `on shoot` does not fire
 - ✅ Spawn ⭐ — `spawn <mob> at <place>:` with `event-entity` in the body
-- ⬜ Suppress Type Hints (Experimental)
+- ✅ Suppress Type Hints (Experimental) — runs its body; Carve has no type hints to hide
 - ✅ While Loop
 
 ## Structures (8)
@@ -1224,7 +1224,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Banner Pattern Type — a named value: plain words or `"text" parsed as banner pattern type`; compares with text; usable as a function parameter type
 - ✅ Biome — `biome at {loc}`, `biome of player`: a text like `birch_forest`
 - 🟡 Block ⭐ — a block is a location with whole numbers
-- ⬜ Block Data
+- 🟡 Block Data — a function parameter type; values are texts like `oak_log[axis=z]` (see `block data of`)
 - ✅ Boolean
 - ✅ Boss Bar Style — a named value: plain words or `"text" parsed as boss bar style`; compares with text; usable as a function parameter type
 - 🟡 BossBar — bars are named by a text id; there is no bar value to keep in a variable
@@ -1249,15 +1249,15 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Display Text Alignment — a named value: plain words or `"text" parsed as display text alignment`; compares with text; usable as a function parameter type
 - ✅ Enchantment — a named value: plain words or `"text" parsed as enchantment`; compares with text; usable as a function parameter type
 - ⛔ Enchantment Offer — the API has no enchanting table offers
-- ⬜ Enchantment Type
+- 🟡 Enchantment Type — a function parameter type; enchantments are texts like `sharpness 5`
 - 🟡 Entity — works as a function parameter type (no extra checks); no value of its own
 - ✅ Entity Effect — a named value: plain words or `"text" parsed as entity effect`; compares with text; usable as a function parameter type
 - ⛔ Entity Snapshot — the plugin API has no entity snapshots
 - ✅ Entity Type — a named value: plain words or `"text" parsed as entity type`; compares with text; usable as a function parameter type
-- ⬜ Entity Type with Amount
+- 🟡 Entity Type with Amount — a function parameter type; written in place as `spawn 3 zombies`, no value of its own
 - ✅ Equipment Slot — a named value: plain words or `"text" parsed as equipment slot`; compares with text; usable as a function parameter type
 - ⛔ Equippable Components — item components are raw bytes only
-- ⬜ Executable
+- 🟡 Executable — a function parameter type only; functions are called by name, there is no function value
 - 🟡 Experience ⭐ — works as a function parameter type (no extra checks); no value of its own
 - ⛔ Firework Effect — firework effects are not in the plugin API
 - ✅ Firework Type — a named value: plain words or `"text" parsed as firework type`; compares with text; usable as a function parameter type
@@ -1298,7 +1298,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Particle — a named value: plain words or `"text" parsed as particle`; compares with text; usable as a function parameter type
 - ✅ Pig Variant — a named value: plain words or `"text" parsed as pig variant`; compares with text; usable as a function parameter type
 - ✅ Player — by UUID handle
-- ⬜ Potion Effect
+- 🟡 Potion Effect — a function parameter type only; there is no potion effect value (effects are given with `apply ... to <player>`)
 - ✅ Potion Effect Event Action — a named value: plain words or `"text" parsed as potion effect event action`; compares with text; usable as a function parameter type
 - ✅ Potion Effect Event Cause — a named value: plain words or `"text" parsed as potion effect event cause`; compares with text; usable as a function parameter type
 - ✅ Potion Effect Type — a named value: plain words or `"text" parsed as potion effect type`; compares with text; usable as a function parameter type
@@ -1325,7 +1325,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Timespan ⭐ — `5 minutes`, `1 hour and 30 seconds`, math, comparisons
 - ✅ Transform Reason — a named value: plain words or `"text" parsed as transform reason`; compares with text; usable as a function parameter type
 - ✅ Tree Type — a named value: plain words or `"text" parsed as tree type`; compares with text; usable as a function parameter type
-- ⬜ Type
+- 🟡 Type — a function parameter type; type names are used in `all <type>s` and `parsed as`, not as values
 - ✅ Unleash Reason — a named value: plain words or `"text" parsed as unleash reason`; compares with text; usable as a function parameter type
 - ✅ UUID — `uuid of player`
 - 🟡 Vector — vector values and `vector(x, y, z)` exist (expressions pages); usable as a parameter type
