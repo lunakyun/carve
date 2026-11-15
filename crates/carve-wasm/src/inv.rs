@@ -8,15 +8,25 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 
+use carve_core::Value;
+use carve_core::gaps::InvVal;
 use pumpkin_plugin_api::gui::Gui;
 use pumpkin_plugin_api::inventory::Inventory;
 use pumpkin_plugin_api::item_stack::ItemStack;
-use pumpkin_plugin_api::text::TextComponent;
 use pumpkin_plugin_api::{Player, Screen};
+
+/// An open chest menu made by a script.
+struct Menu {
+    inv: Inventory,
+    /// The inventory value it was built from (0 for `open chest ...`).
+    id: u64,
+    title: String,
+    rows: u8,
+}
 
 thread_local! {
     /// Open chest menus made by scripts, by player uuid.
-    static MENUS: RefCell<HashMap<String, Inventory>> = RefCell::new(HashMap::new());
+    static MENUS: RefCell<HashMap<String, Menu>> = RefCell::new(HashMap::new());
 }
 
 fn screen(rows: u8) -> Screen {
@@ -41,13 +51,60 @@ fn stack_of(id: &str, count: u32) -> ItemStack {
     ItemStack::new(&format!("minecraft:{id}"), count.clamp(1, 99) as u8)
 }
 
-pub fn open_chest(player: &Player, uuid: &str, rows: u8, title: TextComponent) {
-    let gui = Gui::new(screen(rows), title);
+pub fn open_chest(player: &Player, uuid: &str, rows: u8, title: &str) {
+    open_menu(player, uuid, rows, title, 0);
+}
+
+fn open_menu(player: &Player, uuid: &str, rows: u8, title: &str, id: u64) {
+    let gui = Gui::new(screen(rows), crate::text(title));
     let inv = gui.get_inventory();
     player.open_gui(gui);
     // Opening a window closes the old one first, and that close event drops
     // the old entry. Insert after, so the new menu stays.
-    MENUS.with(|m| m.borrow_mut().insert(uuid.to_string(), inv));
+    let menu = Menu {
+        inv,
+        id,
+        title: title.to_string(),
+        rows,
+    };
+    MENUS.with(|m| m.borrow_mut().insert(uuid.to_string(), menu));
+}
+
+/// Open a menu built from an inventory value, items with their meta.
+pub fn open_value(player: &Player, uuid: &str, v: &InvVal) {
+    open_menu(player, uuid, v.rows, &v.title, v.id);
+    with_menu(uuid, |inv| {
+        for (i, item) in v.slots.iter().enumerate() {
+            if let Some(s) = crate::gaps::stack_of(item) {
+                inv.set_item(i as u32, Some(s));
+            }
+        }
+    });
+}
+
+/// Id, title and rows of the player's open menu.
+pub fn menu_info(uuid: &str) -> Option<(u64, String, u8)> {
+    MENUS.with(|m| m.borrow().get(uuid).map(|x| (x.id, x.title.clone(), x.rows)))
+}
+
+/// Set a slot in every open menu built from inventory value `id`.
+pub fn set_by_id(id: u64, slot: u32, item: &Value) {
+    MENUS.with(|m| {
+        for menu in m.borrow().values().filter(|x| x.id == id) {
+            if slot < menu.inv.get_size() {
+                menu.inv.set_item(slot, crate::gaps::stack_of(item));
+            }
+        }
+    });
+}
+
+/// Set a slot of the player's open menu.
+pub fn set_in_menu(uuid: &str, slot: u32, item: &Value) {
+    with_menu(uuid, |inv| {
+        if slot < inv.get_size() {
+            inv.set_item(slot, crate::gaps::stack_of(item));
+        }
+    });
 }
 
 /// The player closed a window.
@@ -56,7 +113,7 @@ pub fn forget(uuid: &str) {
 }
 
 fn with_menu<R>(uuid: &str, f: impl FnOnce(&Inventory) -> R) -> Option<R> {
-    MENUS.with(|m| m.borrow().get(uuid).map(f))
+    MENUS.with(|m| m.borrow().get(uuid).map(|x| f(&x.inv)))
 }
 
 pub fn get(player: &Player, uuid: &str, current: bool, slot: i64) -> Option<(String, u32)> {
@@ -82,7 +139,7 @@ pub fn set(player: &Player, uuid: &str, current: bool, slot: i64, item: Option<(
         return;
     };
     let stack = item.map(|(id, n)| stack_of(id, n));
-    if current && MENUS.with(|m| m.borrow().contains_key(uuid)) {
+    if current && menu_info(uuid).is_some() {
         with_menu(uuid, |inv| {
             if slot < inv.get_size() {
                 inv.set_item(slot, stack);

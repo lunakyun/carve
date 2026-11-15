@@ -57,6 +57,7 @@ mod ent_host;
 mod ents;
 mod events_items;
 mod fx;
+mod gaps;
 mod inv;
 mod sb;
 
@@ -800,7 +801,7 @@ impl WasmHost<'_> {
 
     fn open_chest(&mut self, p: &PlayerRef, rows: u8, title: &str) {
         if let Some(pl) = self.get(p) {
-            inv::open_chest(pl, &p.uuid, rows, text(title));
+            inv::open_chest(pl, &p.uuid, rows, title);
         }
     }
 
@@ -1543,6 +1544,12 @@ impl Host for TickHost<'_, '_> {
         entity_velocity(e: &carve_core::EntityRef) -> Option<(f64, f64, f64)>;
         set_entity_velocity(e: &carve_core::EntityRef, v: (f64, f64, f64));
         entity_teleport(e: &carve_core::EntityRef, x: f64, y: f64, z: f64, world: Option<&str>);
+        open_inventory(p: &PlayerRef, v: &carve_core::gaps::InvVal);
+        menu_update(id: u64, slot: u32, item: &Value);
+        menu_set(p: &PlayerRef, slot: u32, item: &Value);
+        set_held_item_meta(p: &PlayerRef, m: &carve_core::item_meta::ItemMeta) -> bool;
+        inv_items(p: &PlayerRef) -> Vec<Value>;
+        entity_rotation(e: &carve_core::EntityRef) -> Option<(f64, f64)>;
         advancement(p: &PlayerRef, id: &str, criterion: Option<&str>, grant: bool) -> bool;
         has_advancement(p: &PlayerRef, id: &str) -> bool;
         register_recipe(r: &RecipeDef) -> Result<(), String>;
@@ -1769,6 +1776,9 @@ impl EventAccess for PlayerLeaveEvent {
         c.message = Some(d.leave_message.get_text());
         c
     }
+    fn set_message(d: &mut EventData<Self>, msg: &str) {
+        d.leave_message = text(msg);
+    }
     fn set_cancelled(d: &mut EventData<Self>) {
         d.cancelled = true;
     }
@@ -1873,6 +1883,7 @@ impl EventAccess for InventoryClickEvent {
             slot: i32::from(d.slot),
             item: d.clicked_item.as_ref().map(inv::pair),
             click: format!("{:?}", d.click_type).to_lowercase(),
+            menu: inv::menu_info(&uuid::to_string(d.player.get_id())),
         }));
         c
     }
@@ -2922,6 +2933,11 @@ impl Plugin for Carve {
             ),
             context.register_event_handler::<PlayerDeathEvent, _>(
                 combat::OnDeath,
+                EventPriority::Normal,
+                true,
+            ),
+            context.register_event_handler::<pumpkin_plugin_api::events::EntityDeathEvent, _>(
+                gaps::OnMobDeath,
                 EventPriority::Normal,
                 true,
             ),

@@ -60,6 +60,13 @@ impl State {
         damager: Option<i32>,
     ) {
         let Some(victim) = self.player_by_entity(host, victim_id) else {
+            // A mob: remember who hit it, for `attacker` in `on death`.
+            if let Some(id) = damager {
+                self.hs
+                    .w4
+                    .hit_by
+                    .insert(format!("#{victim_id}"), (id, self.hs.tick));
+            }
             return;
         };
         let attacker: Option<PlayerRef> = damager.and_then(|id| self.player_by_entity(host, id));
