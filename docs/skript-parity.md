@@ -174,7 +174,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 On Leash / Unleash — `on leash` (player) and `on unleash` (`event-text` reason); the leashed entity is not exposed
 - 🟡 On Leaves Decay — `on leaves decay` — can be cancelled; no block position value yet
 - ✅ On Level Change
-- 🟡 On Lightning Strike — `on lightning strike` — can be cancelled; no position value yet
+- 🟡 On Lightning Strike — `on lightning strike` — can be cancelled; no position value yet; Pumpkin fires it only for plugin lightning (Carve's `strike lightning`, then after the script and not cancellable) and skeleton traps
 - 🟡 On Loot Generate — `on loot generate` — `event-text` is the loot table; loot items are not exposed
 - 🟡 On Love Mode Enter — `on love mode enter` — `player` (the feeder, if a player), `event-number` (ticks in love)
 - 🟡 On Move / Rotate ⭐ — `on move`, `event-location`, `past event-location`; only when the block changes, no rotate; a restart is needed after adding the first `on move`
@@ -248,7 +248,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ On Vehicle Exit — `on vehicle exit:`
 - ✅ On Vehicle Move — `on vehicle move:`; `event-from`, `event-to`
 - 🟡 On Villager Career Change — wired, but Pumpkin does not fire this event yet
-- ✅ On Weather Change — `on weather change:` and `on weather change to rain:` / `to clear:`
+- ✅ On Weather Change — `on weather change:` and `on weather change to rain:` / `to clear:`; Pumpkin fires it only for plugin weather changes, so Carve fires it after `set weather` (not cancellable then)
 - ⛔ On World Border Bounds Change — the plugin API has no world border events
 - ⛔ On World Border Bounds Finish Change — the plugin API has no world border events
 - ⛔ On World Border Center Change — the plugin API has no world border events
@@ -716,7 +716,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Debug Info — Skript internals only, no meaning in Carve
 - ✅ Default Value — `a ? b`
 - ✅ Difference — `difference between 3 and 10`, also dates and timespans
-- ✅ Difficulty — `difficulty`, `difficulty of world "w"`, `set difficulty to hard`
+- ✅ Difficulty — `difficulty`, `difficulty of world "w"`, `set difficulty to hard`; one server-wide difficulty, set through the command
 - 🟡 Direction — `3 blocks above/below/north/south/east/west [of] loc`; no direction type
 - ⛔ Display Billboard — needs entity values, which Carve does not have yet
 - ⛔ Display Brightness — needs entity values, which Carve does not have yet

@@ -128,9 +128,10 @@ Values: `peaceful`, `easy`, `normal`, `hard`, or the numbers 0 to 3.
 ## How it runs on the server
 
 - Time, weather and game rules use the Pumpkin world API, per named world.
-- Difficulty has no API yet. Setting it runs the `difficulty` command, which
-  changes the default world. Reading difficulty gives `<none>`, so a
-  difficulty condition is false.
+- Pumpkin has one difficulty for the whole server. Setting it runs the
+  `difficulty` command, so the new value can be read after the script
+  continues (for example after `wait 1 tick`). Reading it uses the server's
+  difficulty, whatever world you name.
 - A weather change with `for` runs the `weather` command (default world only).
 - If a host cannot read a value, the expression is `<none>` and a plain
   condition is false (a negated one is true).

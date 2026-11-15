@@ -233,6 +233,7 @@ fn with_state<R>(
         reply,
         deferred: Vec::new(),
         players: Vec::new(),
+        late: Vec::new(),
     };
     let result = {
         let Ok(mut guard) = STATE.try_lock() else {
@@ -255,7 +256,37 @@ fn with_state<R>(
             );
         server.execute_command(&cmd, sender);
     }
+    let late = std::mem::take(&mut host.late);
+    if !late.is_empty() {
+        fire_late(server, late);
+    }
     Some(result)
+}
+
+/// Fire the events a script's own effects started. Pumpkin fires them while
+/// the script still holds the state, so the nested handler had to skip them.
+/// They can no longer be cancelled. The depth cap stops an event that starts
+/// itself again (`on weather change: set weather to rain`) from looping.
+fn fire_late(server: &Server, late: Vec<(EventKind, carve_core::EventCtx)>) {
+    use std::sync::atomic::{AtomicU8, Ordering};
+    static DEPTH: AtomicU8 = AtomicU8::new(0);
+    if DEPTH.load(Ordering::Relaxed) >= 4 {
+        plog(ApiLevel::Warn, "events started by scripts nest too deep; skipped");
+        return;
+    }
+    DEPTH.fetch_add(1, Ordering::Relaxed);
+    with_state(server, None, |st, host| {
+        for (kind, ctx) in late {
+            if st.engine.table().has_event(kind) {
+                let mut th = TickHost {
+                    inner: host,
+                    hs: &mut st.hs,
+                };
+                st.engine.fire(kind, ctx, &mut th);
+            }
+        }
+    });
+    DEPTH.fetch_sub(1, Ordering::Relaxed);
 }
 
 struct WasmHost<'a> {
@@ -268,6 +299,8 @@ struct WasmHost<'a> {
     /// Every lookup crosses the component boundary, so each UUID is looked
     /// up at most once per call. `None` means offline.
     players: Vec<(String, Option<Player>)>,
+    /// Events started by this call's own effects, fired once the state is free.
+    late: Vec<(EventKind, carve_core::EventCtx)>,
 }
 
 impl WasmHost<'_> {
@@ -526,7 +559,7 @@ impl WasmHost<'_> {
     fn biome_at(&mut self, world: &str, x: i32, y: i32, z: i32) -> Option<String> {
         let w = self.server.get_world_by_name(world)?;
         let b = w.get_biome(carve_block_pos(x, y, z));
-        Some(carve_core::w2_expressions_1::snake(&format!("{b:?}")))
+        Some(enum_name(&format!("{b:?}")))
     }
 
     fn armor_item(
@@ -673,12 +706,27 @@ impl WasmHost<'_> {
     fn strike_lightning(&mut self, at: &FxPos, effect_only: bool) {
         if let Some(w) = self.fx_world(at) {
             w.strike_lightning((at.x, at.y, at.z), effect_only);
+            self.late.push((
+                EventKind::Ext3(carve_core::w2_events_3::Ev3::LightningStrike),
+                carve_core::EventCtx::console(),
+            ));
         }
     }
 
     fn explode(&mut self, at: &FxPos, power: f64, fire: bool) {
         if let Some(w) = self.fx_world(at) {
             w.create_explosion((at.x, at.y, at.z), power as f32, fire, ExplosionInteraction::Tnt);
+            // Same values as Pumpkin's block explode event: yield 1 / power, no entity.
+            let yield_rate = if power > 0.0 { 1.0 / power } else { 1.0 };
+            let ev = carve_core::w2_events_2::Ev::Explode;
+            let ctx = carve_core::w2_events_2::make_ctx(
+                ev,
+                None,
+                &[yield_rate, at.x.floor(), at.y.floor(), at.z.floor(), -1.0],
+                &[],
+                &[],
+            );
+            self.late.push((EventKind::Ext2(ev), ctx));
         }
     }
 
@@ -958,14 +1006,35 @@ impl WasmHost<'_> {
     }
 
     fn set_weather(&mut self, world: Option<&str>, to: Weather, ticks: Option<u32>) {
+        let Some(w) = self.named_world(world) else {
+            if ticks.is_some() {
+                self.execute_command(&to.command(ticks));
+            }
+            return;
+        };
+        let was_raining = w.is_raining();
         // The API has no length, so a length goes through the command.
         if ticks.is_some() {
             self.execute_command(&to.command(ticks));
-            return;
-        }
-        if let Some(w) = self.named_world(world) {
+        } else {
             w.set_raining(to != Weather::Clear);
             w.set_thundering(to == Weather::Thunder);
+        }
+        // Pumpkin's own weather change event comes while this script holds
+        // the state, so it is fired again here, after the script.
+        let rain = to != Weather::Clear;
+        if rain != was_raining {
+            use carve_core::w2_events_4::{ExtEvent as E4, ctx};
+            let name = if rain { "rain" } else { "clear" };
+            let to_kind = if rain {
+                E4::WeatherToRain
+            } else {
+                E4::WeatherToClear
+            };
+            for k in [E4::WeatherChange, to_kind] {
+                let vals = vec![Value::World(w.get_name()), Value::Text(name.into())];
+                self.late.push((EventKind::Ext4(k), ctx(None, vals)));
+            }
         }
     }
 
@@ -1454,6 +1523,12 @@ struct TickHost<'a, 'b> {
     hs: &'a mut HostState,
 }
 
+/// `Biome::DarkForest` (the Debug form of a WIT enum) as `dark_forest`.
+fn enum_name(debug: &str) -> String {
+    let last = debug.rsplit("::").next().unwrap_or(debug);
+    carve_core::w2_expressions_1::snake(last)
+}
+
 macro_rules! delegate {
     ($($name:ident($($a:ident: $t:ty),*) $(-> $r:ty)?;)*) => {
         $(fn $name(&mut self, $($a: $t),*) $(-> $r)? { self.inner.$name($($a),*) })*
@@ -1630,6 +1705,17 @@ impl Host for TickHost<'_, '_> {
 
     fn top_block_y(&mut self, world: Option<&str>, x: i32, z: i32) -> Option<i32> {
         self.inner.top_block_y_impl(world, x, z)
+    }
+
+    /// Pumpkin has one difficulty for the whole server.
+    fn difficulty(&mut self, _world: Option<&str>) -> Option<String> {
+        Some(enum_name(&format!("{:?}", self.inner.server.get_difficulty())))
+    }
+
+    /// `get-chunk` only returns chunks that are already loaded.
+    fn chunk_loaded(&mut self, world: &str, x: i32, z: i32) -> Option<bool> {
+        let w = self.inner.server.get_world_by_name(world)?;
+        Some(w.get_chunk(x, z).is_some())
     }
 
     delegate! {
