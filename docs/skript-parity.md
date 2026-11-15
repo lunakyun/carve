@@ -431,48 +431,48 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⬜ Can Despawn
 - 🟡 Can Fly (follows game mode: creative and spectator)
 - ⬜ Can Hold
-- ⬜ Can Pick Up Items
-- ⬜ Can See
-- ⬜ Can See Chat Colors
-- ⬜ Can See Messages
+- ✅ Can Pick Up Items — `player can pick up items` (players; false in spectator)
+- ✅ Can See — `player can see {_other}`, follows `hide`/`reveal`
+- ✅ Can See Chat Colors — `player can see chat colors`, from the client settings
+- ✅ Can See Messages — `player can see messages`, from the client chat mode
 - ✅ Chance — `chance of 25%`
-- ⬜ Changed Sign Side
+- ⛔ Changed Sign Side — the plugin API's sign change event has no side
 - ✅ Comparison — is, is not, <, >, <=, >=, between, `is a or b`
 - ✅ Contains — text, lists, inventories
-- ⬜ Contains (Property)
-- ⬜ Damage Cause
-- ⬜ Damage Source - Does Scale With Difficulty
-- ⬜ Damage Source - Was Indirectly Caused
-- ⬜ Do Respawn Anchors Work
-- ⬜ Egg Will Hatch
-- ⬜ Enderman Has Been Stared At
-- ⬜ Entity is in Liquid
-- ⬜ Entity Is Sheared
-- ⬜ Entity is Wet
-- ⬜ Entity Storage Is Full
-- ⬜ Equippable Component - Can Be Dispensed
-- ⬜ Equippable Component - Can Be Sheared Off
-- ⬜ Equippable Component - Can Equip On Entities
-- ⬜ Equippable Component - Can Swap Equipment
-- ⬜ Equippable Component - Will Lose Durability
+- ✅ Contains (Property) — same as Contains: text, lists and inventories
+- ✅ Damage Cause — `damage was caused by fall` in `on damage`; game names and Skript names (`drowning`, `projectile`, ...)
+- ⛔ Damage Source - Does Scale With Difficulty — needs damage source values (the plugin API has no damage source object)
+- ⛔ Damage Source - Was Indirectly Caused — needs damage source values (the plugin API has no damage source object)
+- ✅ Do Respawn Anchors Work — `respawn anchors work in world "world"` (true in the nether)
+- ✅ Egg Will Hatch — `the egg will hatch` / `won't hatch` in `on throwing of an egg`
+- ✅ Enderman Has Been Stared At — `{_e} has been stared at`
+- ✅ Entity is in Liquid — `player is in liquid` (water or lava), players and entities
+- ✅ Entity Is Sheared — `{_sheep} is sheared`
+- ✅ Entity is Wet — `player is wet` (in water)
+- ✅ Entity Storage Is Full — `entity storage of <hive> is full` (3 bees)
+- ✅ Equippable Component - Can Be Dispensed — `diamond helmet can be dispensed`; reads the item's default equippable component
+- ✅ Equippable Component - Can Be Sheared Off — `saddle can be sheared off`; default components
+- ✅ Equippable Component - Can Equip On Entities — `saddle can be equipped on entities`; default components
+- ✅ Equippable Component - Can Swap Equipment — `carved pumpkin can't swap equipment`; default components
+- ✅ Equippable Component - Will Lose Durability — `elytra won't lose durability`; default components
 - ✅ Event Cancelled ⭐ — `event is cancelled`, `event is not cancelled`
 - ✅ Exists/Is Set
-- ⬜ Fishing Lure Applied
-- ⬜ Goat Has Horns
-- ⬜ Has AI
-- ⬜ Has Boss Bar Flag
-- ⬜ Has Chat Filtering
-- ⬜ Has Client Weather
+- ⛔ Fishing Lure Applied — the fish event in the plugin API has no lure flag
+- ⛔ Goat Has Horns — the plugin API has no goat data
+- ✅ Has AI — `{_mob} has ai`
+- ✅ Has Boss Bar Flag — `bossbar "id" has darken sky flag`, fog, boss music
+- ✅ Has Chat Filtering — `player has chat filtering`, from the client settings
+- ✅ Has Client Weather — `player has client weather`
 - 🟡 Has Custom Model Data — read it with `custom model data of player's tool` (main-hand item only)
-- ⬜ Has Glowing Text
-- ⬜ Has Item Cooldown
-- ⬜ Has Item Tooltips
-- ⬜ Has Line of Sight
-- ⬜ Has Loot Table
-- ⬜ Has Metadata
+- 🟡 Has Glowing Text — `<sign> has glowing text` reads the sign's data; only the plain case is checked in game (Pumpkin's `data merge block` doesn't change signs)
+- ✅ Has Item Cooldown — `player has cooldown on ender pearl`
+- 🟡 Has Item Tooltips — `tooltip of <item> is shown`; item values carry no tooltip settings, so it is always shown
+- ✅ Has Line of Sight — `player has line of sight to {_loc}` (blocks on the way block it)
+- 🟡 Has Loot Table — blocks only (`LootTable` in the block data); only the no-table case is checked in game
+- ✅ Has Metadata — `player has metadata "key"`
 - ✅ Has Permission
-- ⬜ Has Persistent Data Tag
-- ⬜ Has Played Before
+- ✅ Has Persistent Data Tag — `player has persistent data tag "key"`
+- ✅ Has Played Before — `player has played before` (from `first_join.txt`; false for the whole first session)
 - ✅ Has Potion Effect ⭐ — `player has potion effect speed`, `player doesn't have potion effect speed`
 - ✅ Has Resource Pack — `player has a resource pack` (set when the pack finishes loading)
 - ⛔ Has Scoreboard Tag — the plugin API has no entity tags to read
@@ -534,9 +534,9 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Is Playing Dead — axolotls are not reachable
 - 🟡 Is Plugin Enabled — Pumpkin plugins only, not exposed yet
 - 🟡 Is Poisoned — players only (no entity values yet)
-- ⬜ Is Preferred Tool
+- ✅ Is Preferred Tool — `diamond pickaxe is the preferred tool for <block>` (vanilla tool rules)
 - ⛔ Is Pressing Key — no player input API
-- ⬜ Is Responsive — needs entity values (entities slice), not done here
+- ✅ Is Responsive — `{_interaction} is responsive`
 - 🟡 Is Riding — players only, any vehicle (no entity type filter)
 - ⬜ Is Riptiding — needs entity values (entities slice), not done here
 - ⬜ Is Saddled — needs entity values (entities slice), not done here
