@@ -66,6 +66,7 @@ mod w2_expressions_3;
 mod w4;
 mod w4_conditions_1;
 mod w4_events_movement;
+mod w5_chunk1;
 mod w5_chunk2;
 mod w5_chunk5;
 
@@ -1482,6 +1483,14 @@ impl WasmHost<'_> {
         self.w5c5_impl(q)
     }
 
+    fn w5c1(&mut self, op: carve_core::w5_chunk1::HostOp<'_>) -> Option<bool> {
+        self.w5c1_impl(op)
+    }
+
+    fn read_data_file(&mut self, path: &str) -> Option<Vec<u8>> {
+        w5_chunk1::read_data_file(path)
+    }
+
     fn w2e7_query(&mut self, q: Query<'_>) -> Option<Value> {
         let num = |n: f64| Some(Value::Num(n));
         match q {
@@ -1816,6 +1825,14 @@ impl Host for TickHost<'_, '_> {
         self.inner.w5c5(q)
     }
 
+    fn w5c1(&mut self, op: carve_core::w5_chunk1::HostOp<'_>) -> Option<bool> {
+        self.inner.w5c1(op)
+    }
+
+    fn read_data_file(&mut self, path: &str) -> Option<Vec<u8>> {
+        self.inner.read_data_file(path)
+    }
+
     sb::sb_host_methods!();
 
     fn schedule_wait(&mut self, ticks: u64, token: u64) {
@@ -1889,6 +1906,8 @@ trait EventAccess: FromIntoEvent {
     fn skip(_data: &EventData<Self>) -> bool {
         false
     }
+    /// Values the script changed (`FireOutcome::set`), such as cancelled drops.
+    fn apply_out(_data: &mut EventData<Self>, _out: &[(u8, Value)]) {}
 }
 
 impl EventAccess for PlayerJoinEvent {
@@ -1944,6 +1963,16 @@ impl EventAccess for BlockBreakEvent {
         match &d.player {
             Some(p) => EventCtx::player(player_ref(p)),
             None => EventCtx::console(),
+        }
+    }
+    fn apply_out(d: &mut EventData<Self>, out: &[(u8, Value)]) {
+        use carve_core::w5_chunk1::{SLOT_NO_ITEM_DROPS, SLOT_NO_XP_DROPS};
+        for (slot, _) in out {
+            match *slot {
+                SLOT_NO_ITEM_DROPS => d.should_drop = false,
+                SLOT_NO_XP_DROPS => d.exp = 0,
+                _ => {}
+            }
         }
     }
     fn set_cancelled(d: &mut EventData<Self>) {
@@ -2159,20 +2188,23 @@ impl<E: EventAccess> EventHandler<E> for OnEvent<E> {
         let result = with_state(&server, None, |st, host| {
             E::observe(&data, &mut st.hs);
             if !st.engine.table().has_event(kind) || E::skip(&data) {
-                return (false, None);
+                return (false, None, Vec::new());
             }
             let ctx = E::ctx(&data);
             let mut th = TickHost {
                 inner: host,
                 hs: &mut st.hs,
             };
-            let cancelled = st.engine.fire(kind, ctx, &mut th).cancelled;
+            let o = st.engine.fire(kind, ctx, &mut th);
             st.hs.w4.join_msg = None;
-            (cancelled, st.hs.w4.join_set.take())
+            (o.cancelled, st.hs.w4.join_set.take(), o.set)
         });
-        if let Some((cancelled, msg)) = result {
+        if let Some((cancelled, msg, out)) = result {
             if cancelled {
                 E::set_cancelled(&mut data);
+            }
+            if !out.is_empty() {
+                E::apply_out(&mut data, &out);
             }
             if let Some(m) = msg {
                 E::set_message(&mut data, &m);
@@ -2820,6 +2852,7 @@ impl CommandHandler for AdminCommand {
 fn tick(server: Server) {
     with_state(&server, None, |st, host| {
         st.flush_late(host, None);
+        host.w5_tick();
         st.hs.tick += 1;
         let now = st.hs.tick;
         let mut due = Vec::new();
@@ -2893,6 +2926,7 @@ impl Plugin for Carve {
 
     fn on_load(&self, context: Context) -> Result<(), String> {
         let data_dir = context.get_data_folder();
+        w5_chunk1::set_data_dir(&data_dir);
         let scripts = format!("{data_dir}/{SCRIPTS_DIR}");
         if let Err(e) = std::fs::create_dir_all(&scripts) {
             plog(ApiLevel::Error, &format!("can't create {scripts}: {e}"));
@@ -3249,6 +3283,7 @@ fn data_component(
         ItemComp::Rarity => D::Rarity,
         ItemComp::GlintOverride => D::EnchantmentGlintOverride,
         ItemComp::ItemModel => D::ItemModel,
+        ItemComp::DyedColor => D::DyedColor,
     }
 }
 
