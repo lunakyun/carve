@@ -705,6 +705,17 @@ impl P<'_> {
                 BinOp::Mul
             } else if self.eat_sym("/") {
                 BinOp::Div
+            } else if matches!(self.peek(), Some(t) if t.is_lit("mod"))
+                && Ty::Number.accepts(left.ty(self.env))
+            {
+                // `{_a} mod {_b}`: the remainder, like `mod({_a}, {_b})`.
+                self.pos += 1;
+                let right = self.unary()?;
+                if !Ty::Number.accepts(right.ty(self.env)) {
+                    return Err("'mod' needs numbers".into());
+                }
+                left = crate::functions_aliases::math_call(MathFn::Mod, vec![left, right]);
+                continue;
             } else {
                 return Ok(left);
             };
@@ -954,6 +965,35 @@ impl P<'_> {
                 self.pos = np;
                 continue;
             }
+            if matches!(lw.as_str(), "x" | "y" | "z")
+                && matches!(self.toks.get(self.pos + 2), Some(Tok::Sym("-")))
+                && matches!(self.toks.get(self.pos + 3), Some(t) if t.is_lit("coordinate"))
+            {
+                // `player's x-coordinate`
+                let prop = match lw.as_str() {
+                    "x" => Prop::X,
+                    "y" => Prop::Y,
+                    _ => Prop::Z,
+                };
+                self.pos += 4;
+                e = self.prop(prop, e)?;
+                continue;
+            }
+            if lw == "time" && (e.ty(self.env) == Ty::World || matches!(e, Expr::Text(_))) {
+                // `"world"'s time`, `player's world's time`.
+                self.pos += 2;
+                e = Expr::Wt(Box::new(crate::weather_time::WtExpr {
+                    kind: crate::weather_time::WtKind::Time,
+                    world: Some(e),
+                }));
+                continue;
+            }
+            if lw == "type" && matches!(e.ty(self.env), Ty::Object | Ty::Player) {
+                // `loop-entity's type`: the entity type, like `type of loop-entity`.
+                self.pos += 2;
+                e = crate::entities::type_of_expr(e);
+                continue;
+            }
             if let Some((read, n)) = crate::expr_random_ternary::possessive(self.toks, self.pos + 1) {
                 self.pos += 1 + n;
                 e = Expr::RandomTernary(Box::new(crate::expr_random_ternary::RandomExpr::Read(
@@ -1000,7 +1040,17 @@ impl P<'_> {
             Some(_) => false,
             None => true,
         };
-        if meta_next && e.ty(self.env) == Ty::Item {
+        let of_ench = matches!(self.toks.get(self.pos), Some(t) if t.is_lit("of"))
+            && crate::item_meta::enchant_at(self.toks, self.pos + 1).is_some();
+        if (meta_next || of_ench) && e.ty(self.env) == Ty::Item {
+            e = self.item_meta_postfix(e)?;
+        } else if e.ty(self.env) == Ty::Object
+            && matches!(self.toks.get(self.pos), Some(Tok::Word(w))
+                if w.eq_ignore_ascii_case("named")
+                    || (w.eq_ignore_ascii_case("with")
+                        && matches!(self.toks.get(self.pos + 1), Some(t) if t.is_lit("lore") || t.is_lit("name"))))
+        {
+            // `loop-value with lore "x"`: an item held in a variable.
             e = self.item_meta_postfix(e)?;
         }
         Ok(e)
@@ -1015,6 +1065,7 @@ impl P<'_> {
             name: None,
             lore: Vec::new(),
             enchants: Vec::new(),
+            hide_flags: false,
         };
         let mut any = false;
         loop {
@@ -1044,6 +1095,29 @@ impl P<'_> {
                 } {
                     self.pos += 1;
                     meta.lore.push(self.primary()?);
+                }
+            } else if w == "with"
+                && next_is(self, 1, "all")
+                && (next_is(self, 2, "flags") || (next_is(self, 2, "item") && next_is(self, 3, "flags")))
+                && (next_is(self, 3, "hidden") || next_is(self, 4, "hidden"))
+            {
+                // `with all flags hidden`: no tooltip lines for enchantments and attributes.
+                self.pos += if next_is(self, 2, "item") { 5 } else { 4 };
+                meta.hide_flags = true;
+            } else if w == "of" && crate::item_meta::enchant_at(self.toks, self.pos + 1).is_some() {
+                // `diamond sword of sharpness 3 and unbreaking`, `gold block of mending`.
+                self.pos += 1;
+                while let Some((id, level, used)) = crate::item_meta::enchant_at(self.toks, self.pos) {
+                    self.pos += used;
+                    meta.enchants
+                        .push(Expr::Enchant(Box::new((id.to_string(), level.max(1)))));
+                    if matches!(self.toks.get(self.pos), Some(t) if t.is_lit("and") || t.is_lit(","))
+                        && crate::item_meta::enchant_at(self.toks, self.pos + 1).is_some()
+                    {
+                        self.pos += 1;
+                    } else {
+                        break;
+                    }
                 }
             } else if w == "enchanted" && next_is(self, 1, "with") {
                 self.pos += 2;
@@ -1511,6 +1585,10 @@ impl P<'_> {
 
     pub(crate) fn prop(&self, prop: Prop, of: Expr) -> Result<Expr, String> {
         let t = of.ty(self.env);
+        // `location of targeted block`: a block already is a place.
+        if prop == Prop::Location && t == Ty::Location {
+            return Ok(of);
+        }
         let block_pos = matches!(of, Expr::ClickedBlock)
             && matches!(prop, Prop::Location | Prop::X | Prop::Y | Prop::Z | Prop::World);
         if !block_pos && !prop.takes(t) {
@@ -1823,6 +1901,9 @@ impl P<'_> {
             }
             Tok::Word(w) => {
                 let lw = w.to_ascii_lowercase();
+                if let Some(e) = self.popular_head(&lw)? {
+                    return Ok(e);
+                }
                 if let Some(e) = self.compat_early(&lw)? {
                     return Ok(e);
                 }
@@ -2025,7 +2106,7 @@ impl P<'_> {
                         "'{lw}' doesn't exist in {}: nobody started it",
                         self.env.trigger_name
                     )),
-                    "sender" | "executor" | "console" if self.env.in_function => Err(format!(
+                    "sender" | "executor" if self.env.in_function => Err(format!(
                         "'{lw}' doesn't exist inside a function; pass it as a parameter"
                     )),
                     "sender" | "executor" => Ok(Expr::Sender),
@@ -2037,6 +2118,26 @@ impl P<'_> {
                         self.pos += 1;
                         Ok(Expr::Sender)
                     }
+                    // `world is "world"`, `event-world is "x"`: the world of the player.
+                    "world" | "event-world"
+                        if (lw == "world"
+                            || !self.env.ev_fields.iter().any(|f| f.0.starts_with("event-past-")))
+                            && !self.env.in_function
+                            && !self.env.no_player
+                            && self
+                                .env
+                                .world_event
+                                .is_none_or(|e| e.slot_index("world").is_none())
+                            && crate::events_blocks_players::field_index(
+                                self.env.ev_fields,
+                                "event-world",
+                            )
+                            .is_none()
+                            && !matches!(self.peek(), Some(Tok::Str(_) | Tok::Sym("(" | "'s")))
+                            && !matches!(self.peek(), Some(t) if t.is_lit("of")) =>
+                    {
+                        self.prop(Prop::World, Expr::Player)
+                    }
                     "me" | "myself" if self.env.in_function => {
                         Err("'me' doesn't exist inside a function; pass the player as a parameter".into())
                     }
@@ -2045,7 +2146,18 @@ impl P<'_> {
                         self.env.trigger_name
                     )),
                     "me" | "myself" => Ok(Expr::Player),
-                    "player" => Ok(Expr::Player),
+                    "player"
+                        if matches!(self.peek(), Some(Tok::Sym("'s")))
+                            && matches!(self.toks.get(self.pos + 1), Some(t) if t.is_lit("head") || t.is_lit("skull")) =>
+                    {
+                        // `player's head`: the item (a skull of the player is not tracked).
+                        self.pos += 2;
+                        Ok(Expr::Item {
+                            id: "player_head".to_string(),
+                            count: 1,
+                        })
+                    }
+                    "player" | "event-player" => Ok(Expr::Player),
                     "victim" if self.env.has_attacker && !self.env.in_function => {
                         Ok(Self::textdir_op(TextOp::Victim, Vec::new()))
                     }
@@ -2215,7 +2327,17 @@ impl P<'_> {
                             _ => Err("'formatted' needs a date or text, like 'formatted now'".into()),
                         }
                     }
-                    "arg" | "argument" => self.arg(1),
+                    "arg" | "argument" => {
+                        // `arg 2` / `argument 2` with a space; plain `arg` is the first.
+                        if let Some(Tok::Num(n)) = self.peek().cloned()
+                            && n.fract() == 0.0
+                            && n >= 0.0
+                        {
+                            self.pos += 1;
+                            return self.arg(n as usize);
+                        }
+                        self.arg(1)
+                    }
                     "join" if matches!(self.peek(), Some(Tok::Var(_))) => {
                         let Some(Tok::Var(v)) = self.peek().cloned() else {
                             return Err("expected 'join {list::*} with \", \"'".into());
@@ -2430,12 +2552,12 @@ impl P<'_> {
                     {
                         let int = !matches!(self.peek(), Some(t) if t.is_lit("number"));
                         self.pos += 1;
-                        if !matches!(self.peek(), Some(t) if t.is_lit("between")) {
+                        if !matches!(self.peek(), Some(t) if t.is_lit("between") || t.is_lit("from")) {
                             return Err("expected 'random integer between <number> and <number>'".into());
                         }
                         self.pos += 1;
                         let a = self.sum()?;
-                        if !matches!(self.peek(), Some(t) if t.is_lit("and")) {
+                        if !matches!(self.peek(), Some(t) if t.is_lit("and") || t.is_lit("to")) {
                             return Err("expected 'random integer between <number> and <number>'".into());
                         }
                         self.pos += 1;
@@ -3537,7 +3659,9 @@ impl P<'_> {
             _ => (word, None),
         };
         let want: Option<LoopKind> = match name {
-            "loop-value" | "loop-iteration" | "loop-counter" | "loop-entity" => None,
+            "loop-value" | "loop-iteration" | "loop-counter" | "loop-entity" | "loop-block" | "loop-item"
+            | "loop-itemtype" | "loop-location" | "loop-world" | "loop-offlineplayer" | "loop-text"
+            | "loop-string" | "loop-object" | "loop-livingentity" => None,
             "loop-player" => Some(LoopKind::Players),
             "loop-index" => Some(LoopKind::List),
             "loop-number" => Some(LoopKind::Times),
@@ -3556,7 +3680,19 @@ impl P<'_> {
             }
             None => match want {
                 None => loops.len() - 1,
-                Some(k) => match loops.iter().rposition(|l| *l == k) {
+                Some(k) => match loops
+                    .iter()
+                    .rposition(|l| *l == k)
+                    // `loop all players within 25 meters of x:` is a list of players.
+                    .or_else(|| {
+                        (k == LoopKind::Players)
+                            .then(|| {
+                                loops
+                                    .iter()
+                                    .rposition(|l| matches!(l, LoopKind::List | LoopKind::Values))
+                            })
+                            .flatten()
+                    }) {
                     Some(d) => d,
                     None => {
                         return Err(format!(
@@ -3574,6 +3710,7 @@ impl P<'_> {
         };
         if let (Some(k), Some(got)) = (want, loops.get(depth))
             && *got != k
+            && !(k == LoopKind::Players && matches!(got, LoopKind::List | LoopKind::Values))
         {
             return Err(format!("'{word}': loop {} is not that kind of loop", depth + 1));
         }

@@ -641,7 +641,7 @@ command /echo [<text>]:
     let me = Recipient::Player(steve());
     assert_eq!(
         e.run_command("greet", me.clone(), "steve", &mut h),
-        CommandOutcome::NoPermission
+        CommandOutcome::NoPermission(None)
     );
     h.perms.push(("u1".into(), "test.greet".into()));
     assert_eq!(

@@ -193,6 +193,10 @@ pub enum HeldOp {
     AddLore(Vec<Expr>),
     /// `enchant player's tool with sharpness 5 and unbreaking 3`
     Enchant(Vec<Expr>),
+    /// `set 1st line of (player's tool)'s lore to "x"`: line number, text.
+    LoreLine(Expr, Expr),
+    /// `delete player's held item`
+    Delete,
     /// `disenchant player's tool`
     Disenchant,
 }
@@ -201,6 +205,12 @@ pub enum HeldOp {
 pub enum GapEff {
     SetSlot {
         slot: Expr,
+        inv: Expr,
+        item: Expr,
+    },
+    /// `set slots 0, 1 and 2 of {_gui} to stone`: each slot is a number or a list of numbers.
+    SetSlots {
+        slots: Vec<Expr>,
         inv: Expr,
         item: Expr,
     },
@@ -407,15 +417,36 @@ fn set(toks: &[Tok], env: &Env) -> Result<Option<GapEff>, String> {
     if is(toks.get(i), "the") {
         i += 1;
     }
-    // `set slot N of {_gui} to <item>`
-    if is(toks.get(1), "slot")
+    // `set slot N of {_gui} to <item>`, `set slots 0, 1 and 2 of {_gui} to <item>`
+    if (is(toks.get(1), "slot") || is(toks.get(1), "slots"))
         && let Some(of) = pos_of(toks, 2, &["of"])
         && of < to
         && let Some(inv) = inv_value(toks.get(of + 1..to).unwrap_or_default(), env)
     {
-        let slot = sub(toks, 2, of, env).ok_or("expected a slot number")?;
         let item = sub(toks, to + 1, toks.len(), env).ok_or("expected an item after 'to'")?;
-        return Ok(Some(GapEff::SetSlot { slot, inv, item }));
+        let slot_toks = toks.get(2..of).unwrap_or_default();
+        if let Some(slot) = sub(toks, 2, of, env) {
+            if slot.ty(env) == Ty::List {
+                return Ok(Some(GapEff::SetSlots {
+                    slots: vec![slot],
+                    inv,
+                    item,
+                }));
+            }
+            return Ok(Some(GapEff::SetSlot { slot, inv, item }));
+        }
+        let mut slots = Vec::new();
+        for part in crate::popular_syntax::split_list(slot_toks) {
+            slots.push(parse_expr(part, env).map_err(|_| "expected a slot number".to_string())?);
+        }
+        if slots.is_empty() {
+            return Err("expected a slot number".into());
+        }
+        return Ok(Some(GapEff::SetSlots { slots, inv, item }));
+    }
+    // `set 1st line of (player's tool)'s lore to "x"`, `set line 2 of lore of player's tool to "x"`
+    if let Some(eff) = lore_line(toks, to, env)? {
+        return Ok(Some(eff));
     }
     // `set quit message to "x"`
     if (is(toks.get(i), "quit") || is(toks.get(i), "leave")) && is(toks.get(i + 1), "message") && to == i + 2
@@ -461,6 +492,82 @@ fn set(toks: &[Tok], env: &Env) -> Result<Option<GapEff>, String> {
     Ok(Some(GapEff::Held { who, op }))
 }
 
+/// The line number of `1st line`, `first line`, `line 2`.
+fn line_number(toks: &[Tok], env: &Env) -> Option<(Expr, usize)> {
+    let ordinal = |w: &str| match w.to_ascii_lowercase().as_str() {
+        "first" => Some(1.0),
+        "second" => Some(2.0),
+        "third" => Some(3.0),
+        "fourth" => Some(4.0),
+        "fifth" => Some(5.0),
+        _ => None,
+    };
+    match toks {
+        [Tok::Num(n), Tok::Word(sfx), l, ..]
+            if matches!(sfx.as_str(), "st" | "nd" | "rd" | "th") && is(Some(l), "line") =>
+        {
+            Some((Expr::Num(*n), 3))
+        }
+        [Tok::Word(w), l, ..] if is(Some(l), "line") && ordinal(w).is_some() => {
+            Some((Expr::Num(ordinal(w)?), 2))
+        }
+        [l, Tok::Num(n), ..] if is(Some(l), "line") => Some((Expr::Num(*n), 2)),
+        [l, Tok::Var(raw), ..] if is(Some(l), "line") => {
+            Some((parse_expr(&[Tok::Var(raw.clone())], env).ok()?, 2))
+        }
+        _ => None,
+    }
+}
+
+/// `set <nth> line of <tool>'s lore to <text>`.
+fn lore_line(toks: &[Tok], to: usize, env: &Env) -> Result<Option<GapEff>, String> {
+    let mut i = 1;
+    if is(toks.get(i), "the") {
+        i += 1;
+    }
+    let Some((line, used)) = line_number(toks.get(i..).unwrap_or_default(), env) else {
+        return Ok(None);
+    };
+    i += used;
+    if !is(toks.get(i), "of") {
+        return Ok(None);
+    }
+    let mut body = toks.get(i + 1..to).unwrap_or_default();
+    // `(player's tool)'s lore`, `player's tool's lore`, `lore of player's tool`
+    if let [rest @ .., a, b] = body
+        && is(Some(a), "'s")
+        && is(Some(b), "lore")
+    {
+        body = rest;
+    } else if let [a, o, rest @ ..] = body
+        && is(Some(a), "lore")
+        && is(Some(o), "of")
+    {
+        body = rest;
+    } else {
+        return Ok(None);
+    }
+    let body = strip_parens_all(body);
+    let Some(who) = held(body, env) else {
+        return Ok(None);
+    };
+    let text = sub(toks, to + 1, toks.len(), env).ok_or("expected a text after 'to'")?;
+    Ok(Some(GapEff::Held {
+        who,
+        op: HeldOp::LoreLine(line, text),
+    }))
+}
+
+fn strip_parens_all(mut t: &[Tok]) -> &[Tok] {
+    while let [first, mid @ .., last] = t
+        && first.is_lit("(")
+        && last.is_lit(")")
+    {
+        t = mid;
+    }
+    t
+}
+
 /// `open {_gui} to player`. `open chest with ...` stays with `inventories`.
 fn open(toks: &[Tok], env: &Env) -> Option<GapEff> {
     if ["chest", "a", "an", "new"].iter().any(|w| is(toks.get(1), w)) {
@@ -484,6 +591,15 @@ fn open(toks: &[Tok], env: &Env) -> Option<GapEff> {
 
 /// `clear {_gui}`, `reset name of player's tool`, `clear lore of player's tool`.
 fn clear(toks: &[Tok], env: &Env) -> Option<GapEff> {
+    // `delete player's held item`
+    if is(toks.first(), "delete")
+        && let Some(who) = held(toks.get(1..)?, env).filter(|w| w.ty(env) == Ty::Player)
+    {
+        return Some(GapEff::Held {
+            who,
+            op: HeldOp::Delete,
+        });
+    }
     if is(toks.first(), "clear")
         && let Some(inv) = inv_value(toks.get(1..)?, env)
     {

@@ -264,7 +264,8 @@ pub struct LoadSummary {
 #[derive(Debug, Clone, PartialEq)]
 pub enum CommandOutcome {
     NotFound,
-    NoPermission,
+    /// The `permission message:` of the command, if it has one.
+    NoPermission(Option<String>),
     /// Bad arguments; the text is a message for the sender.
     Usage(String),
     Ran,
@@ -540,6 +541,8 @@ pub struct Engine {
     pub max_instructions: usize,
     /// `variables:` defaults still to apply (after a load or reload).
     pending_defaults: bool,
+    /// Players seen joining since the scripts loaded (for `loop all offline players`).
+    known_players: Vec<PlayerRef>,
     /// Message of the last error that an outer `catch runtime errors` will take.
     caught_stash: String,
     dirty_since: Option<u64>,
@@ -671,6 +674,7 @@ impl Engine {
             vars,
             max_instructions: DEFAULT_MAX_INSTRUCTIONS,
             pending_defaults: false,
+            known_players: Vec::new(),
             caught_stash: String::new(),
             dirty_since: None,
             budget: 0,
@@ -811,6 +815,13 @@ impl Engine {
     /// Run every trigger for `kind`. Returns whether the event got cancelled
     /// (only `cancel event` before the first `wait` counts).
     pub fn fire(&mut self, kind: EventKind, ctx: EventCtx, host: &mut dyn Host) -> FireOutcome {
+        if kind == EventKind::Join
+            && let Some(p) = &ctx.player
+            && !self.known_players.iter().any(|k| k.uuid == p.uuid)
+            && self.known_players.len() < 10_000
+        {
+            self.known_players.push(p.clone());
+        }
         if self.pending_defaults || (kind == EventKind::Join && !self.table.var_defaults.is_empty()) {
             self.defaults_for(kind, &ctx, host);
         }
@@ -883,7 +894,7 @@ impl Engine {
         if let (Some(perm), Some(p)) = (&def.permission, &player)
             && !host.has_permission(p, perm)
         {
-            return CommandOutcome::NoPermission;
+            return CommandOutcome::NoPermission(def.permission_message.clone());
         }
         match (def.players_only, &player) {
             (Some(true), None) => return CommandOutcome::Usage("Only players can use this command.".into()),
@@ -892,7 +903,7 @@ impl Engine {
             }
             _ => {}
         }
-        let args = match parse_args(def, raw_args, host) {
+        let args = match parse_args(def, raw_args, &self.known_players, host) {
             Ok(a) => a,
             Err(msg) => {
                 return CommandOutcome::Usage(match &def.usage_msg {
@@ -910,7 +921,17 @@ impl Engine {
         ctx.player = player;
         ctx.sender = sender;
         ctx.args = args;
-        let ex = Exec::new(&trig, ctx);
+        let mut ex = Exec::new(&trig, ctx);
+        // `<number=5>`: a left-out argument takes its default.
+        for (i, a) in def.args.iter().enumerate() {
+            if let Some(d) = &a.default
+                && matches!(ex.ctx.args.get(i), Some(Value::None))
+                && let Ok(v) = self.eval(d, &mut ex, host)
+                && let Some(slot) = ex.ctx.args.get_mut(i)
+            {
+                *slot = v;
+            }
+        }
         self.start(ex, host);
         if def.cooldown.is_some() {
             self.drops_command_done();
@@ -1058,6 +1079,10 @@ impl Engine {
                     Instr::LoopBreak(end) => {
                         ex.loops.pop();
                         ex.pc = *end;
+                        Ok(None)
+                    }
+                    Instr::LoopPop => {
+                        ex.loops.pop();
                         Ok(None)
                     }
                     Instr::Stop => {
@@ -1338,6 +1363,15 @@ impl Engine {
                 }
                 LoopItems::Values(players.into_iter().map(Value::Player).collect())
             }
+            LoopSrc::OfflinePlayers => {
+                let mut all = host.offline_players();
+                for p in self.known_players.iter().chain(host.online_players().iter()) {
+                    if !all.iter().any(|a| a.uuid == p.uuid) {
+                        all.push(p.clone());
+                    }
+                }
+                LoopItems::Values(all.into_iter().map(Value::Player).collect())
+            }
             LoopSrc::Split(t, s) => {
                 let t = self.text(t, ex, host)?;
                 let s = self.text(s, ex, host)?;
@@ -1460,6 +1494,11 @@ impl Engine {
             Cond::Chance(p) => {
                 let p = self.num(p, ex, host)?;
                 Ok(self.next_random(host) * 100.0 < p)
+            }
+            Cond::Popular(c) => {
+                let crate::popular_syntax::PopCond::IsType { e, kind, negate } = &**c;
+                let v = self.eval(e, ex, host)?;
+                Ok(kind.matches(&v) != *negate)
             }
             Cond::HasItem { player, item, negate } => {
                 let p = self.eval(player, ex, host)?;
@@ -2143,7 +2182,11 @@ impl Engine {
                 }
                 match online(&v, &mut ex.seen, host) {
                     Some(p) => Value::Text(p.name),
-                    None => Value::None,
+                    // An offline player (`<offline player>` argument, `loop all offline players`) still has a name.
+                    None => match &v {
+                        Value::Player(p) if !p.name.is_empty() => Value::Text(p.name.clone()),
+                        _ => Value::None,
+                    },
                 }
             }
             Expr::Neg(inner) => Value::Num(-self.num(inner, ex, host)?),
@@ -2167,7 +2210,12 @@ impl Engine {
                 for s in &m.enchants {
                     specs.push(self.text(s, ex, host)?);
                 }
-                crate::item_meta::with_meta(base, name, lore, &specs)
+                let v = crate::item_meta::with_meta(base, name, lore, &specs);
+                if m.hide_flags {
+                    crate::item_meta::hide_flags(v)
+                } else {
+                    v
+                }
             }
             Expr::ItemInfo(info, inner) => {
                 let v = self.eval(inner, ex, host)?;
@@ -3078,7 +3126,12 @@ fn to_num_opt(v: &Value) -> Option<f64> {
     }
 }
 
-fn parse_args(def: &CommandDef, raw: &str, host: &mut dyn Host) -> Result<Vec<Value>, String> {
+fn parse_args(
+    def: &CommandDef,
+    raw: &str,
+    known: &[PlayerRef],
+    host: &mut dyn Host,
+) -> Result<Vec<Value>, String> {
     let mut rest = raw.trim();
     let mut out = Vec::new();
     let n = def.args.len();
@@ -3091,7 +3144,7 @@ fn parse_args(def: &CommandDef, raw: &str, host: &mut dyn Host) -> Result<Vec<Va
             return Err(format!("Usage: {}", def.usage()));
         }
         let last = i + 1 == n;
-        let word = if last && a.ty == ArgTy::Text {
+        let word = if last && matches!(a.ty, ArgTy::Text | ArgTy::Timespan | ArgTy::Item) {
             let w = rest;
             rest = "";
             w
@@ -3100,17 +3153,13 @@ fn parse_args(def: &CommandDef, raw: &str, host: &mut dyn Host) -> Result<Vec<Va
             rest = r.trim_start();
             w
         };
-        out.push(match a.ty {
-            ArgTy::Text => Value::Text(word.to_string()),
-            ArgTy::Number => Value::Num(
-                word.parse()
-                    .map_err(|_| format!("'{word}' is not a number. Usage: {}", def.usage()))?,
-            ),
-            ArgTy::Player => Value::Player(
-                host.find_player(word)
-                    .ok_or_else(|| format!("Player '{word}' is not online"))?,
-            ),
-        });
+        out.push(crate::popular_syntax::parse_arg(
+            a.ty,
+            word,
+            &def.usage(),
+            known,
+            host,
+        )?);
     }
     if !rest.is_empty() {
         return Err(format!("Too many arguments. Usage: {}", def.usage()));

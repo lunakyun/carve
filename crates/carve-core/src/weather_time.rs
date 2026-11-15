@@ -365,6 +365,32 @@ pub fn parse_effect(toks: &[Tok], env: &Env) -> Result<Option<Effect>, String> {
     let Some(Tok::Word(first)) = toks.first() else {
         return Ok(None);
     };
+    // `add 4 seconds to "world"'s time` reads like `add 4 seconds to time in "world"`.
+    if let Some(i) = toks
+        .windows(2)
+        .position(|w| matches!(&w[0], Tok::Sym("'s")) && is(&w[1], "time"))
+        && i > 1
+        && matches!(
+            first.to_ascii_lowercase().as_str(),
+            "set" | "add" | "remove" | "subtract"
+        )
+    {
+        let start = toks
+            .get(..i)
+            .and_then(|h| {
+                h.iter()
+                    .rposition(|t| is(t, "to") || is(t, "from") || is(t, "set") || is(t, "the"))
+            })
+            .map_or(1, |p| p + 1);
+        if start < i {
+            let mut t: Vec<Tok> = toks.get(..start).unwrap_or_default().to_vec();
+            t.push(Tok::Word("time".into()));
+            t.push(Tok::Word("in".into()));
+            t.extend(toks.get(start..i).unwrap_or_default().iter().cloned());
+            t.extend(toks.get(i + 2..).unwrap_or_default().iter().cloned());
+            return parse_effect(&t, env);
+        }
+    }
     match first.to_ascii_lowercase().as_str() {
         "set" => parse_set(toks.get(1..).unwrap_or_default(), env),
         "add" => parse_add(toks, env, 1),

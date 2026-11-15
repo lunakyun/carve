@@ -590,6 +590,12 @@ impl WasmHost<'_> {
         }
     }
 
+    fn clear_held_item(&mut self, p: &PlayerRef) {
+        if let Some(pl) = self.get(p) {
+            pl.set_item_in_hand(Hand::Right, None);
+        }
+    }
+
     fn held_item(&mut self, p: &PlayerRef) -> Option<(String, u32)> {
         let stack = self.get(p)?.get_item_in_hand(Hand::Right)?;
         let key = stack.get_registry_key();
@@ -1768,6 +1774,7 @@ impl Host for TickHost<'_, '_> {
         has_permission(p: &PlayerRef, node: &str) -> bool;
         log(level: LogLevel, msg: &str);
         online_players() -> Vec<PlayerRef>;
+        clear_held_item(p: &PlayerRef);
         player_location(p: &PlayerRef) -> Option<(f64, f64, f64, String)>;
         teleport_to(p: &PlayerRef, x: f64, y: f64, z: f64, world: Option<&str>);
         held_item(p: &PlayerRef) -> Option<(String, u32)>;
@@ -3132,7 +3139,11 @@ impl CommandHandler for ScriptCommand {
         });
         match outcome {
             Some(CommandOutcome::Ran) => Ok(1),
-            Some(CommandOutcome::NoPermission) => {
+            Some(CommandOutcome::NoPermission(Some(msg))) => {
+                sender.send_message(text(&msg));
+                Ok(0)
+            }
+            Some(CommandOutcome::NoPermission(None)) => {
                 sender.send_error(text("You don't have permission to use this command."));
                 Ok(0)
             }

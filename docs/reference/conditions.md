@@ -7,7 +7,7 @@ editLink: false
 
 # Conditions
 
-Conditions go after `if`, `else if` and `while`, or on a line of their own. 182 entries. Search all of them on the [reference home](./index.md).
+Conditions go after `if`, `else if` and `while`, or on a line of their own. 183 entries. Search all of them on the [reference home](./index.md).
 
 In a pattern, `%type%` is a value, `[...]` is optional and `(a|b)` means one of the words.
 
@@ -680,6 +680,24 @@ Whether a date is later or earlier than now.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
+## Do not contain / not set {#do_not_contain}
+
+```carve
+%text% (do not|don't) contain %text%
+%object% not set
+```
+
+The plural and short forms scripts use: `{list::*} do not contain x` and `arg-1 not set`.
+
+```carve
+if {homes::*} do not contain "base":
+    send "no such home"
+if {_x} not set:
+    send "unset"
+```
+
+Since **unreleased** · Guide: [popular-syntax](../syntax/popular-syntax.md)
+
 ## Egg will hatch {#egg_will_hatch}
 
 ```carve
@@ -908,9 +926,11 @@ Since **unreleased** · Guide: [conditions-flags-metadata](../syntax/conditions-
 ```carve
 %player% has permission %text%
 %player% does not have permission %text%
+%player% (doesn't|does not|do not|don't) have [the] permission %text%
+%player% (has|have) [the] permission %text%
 ```
 
-Checks a permission node.
+Checks a permission node. On a line of its own it stops the trigger when false.
 
 ```carve
 if player has permission "vip":

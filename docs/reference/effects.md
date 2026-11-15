@@ -7,7 +7,7 @@ editLink: false
 
 # Effects
 
-Effects are lines that do something. 186 entries. Search all of them on the [reference home](./index.md).
+Effects are lines that do something. 190 entries. Search all of them on the [reference home](./index.md).
 
 In a pattern, `%type%` is a value, `[...]` is optional and `(a|b)` means one of the words.
 
@@ -446,6 +446,20 @@ clear player's inventory
 ```
 
 Since **unreleased** · Guide: [inventories](../syntax/inventories.md)
+
+## Clear variable {#clear_variable}
+
+```carve
+clear %variable%
+```
+
+Deletes a variable or a whole list variable, like `delete`. On a menu variable it empties the menu (see inventories).
+
+```carve
+clear {homes::%uuid of player%::*}
+```
+
+Since **unreleased** · Guide: [popular-syntax](../syntax/popular-syntax.md)
 
 ## Close inventory {#close_inventory}
 
@@ -1418,10 +1432,11 @@ Since **unreleased** · Guide: [effects-entity-commands](../syntax/effects-entit
 ## Make execute command {#make_execute}
 
 ```carve
-make %object% execute [the] [command] %text%
-force %object% to execute [the] [command] %text%
-execute [the] command %text% by %object%
+make %object% (execute|run) [the] [command] %text%
+force %object% to (execute|run) [the] [command] %text%
+[execute] [the] command %text% by %object%
 execute [the] command %text%
+command %text%
 ```
 
 Runs a command as a player (their permissions apply) or the console. A leading `/` is ignored. Without `by` it runs as the console.
@@ -1488,6 +1503,23 @@ make block at location(2, 70, 2) have glowing text
 ```
 
 Since **unreleased** · Guide: [drops-border-leashes](../syntax/drops-border-leashes.md)
+
+## Message {#message}
+
+```carve
+message %text% [to %player%]
+message %text% to (all|every) [online] (player|players)
+send %text% to (all|every) [online] (player|players)
+```
+
+Sends a message, like `send`. `message "x"` goes to whoever started the trigger. `to all players` sends it to everyone online (and logs it).
+
+```carve
+message "&aWelcome!"
+send "Server restart soon" to all players
+```
+
+Since **unreleased** · Guide: [popular-syntax](../syntax/popular-syntax.md)
 
 ## Op / deop {#op}
 
@@ -1619,6 +1651,22 @@ play sound "block.note_block.pling" with volume 0.5 and pitch 2 to player
 ```
 
 Since **unreleased** · Guide: [sounds](../syntax/sounds.md)
+
+## Player command {#player_command}
+
+```carve
+[(execute|run)] player command %text%
+[(execute|run)] console command %text%
+```
+
+The older Skript forms of `make player execute command` and `execute console command`. `player command` runs as the player who started the trigger.
+
+```carve
+player command "/home"
+console command "/say hello"
+```
+
+Since **unreleased** · Guide: [popular-syntax](../syntax/popular-syntax.md)
 
 ## Poison {#poison}
 
@@ -2524,6 +2572,20 @@ teleport player to 0, 64, 0
 ```
 
 Since **0.1.0** · Guide: [effects](../syntax/effects.md)
+
+## Teleport at {#teleport_at}
+
+```carve
+[(force|forcibly)] teleport %player% at %location%
+```
+
+Same as `teleport %player% to %location%`.
+
+```carve
+teleport player at {spawn}
+```
+
+Since **unreleased** · Guide: [popular-syntax](../syntax/popular-syntax.md)
 
 ## Teleport to location {#teleport_location}
 

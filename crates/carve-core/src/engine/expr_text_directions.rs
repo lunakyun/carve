@@ -38,6 +38,24 @@ impl Engine {
                         .collect(),
                 )
             }
+            TextOp::CommandArgs => {
+                let (Some(full), Some(name)) = (arg(0), arg(1)) else {
+                    return Ok(Value::None);
+                };
+                let full = self.text(full, ex, host)?;
+                let name = self.text(name, ex, host)?;
+                let full = full.trim_start().trim_start_matches('/');
+                let rest = full.get(..name.len()).filter(|h| h.eq_ignore_ascii_case(&name));
+                Value::Text(
+                    rest.map_or("", |_| full.get(name.len()..).unwrap_or(""))
+                        .trim()
+                        .to_string(),
+                )
+            }
+            TextOp::MenuTitle => match ex.ctx.inv.as_deref().and_then(|c| c.menu.clone()) {
+                Some((_, title, _)) => Value::Text(title),
+                None => Value::None,
+            },
             TextOp::Difference => {
                 let (Some(a), Some(b)) = (arg(0), arg(1)) else {
                     return Ok(Value::None);

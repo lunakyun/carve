@@ -266,6 +266,18 @@ fn raw() -> Vec<(&'static str, K)> {
             Script(ScriptOp::Reload),
         ),
         (
+            "reload skript [named] %text% [with errors]",
+            Script(ScriptOp::Reload),
+        ),
+        (
+            "(enable|load) skript [named] %text% [with errors]",
+            Script(ScriptOp::Enable),
+        ),
+        (
+            "(disable|unload) skript [named] %text% [with errors]",
+            Script(ScriptOp::Disable),
+        ),
+        (
             "(disable|unload) script [(file|named)] %text% [with errors]",
             Script(ScriptOp::Disable),
         ),

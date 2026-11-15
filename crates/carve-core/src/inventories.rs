@@ -259,7 +259,12 @@ fn set_slot(toks: &[Tok], env: &Env) -> Option<InvEff> {
 fn item_move(toks: &[Tok], env: &Env, sep: &str) -> Option<InvEff> {
     let remove = sep == "from";
     let s = toks.iter().rposition(|t| is(t, sep))?;
-    let item_toks = toks.get(1..s)?;
+    let mut item_toks = toks.get(1..s)?;
+    // `remove all armor stand from the player`: everything of that kind (a full inventory).
+    let all = remove && item_toks.first().is_some_and(|t| is(t, "all")) && item_toks.len() > 1;
+    if all {
+        item_toks = item_toks.get(1..)?;
+    }
     let target = toks.get(s + 1..)?;
     let (who, has_inv) = match inv_target(target, env) {
         Some(t) if !t.current => (t.who, true),
@@ -272,6 +277,10 @@ fn item_move(toks: &[Tok], env: &Env, sep: &str) -> Option<InvEff> {
         expr_of(item_toks, env, &[Ty::Item])?
     } else {
         strict(item_toks, env, Ty::Item)?
+    };
+    let item = match item {
+        Expr::Item { id, .. } if all => Expr::Item { id, count: 36 * 64 },
+        other => other,
     };
     Some(if remove {
         InvEff::Remove { item, who }

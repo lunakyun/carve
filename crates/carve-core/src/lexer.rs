@@ -65,6 +65,15 @@ pub fn lex(s: &str) -> Result<Vec<Tok>, String> {
                 i += 2;
             }
             let mut word: String = c[start..i].iter().collect();
+            // `bottle o' enchanting`: the apostrophe belongs to the word.
+            if word == "o"
+                && i < n
+                && c[i] == '\''
+                && matches!(out.last(), Some(Tok::Word(w)) if w.eq_ignore_ascii_case("bottle"))
+            {
+                i += 1;
+                word = "o'".to_string();
+            }
             // `arg-1`, `arg-2`: one word.
             if word.eq_ignore_ascii_case("arg") && i + 1 < n && c[i] == '-' && c[i + 1].is_ascii_digit() {
                 i += 1;
@@ -97,6 +106,16 @@ pub fn lex(s: &str) -> Result<Vec<Tok>, String> {
                 }
                 let part: String = c[ws..i].iter().collect();
                 word = format!("loop-{}", part.to_ascii_lowercase());
+                // `loop-offline player`: two words, one value.
+                if word == "loop-offline"
+                    && c.get(i) == Some(&' ')
+                    && c.get(i + 1..i + 7)
+                        .is_some_and(|w| w.iter().collect::<String>().eq_ignore_ascii_case("player"))
+                    && !c.get(i + 7).is_some_and(|ch| ch.is_alphanumeric())
+                {
+                    i += 7;
+                    word = "loop-offlineplayer".to_string();
+                }
                 if i + 1 < n && c[i] == '-' && c[i + 1].is_ascii_digit() {
                     i += 1;
                     let ds = i;

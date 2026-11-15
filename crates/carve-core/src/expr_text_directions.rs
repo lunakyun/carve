@@ -36,6 +36,10 @@ pub enum TextOp {
     DamageCause,
     /// `chat recipients` in `on chat`.
     ChatRecipients,
+    /// `name of current inventory of player`: the title of the menu the click was in.
+    MenuTitle,
+    /// `arguments` in `on command`: the full command without its name. Args: full command, name.
+    CommandArgs,
     /// `victim` in `on damage`: the player or the hurt entity.
     Victim,
 }
@@ -51,7 +55,11 @@ impl TextOp {
     pub fn ty(self, args: &[Expr], env: &crate::expr::Env) -> Ty {
         match self {
             TextOp::Codepoint | TextOp::ChunkX | TextOp::ChunkZ => Ty::Number,
-            TextOp::FromCodepoint | TextOp::DeathMessage | TextOp::DamageCause => Ty::Text,
+            TextOp::FromCodepoint
+            | TextOp::DeathMessage
+            | TextOp::DamageCause
+            | TextOp::MenuTitle
+            | TextOp::CommandArgs => Ty::Text,
             TextOp::CharsBetween { .. } | TextOp::ChatRecipients => Ty::List,
             TextOp::Offset(..) | TextOp::Facing(..) | TextOp::CompassTarget => Ty::Location,
             TextOp::Victim => Ty::Object,

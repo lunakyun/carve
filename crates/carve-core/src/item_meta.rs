@@ -369,6 +369,29 @@ pub struct MetaExpr {
     pub name: Option<crate::expr::Expr>,
     pub lore: Vec<crate::expr::Expr>,
     pub enchants: Vec<crate::expr::Expr>,
+    /// `with all flags hidden`.
+    pub hide_flags: bool,
+}
+
+/// `with all flags hidden`: the item hides its enchantment, attribute and
+/// similar tooltip lines.
+pub fn hide_flags(v: Value) -> Value {
+    let Value::Item { id, count, meta } = v else {
+        return v;
+    };
+    let mut m = meta.map(|b| *b).unwrap_or_default();
+    if !m.comps.iter().any(|(k, _)| k == "tooltip_display") {
+        m.comps.push((
+            "tooltip_display".to_string(),
+            "{hidden_components:[\"minecraft:enchantments\",\"minecraft:attribute_modifiers\",\"minecraft:unbreakable\",\"minecraft:dyed_color\",\"minecraft:stored_enchantments\",\"minecraft:trim\",\"minecraft:can_break\",\"minecraft:can_place_on\"]}"
+                .to_string(),
+        ));
+    }
+    Value::Item {
+        id,
+        count,
+        meta: Some(Box::new(m)),
+    }
 }
 
 /// Build an item value with meta added to `base`. Non-items pass through unchanged.

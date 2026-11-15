@@ -10,9 +10,9 @@ A sender is whoever started the trigger. It is either a player or the console.
 | `console` | The server console. |
 | `me`, `myself` | The player, same as `player`. |
 
-They work in any trigger, but not inside functions. Pass them in as
-parameters instead. `me` also needs a player, so it is not allowed in
-`on load` or `every`.
+They work in any trigger. Inside functions only `console` works: `sender` and
+`me` need a trigger that someone started, so pass them in as parameters. `me`
+also needs a player, so it is not allowed in `on load` or `every`.
 
 A variable can hold the console: `set {who} to console`.
 
@@ -37,7 +37,13 @@ force player to execute command "spawn"
 execute command "/spawn" by player
 execute command "say hi"
 execute console command "say hi"
+command "say hi" by console
+player command "/home"
+console command "/say hi"
 ```
+
+The older forms (`player command`, `console command`, `make player run`) are
+on the [popular syntax page](popular-syntax.md).
 
 - A leading `/` in the command is ignored.
 - `execute command "x"` with no `by` runs as the console.

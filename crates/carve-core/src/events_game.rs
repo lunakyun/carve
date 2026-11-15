@@ -469,6 +469,7 @@ pub const SPECS: &[Spec] = &[
         ev: Ev::Hunger,
         names: &[
             "hunger meter change",
+            "food bar change",
             "hunger change",
             "food level change",
             "food change",

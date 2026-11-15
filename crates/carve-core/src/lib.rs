@@ -63,6 +63,7 @@ pub mod pattern;
 pub mod persist;
 pub mod placeholders;
 pub mod player_flags;
+pub mod popular_syntax;
 pub mod potions_particles_queues;
 pub mod quaternions_protocol;
 pub mod scoreboards_bossbars;

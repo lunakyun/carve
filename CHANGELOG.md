@@ -7,6 +7,47 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Added
+
+- Core Skript syntax that popular public scripts use (page: `syntax/popular-syntax`):
+  - Command arguments: `<offline player>`, `<boolean>`, `<integer>` (refuses `2.5`),
+    `<world>`, `<item>`, `<timespan>`, defaults like `<number=5>` and
+    `[<player=%player%>]`, `arg 1` and `argument 1`, `command //name`, and the
+    `permission message:` entry.
+  - Effects: `message "x" [to ...]`, `send/message ... to all players`,
+    `player command "x"`, `execute player command "x"`, `console command "x"`,
+    `make player run command "x"`, `command "x" by console`, `clear {list::*}`,
+    `teleport player at <location>`, `delete player's held item`,
+    `set 1st line of (player's held item)'s lore to "x"`,
+    `remove all <item> from the player`, `reload skript "name"`,
+    `exit trigger`, `exit N sections`, `exit N loops`,
+    `set slots 0, 1 and 2 of {_gui} to ...` and `set slot (integers between 0 and 8) of ...`.
+  - Items: `of <enchantment> [level]`, `with all flags hidden`, `with lore` on a
+    loop value, and the names `dirt block`, `endstone`, `wheat seed`,
+    `bottle o' enchanting`, `redstone dust`, `gold <tool>`, `player's head`, `grass`, `bed`.
+  - Conditions: `{x} was less than a minute ago`, `difference between a and b is less than 20 seconds`,
+    `player doesn't have permission "x"`, `a and b are set`, `arg-1 not set`,
+    `{list::*} do not contain x`, `x contains "a" or "b"`, `loop-value is a location`,
+    `player is holding anything`, `world is "world"`, `victim is not a or b or c`,
+    `{x} mod 3 = 0`, and a section header that is only a condition works like `if`.
+  - Expressions: `random integer from 1 to 10`, `rounded x`, `player's x-coordinate`,
+    `"world"'s time`, `loop-entity's type`, `name of current inventory of player`,
+    `event-player`, `loop-block`/`loop-item`/`loop-offline player` and the other typed loop values.
+  - Loops: `loop all offline players`, `loop all entities in player's world` (and
+    `in world "x"`), `amount of entities in radius 5 of player`.
+  - Events: `on damage of a or b`, `on rightclick on a or b or a bed`,
+    `on walking on <block or list>`, `on food bar change`; `on tab complete of "/cmd"`
+    loads with a warning and never runs.
+  - `draw 100 cloud at ... with offset vector(...) with extra 0`.
+
+### Changed
+
+- `console` works inside functions.
+- `name of <player>` gives the name of an offline player too.
+- The host trait has `offline_player`, `offline_players` and `clear_held_item`
+  (all have defaults). `CommandOutcome::NoPermission` carries the
+  `permission message:` text.
+
 ## [0.3.2] - 2026-11-15
 
 ### Added

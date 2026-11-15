@@ -176,19 +176,29 @@ impl EventKind {
 pub enum ArgTy {
     Text,
     Number,
+    Integer,
     Player,
+    OfflinePlayer,
+    Boolean,
+    World,
+    Item,
+    Timespan,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ArgDef {
     pub ty: ArgTy,
     pub optional: bool,
+    /// `<number=5>`, `<player=%player%>`: used when the argument is left out.
+    pub default: Option<Expr>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct CommandDef {
     pub name: String,
     pub permission: Option<String>,
+    /// `permission message:`: sent to a player who lacks the permission.
+    pub permission_message: Option<String>,
     pub description: Option<String>,
     pub args: Vec<ArgDef>,
     /// Other names for the command (`aliases: /h, /hi`).
@@ -205,11 +215,7 @@ impl CommandDef {
     pub fn usage(&self) -> String {
         let mut s = format!("/{}", self.name);
         for a in &self.args {
-            let t = match a.ty {
-                ArgTy::Text => "text",
-                ArgTy::Number => "number",
-                ArgTy::Player => "player",
-            };
+            let t = a.ty.name();
             if a.optional {
                 s.push_str(&format!(" [<{t}>]"));
             } else {
@@ -269,6 +275,8 @@ pub enum Cond {
     IsSet(Expr, bool),
     /// Rare conditions (boxed to keep this enum small).
     Rare(Box<crate::conditions_values::Rare>),
+    /// Checks of `popular_syntax` (`loop-value is a location`).
+    Popular(Box<crate::popular_syntax::PopCond>),
     /// `chance of 25%`
     Chance(Expr),
     /// `player has 2 diamonds`, `player's inventory contains stone`.
@@ -480,6 +488,8 @@ pub enum LoopSrc {
     /// `loop sorted {x::*}:` and other list expressions.
     Items(ListSrc),
     Players,
+    /// `loop all offline players`.
+    OfflinePlayers,
     Values(Vec<Expr>),
 }
 
@@ -495,6 +505,8 @@ pub enum Instr {
     LoopNext(usize),
     /// `exit loop`: end the innermost loop and jump to the target.
     LoopBreak(usize),
+    /// Drop the innermost loop frame without jumping (`exit 2 loops`).
+    LoopPop,
     /// `stop`: end the trigger, or return from a function.
     Stop,
     /// A function call used as a statement (its result is dropped).
@@ -583,6 +595,10 @@ pub enum EffKind {
     ConsoleCommand,
     ExecAs,
     ExecAsBy,
+    /// `player command "x"`: the event player runs it.
+    ExecAsPlayer,
+    /// `send "x" to all players`.
+    SendAllPlayers,
     Cancel,
     WaitTicks,
     WaitSeconds,
@@ -963,6 +979,15 @@ struct LoopCx {
     catch: usize,
 }
 
+/// An `if` branch or a loop being compiled, for `exit N sections`.
+struct SecCx {
+    /// Index into `Cx::loops` when the section is a loop.
+    loop_idx: Option<usize>,
+    /// Jumps out of an `if` branch, patched to the end of its chain.
+    jumps: Vec<usize>,
+    catch: usize,
+}
+
 pub(crate) struct Cx<'a> {
     pub(crate) file: &'a str,
     pub(crate) env: Env,
@@ -975,6 +1000,8 @@ pub(crate) struct Cx<'a> {
     pub(crate) lines: Vec<usize>,
     pub(crate) errors: Vec<ScriptError>,
     loops: Vec<LoopCx>,
+    /// The `if` and loop sections open around the current line (`exit 2 sections`).
+    secs: Vec<SecCx>,
     /// `catch runtime errors` sections open around the current line.
     pub(crate) catch_depth: usize,
 }
@@ -992,6 +1019,7 @@ impl<'a> Cx<'a> {
             lines: Vec::new(),
             errors: Vec::new(),
             loops: Vec::new(),
+            secs: Vec::new(),
             catch_depth: 0,
         }
     }
@@ -1024,44 +1052,7 @@ impl Cx<'_> {
             let _ = crate::error::take_compile_warns();
             let lower = line.text.to_ascii_lowercase();
             if lower.starts_with("if ") && line.opens_block() {
-                let mut ends = Vec::new();
-                let mut cur = line;
-                let mut cond_text = line.head().get(3..).unwrap_or("");
-                // Like Skript: a section whose condition fails to parse is
-                // reported and its whole block skipped. The chain ends there,
-                // so a following `else` is reported instead of attaching.
-                while let Some(c) = self.cond(cur.num, cond_text) {
-                    let jif = self.emit(Instr::JumpIfNot(c, usize::MAX), cur.num);
-                    self.block(&cur.children);
-                    let next = lines.get(i + 1);
-                    let next_lower = next.map(|l| l.text.to_ascii_lowercase()).unwrap_or_default();
-                    let has_more = next.is_some_and(|l| l.opens_block())
-                        && (next_lower.starts_with("else if ") || next_lower == "else:");
-                    if has_more {
-                        ends.push(self.emit(Instr::Jump(usize::MAX), cur.num));
-                    }
-                    let here = self.code.len();
-                    if let Some(Instr::JumpIfNot(_, t)) = self.code.get_mut(jif) {
-                        *t = here;
-                    }
-                    if !has_more {
-                        break;
-                    }
-                    i += 1;
-                    let Some(n) = lines.get(i) else { break };
-                    if next_lower == "else:" {
-                        self.block(&n.children);
-                        break;
-                    }
-                    cur = n;
-                    cond_text = n.head().get(8..).unwrap_or("");
-                }
-                let end = self.code.len();
-                for e in ends {
-                    if let Some(Instr::Jump(t)) = self.code.get_mut(e) {
-                        *t = end;
-                    }
-                }
+                self.if_chain(lines, &mut i, 3);
                 i += 1;
                 continue;
             }
@@ -1079,6 +1070,12 @@ impl Cx<'_> {
                 continue;
             }
             if line.opens_block() && crate::structures::section(self, line, &lower) {
+                i += 1;
+                continue;
+            }
+            // A header that is only a condition works like `if`.
+            if line.opens_block() && self.implicit_if(line, &lower) {
+                self.if_chain(lines, &mut i, 0);
                 i += 1;
                 continue;
             }
@@ -1114,6 +1111,96 @@ impl Cx<'_> {
         }
     }
 
+    /// A section header that is not a keyword but reads as a condition
+    /// (`{x} was less than a minute ago:`) works like `if`.
+    fn implicit_if(&self, line: &Line, lower: &str) -> bool {
+        const KEYWORDS: &[&str] = &[
+            "else",
+            "loop ",
+            "while ",
+            "for each ",
+            "try",
+            "catch",
+            "parallel",
+            "async",
+            "delay",
+            "every ",
+            "on ",
+            "command",
+            "function",
+            "options",
+            "variables",
+            "at ",
+        ];
+        if KEYWORDS.iter().any(|k| lower.starts_with(k)) {
+            return false;
+        }
+        let Ok(toks) = lex(line.head()) else {
+            return false;
+        };
+        crate::popular_syntax::looks_like_condition(&toks) && self.parse_cond(&toks).is_some()
+    }
+
+    /// The `if` / `else if` / `else` chain starting at `lines[*i]`. `prefix` is
+    /// the length of the `if ` keyword (0 when it is left out).
+    fn if_chain(&mut self, lines: &[Line], i: &mut usize, prefix: usize) {
+        let Some(line) = lines.get(*i) else { return };
+        let mut ends = Vec::new();
+        let mut cur = line;
+        let mut cond_text = line.head().get(prefix..).unwrap_or("");
+        // Like Skript: a section whose condition fails to parse is
+        // reported and its whole block skipped. The chain ends there,
+        // so a following `else` is reported instead of attaching.
+        while let Some(c) = self.cond(cur.num, cond_text) {
+            let jif = self.emit(Instr::JumpIfNot(c, usize::MAX), cur.num);
+            self.secs.push(SecCx {
+                loop_idx: None,
+                jumps: Vec::new(),
+                catch: self.catch_depth,
+            });
+            self.block(&cur.children);
+            if let Some(sec) = self.secs.pop() {
+                ends.extend(sec.jumps);
+            }
+            let next = lines.get(*i + 1);
+            let next_lower = next.map(|l| l.text.to_ascii_lowercase()).unwrap_or_default();
+            let has_more = next.is_some_and(|l| l.opens_block())
+                && (next_lower.starts_with("else if ") || next_lower == "else:");
+            if has_more {
+                ends.push(self.emit(Instr::Jump(usize::MAX), cur.num));
+            }
+            let here = self.code.len();
+            if let Some(Instr::JumpIfNot(_, t)) = self.code.get_mut(jif) {
+                *t = here;
+            }
+            if !has_more {
+                break;
+            }
+            *i += 1;
+            let Some(n) = lines.get(*i) else { break };
+            if next_lower == "else:" {
+                self.secs.push(SecCx {
+                    loop_idx: None,
+                    jumps: Vec::new(),
+                    catch: self.catch_depth,
+                });
+                self.block(&n.children);
+                if let Some(sec) = self.secs.pop() {
+                    ends.extend(sec.jumps);
+                }
+                break;
+            }
+            cur = n;
+            cond_text = n.head().get(8..).unwrap_or("");
+        }
+        let end = self.code.len();
+        for e in ends {
+            if let Some(Instr::Jump(t)) = self.code.get_mut(e) {
+                *t = end;
+            }
+        }
+    }
+
     /// `stop`, `stop loop` / `exit loop`, `continue`. Returns true if handled.
     pub(crate) fn control(&mut self, num: usize, text: &str, lower: &str) -> bool {
         // Most lines are effects: check the first word before collecting all.
@@ -1123,8 +1210,18 @@ impl Cx<'_> {
         }
         let words: Vec<&str> = lower.split_whitespace().collect();
         match words.as_slice() {
-            ["stop"] | ["stop", "trigger"] | ["exit"] => {
+            ["stop"] | ["stop", "trigger"] | ["exit"] | ["exit", "trigger"] | ["exit", "the", "trigger"] => {
                 self.emit(Instr::Stop, num);
+            }
+            ["exit", "all", "sections"] | ["exit", "all", "loops"] | ["stop", "all", "sections"] => {
+                self.emit(Instr::Stop, num);
+            }
+            ["exit", n, what] | ["stop", n, what]
+                if matches!(*what, "section" | "sections" | "loop" | "loops")
+                    && n.parse::<usize>().is_ok() =>
+            {
+                let n = n.parse::<usize>().unwrap_or(1);
+                self.exit_sections(num, n, matches!(*what, "loop" | "loops"));
             }
             ["stop", "loop"] | ["exit", "loop"] | ["exit", "this", "loop"] | ["break"] => {
                 let Some(lp) = self.loops.last() else {
@@ -1162,6 +1259,66 @@ impl Cx<'_> {
             _ => return false,
         }
         true
+    }
+
+    /// `exit 2 sections` / `exit 2 loops`: leave the innermost `n` sections
+    /// (`if` branches and loops; with `loops_only` only loops count).
+    fn exit_sections(&mut self, num: usize, n: usize, loops_only: bool) {
+        if n == 0 {
+            self.err(num, "'exit 0 sections' does nothing; use a number of 1 or more");
+            return;
+        }
+        let idxs: Vec<usize> = (0..self.secs.len())
+            .rev()
+            .filter(|i| !loops_only || self.secs.get(*i).is_some_and(|s| s.loop_idx.is_some()))
+            .take(n)
+            .collect();
+        if idxs.len() < n {
+            self.emit(Instr::Stop, num);
+            return;
+        }
+        let Some(&target) = idxs.last() else { return };
+        // Frames of loops that are left on the way are dropped.
+        for &i in idxs.iter().take(idxs.len().saturating_sub(1)) {
+            if let Some(l) = self
+                .secs
+                .get(i)
+                .and_then(|s| s.loop_idx)
+                .and_then(|l| self.loops.get(l))
+                && l.frame
+            {
+                self.emit(Instr::LoopPop, num);
+            }
+        }
+        let (catch, loop_idx) = match self.secs.get(target) {
+            Some(s) => (s.catch, s.loop_idx),
+            None => return,
+        };
+        for _ in 0..self.catch_depth.saturating_sub(catch) {
+            self.emit(Instr::CatchEnd, num);
+        }
+        match loop_idx {
+            Some(l) => {
+                let frame = self.loops.get(l).is_some_and(|x| x.frame);
+                let at = self.emit(
+                    if frame {
+                        Instr::LoopBreak(usize::MAX)
+                    } else {
+                        Instr::Jump(usize::MAX)
+                    },
+                    num,
+                );
+                if let Some(lp) = self.loops.get_mut(l) {
+                    lp.breaks.push(at);
+                }
+            }
+            None => {
+                let at = self.emit(Instr::Jump(usize::MAX), num);
+                if let Some(s) = self.secs.get_mut(target) {
+                    s.jumps.push(at);
+                }
+            }
+        }
     }
 
     fn return_stmt(&mut self, num: usize, text: &str) {
@@ -1256,7 +1413,13 @@ impl Cx<'_> {
                 breaks: Vec::new(),
                 catch: self.catch_depth,
             });
+            self.secs.push(SecCx {
+                loop_idx: Some(self.loops.len() - 1),
+                jumps: Vec::new(),
+                catch: self.catch_depth,
+            });
             self.block(&line.children);
+            self.secs.pop();
             self.emit(Instr::Jump(start), line.num);
             let end = self.code.len();
             if let Some(Instr::JumpIfNot(_, t)) = self.code.get_mut(jif) {
@@ -1278,7 +1441,13 @@ impl Cx<'_> {
             catch: self.catch_depth,
         });
         self.env.loops.push(kind);
+        self.secs.push(SecCx {
+            loop_idx: Some(self.loops.len() - 1),
+            jumps: Vec::new(),
+            catch: self.catch_depth,
+        });
         self.block(&line.children);
+        self.secs.pop();
         self.env.loops.pop();
         self.emit(Instr::Jump(next), line.num);
         let end = self.code.len();
@@ -1305,6 +1474,12 @@ impl Cx<'_> {
             "all players" | "all online players" | "players" | "online players"
         ) {
             return Some((LoopSrc::Players, LoopKind::Players));
+        }
+        if matches!(
+            lower.as_str(),
+            "all offline players" | "offline players" | "all offlineplayers"
+        ) {
+            return Some((LoopSrc::OfflinePlayers, LoopKind::Values));
         }
         let toks = match lex(rest) {
             Ok(t) => t,
@@ -1486,6 +1661,9 @@ impl Cx<'_> {
     }
 
     fn single_cond(&self, toks: &[Tok]) -> Option<Cond> {
+        if let Some(c) = crate::popular_syntax::parse_cond(toks, &self.env) {
+            return Some(c);
+        }
         if let Some(c) = crate::gaps::parse_cond(toks, &self.env) {
             return Some(c);
         }
@@ -1637,12 +1815,43 @@ impl Cx<'_> {
         let rest = toks.get(rest_at..)?;
         let mut options = Vec::new();
         for part in rest.split(|t| t.is_lit("or") || t.is_lit(",") || t.is_lit("and")) {
-            options.push(parse_expr(part, &self.env).ok()?);
+            match parse_expr(part, &self.env) {
+                Ok(e) => options.push(e),
+                // `victim is not warden or wither`: a name that is no value, so each
+                // alternative is a condition of its own.
+                Err(_) => return self.each_alternative(toks, pos, rest, negate),
+            }
         }
         (options.len() >= 2).then_some(Cond::AnyOf {
             value,
             options,
             negate,
+        })
+    }
+
+    /// `x is [not] a or b or c` where the alternatives are checks, not values:
+    /// `x is a`, `x is b` joined with `or` (with `not`, every one must fail).
+    fn each_alternative(&self, toks: &[Tok], pos: usize, rest: &[Tok], negate: bool) -> Option<Cond> {
+        if !toks.get(pos).is_some_and(|t| t.is_lit("is")) {
+            return None;
+        }
+        let mut conds = Vec::new();
+        for part in rest.split(|t| t.is_lit("or") || t.is_lit(",")) {
+            let mut t: Vec<Tok> = toks.get(..=pos)?.to_vec();
+            if negate {
+                t.push(Tok::Word("not".into()));
+            }
+            // `is not a warden` and `is a warden` read the same with or without the article.
+            t.extend(part.iter().cloned());
+            conds.push(self.single_cond(&t)?);
+        }
+        if conds.len() < 2 {
+            return None;
+        }
+        Some(if negate {
+            Cond::All(conds)
+        } else {
+            Cond::Any(conds)
         })
     }
 
@@ -1657,6 +1866,7 @@ impl Cx<'_> {
         if self.call_stmt(num, &toks) {
             return;
         }
+        let toks = crate::popular_syntax::rewrite_effect(&toks).unwrap_or(toks);
         match crate::effects_entity_commands::parse_effect(&toks, &self.env) {
             Ok(Some(eff)) => {
                 self.emit(Instr::Eff(eff), num);
@@ -2370,6 +2580,8 @@ fn build_effect(kind: EffKind, mut c: Vec<Option<Capture>>) -> Option<Effect> {
             let who = take_expr(c, 0)?;
             Effect::ExecAs(who, take_expr(c, 1)?)
         }
+        EffKind::ExecAsPlayer => Effect::ExecAs(Expr::Player, take_expr(c, 0)?),
+        EffKind::SendAllPlayers => Effect::Broadcast(take_expr(c, 0)?),
         EffKind::ExecAsBy => {
             let cmd = take_expr(c, 0)?;
             Effect::ExecAs(take_expr(c, 1)?, cmd)
@@ -2417,9 +2629,9 @@ fn build_effect(kind: EffKind, mut c: Vec<Option<Capture>>) -> Option<Effect> {
 
 fn parse_command_header(file: &str, num: usize, head: &str) -> Result<CommandDef, ScriptError> {
     let rest = head.get("command".len()..).unwrap_or("").trim();
-    let mut parts = rest.split_whitespace();
-    let name = parts.next().unwrap_or("");
-    let name = name.strip_prefix('/').unwrap_or(name).to_ascii_lowercase();
+    let (name, arg_text) = rest.split_once(char::is_whitespace).unwrap_or((rest, ""));
+    // `command //replace` is a WorldEdit-style name; Pumpkin names have no slash.
+    let name = name.trim_start_matches('/').to_ascii_lowercase();
     if name.is_empty()
         || !name
             .chars()
@@ -2432,25 +2644,30 @@ fn parse_command_header(file: &str, num: usize, head: &str) -> Result<CommandDef
         ));
     }
     let mut args = Vec::new();
-    for p in parts {
-        let (inner, optional) = match p.strip_prefix('[').and_then(|s| s.strip_suffix(']')) {
-            Some(s) => (s, true),
-            None => (p, false),
+    for (inner, in_brackets) in
+        crate::popular_syntax::split_arg_specs(arg_text).map_err(|e| ScriptError::new(file, num, e))?
+    {
+        let (ty_text, default_text) = match inner.split_once('=') {
+            Some((t, d)) => (t.trim(), Some(d.trim())),
+            None => (inner.trim(), None),
         };
-        let ty = match inner {
-            "<text>" | "<string>" => ArgTy::Text,
-            "<number>" | "<integer>" => ArgTy::Number,
-            "<player>" => ArgTy::Player,
-            _ => {
-                return Err(ScriptError::new(
-                    file,
-                    num,
-                    format!(
-                        "unknown argument '{p}', use <text>, <number>, <player> or [<text>] for optional"
-                    ),
-                ));
-            }
+        let Some(ty) = ArgTy::from_name(ty_text) else {
+            return Err(ScriptError::new(
+                file,
+                num,
+                format!(
+                    "unknown argument '<{ty_text}>', use <text>, <number>, <integer>, <player>, <offline player>, <boolean>, <world>, <item> or <timespan> (optional ones in [ ], defaults like <number=5>)"
+                ),
+            ));
         };
+        let default = match default_text {
+            Some(d) => Some(
+                crate::popular_syntax::compile_default(ty, d)
+                    .map_err(|e| ScriptError::new(file, num, format!("bad default value '{d}': {e}")))?,
+            ),
+            None => None,
+        };
+        let optional = in_brackets || default.is_some();
         if !optional && args.iter().any(|a: &ArgDef| a.optional) {
             return Err(ScriptError::new(
                 file,
@@ -2458,11 +2675,16 @@ fn parse_command_header(file: &str, num: usize, head: &str) -> Result<CommandDef
                 "required arguments can't come after optional ones",
             ));
         }
-        args.push(ArgDef { ty, optional });
+        args.push(ArgDef {
+            ty,
+            optional,
+            default,
+        });
     }
     Ok(CommandDef {
         name,
         permission: None,
+        permission_message: None,
         description: None,
         args,
         aliases: Vec::new(),
@@ -2618,6 +2840,7 @@ pub fn compile_all(files: &[(String, String)]) -> Compiled {
             lines: Vec::new(),
             errors: Vec::new(),
             loops: Vec::new(),
+            secs: Vec::new(),
             catch_depth: 0,
         };
         cx.block(&top.children);
@@ -2920,6 +3143,16 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                 }
             };
             prio = p;
+            if ev.starts_with("tab complete of ") || ev.starts_with("tab completion of ") {
+                // Pumpkin plugins can't change command completions: the trigger is
+                // read (so it is not an error) but never runs.
+                errors.push(ScriptError::warning(
+                    file,
+                    top.num,
+                    "'on tab complete of \"/command\"' does nothing on this server: the plugin API can't change command completions",
+                ));
+                continue;
+            }
             let (ev, ev_filter) = crate::events_items::split_filter(ev.trim());
             let (ev, ph_prefix) = crate::placeholders::split_header(ev);
             let (ev, cmd_filter) = crate::events_movement::split_command_filter(ev);
@@ -3066,6 +3299,9 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                     body = Some(&entry.children);
                 } else if el == "suggestions:" {
                     suggestions = Some(entry);
+                } else if el.starts_with("permission message:") {
+                    let v = entry.text.get("permission message:".len()..).unwrap_or("").trim();
+                    def.permission_message = Some(v.to_string()).filter(|s| !s.is_empty());
                 } else if el.starts_with("permission:") {
                     let v = entry.text.get("permission:".len()..).unwrap_or("").trim();
                     def.permission = Some(v.to_string()).filter(|s| !s.is_empty());
@@ -3131,15 +3367,7 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                 ));
                 continue;
             };
-            let arg_types = def
-                .args
-                .iter()
-                .map(|a| match a.ty {
-                    ArgTy::Text => Ty::Text,
-                    ArgTy::Number => Ty::Number,
-                    ArgTy::Player => Ty::Player,
-                })
-                .collect();
+            let arg_types = def.args.iter().map(|a| a.ty.ty()).collect();
             let env = Env {
                 has_message: false,
                 arg_types,
@@ -3163,6 +3391,7 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                     lines: Vec::new(),
                     errors: Vec::new(),
                     loops: Vec::new(),
+                    secs: Vec::new(),
                     catch_depth: 0,
                 };
                 scx.block(&sec.children);
@@ -3202,6 +3431,7 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
             lines: Vec::new(),
             errors: Vec::new(),
             loops: Vec::new(),
+            secs: Vec::new(),
             catch_depth: 0,
         };
         cx.env.functions = sigs.clone();
@@ -3210,16 +3440,31 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
         let mut header_ok = true;
         for (what, text) in std::mem::take(&mut click_filters) {
             if what == "stepon" {
-                let Some(right) = crate::events_step_jump::step_rhs(&text) else {
-                    cx.err(top.num, format!("'{text}' is not a block name"));
-                    header_ok = false;
-                    continue;
+                // `on walking on (red terracotta, lime terracotta or blue terracotta)`: any of them.
+                let list = text
+                    .trim()
+                    .trim_start_matches('(')
+                    .trim_end_matches(')')
+                    .replace(" or ", ",");
+                let mut alts = Vec::new();
+                for part in list.split(',') {
+                    match crate::events_step_jump::step_rhs(part) {
+                        Some(right) => alts.push(Cond::Cmp(Expr::WorldEventVal(0), CmpOp::Eq, right)),
+                        None => {
+                            cx.err(top.num, format!("'{}' is not a block name", part.trim()));
+                            header_ok = false;
+                        }
+                    }
+                }
+                let cond = if alts.len() == 1 {
+                    alts.pop()
+                } else {
+                    Some(Cond::Any(alts))
                 };
-                let at = cx.emit(
-                    Instr::JumpIfNot(Cond::Cmp(Expr::WorldEventVal(0), CmpOp::Eq, right), usize::MAX),
-                    top.num,
-                );
-                guards.push(at);
+                if let Some(cond) = cond.filter(|_| header_ok) {
+                    let at = cx.emit(Instr::JumpIfNot(cond, usize::MAX), top.num);
+                    guards.push(at);
+                }
                 continue;
             }
             if what == "command" {
@@ -3251,22 +3496,39 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                 }
                 continue;
             }
-            let item = if let Some(e) = crate::events_items::filter_rhs(what, &text) {
-                e
-            } else if matches!(what, "entity" | "mode" | "victim") {
-                cx.err(top.num, format!("'{text}' is not a valid name here"));
-                header_ok = false;
-                continue;
+            // `on damage of horse or donkey:`, `on rightclick on chest or barrel:`: any of them.
+            let parts: Vec<&str> = if matches!(what, "prefix" | "mode") {
+                vec![text.as_str()]
             } else {
-                match lex(&text).and_then(|t| parse_expr(&t, &cx.env)) {
-                    Ok(e) if e.ty(&cx.env) == Ty::Item => e,
-                    _ => {
-                        cx.err(top.num, format!("'{text}' is not an item or block name"));
-                        header_ok = false;
-                        continue;
+                text.split(" or ").map(str::trim).collect()
+            };
+            let mut items = Vec::new();
+            let mut bad = false;
+            for part in parts {
+                if let Some(e) = crate::events_items::filter_rhs(what, part) {
+                    items.push(e);
+                } else if matches!(what, "entity" | "mode" | "victim") {
+                    cx.err(top.num, format!("'{part}' is not a valid name here"));
+                    bad = true;
+                } else {
+                    // `on rightclick on a bed`: the article is left out.
+                    let bare = ["a ", "an ", "any "]
+                        .iter()
+                        .find_map(|p| part.strip_prefix(p))
+                        .unwrap_or(part);
+                    match lex(bare).and_then(|t| parse_expr(&t, &cx.env)) {
+                        Ok(e) if e.ty(&cx.env) == Ty::Item => items.push(e),
+                        _ => {
+                            cx.err(top.num, format!("'{part}' is not an item or block name"));
+                            bad = true;
+                        }
                     }
                 }
-            };
+            }
+            if bad || items.is_empty() {
+                header_ok = false;
+                continue;
+            }
             let left = if what == "with" {
                 Expr::Prop(crate::expr::Prop::Tool, Box::new(Expr::Player))
             } else if let Some(l) = crate::events_items::filter_lhs(what) {
@@ -3274,10 +3536,20 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
             } else {
                 Expr::ClickedBlock
             };
-            let at = cx.emit(
-                Instr::JumpIfNot(Cond::Cmp(left, CmpOp::Eq, item), usize::MAX),
-                top.num,
-            );
+            let cond = if items.len() == 1 {
+                match items.pop() {
+                    Some(item) => Cond::Cmp(left, CmpOp::Eq, item),
+                    None => continue,
+                }
+            } else {
+                Cond::Any(
+                    items
+                        .into_iter()
+                        .map(|item| Cond::Cmp(left.clone(), CmpOp::Eq, item))
+                        .collect(),
+                )
+            };
+            let at = cx.emit(Instr::JumpIfNot(cond, usize::MAX), top.num);
             guards.push(at);
         }
         // A broken header skips the whole trigger, like Skript.

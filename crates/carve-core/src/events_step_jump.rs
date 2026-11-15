@@ -9,11 +9,12 @@ use crate::expr::{Expr, Part};
 /// `step on stone` -> (`step on`, Some(("stepon", "stone"))). Other headers
 /// come back unchanged.
 pub fn split_step_on(ev: &str) -> (&str, Option<(&'static str, String)>) {
-    for base in ["step on", "walk on", "move on"] {
+    for base in ["step on", "walk on", "move on", "walking on", "stepping on"] {
         if let Some(rest) = ev.strip_prefix(base)
             && rest.starts_with(' ')
             && !rest.trim().is_empty()
         {
+            let base = if base.ends_with("ing on") { "step on" } else { base };
             return (base, Some(("stepon", rest.trim().to_string())));
         }
     }

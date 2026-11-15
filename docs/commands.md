@@ -31,18 +31,30 @@ command /name <type> [<type>]:
 | Type | Also | Gives | The player types |
 |---|---|---|---|
 | `<text>` | `<string>` | text | one word, or the rest of the line if it is the last argument |
-| `<number>` | `<integer>` | number | a number like `5` or `2.5` |
+| `<number>` | `<decimal>`, `<double>`, `<float>` | number | a number like `5` or `2.5` |
+| `<integer>` | `<int>`, `<long>` | number | a whole number; `2.5` is refused |
 | `<player>` | | player | the name of an online player |
+| `<offline player>` | `<offlineplayer>` | player | any name; an online player is used when there is one |
+| `<boolean>` | `<bool>` | boolean | `true`, `yes`, `on`, `false`, `no` or `off` |
+| `<world>` | | world | the name of a world the server has |
+| `<item>` | `<itemtype>` | item | an item name like `diamond_sword` (one word, or the rest of the line if it is the last argument) |
+| `<timespan>` | | timespan | like `5 minutes`; takes the rest of the line when it is the last argument |
 
 Rules:
 
 - Optional arguments must come after all required ones.
-- If the last argument is `<text>`, it takes everything that is left, spaces
-  and all. `/say <text>` gets the whole message.
-- Inside the trigger, use `arg-1`, `arg-2`, and so on. `arg` is `arg-1`.
+- If the last argument is `<text>`, `<item>` or `<timespan>`, it takes everything
+  that is left, spaces and all. `/say <text>` gets the whole message.
+- Inside the trigger, use `arg-1`, `arg-2`, and so on, or `arg 1`, `arg 2`
+  and `argument 1`. Plain `arg` is `arg-1`.
 - An optional argument that was left out is `<none>`. Check it with
-  `if arg-2 is set:`.
-- `<integer>` is the same as `<number>`. It does not reject `2.5`.
+  `if arg-2 is set:` (or `if arg-2 not set:`).
+- A default makes an argument optional and fills it in when it is left out:
+  `<number=5>`, `<text=hello>`, `[<player=%player%>]`. The part after `=` is
+  text for `<text>`, and an expression for the other types (`%...%` is
+  optional there). Spaces around `=` are fine.
+- `command //name` is the same as `command /name`: Pumpkin command names have
+  no slash in them.
 
 When the arguments are wrong, the command does not run and the player sees
 one of these:
@@ -60,6 +72,7 @@ Too many arguments. Usage: /pay <player> <number>
 |---|---|---|
 | `trigger:` | yes | The code that runs. |
 | `permission: node` | no | Only players with this permission can use the command. |
+| `permission message: text` | no | Sent to a player who lacks the `permission:`, instead of the default refusal. Colour codes work. |
 | `description: text` | no | Shown in the server's command help. Without it, the usage line is used. |
 | `aliases: /h, /hi` | no | Other names for the command. Like the command itself, they need a restart to appear. |
 | `usage: text` | no | Sent instead of the generated usage line when the arguments are wrong. |

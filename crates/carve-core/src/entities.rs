@@ -334,6 +334,36 @@ fn all_of(toks: &[Tok], s: usize, env: &Env) -> Parsed {
             word_end,
         )));
     };
+    // `all entities in player's world`, `all zombies in world "nether"`: a whole world.
+    {
+        let mut from = m + 1;
+        if toks.get(from).is_some_and(|t| is(t, "world"))
+            && toks.get(from + 1).is_some_and(|t| !matches!(t, Tok::Str(_)))
+        {
+            from += 1;
+        }
+        if toks
+            .get(from)
+            .is_some_and(|t| !is(t, "radius") && !matches!(t, Tok::Num(_)))
+            && let Ok(w) = sub(toks, from, toks.len(), env)
+            && w.ty(env) == Ty::World
+        {
+            let at = Expr::Loc(
+                Box::new(Expr::Num(0.0)),
+                Box::new(Expr::Num(0.0)),
+                Box::new(Expr::Num(0.0)),
+                Some(Box::new(w)),
+            );
+            return Ok(Some((
+                ent(EntExpr::All {
+                    kind,
+                    radius: None,
+                    at: Some(at),
+                }),
+                toks.len(),
+            )));
+        }
+    }
     let (radius, j) = radius_at(toks, m + 1, env)?;
     if !toks.get(j).is_some_and(|t| PREPS.iter().any(|w| is(t, w))) {
         return Err("expected 'of <place>' after the radius".into());
@@ -364,6 +394,18 @@ fn type_of(toks: &[Tok], s: usize, env: &Env) -> Parsed {
 
 /// `size of all zombies in radius 10 of player`.
 fn count(toks: &[Tok], s: usize, env: &Env) -> Parsed {
+    // `amount of entities in radius 5 of player`: the `all` is left out.
+    if toks.get(s + 1).is_some_and(|t| is(t, "of"))
+        && toks
+            .get(s + 2)
+            .is_some_and(|t| is(t, "entities") || is(t, "mobs"))
+        && toks.get(s + 3).is_some_and(|t| is(t, "in") || is(t, "within"))
+    {
+        return match all_of(toks, s + 1, env)? {
+            Some((list, end)) => Ok(Some((ent(EntExpr::Count(list)), end))),
+            None => Ok(None),
+        };
+    }
     if !(toks.get(s + 1).is_some_and(|t| is(t, "of")) && toks.get(s + 2).is_some_and(|t| is(t, "all"))) {
         return Ok(None);
     }
@@ -387,6 +429,11 @@ fn velocity(toks: &[Tok], s: usize, env: &Env) -> Parsed {
         ent(EntExpr::Vel(axis, sub(toks, s + 3, stop, env)?)),
         stop,
     )))
+}
+
+/// `<entity>'s type`: the entity type as text.
+pub(crate) fn type_of_expr(e: Expr) -> Expr {
+    ent(EntExpr::TypeOf(e))
 }
 
 pub(crate) fn ty(e: &EntExpr) -> Ty {

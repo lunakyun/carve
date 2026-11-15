@@ -83,9 +83,30 @@ pub trait Host {
         false
     }
 
+    /// Empty the main hand (`delete player's held item`). The default removes
+    /// as many of the held item from the inventory.
+    fn clear_held_item(&mut self, player: &PlayerRef) {
+        if let Some((id, n)) = self.held_item(player) {
+            self.inv_remove(player, &id, n);
+        }
+    }
+
     /// Everyone online, for `loop all players`.
     fn online_players(&mut self) -> Vec<PlayerRef> {
         Vec::new()
+    }
+
+    /// A player who may be offline, by name (`<offline player>` arguments).
+    /// `None`: the host does not know the name; the core then uses the
+    /// offline-mode UUID of the name.
+    fn offline_player(&mut self, _name: &str) -> Option<PlayerRef> {
+        None
+    }
+
+    /// Everyone the server has seen, for `loop all offline players`. The
+    /// default is the players online now.
+    fn offline_players(&mut self) -> Vec<PlayerRef> {
+        self.online_players()
     }
 
     /// Position and world name of an online player.

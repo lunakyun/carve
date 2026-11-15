@@ -19,12 +19,12 @@ event needs an in-game check. ⛔ items depend on Bukkit plugins (WorldGuard, Va
 | Events | 186 | 128 | 34 | 5 | 19 |
 | Effects | 154 | 83 | 21 | 0 | 50 |
 | Conditions | 170 | 109 | 29 | 0 | 32 |
-| Expressions | 547 | 304 | 86 | 1 | 156 |
+| Expressions | 547 | 305 | 85 | 1 | 156 |
 | Sections | 11 | 10 | 1 | 0 | 0 |
 | Structures | 8 | 8 | 0 | 0 | 0 |
 | Functions | 45 | 44 | 1 | 0 | 0 |
 | Types | 126 | 91 | 20 | 0 | 15 |
-| **All** | **1247** | **777** | **192** | **6** | **272** |
+| **All** | **1247** | **778** | **191** | **6** | **272** |
 
 Counting 🟡 as half, Carve covers about **70%** of core Skript by entry count.
 Leaving out the ⛔ entries that Pumpkin does not allow, it covers about **90%** of what can be done on Pumpkin.
@@ -281,7 +281,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Charge Entity (creeper state is not exposed)
 - ⛔ Clear Entity Storage (no bee or entity storage in Pumpkin)
 - ✅ Color Items — the held item (`dye player's tool red`)
-- ✅ Command — `execute console command`, `execute command "x" [by player]`, `make player execute command "x"`
+- ✅ Command — `execute console command`, `execute command "x" [by player]`, `make player execute command "x"`, `player command "x"`, `console command "x"`, `command "x" by console`
 - 🟡 Conditional / Unconditional — a condition on its own line stops the trigger; Skript's `make command block conditional` is not built yet (the block state has a `conditional` property the API can set)
 - ✅ Connect (`connect player to server "host" [on port n]`)
 - ⛔ Consume Boosting Firework (no elytra firework boost control)
@@ -305,7 +305,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Equippable Component - Lose Durability (no equippable component events)
 - ⛔ Equippable Component - Shear Off (no equippable component events)
 - ⛔ Equippable Component - Swap Equipment (no equippable component events)
-- ✅ Exit — `exit loop`, `stop`
+- ✅ Exit — `exit loop`, `exit trigger`, `exit 2 loops`, `exit 2 sections` (`if` and loop sections), `exit all sections`, `stop`
 - ✅ Expand/Shrink World Border — diameter or radius, `by`/`to`, `over <time>`
 - ✅ Explode Creeper — ignite, stop ignition, instantly explode
 - ✅ Explosion ⭐ — `create explosion of force 3 [with fire] at ...` (plugin API only; Pumpkin has no /explode command)
@@ -360,7 +360,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Make Panda Sneeze — no panda API
 - 🟡 Make Say — runs the vanilla `say` command as the player, so it shows as a say message, not normal chat; not built yet: v0.1 can broadcast the vanilla chat format `<name> message` with server.broadcast/send-system-message (unsigned, no chat events)
 - ✅ Make Sign Glow — front text of the sign at a location
-- ✅ Message — `send ... [to ...]`
+- ✅ Message — `send ... [to ...]`, `message "x" [to ...]`, `send ... to all players`
 - ✅ op/deop ⭐ — `op player`, `deop player`
 - 🟡 Open Book — opens the written book already in the player's main or off hand; cannot open an arbitrary item; not built yet: open-book(hand) only opens what is in the hand, so use the standard swap trick: set-item-in-hand(book), open-book, restore the old stack one tick later via scheduler
 - 🟡 Open/Close Inventory — `open {_gui} to player` and `open chest with 3 rows named "x" to player` work; `close` compiles but Pumpkin's plugin API v0.1 cannot close a window (v0.2 can); not built yet: v0.2 player.wit adds close-inventory and has-open-inventory
@@ -477,7 +477,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Has Line of Sight — `player has line of sight to {_loc}` (blocks on the way block it)
 - 🟡 Has Loot Table — blocks only (`LootTable` in the block data); only the no-table case is checked in game
 - ✅ Has Metadata — `player has metadata "key"`
-- ✅ Has Permission
+- ✅ Has Permission — `has permission`, `have permission`, `doesn't have permission`; `permission message:` entry for commands
 - ✅ Has Persistent Data Tag — `player has persistent data tag "key"`
 - ✅ Has Played Before — `player has played before` (from `carve.redb`; false for the whole first session)
 - ✅ Has Potion Effect ⭐ — `player has potion effect speed`, `player doesn't have potion effect speed`
@@ -625,7 +625,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Any Of — `x is any of {_list::*}`, `any of {_l::*} is x`
 - ⛔ Applied Beacon Effect — Pumpkin has no beacon-effect event
 - 🟡 Applied Enchantments — `applied enchantments` in `on enchant` (texts like `sharpness 1`); read only
-- ✅ Argument — `arg`, `arg-N`
+- ✅ Argument — `arg`, `arg-N`, `arg N`, `argument N`; types `<text>`, `<number>`, `<integer>`, `<player>`, `<offline player>`, `<boolean>`, `<world>`, `<item>`, `<timespan>` and defaults (`<number=5>`)
 - ✅ Arithmetic — + - * /
 - ⛔ Armor Change Item — the plugin API has no equipment change event
 - 🟡 Armor Slot — `helmet of player`, `chestplate`, `leggings`, `boots`: read only
@@ -751,7 +751,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Enchantment Offer Cost — `cost of enchantment offer 1` (read only)
 - ✅ Ender Chest — `ender chest of player`, `slot N of ender chest of player` (get, set), `clear ender chest of`, `open player's ender chest`
 - ✅ Enderman Carrying BlockData — `carried block of <enderman>` (get, set to a block or block data text)
-- 🟡 Entities — `all zombies in radius 10 of player`, `all entities`; no `all entities in chunk` or world filters
+- ✅ Entities — `all zombies in radius 10 of player`, `all entities`, `all entities in player's world`, `all zombies in world "nether"`; no `all entities in chunk`
 - ✅ Entity AI — `ai of <mob>` (get, set)
 - ✅ Entity Attribute — `movement speed attribute of player`, `total` value, set, add, remove, reset
 - 🟡 Entity Fire Burn Duration — `burn duration of player` (read, set, add, remove); no combust-event value
@@ -993,7 +993,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Quit Reason — the leave event has no reason field (player, leave message, cancelled only) and Pumpkin fires it without a reason
 - 🟡 Random — `random element of {list::*}`, `random N elements of {list::*}`
 - ✅ Random Character — `a random character`, `random alphanumeric character`, `random character between "a" and "z"`
-- ✅ Random Numbers
+- ✅ Random Numbers — `random integer between 1 and 10`, `random integer from 1 to 10`, `random number ...`
 - ✅ Random UUID ⭐ — `random uuid` (version 4, as text)
 - ✅ Raw Name — the namespaced id, like `minecraft:diamond_sword`
 - 🟡 Raw String — `raw "&aHi"` stops colour codes and tags from turning into colours by adding an invisible character, so it does not compare equal to the plain text

@@ -1827,7 +1827,7 @@ pub fn is_known(id: &str) -> bool {
 /// Could a name start with `word` (as its first part), or is `word` a plural
 /// of a name? Cheap check before trying longer word runs.
 pub fn could_start(word: &str) -> bool {
-    if alias(word).is_some() {
+    if alias(word).is_some() || word == "bottle" || word == "mob" {
         return true;
     }
     let i = NAMES.partition_point(|n| *n < word);
@@ -1859,6 +1859,25 @@ pub fn alias(joined: &str) -> Option<&'static str> {
         "wither_skull" | "wither_skeleton_head" => "wither_skeleton_skull",
         "skeleton_head" => "skeleton_skull",
         "web" | "cobwebs" => "cobweb",
+        "dirt_block" => "dirt",
+        "spawn_egg" | "spawn_eggs" => "#spawn_egg",
+        "redstone_dust" => "redstone",
+        "daylight_sensor" => "daylight_detector",
+        "gold_sword" => "golden_sword",
+        "gold_axe" => "golden_axe",
+        "gold_pickaxe" => "golden_pickaxe",
+        "gold_shovel" => "golden_shovel",
+        "gold_hoe" => "golden_hoe",
+        "gold_helmet" => "golden_helmet",
+        "gold_chestplate" => "golden_chestplate",
+        "gold_leggings" => "golden_leggings",
+        "gold_boots" => "golden_boots",
+        "bed" | "beds" => "#bed",
+        "mob_spawner" => "spawner",
+        "grass" => "short_grass",
+        "endstone" => "end_stone",
+        "wheat_seed" => "wheat_seeds",
+        "bottle_o_enchanting" | "bottle_o'_enchanting" => "experience_bottle",
         _ => return None,
     })
 }

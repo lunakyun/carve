@@ -291,14 +291,27 @@ impl Engine {
         host: &mut dyn Host,
     ) -> Result<(), String> {
         // Evaluate first, so an error leaves the item alone.
+        let mut line_no = 1usize;
         let texts = match op {
             HeldOp::Name(Some(e)) => vec![self.text(e, ex, host)?],
             HeldOp::Lore(l) | HeldOp::AddLore(l) | HeldOp::Enchant(l) => self.held_texts(l, ex, host)?,
-            HeldOp::Name(None) | HeldOp::Disenchant => Vec::new(),
+            HeldOp::LoreLine(n, t) => {
+                let n = self.num(n, ex, host)?;
+                if !n.is_finite() || !(1.0..=64.0).contains(&n) {
+                    return Err(format!("lore line {n} is out of range, use 1 to 64"));
+                }
+                line_no = n as usize;
+                vec![self.text(t, ex, host)?]
+            }
+            HeldOp::Name(None) | HeldOp::Disenchant | HeldOp::Delete => Vec::new(),
         };
         let Some(p) = self.player(who, ex, host)? else {
             return Ok(());
         };
+        if matches!(op, HeldOp::Delete) {
+            host.clear_held_item(&p);
+            return Ok(());
+        }
         match host.held_item(&p) {
             Some((id, _)) if id != "air" => {}
             _ => return Ok(()),
@@ -309,6 +322,15 @@ impl Engine {
             HeldOp::Name(Some(_)) => m.name = texts.into_iter().next(),
             HeldOp::Lore(_) => m.lore = texts,
             HeldOp::AddLore(_) => m.lore.extend(texts),
+            HeldOp::LoreLine(..) => {
+                while m.lore.len() < line_no {
+                    m.lore.push(String::new());
+                }
+                if let (Some(slot), Some(t)) = (m.lore.get_mut(line_no - 1), texts.into_iter().next()) {
+                    *slot = t;
+                }
+            }
+            HeldOp::Delete => {}
             HeldOp::Enchant(_) => {
                 for t in &texts {
                     let Some((id, level)) = crate::item_meta::split_spec(t) else {
@@ -396,6 +418,47 @@ impl Engine {
                     vec![(s, item)]
                 })?;
                 if bad {
+                    return Err(format!("slot {s} is outside this inventory"));
+                }
+            }
+            GapEff::SetSlots { slots, inv, item } => {
+                let mut nums: Vec<u32> = Vec::new();
+                for e in slots {
+                    let v = self.eval(e, ex, host)?;
+                    let items = match v {
+                        Value::List(l) => l,
+                        other => vec![other],
+                    };
+                    for x in items {
+                        let n = super::to_num_opt(&x).ok_or_else(|| format!("slot {x} is not a number"))?;
+                        if !n.is_finite() || !(0.0..54.0).contains(&n) {
+                            return Err(format!("slot {n} is out of range, a chest has slots 0 to 53"));
+                        }
+                        nums.push(n.floor() as u32);
+                    }
+                }
+                let item = slot_item(self.eval(item, ex, host)?)?;
+                let mut bad = None;
+                self.edit_inv(inv, ex, host, |i| {
+                    let mut changes = Vec::new();
+                    for &s in &nums {
+                        if i.viewer.is_none() {
+                            match i.slots.get_mut(s as usize) {
+                                Some(slot) => *slot = item.clone(),
+                                None => {
+                                    bad = Some(s);
+                                    return Vec::new();
+                                }
+                            }
+                        } else if s as usize >= i.size() {
+                            bad = Some(s);
+                            return Vec::new();
+                        }
+                        changes.push((s, item.clone()));
+                    }
+                    changes
+                })?;
+                if let Some(s) = bad {
                     return Err(format!("slot {s} is outside this inventory"));
                 }
             }

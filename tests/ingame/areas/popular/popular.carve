@@ -1,0 +1,72 @@
+# Syntax that popular public scripts use. Every result goes to chat as pop:<key> <value>.
+
+command /pop-args <offline player> <boolean> [<number=5>] [<text=hi>]:
+    permission message: &cpop:denied
+    trigger:
+        message "pop:args %name of arg 1% %arg 2% %arg-3% %arg-4%"
+
+command /pop-me [<player=%player%>]:
+    trigger:
+        message "pop:me %arg 1%"
+
+command /pop-perm:
+    permission: carve.test.nope
+    permission message: &cpop:denied
+    trigger:
+        message "pop:perm-ran"
+
+command /pop-cmds:
+    trigger:
+        player command "/pop-me"
+        execute player command "pop-args Zed true"
+        console command "/pop-ping"
+        message "pop:cmds-done"
+        send "pop:all" to all players
+        exit trigger
+        message "pop:never"
+
+command /pop-ping:
+    trigger:
+        if sender is console:
+            message "pop:ping console"
+
+command /pop-gui:
+    trigger:
+        set {_g} to chest inventory with 1 row named "&aPop"
+        set slots 0, 1 and 2 of {_g} to diamond named "&bRock" with lore "a", "b"
+        set slot (integers between 3 and 4) of {_g} to gold block of mending named "&6Gold" with all flags hidden
+        set {_l::*} to stone and dirt
+        loop {_l::*}:
+            set slot (loop-index parsed as number) + 4 of {_g} to loop-value with lore "&7%loop-value%"
+        open {_g} to player
+        message "pop:gui-open"
+
+command /pop-offline:
+    trigger:
+        set {_c} to 0
+        loop all offline players:
+            add 1 to {_c}
+        message "pop:offline %{_c}%"
+
+command /pop-misc:
+    trigger:
+        set {_x} to random integer from 3 to 5
+        if {_x} is not between 3 and 5:
+            message "pop:bad-random"
+        set {_t} to now
+        if {_t} was less than a minute ago:
+            message "pop:recent"
+        if difference between now and {_t} is less than 20 seconds:
+            message "pop:close"
+        if player doesn't have permission "carve.test.nope":
+            message "pop:noperm"
+        if world is "world":
+            message "pop:world"
+        set {_n} to 7
+        if {_n} mod 2 = 1:
+            message "pop:odd"
+        loop 3 times:
+            loop 3 times:
+                message "pop:in %loop-number%"
+                exit 2 loops
+        message "pop:misc-done"

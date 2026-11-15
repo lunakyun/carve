@@ -199,7 +199,11 @@ pub fn parse_effect(toks: &[Tok], env: &Env) -> Result<Option<Effect>, String> {
         "show" | "play" | "create" | "make" | "spawn" | "draw" | "summon" => {
             if toks.iter().any(|t| is(t, "display")) {
                 crate::skbee_particles_display::parse_display(toks, env)?.map(WorldFx::Display)
-            } else if toks.iter().any(|t| is(t, "particle") || is(t, "particles")) {
+            } else if toks.iter().any(|t| is(t, "particle") || is(t, "particles"))
+                || (first == "draw"
+                    && matches!(toks.get(1), Some(Tok::Num(_)))
+                    && toks.iter().any(|t| is(t, "at")))
+            {
                 particles(toks, env)?
             } else if toks.iter().any(|t| is(t, "explosion")) {
                 explosion(toks, env)?
@@ -299,9 +303,14 @@ fn particles(toks: &[Tok], env: &Env) -> Result<Option<WorldFx>, String> {
     let Some((last, words)) = head.split_last() else {
         return Ok(None);
     };
-    if !(is(last, "particle") || is(last, "particles")) {
+    // `draw 100 cloud at ...` has no `particles` word.
+    let words = if is(last, "particle") || is(last, "particles") {
+        words
+    } else if toks.first().is_some_and(|t| is(t, "draw")) && matches!(head.first(), Some(Tok::Num(_))) {
+        head
+    } else {
         return Ok(None);
-    }
+    };
     let (count, name_toks) = match words.split_first() {
         Some((c @ (Tok::Num(_) | Tok::Var(_)), rest)) => (number(std::slice::from_ref(c), env), rest),
         _ => (None, words),

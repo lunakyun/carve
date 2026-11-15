@@ -233,6 +233,15 @@ impl P<'_> {
         let mut world = None;
         if self.is_word(0, "in") {
             self.pos += 1;
+            // `in world event-world`: the word `world` only introduces the world.
+            if self.is_word(0, "world")
+                && !matches!(
+                    self.toks.get(self.pos + 1),
+                    Some(crate::lexer::Tok::Str(_)) | None
+                )
+            {
+                self.pos += 1;
+            }
             let w = self.primary()?;
             if !matches!(w.ty(self.env), Ty::World | Ty::Object | Ty::Text) {
                 return Err("'in' needs a world".into());

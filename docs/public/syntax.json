@@ -2706,6 +2706,19 @@
     },
     {
       "category": "effect",
+      "description": "Deletes a variable or a whole list variable, like `delete`. On a menu variable it empties the menu (see inventories).",
+      "example": "clear {homes::%uuid of player%::*}",
+      "id": "clear_variable",
+      "name": "Clear variable",
+      "page": "syntax/popular-syntax",
+      "patterns": [
+        "clear %variable%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
       "description": "Loads, but does nothing yet: plugin API v0.1 has no call to close a window. A warning is logged.",
       "example": "close player's inventory",
       "id": "close_inventory",
@@ -3681,10 +3694,11 @@
       "name": "Make execute command",
       "page": "syntax/senders",
       "patterns": [
-        "make %object% execute [the] [command] %text%",
-        "force %object% to execute [the] [command] %text%",
-        "execute [the] command %text% by %object%",
-        "execute [the] command %text%"
+        "make %object% (execute|run) [the] [command] %text%",
+        "force %object% to (execute|run) [the] [command] %text%",
+        "[execute] [the] command %text% by %object%",
+        "execute [the] command %text%",
+        "command %text%"
       ],
       "since": "unreleased",
       "source": "registry"
@@ -3743,6 +3757,21 @@
       ],
       "since": "unreleased",
       "source": "hand"
+    },
+    {
+      "category": "effect",
+      "description": "Sends a message, like `send`. `message \"x\"` goes to whoever started the trigger. `to all players` sends it to everyone online (and logs it).",
+      "example": "message \"&aWelcome!\"\nsend \"Server restart soon\" to all players",
+      "id": "message",
+      "name": "Message",
+      "page": "syntax/popular-syntax",
+      "patterns": [
+        "message %text% [to %player%]",
+        "message %text% to (all|every) [online] (player|players)",
+        "send %text% to (all|every) [online] (player|players)"
+      ],
+      "since": "unreleased",
+      "source": "registry"
     },
     {
       "category": "effect",
@@ -3878,6 +3907,20 @@
       ],
       "since": "unreleased",
       "source": "hand"
+    },
+    {
+      "category": "effect",
+      "description": "The older Skript forms of `make player execute command` and `execute console command`. `player command` runs as the player who started the trigger.",
+      "example": "player command \"/home\"\nconsole command \"/say hello\"",
+      "id": "player_command",
+      "name": "Player command",
+      "page": "syntax/popular-syntax",
+      "patterns": [
+        "[(execute|run)] player command %text%",
+        "[(execute|run)] console command %text%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
     },
     {
       "category": "effect",
@@ -4819,6 +4862,19 @@
     },
     {
       "category": "effect",
+      "description": "Same as `teleport %player% to %location%`.",
+      "example": "teleport player at {spawn}",
+      "id": "teleport_at",
+      "name": "Teleport at",
+      "page": "syntax/popular-syntax",
+      "patterns": [
+        "[(force|forcibly)] teleport %player% at %location%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "effect",
       "description": "Teleports the player to a location. A location without a world keeps the player in their world.",
       "example": "teleport player to location(0, 64, 0, world \"world\")",
       "id": "teleport_location",
@@ -5695,6 +5751,20 @@
     },
     {
       "category": "condition",
+      "description": "The plural and short forms scripts use: `{list::*} do not contain x` and `arg-1 not set`.",
+      "example": "if {homes::*} do not contain \"base\":\n    send \"no such home\"\nif {_x} not set:\n    send \"unset\"",
+      "id": "do_not_contain",
+      "name": "Do not contain / not set",
+      "page": "syntax/popular-syntax",
+      "patterns": [
+        "%text% (do not|don't) contain %text%",
+        "%object% not set"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
       "description": "In `on throwing of an egg`: whether the thrown egg will hatch a chick (same as `event-hatching`).",
       "example": "on throwing of an egg:\n    if the egg will hatch:\n        send \"A chick!\" to player",
       "id": "egg_will_hatch",
@@ -5927,14 +5997,16 @@
     },
     {
       "category": "condition",
-      "description": "Checks a permission node.",
+      "description": "Checks a permission node. On a line of its own it stops the trigger when false.",
       "example": "if player has permission \"vip\":\n    send \"Hi VIP\" to player",
       "id": "permission",
       "name": "Has permission",
       "page": "syntax/conditions",
       "patterns": [
         "%player% has permission %text%",
-        "%player% does not have permission %text%"
+        "%player% does not have permission %text%",
+        "%player% (doesn't|does not|do not|don't) have [the] permission %text%",
+        "%player% (has|have) [the] permission %text%"
       ],
       "since": "0.1.0",
       "source": "registry"
@@ -10334,5 +10406,5 @@
       "source": "hand"
     }
   ],
-  "version": "0.3.1"
+  "version": "0.3.2"
 }

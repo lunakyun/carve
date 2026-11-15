@@ -105,6 +105,11 @@ fn commas(toks: &[Tok]) -> Vec<&[Tok]> {
 
 /// `a, b, c` as three numbers.
 fn triple(toks: &[Tok], env: &Env) -> Option<Box<[Expr; 3]>> {
+    // `offset vector(0.5, 1, 0.5)` reads like `offset 0.5, 1, 0.5`.
+    let toks = match toks {
+        [v, open, mid @ .., close] if is(v, "vector") && is(open, "(") && is(close, ")") => mid,
+        t => t,
+    };
     let parts = commas(toks);
     let [a, b, c] = parts.as_slice() else {
         return None;
