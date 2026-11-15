@@ -160,7 +160,7 @@ fn lw(t: Option<&Tok>) -> Option<String> {
 pub fn possessive(toks: &[Tok], i: usize) -> Option<(Read, usize)> {
     match (lw(toks.get(i)).as_deref(), lw(toks.get(i + 1)).as_deref()) {
         (Some("remaining"), Some("air")) => Some((Read::RemainingAir, 2)),
-        (Some("respawn"), Some("location")) => Some((Read::RespawnLocation, 2)),
+        (Some("respawn" | "bed"), Some("location")) => Some((Read::RespawnLocation, 2)),
         _ => None,
     }
 }
@@ -250,7 +250,7 @@ impl P<'_> {
                 let p = self.primary()?;
                 self.w6_expr(W6::Read(Read::RemainingAir, Some(p)))
             }
-            "respawn" if n0 == Some("location") && n1 == Some("of") => {
+            "respawn" | "bed" if n0 == Some("location") && n1 == Some("of") => {
                 self.pos += 2;
                 let p = self.primary()?;
                 self.w6_expr(W6::Read(Read::RespawnLocation, Some(p)))
@@ -480,8 +480,14 @@ pub const EFFECT_PATTERNS: &[(&str, EffKind)] = &[
     ("add %timespan% to %player%'s remaining air", K(AddAir)),
     ("remove %timespan% from remaining air of %player%", K(RemoveAir)),
     ("remove %timespan% from %player%'s remaining air", K(RemoveAir)),
-    ("set respawn location of %player% to %location%", K(SetRespawn)),
-    ("set %player%'s respawn location to %location%", K(SetRespawn)),
+    (
+        "set [the] (respawn|bed) location of %player% to %location%",
+        K(SetRespawn),
+    ),
+    (
+        "set %player%'s (respawn|bed) location to %location%",
+        K(SetRespawn),
+    ),
 ];
 
 fn cap(caps: &mut [Option<Capture>], i: usize) -> Option<Expr> {

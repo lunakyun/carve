@@ -245,6 +245,8 @@ pub enum Cond {
     Rare4(Box<crate::w4_conditions_1::W4Cond>),
     /// Tag and loaded checks (`w4_skbee_raytrace_world`).
     Rtw(Box<crate::w4_skbee_raytrace_world::RtwCond>),
+    /// Mob, item, block and effect checks (`w5_chunk3`).
+    W5c3(Box<crate::w5_chunk3::W5Cond>),
     /// `{_gui} contains diamond` (see `gaps`).
     Gap(Box<crate::gaps::GapCond>),
     HasPerm {
@@ -357,6 +359,8 @@ pub enum Effect {
     W6(Box<crate::w2_expressions_6::W6Effect>),
     /// `create world`, `unload world` (`w4_skbee_raytrace_world`).
     Rtw(Box<crate::w4_skbee_raytrace_world::RtwEffect>),
+    /// Barter drop changes (`w5_chunk3`).
+    W5c3(Box<crate::w5_chunk3::W5Effect>),
     SetHealth(Expr, Expr),
     SetGamemode(Expr, Expr),
     /// Experience change; the two expressions are in pattern order.
@@ -533,6 +537,7 @@ pub enum EffKind {
     W2e3(crate::w2_effects_3::W2Op),
     W6(crate::w2_expressions_6::W6Op),
     Rtw(crate::w4_skbee_raytrace_world::EOp),
+    W5c3(crate::w5_chunk3::EOp),
     SetHealth,
     SetGamemode,
     Xp(crate::xp_level::XpOp),
@@ -609,6 +614,8 @@ pub enum CondKind {
     W4(crate::w4_conditions_1::Kind, bool),
     /// Tag and loaded checks from `w4_skbee_raytrace_world`; the bool is negation.
     Rtw(crate::w4_skbee_raytrace_world::CKind, bool),
+    /// Conditions from `w5_chunk3`; the bool is negation.
+    W5c3(crate::w5_chunk3::Kind, bool),
 }
 
 /// Text effects (`replace ...`). Kept apart from `EFFECT_PATTERNS` so the
@@ -786,6 +793,11 @@ fn registry() -> &'static Registry {
                     .iter()
                     .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
             )
+            .chain(
+                crate::w5_chunk3::EFFECT_PATTERNS
+                    .iter()
+                    .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
+            )
             .collect(),
         conditions: crate::op_kick_ban::CONDITION_PATTERNS
             .iter()
@@ -798,6 +810,7 @@ fn registry() -> &'static Registry {
             .chain(crate::w2_conditions_3::W2_CONDITION_PATTERNS)
             .chain(crate::w4_conditions_1::CONDITION_PATTERNS)
             .chain(crate::w4_skbee_raytrace_world::CONDITION_PATTERNS)
+            .chain(crate::w5_chunk3::CONDITION_PATTERNS)
             .chain(CONDITION_PATTERNS)
             .filter_map(|(s, k)| Pattern::new(s, *k).ok())
             .collect(),
@@ -824,6 +837,7 @@ pub fn check_registry() -> Result<(), String> {
         .chain(crate::w2_expressions_5::EFFECT_PATTERNS)
         .chain(crate::w2_expressions_6::EFFECT_PATTERNS)
         .chain(crate::w4_skbee_raytrace_world::EFFECT_PATTERNS)
+        .chain(crate::w5_chunk3::EFFECT_PATTERNS)
     {
         Pattern::new(s, *k)?;
     }
@@ -841,6 +855,7 @@ pub fn check_registry() -> Result<(), String> {
         .chain(crate::w2_conditions_3::W2_CONDITION_PATTERNS)
         .chain(crate::w4_conditions_1::CONDITION_PATTERNS)
         .chain(crate::w4_skbee_raytrace_world::CONDITION_PATTERNS)
+        .chain(crate::w5_chunk3::CONDITION_PATTERNS)
         .chain(CONDITION_PATTERNS)
     {
         Pattern::new(s, *k)?;
@@ -1321,8 +1336,9 @@ impl Cx<'_> {
         let mut type_err = None;
         let mut memo = Memo::default();
         let rtw = crate::w4_skbee_raytrace_world::line_may_match(&toks);
+        let w5c3 = crate::w5_chunk3::line_may_match(&toks);
         for p in &registry().conditions {
-            if !rtw && matches!(p.kind, CondKind::Rtw(..)) {
+            if !rtw && matches!(p.kind, CondKind::Rtw(..)) || !w5c3 && matches!(p.kind, CondKind::W5c3(..)) {
                 continue;
             }
             match p.matches_memo(&toks, &self.env, &mut memo) {
@@ -1341,6 +1357,7 @@ impl Cx<'_> {
             .chain(crate::w2_conditions_3::W2_CONDITION_PATTERNS)
             .chain(crate::w4_conditions_1::CONDITION_PATTERNS)
             .chain(crate::w4_skbee_raytrace_world::CONDITION_PATTERNS)
+            .chain(crate::w5_chunk3::CONDITION_PATTERNS)
             .chain(CONDITION_PATTERNS)
             .map(|(s, _)| *s)
             .collect();
@@ -1431,9 +1448,11 @@ impl Cx<'_> {
             return Some(c);
         }
         let mut memo = Memo::default();
+        let w5c3 = crate::w5_chunk3::line_may_match(toks);
         registry()
             .conditions
             .iter()
+            .filter(|p| w5c3 || !matches!(p.kind, CondKind::W5c3(..)))
             .find_map(|p| {
                 p.matches_memo(toks, &self.env, &mut memo)
                     .ok()
@@ -1807,6 +1826,7 @@ impl Cx<'_> {
             .chain(crate::w2_effects_3::EFFECT_PATTERNS)
             .chain(crate::w2_expressions_6::EFFECT_PATTERNS)
             .chain(crate::w4_skbee_raytrace_world::EFFECT_PATTERNS)
+            .chain(crate::w5_chunk3::EFFECT_PATTERNS)
             .map(|(s, _)| *s)
             .collect();
         let mut e = ScriptError::new(
@@ -1907,6 +1927,9 @@ fn build_cond(kind: CondKind, mut c: Vec<Option<Capture>>) -> Cond {
             k, negate, a, b,
         )));
     }
+    if let CondKind::W5c3(k, negate) = kind {
+        return Cond::W5c3(Box::new(crate::w5_chunk3::build_cond(k, negate, c)));
+    }
     if let CondKind::W3(k) = kind {
         return match crate::w2_conditions_3::build(k, c) {
             Some(w) => Cond::Rare3(Box::new(w)),
@@ -1944,7 +1967,7 @@ fn build_cond(kind: CondKind, mut c: Vec<Option<Capture>>) -> Cond {
             let b = crate::w4_conditions_1::has_b(kind).then_some(b);
             return Cond::Rare4(Box::new(crate::w4_conditions_1::build(kind, negate, a, b)));
         }
-        CondKind::W3(_) | CondKind::Rtw(..) => CmpOp::Eq,
+        CondKind::W3(_) | CondKind::Rtw(..) | CondKind::W5c3(..) => CmpOp::Eq,
         CondKind::IsSet => return Cond::IsSet(a, true),
         CondKind::NotSet => return Cond::IsSet(a, false),
         CondKind::Ne => CmpOp::Ne,
@@ -2061,6 +2084,7 @@ fn build_effect(kind: EffKind, mut c: Vec<Option<Capture>>) -> Option<Effect> {
         EffKind::W5(op) => return crate::w2_expressions_5::build(op, c),
         EffKind::W6(op) => return crate::w2_expressions_6::build(op, c),
         EffKind::Rtw(op) => return crate::w4_skbee_raytrace_world::build(op, c),
+        EffKind::W5c3(op) => return crate::w5_chunk3::build_effect(op, c),
         EffKind::Heal => Effect::Heal(take_expr(c, 0)?),
         EffKind::SetHealth => Effect::SetHealth(take_expr(c, 0)?, take_expr(c, 1)?),
         EffKind::SetGamemode => Effect::SetGamemode(take_expr(c, 0)?, take_expr(c, 1)?),

@@ -232,6 +232,8 @@ pub enum Expr {
     T1(Box<crate::types_1::Node>),
     /// Ray tracing, chunks and tags (see `w4_skbee_raytrace_world`).
     Rtw(Box<crate::w4_skbee_raytrace_world::Node>),
+    /// Operator and ban lists, `any of`, beacon effects (see `w5_chunk3`).
+    W5c3(Box<crate::w5_chunk3::Node>),
     /// Inventory values, `items in`, regex replace (see `gaps`).
     Gap(Box<crate::gaps::GapExpr>),
 }
@@ -467,6 +469,7 @@ impl Expr {
             Expr::W4F(n) => n.f.ty(),
             Expr::T1(n) => n.ty,
             Expr::Rtw(n) => n.ty,
+            Expr::W5c3(n) => n.ty(),
             Expr::Gap(g) => g.ty(),
             Expr::Items(_) => Ty::List,
             Expr::Bound(b) => b.ty(),
@@ -1677,6 +1680,9 @@ impl P<'_> {
                     return Ok(e);
                 }
                 if let Some(e) = self.rtw_head(&lw)? {
+                    return Ok(e);
+                }
+                if let Some(e) = self.w5c3_head(&lw)? {
                     return Ok(e);
                 }
                 if let Some(e) = self.t1_head(&lw)? {

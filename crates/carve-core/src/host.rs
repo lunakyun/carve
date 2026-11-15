@@ -914,6 +914,12 @@ pub trait Host {
     }
     // ---- w2_expressions_4 ----
 
+    /// Answer one of the `w5_chunk3` questions (see [`crate::w5_chunk3::Q`]).
+    /// `None` when the game cannot tell.
+    fn w5c3(&mut self, _q: crate::w5_chunk3::Q<'_>) -> Option<crate::value::Value> {
+        None
+    }
+
     /// Answer a yes/no question about a player, entity or block (see
     /// `w4_conditions_1::Check`). `None` means the game cannot tell.
     fn w4c1_check(
