@@ -1,4 +1,4 @@
-# Wave 5 chunk 3 area. Every result goes to chat as c:<key> <value>.
+# Every result goes to chat as c:<key> <value>.
 
 command /cmipos:
     trigger:

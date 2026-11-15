@@ -255,7 +255,7 @@ pub enum Cond {
     Rtw(Box<crate::skbee_raytrace_world::RtwCond>),
     /// Mob, item, block and effect checks (`conditions_mobs_items`).
     MobsItems(Box<crate::conditions_mobs_items::MobItemCond>),
-    /// Conditions the game can answer after all ().
+    /// Mob, block and server state conditions (`conditions_mob_block_state`).
     MobBlockState(Box<crate::conditions_mob_block_state::MobBlockCond>),
     /// `can age` (`drops_border_leashes`).
     CanAge(Box<crate::drops_border_leashes::CanAge>),

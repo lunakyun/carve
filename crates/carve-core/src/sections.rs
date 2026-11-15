@@ -1,4 +1,4 @@
-//! Wave 4 sections: `filter {list::*} to match:`, `spawn <entity> at <loc>:`,
+//! `filter {list::*} to match:`, `spawn <entity> at <loc>:`,
 //! `suppress type hints:` and the refusal of `shoot ...:`.
 //!
 //! All of them turn into lines that the normal compiler already understands,

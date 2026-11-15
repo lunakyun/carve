@@ -1,4 +1,4 @@
-//! Wave 5, chunk 3: mob and player checks (`is tamed`, `is saddled`,
+//! Mob and player checks (`is tamed`, `is saddled`,
 //! `is wearing`, `is riptiding`, ...), item and block checks (`is stackable`,
 //! `lid of ... is open`, glint override), potion effect flags, display flags,
 //! `resource pack was ...`, `x is any of ...`, the operator and ban lists,

@@ -1,4 +1,4 @@
-# More events
+# Game events (heal, grow, explode, fishing, furnace)
 
 These events all work like `on join:`. Each has event values you can read
 inside the trigger. Values are plain numbers, texts or true/false.

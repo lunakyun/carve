@@ -1,4 +1,4 @@
-# More conditions
+# Conditions on values, dates, items and scripts
 
 Every condition here also has a negated form (`is not`, `isn't`).
 

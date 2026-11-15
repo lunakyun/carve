@@ -1,4 +1,4 @@
-//! Wave 6, chunk 7: host calls (`entity from uuid`) and `auto reload:`.
+//! Host calls (`entity from uuid`) and `auto reload:`.
 
 use carve_core::EntityRef;
 use pumpkin_plugin_api::logging::LogLevel as ApiLevel;

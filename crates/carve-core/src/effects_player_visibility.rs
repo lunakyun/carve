@@ -1,4 +1,4 @@
-//! Wave 2 effects, part 1: `connect`, `force respawn`, `hide`/`reveal`
+//! `connect`, `force respawn`, `hide`/`reveal`
 //! players, `equip`, and `copy ... into`.
 
 use crate::compile::{EffKind, Effect};

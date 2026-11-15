@@ -1,4 +1,4 @@
-# Wave 6 chunk 1 area. Every result goes to chat as esj:<key> <value>.
+# Every result goes to chat as esj:<key> <value>.
 
 on step on stone:
     send "esj:step %event-block%" to player

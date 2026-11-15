@@ -1,4 +1,4 @@
-//! Wave 2, expressions 5: number constants, `numbers from a to b`,
+//! Number constants, `numbers from a to b`,
 //! `x% of y`, midpoints, stack sizes, moon phase, player list name,
 //! metadata and persistent data, `parse error`, `plain <item>`.
 //!

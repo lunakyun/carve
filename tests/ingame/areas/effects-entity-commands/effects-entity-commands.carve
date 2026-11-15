@@ -1,4 +1,4 @@
-# Wave 6 chunk 2 area. Every result goes to chat as eec:<key> <value>.
+# Every result goes to chat as eec:<key> <value>.
 
 command /eecping:
     trigger:

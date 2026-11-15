@@ -1,4 +1,4 @@
-// Wave 5 chunk 4: block data, block spheres and lines, written books, boss bar
+// Block data, block spheres and lines, written books, boss bar
 // by id, brewing stand slots, world border settings, potion effect values,
 // item damage, ender chests, enderman blocks, AI, attributes, enchanting
 // values, inventory actions, cursor slot and event values.

@@ -32,7 +32,7 @@ impl P<'_> {
         Ok(e)
     }
 
-    /// The expressions of this batch. Returns `None` when the words are not
+    /// The expressions of this module. Returns `None` when the words are not
     /// one of them. `lw` is the lowercase word just read.
     pub(super) fn fact_head(&mut self, lw: &str) -> Result<Option<Expr>, String> {
         if !matches!(

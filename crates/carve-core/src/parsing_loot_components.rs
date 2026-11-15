@@ -1,4 +1,4 @@
-//! Wave 6, chunk 5: `parsed as integer|boolean|player`, `<timespan> formatted
+//! `parsed as integer|boolean|player`, `<timespan> formatted
 //! human-readable`, loot tables and loot contexts (plain records), item values
 //! with a component (`with custom model data`, `with enchantment glint`,
 //! `with item model`) and a few game facts through one host

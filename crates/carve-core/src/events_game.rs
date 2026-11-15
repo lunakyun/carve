@@ -133,7 +133,7 @@ pub const SPECS: &[Spec] = &[
             ("enchant option", N(0)),
             ("enchantment cost", N(1)),
             ("enchant cost", N(1)),
-            // Wave 5 chunk 4: Skript's names for the cost and the hint.
+            // Skript's names for the cost and the hint.
             ("enchanting cost", N(1)),
             ("experience cost", N(1)),
             ("exp cost", N(1)),

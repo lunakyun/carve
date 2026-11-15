@@ -1,8 +1,8 @@
-//! Wave 6, chunk 3: conditions the game can answer after all (`is adult`,
+//! Mob, block and server state conditions (`is adult`,
 //! `is baby`, `is charged`, `is climbing`, `is conditional`, `is lootable`,
 //! `is occluding`, `is pathfinding`, `is persistent`, `is left handed`,
 //! `is pressing <key>`, `is holding`, `plugin "x" is enabled`, `running
-//! minecraft "x"`, ...). The old notes said the API had nothing for these.
+//! minecraft "x"`, ...).
 //!
 //! Everything compiles to one boxed `Cond::MobBlockState`, so the hot condition enum
 //! does not grow. Lines without a key word never touch the pattern table. The

@@ -1,4 +1,4 @@
-# Functions and sections (wave 4)
+# Built-in functions and sections
 
 ## Built-in functions
 

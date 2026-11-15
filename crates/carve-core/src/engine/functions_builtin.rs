@@ -1,4 +1,4 @@
-//! Running the wave-4 functions (syntax in `functions_builtin.rs`).
+//! Running the built-in functions (syntax in `functions_builtin.rs`).
 
 use super::{Engine, Exec};
 use crate::functions_builtin::{Node, apply};

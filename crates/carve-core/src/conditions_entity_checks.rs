@@ -1,4 +1,4 @@
-//! Wave 4 conditions, part 1: `is alphanumeric`, `event is cancelled`,
+//! `is alphanumeric`, `event is cancelled`,
 //! `can hold`, `can build`, `can see`, `has line of sight`, `has item cooldown`,
 //! `is sedated`, `respawn anchors work`, `has glowing text`, and a group of
 //! entity and player checks the game answers through `Host::entity_check`

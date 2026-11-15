@@ -1,7 +1,7 @@
 # Block lists, books, borders, attributes and enchanting
 
-Block data is on the [wave 5, chunk 6 page](entity-block-properties.md#blocks) and potion
-effect values on the [wave 5, chunk 5 page](potions-particles-queues.md#potion-effect-values).
+Block data is on the [entity and block properties page](entity-block-properties.md#blocks) and potion
+effect values on the [potions, particles and queues page](potions-particles-queues.md#potion-effect-values).
 
 ## Lists of blocks
 

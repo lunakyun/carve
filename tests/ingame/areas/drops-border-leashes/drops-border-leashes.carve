@@ -1,4 +1,4 @@
-# Wave 5 chunk 1 area. Every result goes to chat as c:<key> <value>.
+# Every result goes to chat as c:<key> <value>.
 
 command /cping:
     trigger:

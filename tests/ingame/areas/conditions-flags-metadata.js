@@ -1,4 +1,4 @@
-// Wave 5 chunk 2 area: conditions. Pick up items, can see, chat settings,
+// Conditions. Pick up items, can see, chat settings,
 // client weather, respawn anchors, mob checks, wet and in liquid, glowing
 // text, item cooldown, line of sight, contains, damage cause, egg hatch,
 // entity storage, equippable flags, boss bar flags, tooltips, loot tables,

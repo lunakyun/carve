@@ -1,4 +1,4 @@
-//! Wave 5 conditions, part 2: `damage was caused by`, `egg will hatch`,
+//! `damage was caused by`, `egg will hatch`,
 //! `entity storage is full`, the equippable checks (`can be dispensed`, ...),
 //! `has boss bar flag`, `has tooltip`, `has loot table`, `has metadata`,
 //! `has persistent data tag`, `has played before`, `is preferred tool` and

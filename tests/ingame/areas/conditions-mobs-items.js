@@ -1,4 +1,4 @@
-// Wave 5 chunk 3 area: mob checks (tamed, tameable, saddled, screaming,
+// Mob checks (tamed, tameable, saddled, screaming,
 // riptiding), is wearing, glint override, chest and barrel lids, potion
 // effect flags, text display flags, bed location, beacon effects, operator
 // and ban lists, resource pack states, anvil values, applied enchantments,

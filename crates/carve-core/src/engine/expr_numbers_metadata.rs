@@ -1,4 +1,4 @@
-//! Running the wave 2 expressions-5 expressions and effects
+//! Running the number, metadata and persistent data expressions and effects
 //! (see `expr_numbers_metadata.rs` for the syntax side).
 
 use super::{Engine, Exec};

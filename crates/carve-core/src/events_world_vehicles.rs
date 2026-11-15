@@ -56,7 +56,7 @@ pub enum ExtEvent {
     PlaceholderRequest,
     /// `on preparing craft` (see `drops_border_leashes`).
     PrepareCraft,
-    // Wave 6 chunk 1 (see `events_step_jump`).
+    // Step, jump, chunk and border events (see `events_step_jump`).
     PickupArrow,
     Riptide,
     ExperienceSpawn,

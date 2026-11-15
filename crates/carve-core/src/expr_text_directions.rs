@@ -1,4 +1,4 @@
-//! Wave 2 expressions, part 2: character codes, `characters between`,
+//! Character codes, `characters between`,
 //! `difference between`, directions (`3 blocks above loc`), chunk numbers,
 //! compass target, `death message`, `damage cause` and `chat recipients`.
 //!

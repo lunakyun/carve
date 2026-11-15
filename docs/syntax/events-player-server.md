@@ -1,4 +1,4 @@
-# More events
+# Player and server events (kick, leash, piston, portal, redstone)
 
 These triggers work like `on join:`. Each one can be cancelled with `cancel event`.
 

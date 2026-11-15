@@ -1,4 +1,4 @@
-//! Wave 6 chunk 1: helpers for the events added to `events_world_vehicles` (step on,
+//! Helpers for the events added to `events_world_vehicles` (step on,
 //! chunk enter, jump, world border changes, armor change and more).
 //!
 //! Everything here is plain logic with no game calls, so it is unit tested

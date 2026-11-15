@@ -1,5 +1,5 @@
 //! Tables built from Pumpkin 0.2.2's `items.json` and `blocks.json` (sorted, for binary search).
-//! Regenerate with the script in the Wave 6 notes if the game data changes.
+//! Regenerate from the game data (items.json and blocks.json) if it changes.
 
 pub const FOOD: &[&str] = &[
     "apple",

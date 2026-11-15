@@ -1,4 +1,4 @@
-//! Running the wave-2 expressions-6 variants (syntax in `expr_random_ternary.rs`).
+//! Running the random, ternary and reduce expression variants (syntax in `expr_random_ternary.rs`).
 
 use super::{Engine, Exec, online};
 use crate::expr::VarRef;

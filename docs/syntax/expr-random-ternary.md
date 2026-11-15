@@ -1,4 +1,4 @@
-# Wave 2: expressions-6
+# Random values, ternary, reduce and a few host reads
 
 Small expressions that did not fit the other pages.
 

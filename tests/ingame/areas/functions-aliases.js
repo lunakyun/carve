@@ -1,4 +1,4 @@
-// Wave 6 chunk 7 area: variadic min/max, round places, world(), entity(uuid),
+// Variadic min/max, round places, world(), entity(uuid),
 // axisAngle, for each, alias patterns/plurals, suppress and using lines.
 //   node tests/ingame/areas/functions-aliases.js
 'use strict'

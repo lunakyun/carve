@@ -1,4 +1,4 @@
-# Wave 5 chunk 2 area: conditions. Every command answers with "k:<tag> ..."
+# Conditions. Every command answers with "k:<tag> ..."
 # and yes/no words the test reads.
 
 on join:

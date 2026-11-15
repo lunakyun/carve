@@ -1,4 +1,4 @@
-// Wave 6 chunk 3 area: conditions the game can answer (age, creeper state,
+// Conditions the game can answer (age, creeper state,
 // handedness, held items, block properties, pressed keys, plugins, features,
 // version, ban list, flight) and the data-table checks (edible, fuel,
 // fire resistant, flammable).

@@ -1,4 +1,4 @@
-//! Wave 2, expressions-6: special numbers, random characters and UUIDs,
+//! Special numbers, random characters and UUIDs,
 //! `raw`, `repeated`, ternary, `reduce`, `recursive`, and a few host reads
 //! (`remaining air`, `respawn location`, `sea level`, `simulation distance`,
 //! `tablisted players`, `quit message`).

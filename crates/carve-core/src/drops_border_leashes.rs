@@ -1,4 +1,4 @@
-//! Wave 5, chunk 1: command cooldowns and failing a command, drops and kept
+//! Command cooldowns and failing a command, drops and kept
 //! inventories in death and break events, dyeing and glint of the held item,
 //! creepers and other explosive entities, dropping items, the whitelist
 //! enforcement, growing and shrinking the world border, leashes, the server

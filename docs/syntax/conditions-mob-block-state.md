@@ -1,6 +1,6 @@
 # Conditions the game can answer
 
-Wave 6 checked every row marked as impossible against Pumpkin 0.2.2's real plugin
+Every row marked as impossible against Pumpkin 0.2.2's real plugin
 API (v0.1). These conditions all work now. Every one has a negated form
 (`is not`, `isn't`, `aren't`). A check the game can't answer is false, negated
 or not.

@@ -1,4 +1,4 @@
-//! Wave 5, chunk 4: block spheres and lines, books, world border
+//! Block spheres and lines, books, world border
 //! settings, item damage, ender chests, AI, attributes,
 //! enchanting offers, inventory actions and event values.
 

@@ -1,4 +1,4 @@
-//! Wave 5, chunk 6: entity, display, block, border, boss bar and inventory
+//! Entity, display, block, border, boss bar and inventory
 //! properties, plus a few event value names and the `shoot` section.
 //!
 //! - `scale of <entity>`, `target of <mob>`, `spectator target of <player>`,

@@ -32,6 +32,21 @@ The plugin ends up in `target/wasm32-wasip2/release/carve.wasm`.
 - `crates/carve-wasm`: the Pumpkin plugin. It implements `Host`.
 - `crates/carve-core/tests/core.rs`: tests, using a mock host.
 
+Source files are named after what they do, not when they were written:
+
+- `compile.rs`, `expr.rs`, `engine.rs`, `host.rs`: the parser, expression
+  parser, VM and `Host` trait. `engine/` holds the out-of-line evaluators.
+- `events_*.rs`: event triggers and their values (`events_movement.rs`,
+  `events_game.rs`, ...).
+- `conditions_*.rs`, `effects_*.rs`, `expr_*.rs`: patterns and logic for the
+  rarer conditions, effects and expressions, grouped by topic.
+- Topic files such as `potions_particles_queues.rs`, `block_state_lists.rs`,
+  `skbee_*.rs` or `weather_time.rs` hold one feature area each.
+- `data/`: generated lookup tables (tags, block states, item tables).
+- `crates/carve-wasm/src` mirrors these names for the game-side code; each
+  area also has `tests/<name>.rs` and `tests/ingame/areas/<name>.js`, and its
+  syntax page is `docs/syntax/<name>.md`.
+
 [docs/architecture.md](docs/architecture.md) explains how a script goes from
 text to instructions.
 

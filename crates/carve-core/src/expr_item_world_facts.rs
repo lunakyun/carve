@@ -1,4 +1,4 @@
-//! Expressions, part 1 (A to C): `an eternity`, `5 degrees`, `altitude of`,
+//! Item, world and color expressions: `an eternity`, `5 degrees`, `altitude of`,
 //! `red value of`, `amount of diamonds in player's inventory`, `biome at`,
 //! `helmet of player`, `beacon tier of`, `brewing time of`, `burn time of`,
 //! `all scripts`.

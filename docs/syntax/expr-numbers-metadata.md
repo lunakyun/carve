@@ -1,4 +1,4 @@
-# Numbers, locations, player list, data (wave 2, expressions 5)
+# Numbers, locations, player list and data
 
 ## Number constants
 

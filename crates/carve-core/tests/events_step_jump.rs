@@ -1,4 +1,4 @@
-//! Wave 6 chunk 1: new event triggers and the pure logic behind them.
+//! New event triggers and the pure logic behind them.
 
 use carve_core::compile::check_registry;
 use carve_core::events_player_server::PlayerServerEvent;

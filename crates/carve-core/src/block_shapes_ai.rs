@@ -1,4 +1,4 @@
-//! Wave 5, chunk 4: block spheres and lines, written books,
+//! Block spheres and lines, written books,
 //! world border settings, item damage, ender chests,
 //! entity AI and attributes, enchanting offers, inventory actions and a few
 //! event values (`broadcast message`, `consumed item`, `the zombie`).

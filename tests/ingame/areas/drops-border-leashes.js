@@ -1,4 +1,4 @@
-// Wave 5 chunk 1 area: command cooldowns and failures, cancelled drops, kept
+// Command cooldowns and failures, cancelled drops, kept
 // inventories, dyed and glinting items, creepers, tnt, dropped items, the
 // whitelist enforcement, the world border, leashes and persistence, the server
 // icon, babies, glowing signs, pathfinding, potion effect flags, conditions

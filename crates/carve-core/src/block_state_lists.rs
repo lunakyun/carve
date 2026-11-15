@@ -1,4 +1,4 @@
-//! Wave 6, chunk 4: block-state properties (honey level, brushing stage, age
+//! Block-state properties (honey level, brushing stage, age
 //! of a block), `first N elements of`, `last N elements of`,
 //! `elements N to M of`, `dequeue`, `banner pattern item of` and
 //! `persistent data keys of`.

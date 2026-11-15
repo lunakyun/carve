@@ -1,4 +1,4 @@
-// Wave 5 chunk 6 area: scale, targets, spectator camera, text displays,
+// Scale, targets, spectator camera, text displays,
 // sea pickles, block data, temperature, world border warnings, boss bar and
 // inventory reads, all <type>s, slot index, spawn eggs, stored enchantments,
 // the shoot section and the spawning reason / tamer / source block / shooter

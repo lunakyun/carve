@@ -326,7 +326,7 @@ fn suppress_type_hints_runs_body() {
 
 #[test]
 fn shoot_section_compiles() {
-    // The section works since wave 5 (see tests/entity_block_properties.rs).
+    // The section works (see tests/entity_block_properties.rs).
     let e = errors_of("on join:\n\tshoot an arrow from player:\n\t\tbroadcast \"x\"\n");
     assert!(e.is_empty(), "{e:?}");
 }

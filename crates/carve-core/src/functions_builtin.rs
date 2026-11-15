@@ -1,4 +1,4 @@
-//! Wave 4: the built-in functions of Skript that are not plain math:
+//! The built-in functions of Skript that are not plain math:
 //! trigonometry (in degrees), `exp`, `ln`, `log`, `root`, `factorial`,
 //! `combinations`, `permutations`, `clamp`, `median`, `product`, `concat`,
 //! `formatNumber`, `fromBase`, `toBase`, `isNaN`, `calcExperience`, `rgb`,

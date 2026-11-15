@@ -1,4 +1,4 @@
-# More conditions
+# Conditions on flags, metadata and equipment
 
 All of these work in `if`, `else if`, `while`, `and` and `or`, and have a negated form.
 A check the game can't answer (a hive that isn't there, an unknown boss bar) is false in

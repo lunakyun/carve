@@ -219,15 +219,15 @@ pub enum Expr {
     Ext(crate::expr_player_state::ExtFn, Vec<Expr>),
     /// A rare expression from `expr_item_damage_facts`.
     ItemDamageFacts(Box<crate::expr_item_damage_facts::Fact>),
-    /// Rare wave 2 expressions (numbers, midpoint, metadata, ...), boxed to keep this enum small.
+    /// Rare expressions (numbers, midpoint, metadata, ...), boxed to keep this enum small.
     NumbersMetadata(Box<crate::expr_numbers_metadata::NumberFact>),
     /// `placeholder "x" for player` and `parse placeholders in ...`.
     Ph(Box<crate::placeholders::Ph>),
-    /// Rare wave-2 expressions (see `expr_random_ternary.rs`).
+    /// Random, ternary and reduce expressions (see `expr_random_ternary.rs`).
     RandomTernary(Box<crate::expr_random_ternary::RandomExpr>),
     /// Vectors, server facts and other rare expressions (see `expr_vectors_server`).
     VectorsServer(Box<crate::expr_vectors_server::Node>),
-    /// Wave-4 functions: trigonometry, `clamp`, `concat`, `formatNumber`, ... (see `functions_builtin`).
+    /// Trigonometry, `clamp`, `concat`, `formatNumber`, ... (see `functions_builtin`).
     Builtin(Box<crate::functions_builtin::Node>),
     /// Colors, named values and other types (see `named_types`).
     T1(Box<crate::named_types::Node>),
@@ -245,7 +245,7 @@ pub enum Expr {
     EntityBlockProps(Box<crate::entity_block_properties::Node>),
     /// Block properties, element ranges, dequeue, ... (see `block_state_lists`).
     BlockStateLists(Box<crate::block_state_lists::Node>),
-    /// Wave 6 chunk 6: portal cooldown, protocol version, sign text, ... (see `quaternions_protocol`).
+    /// Portal cooldown, protocol version, sign text, ... (see `quaternions_protocol`).
     Quaternions(Box<crate::quaternions_protocol::Node>),
     /// Block data, block spheres, books, borders, attributes, ... (see `block_shapes_ai`).
     BlockShapes(Box<crate::block_shapes_ai::Node>),
@@ -2526,7 +2526,7 @@ impl P<'_> {
         }
     }
 
-    /// Wave-4 functions like `clamp(x, 0, 10)` (see `functions_builtin`).
+    /// Built-in functions like `clamp(x, 0, 10)` (see `functions_builtin`).
     fn builtin_function(&mut self, lw: &str) -> Result<Expr, String> {
         let (f, min, max) = crate::functions_builtin::lookup(lw).ok_or("unknown function")?;
         self.pos += 1; // (

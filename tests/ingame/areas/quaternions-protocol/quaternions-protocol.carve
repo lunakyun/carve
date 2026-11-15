@@ -1,4 +1,4 @@
-# Wave 6 chunk 6 area: portal cooldown, protocol version, rotation maths,
+# Portal cooldown, protocol version, rotation maths,
 # vector components, N times, plain item, villager data, vehicle and passengers,
 # whitelist, world border add/remove, yaw/pitch, NBT block reads.
 # Every command reports back with a "qpr:" message the test reads.

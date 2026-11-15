@@ -1,4 +1,4 @@
-//! A mixed batch of expressions: `not x`, number limits, item amount,
+//! Expressions: `not x`, number limits, item amount,
 //! durability, item cooldown, `last color of`, `language of`, last damage
 //! facts, last death location, join message, resource pack response and
 //! highest/lowest solid block.

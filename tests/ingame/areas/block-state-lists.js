@@ -1,4 +1,4 @@
-// Wave 6 chunk 4 area: element ranges, dequeue, banner pattern items,
+// Element ranges, dequeue, banner pattern items,
 // persistent data keys, honey level, brushing stage and the age of a block.
 //   node tests/ingame/areas/block-state-lists.js
 'use strict'

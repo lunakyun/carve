@@ -1,6 +1,6 @@
 # Horns, trees, flight, fake blocks and more
 
-Wave 6, chunk 2. Every example below runs on Pumpkin 0.2.2.
+Every example below runs on Pumpkin 0.2.2.
 
 ## Goat horns
 

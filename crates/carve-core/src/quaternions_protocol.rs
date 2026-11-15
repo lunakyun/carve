@@ -1,5 +1,5 @@
-//! Wave 6, chunk 6: rows that were marked missing but the API (or plain
-//! logic) can do.
+//! Quaternion and rotation math, portal cooldown, protocol version and similar reads, done with
+//! the plugin API or plain logic.
 //!
 //! - `plain <item>`, `<n> times`, `w of <quaternion>`, `rotation angle|axis of
 //!   <quaternion>`, `<vector|quaternion> rotated around <axis> by <degrees>`.

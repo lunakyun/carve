@@ -1,4 +1,4 @@
-# Wave 6 chunk 4 area: first/last/range elements, dequeue, banner pattern
+# First/last/range elements, dequeue, banner pattern
 # items, persistent data keys, honey level, brushing stage and block age.
 # Every command reports back with a "bsl:" message the test reads.
 

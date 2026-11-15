@@ -1,4 +1,4 @@
-// Wave 6 chunk 1 area: events that were marked blocked or partial. Step on,
+// Step on,
 // chunk enter, jump, tool change items, attack attempts, pressure plates,
 // spawn point changes, world border polling, armor polling, experience
 // orbs, pistons, lightning, block drops, bells, can build, unload and stop.

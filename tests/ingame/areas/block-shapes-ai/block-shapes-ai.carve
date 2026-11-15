@@ -1,4 +1,4 @@
-# Wave 5 chunk 4: block data, block lists, books, borders, effects, items,
+# Block data, block lists, books, borders, effects, items,
 # ender chests, entities, enchanting and event values. Every line the test
 # reads starts with "bsa:".
 

@@ -1,6 +1,6 @@
 # Expressions: not, limits, items, last-event facts, light
 
-A mixed batch of expressions. Each one works anywhere an expression works.
+Item, damage and last-event expressions. Each one works anywhere an expression works.
 
 ## Logic and numbers
 

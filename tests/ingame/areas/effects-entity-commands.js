@@ -1,4 +1,4 @@
-// Wave 6 chunk 2 area: goat horns, silence, screaming, trees,
+// Goat horns, silence, screaming, trees,
 // zombifying, allay clones, script switching, reset and remove all, vector
 // rotation, flight, fake blocks, interaction and text display flags, sound
 // categories, shearing, taming and timed bans.

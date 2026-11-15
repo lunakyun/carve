@@ -1,6 +1,6 @@
 # Characters, differences, directions and event values
 
-Small expressions added in wave 2.
+Small text, direction and event-value expressions.
 
 ## Character codes
 

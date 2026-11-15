@@ -1,4 +1,4 @@
-//! Wave 6, chunk 2: effects that were marked missing but the server can do.
+//! Effects done through server commands and plain logic.
 //!
 //! Goat horns, silence, screaming, growing trees, zombifying,
 //! allay duplication and script switching go through console commands Pumpkin

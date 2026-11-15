@@ -1,4 +1,4 @@
-//! Wave 6, chunk 7: small pieces that were marked partial for the wrong reason.
+//! Variadic `min`/`max`, `round` with places, `entity(uuid)`, `axisAngle` and alias patterns.
 //!
 //! `min(a, b, c, ...)`, `round(n, places)`, `entity(uuid)`, `axisAngle(...)`,
 //! the `for each` loop wording and the plural forms and `[optional]` /

@@ -1,4 +1,4 @@
-# Wave 6 chunk 7 area: variadic min/max, round(n, places), world("x"),
+# Variadic min/max, round(n, places), world("x"),
 # entity(uuid), axisAngle, `for each`, alias patterns and plurals, and the
 # accepted-and-ignored `locally suppress` / `using` lines.
 # Every command reports back with a "fal:" message the test reads.

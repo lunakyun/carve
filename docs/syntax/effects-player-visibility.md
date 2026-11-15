@@ -1,4 +1,4 @@
-# Wave 2 effects, part 1
+# Player visibility, respawn and equipment effects
 
 ## Connect (send a player to another server)
 

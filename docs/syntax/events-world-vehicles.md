@@ -1,4 +1,4 @@
-# More events
+# World, vehicle and server list events
 
 These events give extra values with `event-<name>`. For example,
 `event-motd` in `on server list ping`. Some values can be changed with

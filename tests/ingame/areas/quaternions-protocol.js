@@ -1,4 +1,4 @@
-// Wave 6 chunk 6 area: portal cooldown, protocol version, rotation maths,
+// Portal cooldown, protocol version, rotation maths,
 // vector components, N times, plain item, villager data, vehicle, whitelist,
 // world border add/remove, yaw/pitch and block-entity NBT reads.
 //   node tests/ingame/areas/quaternions-protocol.js

@@ -1,6 +1,6 @@
-# Wave 6, chunk 1: events that turned out to be possible
+# Step, jump, chunk and border events
 
-These events used to be marked blocked or partial. Each one was checked against
+Each event was checked against
 Pumpkin's plugin API and the server source. Most are verified in-game by
 `tests/ingame/areas/events-step-jump.js`.
 

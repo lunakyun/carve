@@ -1,4 +1,4 @@
-# More events and `at <time>:`
+# Block and player events, and `at <time>:`
 
 These triggers use the same form as other events: `on <name>:`. Inside, the
 event gives you values named `event-...`. `cancel event` stops the action when
