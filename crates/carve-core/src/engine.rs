@@ -352,7 +352,7 @@ pub(crate) struct Exec {
     /// The code running now (a trigger or a function body).
     code: Arc<Code>,
     pc: usize,
-    locals: Locals,
+    pub(crate) locals: Locals,
     loops: Vec<LoopFrame>,
     /// Callers of the running function, innermost last.
     callers: Vec<Frame>,
@@ -2708,6 +2708,7 @@ impl Engine {
             Effect::Nbt(n) => self.nbt_effect(n, ex, host)?,
             Effect::Ent(f) => self.ent_effect(f, ex, host)?,
             Effect::W5c1(f) => self.w5c1_effect(f, ex, host)?,
+            Effect::W6c2(f) => self.w6c2_effect(f, ex, host)?,
             Effect::Combat(f) => self.combat_effect(f, ex, host)?,
             Effect::Skb(s) => self.skb_effect(s, ex, host)?,
             Effect::Server(f) => self.server_effect(f, ex, host)?,

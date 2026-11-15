@@ -80,6 +80,7 @@ pub mod w5_chunk5;
 pub mod w5_chunk6;
 pub mod w5_chunk6_blockdata;
 pub mod w6_chunk1;
+pub mod w6_chunk2;
 pub mod w6_chunk4;
 pub mod w6_chunk5;
 pub mod w6_chunk6;

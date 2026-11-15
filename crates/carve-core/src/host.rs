@@ -361,6 +361,12 @@ pub trait Host {
         }
     }
 
+    /// Ban that ends after `seconds` (`ban x for 1 day`). `false`: not possible
+    /// here (the target has to be online on Pumpkin).
+    fn ban_for(&mut self, _name: &str, _reason: Option<&str>, _ip: bool, _seconds: u64) -> bool {
+        false
+    }
+
     /// Lift a ban. Default: `pardon` / `pardon-ip`.
     fn unban(&mut self, name: &str, ip: bool) {
         let cmd = if ip { "pardon-ip" } else { "pardon" };
@@ -1139,6 +1145,12 @@ pub trait Host {
     /// A change from `w6_chunk6`. Returns whether it was done.
     fn w6c6_set(&mut self, _s: crate::w6_chunk6::Set<'_>) -> bool {
         false
+    }
+
+    /// A game-side change of `w6_chunk2` (flight, fake blocks, display flags,
+    /// sound categories, shearing, taming). `None`: this host can't.
+    fn w6c2(&mut self, _op: crate::w6_chunk2::HostOp<'_>) -> Option<bool> {
+        None
     }
 
     /// A question from `w5_chunk6` (scale, targets, text displays, borders, boss bars).

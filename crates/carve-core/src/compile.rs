@@ -377,6 +377,8 @@ pub enum Effect {
     Z6(Box<crate::w6_chunk6::W6Fx>),
     /// Effects of `w5_chunk1` (cooldowns, drops, creepers, leashes, ...).
     W5c1(Box<crate::w5_chunk1::Fx>),
+    /// Effects of `w6_chunk2` (horns, silence, trees, script switching, ...).
+    W6c2(Box<crate::w6_chunk2::Fx>),
     SetHealth(Expr, Expr),
     SetGamemode(Expr, Expr),
     /// Experience change; the two expressions are in pattern order.
@@ -1615,6 +1617,17 @@ impl Cx<'_> {
         };
         if self.call_stmt(num, &toks) {
             return;
+        }
+        match crate::w6_chunk2::parse_effect(&toks, &self.env) {
+            Ok(Some(eff)) => {
+                self.emit(Instr::Eff(eff), num);
+                return;
+            }
+            Ok(None) => {}
+            Err(msg) => {
+                self.err(num, msg);
+                return;
+            }
         }
         match crate::w5_chunk4::parse_effect(&toks, &self.env) {
             Ok(Some(eff)) => {
