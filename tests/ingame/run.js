@@ -295,8 +295,15 @@ async function phase1 (srv) {
   check('admin: info', !!await say('carve info', 'Data folder'))
   check('admin: info <script>', !!await say('carve info carve-test', 'double(n: number) :: number'))
   fs.writeFileSync(path.join(SCRIPTS, 'one.carve'), 'on join:\n    blorp\n')
-  const bad = await say('carve reload one', 'while reloading')
-  check('admin: reload <script> with error keeps old', !!bad && !!await tester.waitFor(has('system', ['Line 2:', '(one.carve)']), 2000, bad.t))
+  // Both lines are searched from the command on: they can arrive in one batch.
+  const tBad = Date.now()
+  tester.command('carve reload one')
+  const [bad, badLine] = await Promise.all([
+    tester.waitFor(has('system', 'while reloading'), 5000, tBad),
+    tester.waitFor(has('system', ['Line 2:', '(one.carve)']), 5000, tBad),
+  ])
+  check('admin: reload <script> with error keeps old', !!bad && !!badLine,
+    `${bad ? 'reload error shown' : 'no reload error'}, ${badLine ? 'line shown' : 'no line'}`)
   check('admin: errors', !!await say('carve errors one', ['Line 2:', '(one.carve)']))
   fs.writeFileSync(path.join(SCRIPTS, 'one.carve'),
     'command /tvar2:\n    trigger:\n        send "x"\non chat:\n    if message is "one?":\n        send "t:one" to player\n')

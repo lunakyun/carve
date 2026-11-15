@@ -173,8 +173,13 @@ t.run(async () => {
     await mode('pigcancel')
     m = await run('einfo', 'e:info')
     const hp0 = m && (m.match(/health=([\d.]+)/) || [])[1]
-    s = Date.now()
-    const cm = await hit(pig.entityId, 'c:mobdmg')
+    // The pig can walk out of reach between `ehere` and the hit: bring it back and retry.
+    let cm = null
+    for (let i = 0; i < 3 && !cm; i++) {
+      if (i) { await run('ehere', 'e:here'); await sleep(600) }
+      s = Date.now()
+      cm = await hit(pig.entityId, 'c:mobdmg')
+    }
     await sleep(300)
     m = await run('einfo', 'e:info')
     const hp1 = m && (m.match(/health=([\d.]+)/) || [])[1]
@@ -195,9 +200,10 @@ t.run(async () => {
     let fid = await fresh()
     s = Date.now()
     await run('etp', 'e:tp done')
-    await sleep(1000) // the teleport lands on a later tick and resets the velocity
     const tp = await waitRaw(['teleport_entity', 'entity_position_sync'], fid, s)
+    // Read the position right away: the pig's AI walks it off within a second.
     m = await run('einfo', 'e:info')
+    await sleep(1000) // the teleport lands on a later tick and resets the velocity
     const num = (k) => parseFloat(((m || '').match(new RegExp(` ${k}=(-?[\\d.]+)`)) || [])[1])
     const near = Math.abs(num('x') - bot.pos.x) < 1.5 && Math.abs(num('z') - (bot.pos.z + 1)) < 1.5
     t.check('teleport entity', !!tp && near, `${tp ? tp.name : 'no teleport packet'}; ${m}`)
@@ -205,9 +211,15 @@ t.run(async () => {
     for (const [dir, axis, sign] of [['north', 'z', -1], ['east', 'x', 1]]) {
       s = Date.now()
       // The pig's own AI can overwrite the push on the same tick, so push again
-      // (up to 3 times) until a motion packet shows it.
+      // (up to 5 times) until a motion packet shows it. A pushed pig can die of
+      // fall damage or leave view; then a fresh one takes its place.
       let pm = null
-      for (let i = 0; i < 3 && !pm && bot.entities.has(fid); i++) {
+      for (let i = 0; i < 5 && !pm; i++) {
+        if (!bot.entities.has(fid)) {
+          fid = await fresh()
+          await run('etp', 'e:tp done')
+          await sleep(1000)
+        }
         const since = Date.now()
         await run(`epush ${dir}`, `e:pushed ${dir}`)
         pm = await bot.waitPacket('set_entity_motion', (d) => d.entityId === fid && d.velocity && d.velocity[axis] * sign > 0.05, 2000, since)
@@ -224,9 +236,13 @@ t.run(async () => {
     const vy = m ? parseFloat(m.split(' ')[1]) : NaN
     t.check('y velocity of entity reads back', vy > 1 && vy <= 1.5, m || '')
     fid = await fresh()
-    s = Date.now()
-    await run('epush up', 'e:pushed up')
-    const pu = await bot.waitPacket('set_entity_motion', (d) => d.entityId === fid && d.velocity && d.velocity.y > 0.2, 6000, s)
+    // Retried like the pushes above: the pig's AI can overwrite the push.
+    let pu = null
+    for (let i = 0; i < 3 && !pu; i++) {
+      s = Date.now()
+      await run('epush up', 'e:pushed up')
+      pu = await bot.waitPacket('set_entity_motion', (d) => d.entityId === fid && d.velocity && d.velocity.y > 0.2, 3000, s)
+    }
     t.check('push entity up', !!pu, pu ? JSON.stringify(pu.velocity) : 'no matching motion packet')
 
     s = Date.now()
@@ -315,7 +331,7 @@ t.run(async () => {
   const hr = await health(s, (d) => d.health < 20, 15000)
   t.check('respawn restores full health', !!hr && Math.abs(hr.health - 19) < 0.01, hr ? `health after 1 damage: ${hr.health}` : 'no set_health')
 
-  t.skip('projectiles (on damage by arrow, shoot)', 'the test bot cannot draw a bow, and Carve has no shoot effect (Shoot is ⛔)')
+  t.skip('projectiles (on damage by arrow, shoot)', 'the test bot cannot draw a bow; the shoot section is checked in the w5-chunk6 area')
   await sleep(300)
   t.check('bot still connected', !bot.closed)
   const errs = bot.packets.filter((p) => p.error)

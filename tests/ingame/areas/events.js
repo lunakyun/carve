@@ -153,6 +153,8 @@ t.run(async () => {
   // ---- clicks ----
   srv.console('setblock 2 64 0 minecraft:gold_block')
   srv.console('setblock 0 64 2 minecraft:emerald_block')
+  // The air click below looks straight up; clear anything (a tree) above the bot.
+  srv.console('fill -1 65 -1 1 72 1 minecraft:air')
   srv.console('clear Tester')
   since = now()
   srv.console('give Tester stick 1')
@@ -163,7 +165,7 @@ t.run(async () => {
   // the clicked block of an air click.
   bot.look(0, -90)
   since = now()
-  bot.useItem()
+  bot.useItem(0, 0, -90) // use_item carries its own rotation, which Pumpkin ray-casts with
   const rcs = await bot.waitText('e:rclick-stick', { since })
   t.check('on right click with stick (air) + clicked block', !!rcs && rcs.text.includes('air'), rcs ? rcs.text : 'none')
   t.check('on consume does not fire for a stick', !await bot.waitText('e:consume', { since, ms: 800 }))
@@ -275,11 +277,16 @@ t.run(async () => {
   let pu = await bot.waitText('e:pickup', { since, ms: 2500 })
   if (!pu && item) {
     const back = { ...bot.pos }
-    await bot.walkTo(item.x, item.y, item.z, 0.3)
-    pu = await bot.waitText('e:pickup', { since, ms: 4000 })
+    // The item can slide a little after it spawns, and the bot does not see
+    // where it went: try its spawn spot, then spots around it.
+    for (const [dx, dz] of [[0, 0], [0.5, 0], [-0.5, 0], [0, 0.5], [0, -0.5]]) {
+      await bot.walkTo(item.x + dx, item.y, item.z + dz, 0.3)
+      pu = await bot.waitText('e:pickup', { since, ms: dx || dz ? 1500 : 4000 })
+      if (pu) break
+    }
     await bot.walkTo(back.x, back.y, back.z, 0.3)
   }
-  t.check('on pick up', !!pu, pu ? pu.text : 'none')
+  t.check('on pick up', !!pu, pu ? pu.text : `none; item ${!item ? 'never spawned' : bot.entities.has(item.entityId) ? 'still on the ground' : 'gone'}`)
   if (pu && pu.text.includes('dirt')) t.check('on pick up: event-item', true, pu.text)
   else if (pu) t.skip('on pick up: event-item', `Pumpkin 0.2.2 sends the entity type id, not the item (${pu.text})`)
   srv.console('clear Tester')
