@@ -28,13 +28,16 @@ pub const MAX_BLOCK_DEPTH: usize = 32;
 #[derive(Clone, Copy, PartialEq)]
 enum Unit {
     Tab,
-    Spaces(usize),
+    Spaces,
 }
 
 /// The line tree and the errors of the lines that were left out.
 pub fn parse_blocks(file: &str, src: &str) -> (Vec<Line>, Vec<ScriptError>) {
     let mut errors = Vec::new();
     let mut unit: Option<Unit> = None;
+    // Indent widths of the open levels of the current top-level item.
+    let mut widths: Vec<usize> = vec![0];
+    let mut prev_opens = false;
     let mut flat: Vec<(usize, usize, String)> = Vec::new(); // level, line, text
     for (i, raw) in src.lines().enumerate() {
         let num = i + 1;
@@ -53,7 +56,12 @@ pub fn parse_blocks(file: &str, src: &str) -> (Vec<Line>, Vec<ScriptError>) {
         }
         let indent: String = line.chars().take_while(|c| *c == ' ' || *c == '\t').collect();
         let text = line[indent.len()..].to_string();
+        let width = indent.len();
         let level = if indent.is_empty() {
+            // A new top-level item: its block may use its own indentation.
+            unit = None;
+            widths.clear();
+            widths.push(0);
             0
         } else {
             let tabs = indent.chars().all(|c| c == '\t');
@@ -66,40 +74,51 @@ pub fn parse_blocks(file: &str, src: &str) -> (Vec<Line>, Vec<ScriptError>) {
                 ));
                 continue;
             }
-            let u = *unit.get_or_insert(if tabs {
-                Unit::Tab
-            } else {
-                Unit::Spaces(indent.len())
-            });
+            let u = *unit.get_or_insert(if tabs { Unit::Tab } else { Unit::Spaces });
             match u {
-                Unit::Tab if tabs => indent.len(),
-                Unit::Spaces(n) if spaces && indent.len().is_multiple_of(n) => indent.len() / n,
-                Unit::Tab => {
+                Unit::Tab if !tabs => {
                     errors.push(ScriptError::new(
                         file,
                         num,
-                        "this file is indented with tabs, but this line uses spaces",
+                        "this block is indented with tabs, but this line uses spaces",
                     ));
                     continue;
                 }
-                Unit::Spaces(n) => {
-                    if tabs {
-                        errors.push(ScriptError::new(
-                            file,
-                            num,
-                            "this file is indented with spaces, but this line uses tabs",
-                        ));
-                    } else {
-                        errors.push(ScriptError::new(
-                            file,
-                            num,
-                            format!("indentation must be a multiple of {n} spaces"),
-                        ));
-                    }
+                Unit::Spaces if !spaces => {
+                    errors.push(ScriptError::new(
+                        file,
+                        num,
+                        "this block is indented with spaces, but this line uses tabs",
+                    ));
                     continue;
                 }
+                _ => {}
+            }
+            // Like Skript, each section sets its own step: the first line
+            // under a `:` line opens a level at its width, and a later line
+            // must line up with one of the open levels.
+            let top = widths.last().copied().unwrap_or(0);
+            if width > top {
+                if prev_opens {
+                    widths.push(width);
+                    widths.len() - 1
+                } else {
+                    // Reported below as unexpected indentation.
+                    widths.len()
+                }
+            } else if let Some(pos) = widths.iter().position(|w| *w == width) {
+                widths.truncate(pos + 1);
+                pos
+            } else {
+                errors.push(ScriptError::new(
+                    file,
+                    num,
+                    "this line's indentation doesn't line up with any block above it",
+                ));
+                continue;
             }
         };
+        prev_opens = text.ends_with(':');
         flat.push((level, num, text));
     }
 

@@ -75,9 +75,11 @@ demo.carve:3: unexpected indentation (the line above does not end with ':')
 demo.carve:1: empty block: nothing is indented under this line
 ```
 
-A file must use tabs or spaces, not both. The first indented line sets the
-step: if it uses 4 spaces, every level is 4 more spaces. Mixing gives errors
-like `this file is indented with spaces, but this line uses tabs`.
+Indent with tabs or spaces, any width, like Skript. Each trigger, command or
+function can use its own style: one can use 2 spaces and the next 4 or tabs.
+Inside one block, the first line under a `:` sets that level, and lines after
+it must line up with a level above. Mixing tabs and spaces inside one block
+gives `this block is indented with spaces, but this line uses tabs`.
 
 **Triggers and commands.**
 

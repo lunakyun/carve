@@ -71,7 +71,8 @@ on join:                              # a trigger: when this runs
   [expressions](syntax/expressions.md).
 - `#` starts a comment.
 
-Indent with tabs or with spaces, but use one style per file.
+Indent with tabs or spaces, any width. Each trigger can use its own style, as
+in Skript; just don't mix tabs and spaces inside one block.
 
 ## Your first command
 
