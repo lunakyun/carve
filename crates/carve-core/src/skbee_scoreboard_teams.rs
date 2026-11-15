@@ -48,6 +48,7 @@ pub enum TeamProp {
     SeeInvisibles,
     NametagVisibility,
     CollisionRule,
+    DeathMessageVisibility,
 }
 
 impl TeamProp {
@@ -61,6 +62,7 @@ impl TeamProp {
             ["see", "friendly", "invisibles"] => TeamProp::SeeInvisibles,
             ["nametag", "visibility"] | ["name", "tag", "visibility"] => TeamProp::NametagVisibility,
             ["collision", "rule"] => TeamProp::CollisionRule,
+            ["death", "message", "visibility"] => TeamProp::DeathMessageVisibility,
             _ => return None,
         })
     }
@@ -80,6 +82,7 @@ impl TeamProp {
             TeamProp::SeeInvisibles => "seeinvisibles",
             TeamProp::NametagVisibility => "nametag",
             TeamProp::CollisionRule => "collision",
+            TeamProp::DeathMessageVisibility => "deathmessage",
         }
     }
 }
@@ -530,7 +533,10 @@ fn set_team(toks: &[Tok], mut i: usize, env: &Env) -> Result<Option<SbFx>, Strin
     let vt = toks.get(to + 1..).unwrap_or_default();
     let value = match prop {
         TeamProp::FriendlyFire | TeamProp::SeeInvisibles => expr_of(vt, env, &[Ty::Boolean]),
-        TeamProp::Color | TeamProp::NametagVisibility | TeamProp::CollisionRule => {
+        TeamProp::Color
+        | TeamProp::NametagVisibility
+        | TeamProp::CollisionRule
+        | TeamProp::DeathMessageVisibility => {
             // Bare words (`dark red`, `hide for other teams`) are a literal.
             let bare: Option<Vec<String>> = vt
                 .iter()
@@ -990,6 +996,7 @@ fn prop_default(prop: TeamProp, team: &str) -> Value {
         TeamProp::SeeInvisibles => Value::Bool(true),
         TeamProp::NametagVisibility => Value::Text("always".into()),
         TeamProp::CollisionRule => Value::Text("always".into()),
+        TeamProp::DeathMessageVisibility => Value::Text("always".into()),
     }
 }
 
@@ -1263,6 +1270,13 @@ impl Engine {
                             Value::Text(norm_word(&v.to_string())),
                         )
                     }
+                    TeamProp::DeathMessageVisibility => {
+                        let s = visibility(&v.to_string())?;
+                        (
+                            format!("team modify {team} deathMessageVisibility {s}"),
+                            Value::Text(norm_word(&v.to_string())),
+                        )
+                    }
                     TeamProp::CollisionRule => {
                         let s = collision(&v.to_string())?;
                         (
@@ -1425,7 +1439,10 @@ impl Engine {
                             // The stored visibility and collision words read back with spaces.
                             match (p, v) {
                                 (
-                                    TeamProp::NametagVisibility | TeamProp::CollisionRule | TeamProp::Color,
+                                    TeamProp::NametagVisibility
+                                    | TeamProp::DeathMessageVisibility
+                                    | TeamProp::CollisionRule
+                                    | TeamProp::Color,
                                     Value::Text(t),
                                 ) => Value::Text(t.replace('_', " ")),
                                 _ => v.clone(),

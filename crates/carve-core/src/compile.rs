@@ -1031,6 +1031,14 @@ impl Cx<'_> {
                 i += 1;
                 continue;
             }
+            if lower.starts_with("for each ")
+                && line.opens_block()
+                && let Some(l) = crate::w6_chunk7::for_each_line(line)
+            {
+                self.loop_block(&l);
+                i += 1;
+                continue;
+            }
             if (lower.starts_with("loop ") || lower.starts_with("while ")) && line.opens_block() {
                 self.loop_block(line);
                 i += 1;

@@ -53,14 +53,18 @@ pub fn extract(file: &str, tree: Vec<Line>) -> (Vec<Line>, FileStructs, Vec<Scri
                             && !k.contains(['"', '{', '%', ':']) =>
                     {
                         let k = k.trim().to_ascii_lowercase();
-                        if aliases.iter().any(|(n, _)| *n == k) {
+                        let names = crate::w6_chunk7::alias_names(&k);
+                        if let Some(dup) = names.iter().find(|n| aliases.iter().any(|(m, _)| m == *n)) {
+                            let shown = if names.len() == 1 { k.clone() } else { dup.clone() };
                             errors.push(ScriptError::new(
                                 file,
                                 a.num,
-                                format!("alias '{k}' is defined twice"),
+                                format!("alias '{shown}' is defined twice"),
                             ));
                         } else {
-                            aliases.push((k, v.trim().to_string()));
+                            for n in names {
+                                aliases.push((n, v.trim().to_string()));
+                            }
                         }
                     }
                     _ => errors.push(ScriptError::new(
@@ -87,6 +91,7 @@ pub fn extract(file: &str, tree: Vec<Line>) -> (Vec<Line>, FileStructs, Vec<Scri
             rest.push(top);
         }
     }
+    crate::w6_chunk7::add_plurals(&mut aliases);
     if !aliases.is_empty() {
         // Longest names first, so `iron sword` wins over `iron`.
         aliases.sort_by_key(|(k, _)| std::cmp::Reverse(k.len()));

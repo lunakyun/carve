@@ -73,6 +73,7 @@ mod w5_chunk4;
 mod w5_chunk5;
 mod w5_chunk6;
 mod w6_chunk5;
+mod w6_chunk7;
 
 const SCRIPTS_DIR: &str = "scripts";
 const VARS_FILE: &str = "variables.json";
@@ -1793,6 +1794,10 @@ impl Host for TickHost<'_, '_> {
         r
     }
 
+    fn entity_by_uuid(&mut self, uuid: &str) -> Option<carve_core::EntityRef> {
+        self.inner.entity_by_uuid_impl(uuid)
+    }
+
     fn top_block_y(&mut self, world: Option<&str>, x: i32, z: i32) -> Option<i32> {
         self.inner.top_block_y_impl(world, x, z)
     }
@@ -2911,7 +2916,7 @@ impl CommandHandler for AdminCommand {
 // ---------- plugin ----------
 
 fn tick(server: Server) {
-    with_state(&server, None, |st, host| {
+    let reloaded = with_state(&server, None, |st, host| {
         st.flush_late(host, None);
         host.w5_tick();
         st.hs.tick += 1;
@@ -2948,7 +2953,14 @@ fn tick(server: Server) {
         if let Some(json) = st.engine.bounds.save_due(now * 50) {
             st.save_to(BOUNDS_FILE, &json);
         }
+        if now % w6_chunk7::AUTO_RELOAD_TICKS == 0 {
+            return w6_chunk7::auto_reload(st, host);
+        }
+        false
     });
+    if reloaded == Some(true) {
+        fire_load(&server);
+    }
 }
 
 /// Run `on load` triggers (after the first load and after each good reload).

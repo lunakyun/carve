@@ -7,7 +7,7 @@ editLink: false
 
 # Conditions
 
-Conditions go after `if`, `else if` and `while`, or on a line of their own. 88 entries. Search all of them on the [reference home](./index.md).
+Conditions go after `if`, `else if` and `while`, or on a line of their own. 119 entries. Search all of them on the [reference home](./index.md).
 
 In a pattern, `%type%` is a value, `[...]` is optional and `(a|b)` means one of the words.
 
@@ -42,6 +42,73 @@ if block below player is grass block or dirt:
 ```
 
 Since **unreleased** · Guide: [blocks](../syntax/blocks.md)
+
+## Can age {#can_age}
+
+```carve
+%entity% can (age|grow up)
+%entity% (can't|cannot) (age|grow up)
+```
+
+Whether a mob has a baby form and grows up.
+
+```carve
+spawn a cow at location(0, 70, 0)
+if last spawned entity can age:
+    send "yes"
+```
+
+Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+
+## Can be dispensed {#equip_can_be_dispensed}
+
+```carve
+%object% can be dispensed
+%object% (can't|cannot|can not) be dispensed
+```
+
+Whether a dispenser can put the item on a nearby entity. Reads the item's default (vanilla) equippable component; items without one are false.
+
+```carve
+if diamond helmet can be dispensed:
+    send "yes"
+```
+
+Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
+
+## Can be equipped on entities {#equip_on_entities}
+
+```carve
+%object% can be (equipped|put) (on|onto) entities
+%object% can equip (on|onto) entities
+%object% (can't|cannot|can not) be (equipped|put) (on|onto) entities
+%object% (can't|cannot|can not) equip (on|onto) entities
+```
+
+Whether a player can put the item on a mob by right-clicking it (saddles, harnesses). Reads the item's default equippable component.
+
+```carve
+if saddle can be equipped on entities:
+    send "yes"
+```
+
+Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
+
+## Can be sheared off {#equip_can_be_sheared_off}
+
+```carve
+%object% can be sheared off
+%object% (can't|cannot|can not) be sheared off
+```
+
+Whether shears can take the item off a mob (saddles, horse armor, llama carpets). Reads the item's default equippable component.
+
+```carve
+if saddle can be sheared off:
+    send "yes"
+```
+
+Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
 
 ## Can breed {#can_breed}
 
@@ -129,6 +196,24 @@ Whether a player's chat settings show messages, or chat colours.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
+## Can swap equipment {#equip_can_swap}
+
+```carve
+%object% can (swap|switch) equipment
+%object% can be (swapped|switched)
+%object% (can't|cannot|can not) (swap|switch) equipment
+%object% (can't|cannot|can not) be (swapped|switched)
+```
+
+Whether right-clicking with the item swaps it with the worn piece. Reads the item's default equippable component.
+
+```carve
+if carved pumpkin can't swap equipment:
+    send "no swapping"
+```
+
+Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
+
 ## Chance {#chance}
 
 ```carve
@@ -173,6 +258,23 @@ Whether an entity's name tag is shown.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
+## Damage was caused by {#damage_was_caused_by}
+
+```carve
+[the] damage (was|is|has) [been] (caused|done|made) by %object%
+[the] damage (wasn't|was not|isn't|is not|hasn't|has not) [been] (caused|done|made) by %object%
+```
+
+In `on damage`: whether the damage came from a cause. Takes the game's damage type names (`fall`, `lava`, `in_wall`, `player_attack`) and the Skript names (`drowning`, `projectile`, `entity attack`, `suffocation`, `void`, ...).
+
+```carve
+on damage:
+    if damage was caused by fall:
+        cancel event
+```
+
+Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
+
 ## Date in future or past {#date_future_past}
 
 ```carve
@@ -185,6 +287,23 @@ Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 Whether a date is later or earlier than now.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Egg will hatch {#egg_will_hatch}
+
+```carve
+[the] egg (will|is going to) hatch
+[the] egg (won't|will not|isn't going to|is not going to) hatch
+```
+
+In `on throwing of an egg`: whether the thrown egg will hatch a chick (same as `event-hatching`).
+
+```carve
+on throwing of an egg:
+    if the egg will hatch:
+        send "A chick!" to player
+```
+
+Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
 
 ## Ends with {#ends_with}
 
@@ -202,6 +321,24 @@ on chat:
 ```
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Entity storage is full {#entity_storage_full}
+
+```carve
+[the] entity storage of %location% (is|are) full
+[the] entity storage of %location% (isn't|is not|aren't|are not) full
+%location%'s entity storage (is|are) full
+%location%'s entity storage (isn't|is not|aren't|are not) full
+```
+
+Whether a beehive or bee nest holds the most bees it can (3). False for other blocks, negated or not.
+
+```carve
+if entity storage of block at location(1, 64, 1) is full:
+    send "The hive is full"
+```
+
+Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
 
 ## Event is cancelled {#event_cancelled}
 
@@ -235,6 +372,28 @@ Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 Whether an enderman has been looked at by a player.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Has boss bar flag {#has_bossbar_flag}
+
+```carve
+bossbar %text% (has|have) [the] [flag] (darken sky|darken the sky|sky darkening) [flag]
+bossbar %text% (doesn't|does not) have [the] [flag] (darken sky|darken the sky|sky darkening) [flag]
+bossbar %text% (has|have) [the] [flag] [create] fog [flag]
+bossbar %text% (doesn't|does not) have [the] [flag] [create] fog [flag]
+bossbar %text% (has|have) [the] [flag] (dragon bar|[play] boss music) [flag]
+bossbar %text% (doesn't|does not) have [the] [flag] (dragon bar|[play] boss music) [flag]
+```
+
+Whether a boss bar (by id) has the darken sky, fog or boss music (dragon bar) flag. An unknown bar is false, negated or not.
+
+```carve
+create bossbar "raid" with title "Raid"
+add darken sky flag to bossbar "raid"
+if bossbar "raid" has darken sky flag:
+    send "dark"
+```
+
+Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
 
 ## Has chat filtering {#chat_filtering}
 
@@ -318,6 +477,40 @@ Whether an entity can see another entity with nothing in between.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
+## Has loot table {#has_loot_table}
+
+```carve
+%location% (has|have) [a] loot table
+%location% (has|have) [a] loottable
+%location% (doesn't|does not|don't|do not) have [a] loot table
+%location% (doesn't|does not|don't|do not) have [a] loottable
+```
+
+Whether a container block (chest, barrel, ...) still has a loot table to fill it from (`LootTable` in its block data).
+
+```carve
+if block at location(1, 64, 1) has a loot table:
+    send "Not opened yet"
+```
+
+Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
+
+## Has metadata {#has_metadata}
+
+```carve
+%object% (has|have) metadata [(value|tag)] %text%
+%object% (doesn't|does not|don't|do not) have metadata [(value|tag)] %text%
+```
+
+Whether a metadata value is set on a player, world or item type (see `set metadata value`).
+
+```carve
+if player has metadata "frozen":
+    cancel event
+```
+
+Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
+
 ## Has permission {#permission}
 
 ```carve
@@ -333,6 +526,39 @@ if player has permission "vip":
 ```
 
 Since **0.1.0** · Guide: [conditions](../syntax/conditions.md)
+
+## Has persistent data tag {#has_persistent_data}
+
+```carve
+%object% (has|have) [persistent] data (tag|tags|value|values) %text%
+%object% (doesn't|does not|don't|do not) have [persistent] data (tag|tags|value|values) %text%
+```
+
+Whether a persistent data value is set on a player, world or item type (see `set persistent data value`).
+
+```carve
+if player has persistent data tag "kit":
+    send "Kit already claimed"
+```
+
+Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
+
+## Has played before {#has_played_before}
+
+```carve
+%player% (has|did) [already] (play|played) [on (this|the) server] (before|already)
+%player% (hasn't|has not|didn't|did not) [(already|yet)] (play|played) [on (this|the) server] [(before|already|yet)]
+```
+
+Whether a player joined the server before this session. Carve remembers who joined in `first_join.txt`, so it is false for the whole first session.
+
+```carve
+on join:
+    if player hasn't played before:
+        send "Welcome, new player!" to player
+```
+
+Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
 
 ## Has potion effect {#potion}
 
@@ -434,6 +660,24 @@ Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 Whether a text has only letters and digits.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Is any of {#w5c3_any_of}
+
+```carve
+%object% (is|are|=) (any|any one|one) of %object%
+%object% (isn't|is not|aren't|are not|!=) (any|any one|one) of %object%
+(any|any one|one) of %object% (is|are|=) %object%
+(any|any one|one) of %object% (isn't|is not|aren't|are not|!=) %object%
+```
+
+Whether a value equals one of the items of a list (negated: none of them).
+
+```carve
+if player is any of all operators:
+    send "op"
+```
+
+Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
 
 ## Is banned {#banned}
 
@@ -805,6 +1049,41 @@ Whether a player has the poison effect.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
+## Is preferred tool {#is_preferred_tool}
+
+```carve
+%object% (is|are) %location%'s preferred (tool|tools)
+%object% (is|are) [(the|a)] preferred (tool|tools) (for|of) %object%
+%object% (isn't|is not|aren't|are not) %location%'s preferred (tool|tools)
+%object% (isn't|is not|aren't|are not) [(the|a)] preferred (tool|tools) (for|of) %object%
+```
+
+Whether breaking a block with the item gives drops: true for blocks that drop with anything, otherwise the vanilla tool rules (tool type and tier).
+
+```carve
+if diamond pickaxe is the preferred tool for obsidian:
+    send "yes"
+```
+
+Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
+
+## Is responsive {#is_responsive}
+
+```carve
+%object% (is|are) responsive
+%object% (isn't|is not|aren't|are not) responsive
+```
+
+Whether an interaction entity is responsive (shows the hand swing when clicked). False for other entities.
+
+```carve
+spawn an interaction at player
+if last spawned entity is responsive:
+    send "yes"
+```
+
+Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
+
 ## Is riding {#riding}
 
 ```carve
@@ -826,6 +1105,51 @@ Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 Whether the bell at a location is ringing.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Is riptiding {#w5c3_riptiding}
+
+```carve
+%object% (is|are) riptiding
+%object% (isn't|is not|aren't|are not) riptiding
+```
+
+Whether a player or mob is in the trident spin attack.
+
+```carve
+if player is riptiding:
+    send "whee"
+```
+
+Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+
+## Is saddled {#w5c3_saddled}
+
+```carve
+%object% (is|are) [properly] saddled
+%object% (isn't|is not|aren't|are not) [properly] saddled
+```
+
+Whether something sits in the saddle slot of a pig, strider, horse or camel.
+
+```carve
+command /sad:
+    trigger:
+        if nearest pig to player is saddled:
+            send "saddled"
+```
+
+Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+
+## Is screaming {#w5c3_screaming}
+
+```carve
+%object% (is|are) screaming
+%object% (isn't|is not|aren't|are not) screaming
+```
+
+Whether an enderman is screaming. Goats have no data in the plugin API.
+
+Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
 
 ## Is script command {#script_command}
 
@@ -930,6 +1254,22 @@ Whether a block type is solid.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
+## Is spawnable {#w5c3_spawnable}
+
+```carve
+%object% (is|are) spawnable [in %world%]
+%object% (isn't|is not|aren't|are not) spawnable [in %world%]
+```
+
+Whether an entity type can be spawned: a known type other than `player` and `fishing_bobber`.
+
+```carve
+if "zombie" is spawnable in player's world:
+    send "yes"
+```
+
+Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+
 ## Is sprinting {#sprinting}
 
 ```carve
@@ -945,6 +1285,22 @@ if player is sprinting:
 ```
 
 Since **unreleased** · Guide: [player-flags](../syntax/player-flags.md)
+
+## Is stackable {#w5c3_stackable}
+
+```carve
+%object% (is|are) stackable
+%object% (isn't|is not|aren't|are not) stackable
+```
+
+Whether an item stacks to more than 1.
+
+```carve
+if diamond sword is not stackable:
+    send "one per slot"
+```
+
+Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
 
 ## Is swimming {#swimming}
 
@@ -991,6 +1347,41 @@ Whether a block or item is in a Minecraft tag, like `minecraft:logs`.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
+## Is tameable {#w5c3_tameable}
+
+```carve
+%object% (is|are) tameable
+%object% (isn't|is not|aren't|are not) tameable
+```
+
+Whether a mob (or entity type) can be tamed: wolves, cats, parrots, horses, donkeys, mules, llamas, camels and skeleton or zombie horses.
+
+```carve
+if "wolf" is tameable:
+    send "yes"
+```
+
+Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+
+## Is tamed {#w5c3_tamed}
+
+```carve
+%object% (is|are) tamed
+%object% (isn't|is not|aren't|are not) tamed
+```
+
+Whether a wolf or cat has an owner. Other tameable mobs have no data in Pumpkin's plugin API, so the check is false either way.
+
+```carve
+command /tamed:
+    trigger:
+        set {_w} to nearest wolf to player
+        if {_w} is tamed:
+            send "tamed"
+```
+
+Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+
 ## Is the console {#is_console}
 
 ```carve
@@ -1029,6 +1420,22 @@ Whether an entity still exists in the world.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
+## Is wearing {#w5c3_wearing}
+
+```carve
+%object% (is|are) wearing %object%
+%object% (isn't|is not|aren't|are not) wearing %object%
+```
+
+Whether a player or mob wears an item in its head, chest, legs, feet, body or saddle slot. With a list, every item must be worn.
+
+```carve
+if player is wearing diamond helmet:
+    send "shiny"
+```
+
+Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+
 ## Is wet {#wet}
 
 ```carve
@@ -1062,6 +1469,66 @@ Whether a location or entity is within a distance of another.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
+## Item has enchantment glint override {#w5c3_glint}
+
+```carve
+%player%'s (tool|held item) (has|have) [an] (enchantment glint (overridden|override)|overridden enchantment glint)
+%player%'s (tool|held item) (doesn't|does not|don't|do not) have [an] (enchantment glint (overridden|override)|overridden enchantment glint)
+[the] (tool|held item) of %player% (has|have) [an] (enchantment glint (overridden|override)|overridden enchantment glint)
+[the] (tool|held item) of %player% (doesn't|does not|don't|do not) have [an] (enchantment glint (overridden|override)|overridden enchantment glint)
+```
+
+Whether the held item has the enchantment glint override component. Only the held item: item values in variables do not keep components.
+
+```carve
+if player's tool has enchantment glint overridden:
+    send "glint"
+```
+
+Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+
+## Item tooltip is shown {#item_tooltip_shown}
+
+```carve
+[the] [(entire|additional)] (tooltip|tooltips) of %object% (is|are) shown
+[the] [(entire|additional)] (tooltip|tooltips) of %object% (is|are) hidden
+%object%'s [(entire|additional)] (tooltip|tooltips) (is|are) shown
+%object%'s [(entire|additional)] (tooltip|tooltips) (is|are) hidden
+%object% (has|have) [(a|an|the)] (entire|additional) tooltip
+%object% (doesn't|does not|don't|do not) have [(a|an|the)] (entire|additional) tooltip
+```
+
+Whether an item's tooltip is shown. Carve item values carry no tooltip settings, so this is always shown.
+
+```carve
+if tooltip of diamond sword is shown:
+    send "yes"
+```
+
+Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
+
+## Lid is open/closed {#w5c3_lid}
+
+```carve
+[the] (lid|lids) of %object% (is|are) (open|opened)
+[the] (lid|lids) of %object% (isn't|is not|aren't|are not) (open|opened)
+[the] (lid|lids) of %object% (is|are) (closed|close)
+[the] (lid|lids) of %object% (isn't|is not|aren't|are not) (closed|close)
+%object%'s (lid|lids) (is|are) (open|opened)
+%object%'s (lid|lids) (isn't|is not|aren't|are not) (open|opened)
+%object%'s (lid|lids) (is|are) (closed|close)
+%object%'s (lid|lids) (isn't|is not|aren't|are not) (closed|close)
+```
+
+Whether a chest or trapped chest has viewers, or a barrel is open. Ender chests and shulker boxes (no viewer count in Pumpkin) and other blocks are neither open nor closed.
+
+```carve
+if lid of location(0, 64, 0, world "world") is open:
+    send "someone is looking"
+```
+
+Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+
 ## Matches regex {#regex}
 
 ```carve
@@ -1075,6 +1542,32 @@ Whether a text contains or fully matches a regular expression.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
+## Potion effect has icon / particles / is ambient {#w5c3_effect_flags}
+
+```carve
+[the] [potion] effect of %object% (of|on) %player% (has|have) [an] icon
+[the] [potion] effect of %object% (of|on) %player% (doesn't|does not|don't|do not) have [an] icon
+[the] [potion] effect of %object% (of|on) %player% (has|have) particles
+[the] [potion] effect of %object% (of|on) %player% (doesn't|does not|don't|do not) have particles
+[the] [potion] effect of %object% (of|on) %player% (is|are) ambient
+[the] [potion] effect of %object% (of|on) %player% (isn't|is not|aren't|are not) ambient
+%player%'s %object% [potion] effect (has|have) [an] icon
+%player%'s %object% [potion] effect (doesn't|does not|don't|do not) have [an] icon
+%player%'s %object% [potion] effect (has|have) particles
+%player%'s %object% [potion] effect (doesn't|does not|don't|do not) have particles
+%player%'s %object% [potion] effect (is|are) ambient
+%player%'s %object% [potion] effect (isn't|is not|aren't|are not) ambient
+```
+
+Flags of a player's active potion effect. Players only. Without that effect the check is false either way.
+
+```carve
+if player's speed effect doesn't have particles:
+    send "hidden speed"
+```
+
+Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+
 ## PvP enabled {#pvp}
 
 ```carve
@@ -1087,6 +1580,23 @@ pvp is (disabled|not enabled) in %world%
 Whether players can hurt each other, server-wide or in a world.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Resource pack state {#w5c3_resource_pack}
+
+```carve
+[the] resource pack (was|is|has) [been] %object%
+[the] resource pack (wasn't|was not|isn't|is not|hasn't|has not) [been] %object%
+```
+
+In `on resource pack response`: the state the player sent (`accepted`, `declined`, `downloaded`, `successfully loaded`, `failed download`, `invalid url`, `failed reload`, `discarded`).
+
+```carve
+on resource pack response:
+    if the resource pack was declined:
+        send "Please accept the pack" to player
+```
+
+Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
 
 ## Respawn anchors work {#respawn_anchors}
 
@@ -1127,6 +1637,23 @@ on chat:
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
+## Text display has drop shadow / is visible through blocks {#w5c3_text_display}
+
+```carve
+[the] text of %object% (has|have) [a] (drop|text) shadow
+[the] text of %object% (doesn't|does not|don't|do not) have [a] (drop|text) shadow
+%object% (has|have) [a] (drop|text) shadow
+%object% (doesn't|does not|don't|do not) have [a] (drop|text) shadow
+[the] text of %object% (is|are) visible through (blocks|walls)
+[the] text of %object% (isn't|is not|aren't|are not) visible through (blocks|walls)
+%object% (is|are) visible through (blocks|walls)
+%object% (isn't|is not|aren't|are not) visible through (blocks|walls)
+```
+
+Flags of a text display entity.
+
+Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+
 ## Text or list contains {#contains}
 
 ```carve
@@ -1144,6 +1671,22 @@ on chat:
 ```
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Will lose durability {#equip_loses_durability}
+
+```carve
+%object% will (lose durability|be damaged) [(on [wearer's] injury|when [the] wearer [is] (hurt|injured|damaged))]
+%object% (won't|will not) (lose durability|be damaged) [(on [wearer's] injury|when [the] wearer [is] (hurt|injured|damaged))]
+```
+
+Whether the worn item loses durability when the wearer is hurt. Reads the item's default equippable component.
+
+```carve
+if elytra won't lose durability:
+    send "tough"
+```
+
+Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
 
 ## World or chunk is loaded {#world_loaded}
 

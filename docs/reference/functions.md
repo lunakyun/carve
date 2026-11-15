@@ -81,12 +81,13 @@ floor(%number%)
 ceil(%number%)
 ceiling(%number%)
 round(%number%)
+round(%number%, %number%)
 ```
 
-Rounds down, up, or to the nearest whole number.
+Rounds down, up, or to the nearest whole number. `round(n, places)` keeps that many decimal places.
 
 ```carve
-send "%round(2.6)%" to player
+send "%round(2.6)% %round(3.14159, 2)%" to player
 ```
 
 Since **unreleased** · Guide: [expressions](../syntax/expressions.md)
@@ -108,14 +109,14 @@ Since **unreleased** · Guide: [types](../syntax/types.md)
 ## min / max {#min_max}
 
 ```carve
-min(%number%, %number%)
-max(%number%, %number%)
+min(%number%, %number%, ...)
+max(%number%, %number%, ...)
 ```
 
-The smaller or bigger of two numbers.
+The smallest or biggest of two or more numbers.
 
 ```carve
-send "%max(3, 7)%" to player
+send "%max(3, 7, 5)%" to player
 ```
 
 Since **unreleased** · Guide: [expressions](../syntax/expressions.md)

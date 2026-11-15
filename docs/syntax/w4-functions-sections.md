@@ -20,8 +20,10 @@ same name wins. Wrong argument counts or types are load errors with `file:line`.
 | `uuid(text)` | parses a UUID |
 | `player(name or uuid)`, `offlinePlayer(...)` | looks up a player |
 
-Not available: `entity()` (no entity lookup by UUID in the plugin API),
-`quaternion()` and `axisAngle()` (no quaternion type). `vector(x, y, z)` already existed.
+Also: `entity(uuid)` (a player or any live entity), `world("name")`,
+`quaternion(w, x, y, z)`, `axisAngle(degrees, x, y, z)` and
+`axisAngle(degrees, vector)` (the axis is normalised), `round(n, places)` and
+`min`/`max` with any number of values. `vector(x, y, z)` already existed.
 
 ## Sections
 
@@ -45,4 +47,4 @@ suppress type hints:
 
 ## Structures
 
-- `auto reload:` is accepted and ignored; Carve reloads only on request.
+- `auto reload` (a line of its own at the top level) makes Carve reload that script when its file changes. Carve looks at the scripts folder every 2 seconds; scripts without the line are only reloaded by `/carve reload`.

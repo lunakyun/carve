@@ -7,7 +7,7 @@ editLink: false
 
 # Events
 
-Events and other top-level lines: what starts a trigger. 151 entries. Search all of them on the [reference home](./index.md).
+Events and other top-level lines: what starts a trigger. 152 entries. Search all of them on the [reference home](./index.md).
 
 In a pattern, `%type%` is a value, `[...]` is optional and `(a|b)` means one of the words.
 
@@ -1288,6 +1288,23 @@ on portal enter
 An entity walks into a portal block.
 
 Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Prepare craft {#prepare_craft}
+
+```carve
+on preparing craft
+on prepare craft
+on beginning craft
+```
+
+A recipe matches in a crafting grid, before the player takes the result. `event-item` is the result, `event-recipe` the recipe id. Can be cancelled.
+
+```carve
+on preparing craft:
+    send "You can make %event-item%"
+```
+
+Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
 
 ## Projectile hit {#projectile_hit}
 

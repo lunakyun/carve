@@ -115,13 +115,13 @@ set collision rule of team "red" to push own team
 You can also write `set team prefix of "red" to ...`. Read them back with
 `prefix of team "red"` or `team prefix of "red"`, and the same for `suffix`,
 `color`, `display name`, `friendly fire`, `see friendly invisibles`,
-`nametag visibility` and `collision rule` (all with `team ...`).
+`nametag visibility`, `death message visibility` and `collision rule` (all with `team ...`).
 
 - Colors: the 16 Minecraft names (`dark red`, `light purple`, ...) and
   `reset`. `pink`, `purple` and `grey` also work. Write them as bare words or
   as text.
-- Nametag visibility: `always`, `never`, `hide for other teams`,
-  `hide for own team`.
+- Nametag visibility and death message visibility: `always`, `never`,
+  `hide for other teams`, `hide for own team`.
 - Collision rule: `always`, `never`, `push other teams`, `push own team`.
 - Prefix, suffix and display name accept `&` color codes.
 - A team that has never been changed reads back the defaults: empty prefix

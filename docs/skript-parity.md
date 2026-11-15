@@ -333,7 +333,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Lightning ⭐ — `strike lightning [effect] at ...`
 - ✅ Load Server Icon — a PNG from Carve's data folder; `set the server icon to the last loaded server icon` in `on server list ping`
 - 🟡 Load World — `create world "x" [with environment nether]`, `load world "x"`, `unload world "x"`; works only on hosts that can create worlds (Pumpkin 0.1 cannot, the script gets an error)
-- 🟡 Locally Suppress Warning — accepted and ignored; Carve has no such warnings
+- ✅ Locally Suppress Warning — accepted; Carve prints none of those warnings, so there is nothing to silence
 - ✅ Log — `log "x" [to file "name"]` appends to `logs/<name>`
 - ✅ Look At — `make player look at <location>` (players)
 - ✅ Make Adult/Baby
@@ -865,7 +865,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Last Death Location — `last death location of <player>`; remembered since the plugin loaded
 - ⛔ Last Interaction Date — not blocked by the API, only not built yet: interaction-entity.get-last-interaction returns only a uuid. Pumpkin stores a timestamp (PlayerAction in interaction.rs) but the WIT does not expose it
 - ⛔ Last Interaction Player — not blocked by the API, only not built yet: display.wit v0.1 interaction-entity.get-last-interaction returns option<uuid>, and get-last-attacker also exists. Resolve the uuid with server.get-player-by-name or the online player list
-- ⛔ Last Loaded Server Icon — not blocked by the API, only not built yet: Skript's expression returns the icon from `load server icon from file`. That is Carve-side state
+- ✅ Last Loaded Server Icon — `last loaded server icon` (a data: URL); in-game: sent in the status ping
 - 🟡 Last Resource Pack Response — `[last] resource pack response [of <player>]`: status text from Pumpkin
 - ✅ Last Spawned Entity — needs the plugin host, `/summon` cannot report it
 - ⛔ Last/First Login Time — not blocked by the API, only not built yet: No API for history, but Carve can stamp first and last join in its own data on player-join and player-leave events. It is only correct from when Carve started tracking, because earlier players have no record
@@ -1023,7 +1023,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Sea Pickles — `[min|max] [sea] pickles of <block>`; set, add, remove, reset (clamped 1 to 4)
 - ⛔ Seed of Loot Table — no loot table data in the plugin API
 - ⛔ Sent Command List — Pumpkin has no event for the command tree sent to a client (its command send event is the typed command)
-- ⛔ Server Icon — the icon is only in the server list ping event, which Carve does not expose
+- ✅ Server Icon — `load the server icon from file "icon.png"`, `set the server icon to the last loaded server icon` in `on server list ping`
 - ✅ Sets — `all <type>s` / `every <type>` for the named-value types (difficulties, moon phases, boss bar styles...)
 - ✅ Shooter — `shooter` in `on shoot` (the mob that shot)
 - ✅ Shuffled List ⭐ — `shuffled {x::*}`
@@ -1145,8 +1145,8 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Conditionals — `if` / `else if` / `else`, inline `<effect> if <cond>` / `unless`, `parse if`
 - ✅ Delay — `wait N ticks/seconds`, `wait 1 minute and 30 seconds`, `wait {span}`
 - ✅ Filter ⭐ — `filter {x::*} to match:` with `input`
-- 🟡 For Each Loop — `loop {list::*}` works; no `for each` wording
-- 🟡 Locally Suppress Warning — accepted and ignored; Carve has no such warnings
+- ✅ For Each Loop — `for each {_x} in {list::*}:` (sets `{_x}` every round) and `for each <type> in ...:` as `loop`
+- ✅ Locally Suppress Warning — accepted; Carve prints none of those warnings, so there is nothing to silence
 - ✅ Loop — times, lists, all players, values
 - 🟡 Shoot — `shoot <projectile> [from <entity>] [at speed <n>]:` spawns and launches it and runs the body with it; the plugin API cannot set the owner, so hits are not credited and `on shoot` does not fire
 - ✅ Spawn ⭐ — `spawn <mob> at <place>:` with `event-entity` in the body
@@ -1155,13 +1155,13 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 
 ## Structures (8)
 
-- 🟡 Aliases — `aliases:` section replaces a name by any text (an item, say); no plural forms, no variants
-- 🟡 Auto Reload — accepted and ignored; Carve reloads only on request
+- ✅ Aliases — `aliases:` replaces a name by any text (an item, say); names take `(a|b)` choices and `[optional]` parts, and every name also works in the plural unless you define it yourself
+- ✅ Auto Reload — a top-level `auto reload` line reloads that script when its file changes (checked every 2 seconds); other scripts are only reloaded by `/carve reload`
 - ✅ Command — args, permission, aliases, usage, executable by; no cooldown; new commands need a restart
 - ✅ Event — see events
 - ✅ Function — also `local function` (visible in its own file only)
 - ✅ Options — `{@name}`
-- 🟡 Using Experimental Feature — `using ...` lines are accepted and ignored; Carve has no experimental features
+- ✅ Using Experimental Feature — `using ...` lines are accepted; Carve has no experimental features, so there is nothing to switch on
 - ✅ Variables ⭐ — `variables:` defaults, also per player (`{coins::%player%} = 0`)
 
 ## Functions (45)
@@ -1171,7 +1171,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ asin — see syntax/w4-functions-sections
 - ✅ atan — see syntax/w4-functions-sections
 - ✅ atan2 — see syntax/w4-functions-sections
-- ⛔ axisAngle — Carve has no quaternion type
+- ✅ axisAngle — `axisAngle(degrees, x, y, z)` and `axisAngle(degrees, vector)`; the axis is normalised, a zero axis is an error
 - ✅ calcExperience — see syntax/w4-functions-sections
 - ✅ ceil
 - ✅ ceiling
@@ -1180,7 +1180,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ concat — see syntax/w4-functions-sections
 - ✅ cos — see syntax/w4-functions-sections
 - ✅ date
-- ⛔ entity — the plugin API cannot find an entity by UUID
+- ✅ entity — `entity(uuid)` and `entity from uuid "..."`: an online player, or any live entity found by scanning the worlds; `<none>` when nothing has that UUID
 - ✅ exp — see syntax/w4-functions-sections
 - ✅ factorial — see syntax/w4-functions-sections
 - ✅ floor
@@ -1188,21 +1188,21 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ fromBase — see syntax/w4-functions-sections
 - ✅ isNaN — see syntax/w4-functions-sections
 - ✅ ln — see syntax/w4-functions-sections
-- 🟡 location — `location(x, y, z[, world])`, no yaw/pitch
+- 🟡 location — `location(x, y, z[, world])`; no yaw/pitch arguments: Carve's location value holds only x, y, z and a world, so there is no field to keep a rotation in (the WIT calls for rotation exist: teleport options and set-rotation)
 - ✅ log — see syntax/w4-functions-sections
-- 🟡 max — two numbers, or `max of {x::*}`
+- ✅ max — `max(a, b, c, ...)` with two or more numbers, or `max of {x::*}`
 - ✅ mean — `average of {x::*}`
 - ✅ median — see syntax/w4-functions-sections
-- 🟡 min — two numbers, or `min of {x::*}`
+- ✅ min — `min(a, b, c, ...)` with two or more numbers, or `min of {x::*}`
 - ✅ mod
 - ✅ offlineplayer — see syntax/w4-functions-sections
 - ✅ permutations — see syntax/w4-functions-sections
 - ✅ player — see syntax/w4-functions-sections
 - ✅ product — see syntax/w4-functions-sections
-- ⛔ quaternion — Carve has no quaternion type
+- ✅ quaternion — `quaternion(w, x, y, z)`
 - ✅ rgb — see syntax/w4-functions-sections
 - ✅ root — see syntax/w4-functions-sections
-- 🟡 round — no decimal places argument
+- ✅ round — `round(n)` and `round(n, places)`
 - ✅ sin — see syntax/w4-functions-sections
 - ✅ sqrt
 - ✅ sum — `sum of {x::*}`
@@ -1210,16 +1210,16 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ toBase — see syntax/w4-functions-sections
 - ✅ uuid — see syntax/w4-functions-sections
 - ✅ vector — `vector(x, y, z)`
-- 🟡 world — as `world "name"`
+- ✅ world — `world("name")` and `world "name"`
 
 ## Types (126)
 
-- 🟡 Any Named Thing — works as a function parameter type (no extra checks); no value of its own
-- 🟡 Any Numbered/Sized Thing — works as a function parameter type (no extra checks); no value of its own
-- 🟡 Any Valued Thing — works as a function parameter type (no extra checks); no value of its own
-- 🟡 Anything with Contents — works as a function parameter type (no extra checks); no value of its own
+- ✅ Any Named Thing — an abstract type with no value of its own; a function parameter of this type accepts any value (in-game: a function with this parameter type is called)
+- ✅ Any Numbered/Sized Thing — an abstract type with no value of its own; a function parameter of this type accepts any value (in-game: a function with this parameter type is called) (`any numbered thing`, `any sized thing`)
+- ✅ Any Valued Thing — an abstract type with no value of its own; a function parameter of this type accepts any value (in-game: a function with this parameter type is called)
+- ✅ Anything with Contents — an abstract type with no value of its own; a function parameter of this type accepts any value (in-game: a function with this parameter type is called)
 - ✅ Attribute Type — a named value: plain words or `"text" parsed as attribute type`; compares with text; usable as a function parameter type
-- 🟡 Audience — works as a function parameter type (no extra checks); no value of its own
+- ✅ Audience — an abstract type with no value of its own; a function parameter of this type accepts any value (in-game: a function with this parameter type is called)
 - ⛔ Banner Pattern — the banner block entity API has no patterns
 - ✅ Banner Pattern Type — a named value: plain words or `"text" parsed as banner pattern type`; compares with text; usable as a function parameter type
 - ✅ Biome — `biome at {loc}`, `biome of player`: a text like `birch_forest`
@@ -1250,7 +1250,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Enchantment — a named value: plain words or `"text" parsed as enchantment`; compares with text; usable as a function parameter type
 - ⛔ Enchantment Offer — the API has no enchanting table offers
 - 🟡 Enchantment Type — a function parameter type; enchantments are texts like `sharpness 5`
-- 🟡 Entity — works as a function parameter type (no extra checks); no value of its own
+- ✅ Entity — an abstract type with no value of its own; a function parameter of this type accepts any value (in-game: a function with this parameter type is called)
 - ✅ Entity Effect — a named value: plain words or `"text" parsed as entity effect`; compares with text; usable as a function parameter type
 - ⛔ Entity Snapshot — the plugin API has no entity snapshots
 - ✅ Entity Type — a named value: plain words or `"text" parsed as entity type`; compares with text; usable as a function parameter type
@@ -1267,7 +1267,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Game Effect — a named value: plain words or `"text" parsed as game effect`; compares with text; usable as a function parameter type
 - ✅ Game Mode ⭐ — `survival`, `creative`, `adventure`, `spectator`
 - 🟡 Gamerule — a name checked at compile time; old names like doDaylightCycle are mapped
-- 🟡 Gamerule Value — works as a function parameter type (no extra checks); no value of its own
+- ✅ Gamerule Value — a yes/no or number; usable as a function parameter type (in-game: called with a yes/no value)
 - ✅ Gene — a named value: plain words or `"text" parsed as gene`; compares with text; usable as a function parameter type
 - ⛔ Header — Carve has no config file or node reading
 - ⛔ Heal Reason — needs the regain health event, which is not wired in Carve
@@ -1281,16 +1281,16 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Item Display Transforms — a named value: plain words or `"text" parsed as item display transforms`; compares with text; usable as a function parameter type
 - ✅ Item Flag — a named value: plain words or `"text" parsed as item flag`; compares with text; usable as a function parameter type
 - ⛔ Item Rarity — the API only exposes raw component bytes, not typed access
-- 🟡 Item Type — Minecraft ids, checked at load
+- ✅ Item Type — Minecraft ids, checked at load; usable as a function parameter type (in-game: called with `diamond sword`)
 - 🟡 Living Entity — works as a function parameter type (no extra checks); no value of its own
 - ✅ Location — no yaw/pitch
 - ⛔ Loot Context — only the loot generate event carries one; the API cannot build contexts
 - ⛔ Loot Table — only the loot generate event carries one; the API cannot build tables
-- 🟡 Metadata Holder — works as a function parameter type (no extra checks); no value of its own
+- ✅ Metadata Holder — an abstract type with no value of its own; a function parameter of this type accepts any value (in-game: a function with this parameter type is called)
 - 🟡 Minecraft Tag — `minecraft tag "logs"`; built-in vanilla tag list
 - ⛔ Money — needs an economy plugin (Vault)
 - ✅ Moon Phase — a named value: plain words or `"text" parsed as moon phase`; compares with text; usable as a function parameter type
-- 🟡 Nameable — works as a function parameter type (no extra checks); no value of its own
+- ✅ Nameable — an abstract type with no value of its own; a function parameter of this type accepts any value (in-game: a function with this parameter type is called)
 - ⛔ Node — Carve has no config file or node reading
 - ✅ Number
 - ✅ Object
@@ -1312,7 +1312,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Respawn Reason — a named value: plain words or `"text" parsed as respawn reason`; compares with text; usable as a function parameter type
 - ✅ Scalable Particle Effect — a named value: plain words or `"text" parsed as scalable particle effect`; compares with text; usable as a function parameter type
 - 🟡 Script — through `/carve`
-- ⛔ Server Icon — the server status icon is not in the plugin API
+- ✅ Server Icon — `load the server icon from file "icon.png"` (64x64 PNG in Carve's data folder) and `set the server icon to the last loaded server icon` in `on server list ping`; in-game: the status ping returns the icon
 - 🟡 Slot — works as a function parameter type (no extra checks); no value of its own
 - ✅ Sound Category — a named value: plain words or `"text" parsed as sound category`; compares with text; usable as a function parameter type
 - ✅ Spawn Reason — a named value: plain words or `"text" parsed as spawn reason`; compares with text; usable as a function parameter type
@@ -1328,7 +1328,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 Type — a function parameter type; type names are used in `all <type>s` and `parsed as`, not as values
 - ✅ Unleash Reason — a named value: plain words or `"text" parsed as unleash reason`; compares with text; usable as a function parameter type
 - ✅ UUID — `uuid of player`
-- 🟡 Vector — vector values and `vector(x, y, z)` exist (expressions pages); usable as a parameter type
+- ✅ Vector — `vector(x, y, z)` and vector maths; usable as a function parameter type (in-game: called with a vector)
 - 🟡 Vehicle — works as a function parameter type (no extra checks); no value of its own
 - ✅ Villager Career Change Reason — a named value: plain words or `"text" parsed as villager career change reason`; compares with text; usable as a function parameter type
 - ✅ Villager Profession — a named value: plain words or `"text" parsed as villager profession`; compares with text; usable as a function parameter type
