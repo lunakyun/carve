@@ -7,7 +7,7 @@ editLink: false
 
 # Expressions
 
-Expressions are values you put into effects and conditions. 74 entries. Search all of them on the [reference home](./index.md).
+Expressions are values you put into effects and conditions. 137 entries. Search all of them on the [reference home](./index.md).
 
 In a pattern, `%type%` is a value, `[...]` is optional and `(a|b)` means one of the words.
 
@@ -28,6 +28,96 @@ if time since {last::%uuid of player%} < 30 seconds:
 ```
 
 Since **unreleased** · Guide: [timespans](../syntax/timespans.md)
+
+## All banned players/IPs {#w5c3_banned}
+
+```carve
+[all [[of] the]] banned (players|ips|ip addresses)
+```
+
+Banned players (online or not) or banned IP addresses as text.
+
+```carve
+loop all banned players:
+    send "%loop-value%"
+```
+
+Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+
+## All operators {#w5c3_operators}
+
+```carve
+[all [[of] the]] (ops|operators)
+```
+
+Every operator in `ops.json`, online or not.
+
+```carve
+send "%all operators%"
+```
+
+Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+
+## All values of a type {#c6_sets}
+
+```carve
+(all [[of] the]|every) %*type%s
+```
+
+Every value of a named-value type, like `all difficulties` or `all boss bar styles`. Works in `loop`.
+
+```carve
+loop all difficulties:
+    send "%loop-value%"
+```
+
+Since **unreleased** · Guide: [w5-chunk6](../syntax/w5-chunk6.md)
+
+## Anvil text input / repair cost {#w5c3_anvil}
+
+```carve
+anvil text input
+anvil [item] repair cost
+```
+
+In `on anvil prepare`: the rename text and the repair cost (Pumpkin always sends 1).
+
+```carve
+on anvil prepare:
+    send "%anvil text input%" to player
+```
+
+Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+
+## Any of {#w5c3_any_of_expr}
+
+```carve
+(any [one]|one) of [the] %objects%
+```
+
+The items of a list. In `is` checks it means "one of".
+
+```carve
+set {_l::*} to 1, 2 and 3
+send "%any of {_l::*}%"
+```
+
+Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+
+## Applied enchantments {#w5c3_applied}
+
+```carve
+applied (enchantments|enchants)
+```
+
+In `on enchant`: the enchantments the table adds, like `sharpness 3`. Read only.
+
+```carve
+on enchant:
+    send "%applied enchantments%" to player
+```
+
+Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
 
 ## Argument {#arg}
 
@@ -62,6 +152,52 @@ set {_half} to (5 + 3) / 2
 
 Since **0.1.0** · Guide: [expressions](../syntax/expressions.md)
 
+## Barter input / drops {#w5c3_barter}
+
+```carve
+(barter|bartering) input
+(barter|bartering) drops
+```
+
+In `on piglin barter`: the item the piglin took and the items it will throw.
+
+```carve
+on piglin barter:
+    broadcast "%barter drops%"
+```
+
+Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+
+## Beacon effects {#w5c3_beacon}
+
+```carve
+(primary|secondary) [beacon] effect of %location%
+beacon (primary|secondary) effect of %location%
+```
+
+The effect a beacon gives (`speed`), or `<none>`. Read only; Pumpkin 0.2.2 has no way to pick beacon effects in game.
+
+```carve
+send "%primary beacon effect of location(0, 64, 0, world "world")%"
+```
+
+Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+
+## Bed location {#w5c3_bed}
+
+```carve
+bed location of %player%
+%player%'s bed location
+```
+
+Where the player respawns, the same as `respawn location`. Can be set.
+
+```carve
+set player's bed location to location(0, 70, 0)
+```
+
+Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+
 ## Block {#block}
 
 ```carve
@@ -80,6 +216,38 @@ set {_b} to block below player
 
 Since **unreleased** · Guide: [blocks](../syntax/blocks.md)
 
+## Block data {#c6_block_data}
+
+```carve
+[the] block data of %block%
+%block%'s block data
+```
+
+The block id and its state properties as a text like `oak_log[axis=y]`. Setting it places the block and its properties; properties not named keep their value.
+
+```carve
+set block data of block at location(0, 64, 0) to "oak_log[axis=x]"
+```
+
+Since **unreleased** · Guide: [w5-chunk6](../syntax/w5-chunk6.md)
+
+## Block sphere {#block_sphere}
+
+```carve
+[all [the]] blocks in radius %number% (of|around) %location%
+[all [the]] blocks around %location% in radius %number%
+```
+
+Every block whose center is within the radius, as block locations. The radius goes up to 32.
+
+```carve
+loop blocks in radius 3 of player:
+    if type of block at loop-value is stone:
+        set block at loop-value to glass
+```
+
+Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+
 ## Block type {#block_type}
 
 ```carve
@@ -94,6 +262,42 @@ send "You stand on %type of block below player%." to player
 
 Since **unreleased** · Guide: [blocks](../syntax/blocks.md)
 
+## Blocks {#blocks}
+
+```carve
+[all [the]] blocks between %location% and %location%
+[all [the]] blocks from %location% to %location%
+[all [the]] blocks (above|below|north|south|east|west) [of] %location%
+```
+
+`between`: every block of the box (up to 262144). `from ... to`: the blocks a straight line passes through. A direction: the 100 blocks next to the location that way.
+
+```carve
+loop blocks from player to location(0, 64, 0):
+    set block at loop-value to glass
+```
+
+Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+
+## Book author, title and pages {#book_values}
+
+```carve
+[the] book (author|writer|publisher) of %item%
+[the] (author|writer|publisher) of %item%
+[the] book (title|name) of %item%
+[the] [book] (pages|content) of %item%
+[the] [book] page %number% of %item%
+```
+
+The author, title and pages of a written book. They work on the held item (`player's tool`) and can be set; setting them on any held item makes it carry book content.
+
+```carve
+set book title of player's tool to "Rules"
+set page 1 of player's tool to "Be nice"
+```
+
+Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+
 ## Boolean {#boolean}
 
 ```carve
@@ -107,6 +311,68 @@ set {_on} to true
 ```
 
 Since **unreleased** · Guide: [types](../syntax/types.md)
+
+## Boss bar from key {#bossbar_by_id}
+
+```carve
+(bossbar|boss bar) [with|from] (id|key) %text%
+```
+
+The id of the boss bar with that id, or none when there is no such bar. Carve names bars by their text id, so the result works anywhere a bar id does.
+
+```carve
+set {_b} to boss bar with id "raid"
+if {_b} is set:
+    show bossbar {_b} to player
+```
+
+Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+
+## Boss bar key and progress {#bossbar_key}
+
+```carve
+[the] boss[ ]bar (key|id) of [bossbar] %text%
+[the] progress of bossbar %text%
+```
+
+The id of a boss bar when it exists, and its progress from 0 to 100.
+
+```carve
+create bossbar "raid" with progress 40
+send "%progress of bossbar "raid"%"
+```
+
+Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+
+## Brewing stand slot {#brewing_slot}
+
+```carve
+[the] [brewing stand['s]] (first|second|third) bottle [slot] of %block%
+[the] [brewing stand['s]] (ingredient|fuel) slot of %block%
+```
+
+An item in a brewing stand, read from and written to the block entity data. Can be set.
+
+```carve
+set ingredient slot of block at {_stand} to nether wart
+```
+
+Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+
+## Broadcast message {#broadcast_message}
+
+```carve
+[the] broadcast[ed] message
+```
+
+The message in `on broadcast` (the same as `event-text`). Read only.
+
+```carve
+on broadcast:
+    send "[log] %broadcast message%" to console
+```
+
+Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
 
 ## Chat message {#message}
 
@@ -174,6 +440,21 @@ on right click:
 
 Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
 
+## Client weather {#client_weather}
+
+```carve
+[the] (client|custom) weather of %player%
+```
+
+The weather only this player sees: `rain`, `clear`, or `<none>` when it follows the world. Set it with `set client weather of player to rain` and `reset client weather of player`.
+
+```carve
+set client weather of player to rain
+send "%client weather of player%"
+```
+
+Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+
 ## Colored / uncolored {#colored}
 
 ```carve
@@ -189,6 +470,21 @@ set {_plain} to uncolored "<red>Hello"
 
 Since **unreleased** · Guide: [colors](../syntax/colors.md)
 
+## Consumed item {#consumed_item}
+
+```carve
+[the] consumed item
+```
+
+The item in `on consume` (the same as `event-item`). Read only.
+
+```carve
+on consume:
+    send "you ate %consumed item%"
+```
+
+Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+
 ## Coordinates {#coordinates}
 
 ```carve
@@ -202,6 +498,54 @@ send "You are at y %y of player%" to player
 ```
 
 Since **unreleased** · Guide: [types](../syntax/types.md)
+
+## Creature / entity / typed event entity {#event_entity_typed}
+
+```carve
+[the] (entity|creature|mob|living entity)
+[the] %entity type%
+event-%entity type%
+```
+
+In `on damage` and `on death`: the hurt or dead mob. With a type (`the zombie`) it is none when the mob is another type. Players are `player` and `victim`.
+
+```carve
+on death:
+    if the zombie is set:
+        broadcast "a zombie fell"
+```
+
+Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+
+## Cursor slot {#cursor_slot}
+
+```carve
+[the] cursor slot [of %player%]
+```
+
+The item on the cursor in `on inventory click`, before the click. Read only.
+
+```carve
+on inventory click:
+    send "holding %cursor slot of player%"
+```
+
+Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+
+## Damage value and durability {#item_damage_value}
+
+```carve
+[the] (damage [value]|durability) of %item%
+```
+
+How much durability an item has used up, and how much it has left. Can be set, reset, added to and removed from on the held item (`player's tool`).
+
+```carve
+set damage of player's tool to 0
+send "%durability of player's tool% uses left"
+```
+
+Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
 
 ## Damage values {#damage_values}
 
@@ -220,6 +564,21 @@ on damage:
 ```
 
 Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Damaged item {#damaged_item}
+
+```carve
+%item% with (damage|data) [value] %number%
+%item% damaged by %number%
+```
+
+An item with that much durability used up.
+
+```carve
+give diamond sword with damage 500 to player
+```
+
+Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
 
 ## Default value {#default}
 
@@ -265,6 +624,134 @@ set {_d} to distance between player and location(0, 64, 0)
 ```
 
 Since **unreleased** · Guide: [types](../syntax/types.md)
+
+## Enchant item, cost, bonus and hint {#enchant_event_values}
+
+```carve
+[the] enchant[ed] item
+[the] [displayed] (exp|xp|experience|enchanting) cost
+[the] enchant[ing|ment] bonus
+[the] enchant[ment] hint [level]
+```
+
+In `on enchant` and `on enchant prepare`: the item, in `on enchant` the level cost and the enchantment (and level) the table showed, in `on enchant prepare` the bookshelf bonus. Read only.
+
+```carve
+on enchant:
+    send "%enchant item% for %exp cost% levels: %enchantment hint%"
+```
+
+Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+
+## Enchantment level {#enchantment_level}
+
+```carve
+[the] enchant[ment] level[s] of %enchantment type%
+```
+
+The level of an enchantment written like `sharpness 5` or `sharpness V` (1 when there is no number), or of an enchantment offer.
+
+```carve
+send "%enchantment level of "sharpness 5"%"
+```
+
+Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+
+## Enchantment offer {#enchantment_offers}
+
+```carve
+[all [the]] enchant[ment] offers
+enchant[ment] offer %number%
+[the] (first|second|third) enchant[ment] offer
+```
+
+In `on enchant prepare`: the offers of the table (1-3), as values with an enchantment, a level and a cost. Read only.
+
+```carve
+on enchant prepare:
+    send "%enchantment offer 1%"
+```
+
+Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+
+## Enchantment offer cost {#enchantment_offer_cost}
+
+```carve
+[the] [enchant[ment]] cost of %enchantment offer%
+```
+
+The level cost of an enchantment offer.
+
+```carve
+on enchant prepare:
+    send "%cost of enchantment offer 1% levels"
+```
+
+Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+
+## Ender chest {#ender_chest}
+
+```carve
+[the] ender[ ]chest [inventory] of %player%
+%player%'s ender[ ]chest
+slot %number% of [the] ender chest of %player%
+```
+
+The items in a player's ender chest, and one slot of it (0-26, can be set). `open player's ender chest to player` and `clear ender chest of player` work too; Pumpkin can only show players their own ender chest.
+
+```carve
+set slot 0 of ender chest of player to diamond
+open player's ender chest to player
+```
+
+Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+
+## Enderman carrying block data {#carried_block}
+
+```carve
+[the] carried block[[ ]data] of %entity%
+%entity%'s carried block[[ ]data]
+```
+
+The block an enderman holds, as block data text. Can be set to a block type or block data, and reset.
+
+```carve
+spawn an enderman at player
+set carried block of last spawned entity to "tnt"
+```
+
+Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+
+## Entity AI {#entity_ai}
+
+```carve
+[the] (ai|artificial intelligence) of %entity%
+%entity%'s (ai|artificial intelligence)
+```
+
+Whether a mob's AI is on. Can be set to true or false. Players have none.
+
+```carve
+spawn a zombie at player
+set ai of last spawned entity to false
+```
+
+Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+
+## Entity attribute {#entity_attribute}
+
+```carve
+[the] %attribute type% [(total|final|modified)] attribute [value] of %entity%
+```
+
+The base value of an attribute (`movement speed`, `max health`, `scale`, ...), or with `total` the value with modifiers. Can be set, reset, added to and removed from (that changes the base).
+
+```carve
+set movement speed attribute of player to 0.2
+reset scale attribute of player
+```
+
+Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
 
 ## Event entity {#event_entity}
 
@@ -457,6 +944,22 @@ send "%index of "l" in "hello"%" to player
 
 Since **unreleased** · Guide: [text-case-substring](../syntax/text-case-substring.md)
 
+## Inventory action {#inventory_action}
+
+```carve
+[the] (inventory|click) action
+```
+
+What the click in `on inventory click` does, like `pickup all`, `place one`, `swap with cursor`, `move to other inventory` or `drop one slot`. Worked out from the click type, the clicked item and the cursor.
+
+```carve
+on inventory click:
+    if inventory action is "pickup all":
+        cancel event
+```
+
+Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+
 ## Inventory click values {#click_values}
 
 ```carve
@@ -473,6 +976,24 @@ on inventory click:
 ```
 
 Since **unreleased** · Guide: [inventories](../syntax/inventories.md)
+
+## Inventory rows, slots, holder and viewers {#inventory_rows}
+
+```carve
+[amount of] rows of %inventory%
+[amount of] slots of %inventory%
+holder[s] of %inventory%
+viewers of %inventory%
+```
+
+Rows and slots of a chest inventory value, the players who have it open, and its holder (always none for chests made by scripts).
+
+```carve
+set {_g} to chest inventory with 3 rows named "Shop"
+send "%rows of {_g}%"
+```
+
+Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
 
 ## Inventory slot {#slot}
 
@@ -653,6 +1174,20 @@ on join:
 
 Since **unreleased** · Guide: [w4-skbee-raytrace-world](../syntax/w4-skbee-raytrace-world.md)
 
+## Minimum and maximum enchantment level {#enchant_level_bounds}
+
+```carve
+[the] ((max|min)[imum]|starting) enchant[ment] level of %enchantment%
+```
+
+The lowest (always 1) and highest vanilla level of an enchantment.
+
+```carve
+send "%max enchantment level of sharpness%"
+```
+
+Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+
 ## Name {#name}
 
 ```carve
@@ -667,6 +1202,22 @@ set {owner} to name of player
 ```
 
 Since **0.1.0** · Guide: [expressions](../syntax/expressions.md)
+
+## New potion effect {#new_potion_effect}
+
+```carve
+[a[n]] [ambient] potion effect of %potion effect type% [[of] tier %number%] [without particles] [for %timespan%]
+[an] (infinite|permanent) [ambient] potion effect of %potion effect type% [[of] tier %number%]
+```
+
+A potion effect value to keep in a variable and apply later with `apply {_e} to player`. Without a tier it is 1; without `for` it lasts 15 seconds.
+
+```carve
+set {_e} to potion effect of speed of tier 2 for 30 seconds
+apply {_e} to player
+```
+
+Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
 
 ## Newline, trimmed, reversed {#text_misc}
 
@@ -747,6 +1298,21 @@ on level change:
 
 Since **unreleased** · Guide: [events-items](../syntax/events-items.md)
 
+## On-screen kick message {#on_screen_kick_message}
+
+```carve
+[the] on-screen kick (message|reason)
+```
+
+The reason the kicked player sees, in `on kick`. Read only on Pumpkin.
+
+```carve
+on kick:
+    broadcast "%player% was kicked: %on-screen kick message%"
+```
+
+Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+
 ## Option {#option}
 
 ```carve
@@ -791,6 +1357,43 @@ set {_n} to "42" parsed as number
 ```
 
 Since **unreleased** · Guide: [expressions](../syntax/expressions.md)
+
+## Particle count, offset and speed {#particle_parts}
+
+```carve
+[the] particle count of %particle%
+[the] particle (offset|distribution|velocity) of %particle%
+[the] (particle speed [value]|extra value) of %particle%
+```
+
+Parts of a particle value. They can be set on a variable: `set particle count of {_p} to 5`.
+
+```carve
+set {_p} to flame particle
+set particle count of {_p} to 5
+send "%particle count of {_p}%"
+```
+
+Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+
+## Particle value {#particle_value}
+
+```carve
+<particle> particle
+%particle% with [an] offset [of] %vector%
+%particle% with [a] distribution [of] %vector%
+%particle% with [a] velocity [of] %vector%
+%particle% with ([a] particle speed [value]|[an] extra value) [of] %number%
+```
+
+A particle with its count, offset and speed, to keep in a variable and draw with `draw {_p} at <place>`. With a velocity the count is 0 and the vector is the direction.
+
+```carve
+set {_p} to flame particle with offset vector(1, 0, 1) with particle speed 0.1
+draw {_p} at player
+```
+
+Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
 
 ## Ping and IP {#ping}
 
@@ -853,6 +1456,114 @@ send "Hi %player%" to player
 
 Since **0.1.0** · Guide: [expressions](../syntax/expressions.md)
 
+## Player skull {#player_skull}
+
+```carve
+[the] skull of %player|text%
+```
+
+A player head with that player's skin, for `give`.
+
+```carve
+give skull of player to player
+```
+
+Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+
+## Potion effect amplifier, tier and duration {#potion_effect_parts}
+
+```carve
+[the] [potion] amplifier of %potion effect%
+[the] potion (tier|level) of %potion effect%
+[the] potion (duration|length) of %potion effect%
+```
+
+Parts of a potion effect value. The amplifier starts at 0, the tier at 1. All three can be set on a variable: `set potion amplifier of {_e} to 2`.
+
+```carve
+set {_e} to potion effect of speed 2
+send "%potion tier of {_e}% for %potion duration of {_e}%"
+```
+
+Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+
+## Potion effect type category {#potion_category}
+
+```carve
+[the] potion [effect [type]] category of %potion effect type%
+```
+
+Whether an effect type is `beneficial`, `harmful` or `neutral`.
+
+```carve
+send "%potion category of poison%"
+```
+
+Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+
+## Potion effects of a player {#potion_effects_of}
+
+```carve
+[the] [active] potion effects of %player%
+[the] %potion effect type% [potion] effect of %player%
+[the] [potion] tier of %potion effect type% (of|for|on) %player%
+```
+
+The active potion effects of a player, one of them, or its tier. Players only.
+
+```carve
+send "%potion effects of player%"
+send "%tier of speed of player%"
+```
+
+Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+
+## Potion item {#potion_item}
+
+```carve
+[splash|lingering] potion [item] of %potion effect type%
+potion item of %potion effect%
+```
+
+A potion, splash potion or lingering potion item with that effect, for `give`.
+
+```carve
+give splash potion of poison to player
+```
+
+Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+
+## Projectile force {#projectile_force}
+
+```carve
+[the] projectile force
+```
+
+The force of the shot in `on entity shoot bow`. Pumpkin fires that event only for mobs.
+
+```carve
+on entity shoot bow:
+    broadcast "force %projectile force%"
+```
+
+Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+
+## Queue and its start and end {#new_queue}
+
+```carve
+[a] [new] queue [(of|with) %objects%]
+[the] (start|end) of %queue%
+```
+
+A first-in first-out queue, and its first or last element without removing it.
+
+```carve
+set {_q} to a new queue of 1, 2 and 3
+send "%start of {_q}%"
+```
+
+Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+
 ## Random number {#random_number}
 
 ```carve
@@ -867,6 +1578,20 @@ set {_roll} to random integer between 1 and 6
 ```
 
 Since **unreleased** · Guide: [expressions](../syntax/expressions.md)
+
+## Raw name {#raw_name}
+
+```carve
+(raw|minecraft|vanilla) name[s] of %item%
+```
+
+The namespaced id of an item, like `minecraft:diamond_sword`.
+
+```carve
+send "%raw name of player's tool%"
+```
+
+Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
 
 ## Ray trace {#ray_trace}
 
@@ -884,6 +1609,20 @@ on join:
 ```
 
 Since **unreleased** · Guide: [w4-skbee-raytrace-world](../syntax/w4-skbee-raytrace-world.md)
+
+## Redstone power {#redstone_power}
+
+```carve
+[the] redstone power of %block%
+```
+
+The power level read from a block's state: wire, weighted plates, targets and daylight detectors give their power, redstone blocks 15, levers, buttons, torches and repeaters 15 when on, anything else 0.
+
+```carve
+send "%redstone power of targeted block of player%"
+```
+
+Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
 
 ## Regex replaced text {#regex_replaced}
 
@@ -912,6 +1651,83 @@ set {_t} to "a-b" with all "-" replaced with " "
 ```
 
 Since **unreleased** · Guide: [text-join-split](../syntax/text-join-split.md)
+
+## Respawn anchor charges {#anchor_charges}
+
+```carve
+[the] [max[imum]] charge[s] of %block%
+```
+
+Charges of a respawn anchor (0 to 4), or 4 for the maximum. Set with `set charges of <block> to 3`.
+
+```carve
+send "%charges of targeted block of player%"
+```
+
+Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+
+## Respawn reason {#respawn_reason}
+
+```carve
+[the] respawn[ing] reason
+```
+
+Why the player respawns, in `on respawn`: `death`, or `end_portal`.
+
+```carve
+on respawn:
+    send "%respawn reason%"
+```
+
+Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+
+## Result of a function {#result_of_function}
+
+```carve
+[the] result[s] of [running|executing] function %text% [with arg[ument]s %objects%]
+```
+
+Calls a script function by its name and gives what it returns.
+
+```carve
+function double(n: number) :: number:
+    return {_n} * 2
+
+on join:
+    send "%result of function "double" with arguments 21%"
+```
+
+Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+
+## Scale {#c6_scale}
+
+```carve
+[the] scale of %entity%
+%entity%'s scale
+```
+
+The scale attribute of a living entity or player (0.0625 to 16), or the transformation scale of a display entity (a vector). Can be set, added to, removed from and reset.
+
+```carve
+set scale of player to 2
+reset scale of player
+```
+
+Since **unreleased** · Guide: [w5-chunk6](../syntax/w5-chunk6.md)
+
+## Sea pickles {#c6_sea_pickles}
+
+```carve
+[the] [(min|max)[imum]] [sea] pickle(s| count| amount) of %block%
+```
+
+The pickle count of a sea pickle block (1 to 4); `min` and `max` are 1 and 4. The count can be set, added to and removed from.
+
+```carve
+add 1 to sea pickles of block at location(0, 64, 0)
+```
+
+Since **unreleased** · Guide: [w5-chunk6](../syntax/w5-chunk6.md)
 
 ## Sender {#sender}
 
@@ -944,6 +1760,20 @@ send "%size of {warps::*}% warps" to player
 ```
 
 Since **unreleased** · Guide: [list-literals](../syntax/list-literals.md)
+
+## Slot index {#c6_slot_index}
+
+```carve
+[the] [(raw|unique)] index of %slot%
+```
+
+The number of `clicked slot` or `slot N of <inventory>`.
+
+```carve
+send "%index of slot 5 of player's inventory%"
+```
+
+Since **unreleased** · Guide: [w5-chunk6](../syntax/w5-chunk6.md)
 
 ## Slot of an inventory value {#inventory_slot_value}
 
@@ -992,6 +1822,56 @@ set {_s::*} to sorted {_n::*}
 
 Since **unreleased** · Guide: [list-ops](../syntax/list-ops.md)
 
+## Source block, tamer, shooter, spawning reason {#c6_event_names}
+
+```carve
+[the] source block
+[the] tamer
+[the] shooter
+[the] spawning reason
+```
+
+Skript names for event values: the spreading block in `on spread`, the owner in `on tame`, the shooting entity in `on shoot` and the reason in `on spawn`.
+
+```carve
+on tame:
+    broadcast "%tamer% tamed a pet"
+```
+
+Since **unreleased** · Guide: [w5-chunk6](../syntax/w5-chunk6.md)
+
+## Spawn egg entity {#c6_spawn_egg_entity}
+
+```carve
+[the] spawn egg entity of %item%
+%item%'s spawn egg entity
+```
+
+The entity type a spawn egg makes. Setting it turns an item kept in a variable into another spawn egg.
+
+```carve
+set {_e} to 1 zombie spawn egg
+set spawn egg entity of {_e} to "cow"
+```
+
+Since **unreleased** · Guide: [w5-chunk6](../syntax/w5-chunk6.md)
+
+## Spectator target {#c6_spectator_target}
+
+```carve
+spectator target [of %player%]
+%player%'s spectator target
+```
+
+The entity whose view a player sees. Set it to an entity; reset gives the player their own view back.
+
+```carve
+spawn a pig at player
+set spectator target of player to last spawned entity
+```
+
+Since **unreleased** · Guide: [w5-chunk6](../syntax/w5-chunk6.md)
+
 ## Split text {#split}
 
 ```carve
@@ -1005,6 +1885,20 @@ set {_parts::*} to split "a,b,c" at ","
 ```
 
 Since **unreleased** · Guide: [text-join-split](../syntax/text-join-split.md)
+
+## Stored enchantments {#c6_stored_enchantments}
+
+```carve
+[the] stored enchant[ment]s of %player%'s tool
+```
+
+The enchantments kept in an enchanted book in the main hand, as texts like `sharpness 5`. Set them to a text or a list of texts, or delete them.
+
+```carve
+set stored enchantments of player's tool to "sharpness 5"
+```
+
+Since **unreleased** · Guide: [w5-chunk6](../syntax/w5-chunk6.md)
 
 ## Substring {#substring}
 
@@ -1037,6 +1931,36 @@ send "%sum of {_n::*}%" to player
 
 Since **unreleased** · Guide: [list-ops](../syntax/list-ops.md)
 
+## Target {#c6_target}
+
+```carve
+[the] target[ed] [entity] [of %entity%]
+%entity%'s target[ed] [entity]
+```
+
+What a mob attacks, or the entity a player looks at (up to 100 blocks). Set it on mobs; delete or reset clears it. In `on target` plain `target` is the event's target.
+
+```carve
+send "you look at %target of player%"
+```
+
+Since **unreleased** · Guide: [w5-chunk6](../syntax/w5-chunk6.md)
+
+## Temperature {#c6_temperature}
+
+```carve
+[the] temperature[s] of %block%
+%block%'s temperature
+```
+
+The temperature at a block: the biome's base temperature, lower above y 80 as in vanilla (without vanilla's noise).
+
+```carve
+send "%temperature of block below player%"
+```
+
+Since **unreleased** · Guide: [w5-chunk6](../syntax/w5-chunk6.md)
+
 ## Text {#text}
 
 ```carve
@@ -1066,6 +1990,23 @@ send "%capitalized "steve"%" to player
 ```
 
 Since **unreleased** · Guide: [text-case-substring](../syntax/text-case-substring.md)
+
+## Text display alignment, line width, opacity {#c6_text_display}
+
+```carve
+[the] text alignment of %display%
+[the] line width of %display%
+[the] [display] [text] opacity of %display%
+```
+
+Fields of a text display entity: alignment `left`, `center` or `right`, line width in pixels (default 200) and text opacity 0 to 255 (default 255). Can be set; width and opacity can be added to, removed from and reset.
+
+```carve
+spawn text display at player with text "hi"
+set text alignment of last spawned entity to left
+```
+
+Since **unreleased** · Guide: [w5-chunk6](../syntax/w5-chunk6.md)
 
 ## Timespan {#timespan}
 
@@ -1110,6 +2051,24 @@ send "%total minutes of {_t}%" to player
 ```
 
 Since **unreleased** · Guide: [timespans](../syntax/timespans.md)
+
+## Title, style, viewers {#c6_title_style_viewers}
+
+```carve
+[the] title of (bossbar %text%|%inventory%)
+[the] style of bossbar %text%
+[the] viewers of (bossbar %text%|%inventory%)
+```
+
+The title, style and viewers of a boss bar, and the title and viewers of an inventory value. Add or remove players from viewers to show, hide, open or close; the title of an inventory in a variable can be set.
+
+```carve
+set {_i} to chest inventory with 3 rows named "Shop"
+add player to viewers of {_i}
+send "%viewers of {_i}%"
+```
+
+Since **unreleased** · Guide: [w5-chunk6](../syntax/w5-chunk6.md)
 
 ## Tool {#tool}
 
@@ -1176,4 +2135,38 @@ if world of player is "world":
 ```
 
 Since **unreleased** · Guide: [types](../syntax/types.md)
+
+## World border {#c6_world_border}
+
+```carve
+[the] world border [of %world|player|location%]
+%world|player%'s world border
+[the] world border warning (distance|time) [of %world border|world|player%]
+```
+
+The world border of a world (the default world when none is given), and its warning distance (blocks) and warning time (a timespan). The warnings can be set, added to, removed from and reset.
+
+```carve
+set world border warning distance to 10
+add 30 seconds to world border warning time
+```
+
+Since **unreleased** · Guide: [w5-chunk6](../syntax/w5-chunk6.md)
+
+## World border center and damage {#border_settings}
+
+```carve
+[the] world[ ]border (center|middle) of %world border%
+[the] world[ ]border damage amount of %world border%
+[the] world[ ]border damage buffer of %world border%
+```
+
+The center (a location at y 0), the damage per block outside the border and the safe distance past it. A world works in place of its border. Can be set, reset, and the numbers added to or removed from.
+
+```carve
+set world border center of world border of world of player to location(0, 0, 0)
+set world border damage amount of world of player to 1
+```
+
+Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
 

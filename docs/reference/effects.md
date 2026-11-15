@@ -7,7 +7,7 @@ editLink: false
 
 # Effects
 
-Effects are lines that do something. 114 entries. Search all of them on the [reference home](./index.md).
+Effects are lines that do something. 155 entries. Search all of them on the [reference home](./index.md).
 
 In a pattern, `%type%` is a value, `[...]` is optional and `(a|b)` means one of the words.
 
@@ -39,6 +39,16 @@ remove 2 diamonds from player
 ```
 
 Since **unreleased** · Guide: [inventories](../syntax/inventories.md)
+
+## apply %object% to %player% {#apply_object_to_player}
+
+```carve
+apply %object% to %player%
+```
+
+_No description yet._
+
+Since **unreleased**
 
 ## Apply potion effect {#apply_potion}
 
@@ -108,6 +118,43 @@ Sets how long an entity stays on fire, used as `set burn time of player to 5 sec
 
 Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
+## Cancel command cooldown {#cancel_cooldown}
+
+```carve
+(cancel|ignore) [the] [current] [command] cooldown
+(uncancel|unignore) [the] [current] [command] cooldown
+```
+
+In a command with `cooldown:`: this use does not start the cooldown. Commands take `cooldown:`, `cooldown message:` (with `%remaining time%`, `%elapsed time%`, `%cooldown time%`) and `cooldown bypass:` (a permission). Cooldowns are per player and kept in memory.
+
+```carve
+command /heal:
+    cooldown: 1 minute
+    cooldown message: Wait %remaining time%.
+    trigger:
+        heal player
+        cancel the cooldown
+```
+
+Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+
+## Cancel drops {#cancel_drops}
+
+```carve
+(cancel|clear|delete) [the] drops
+(cancel|clear|delete) [the] drops of items
+(cancel|clear|delete) [the] drops of (xp|experience)
+```
+
+In `on break` and `on death`: nothing (or no items, or no experience) is dropped.
+
+```carve
+on break:
+    cancel the drops
+```
+
+Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+
 ## Cancel event {#cancel}
 
 ```carve
@@ -141,6 +188,24 @@ clear {_gui}
 ```
 
 Since **unreleased** · Guide: [inventories](../syntax/inventories.md)
+
+## Change barter drops {#w5c3_barter_drops}
+
+```carve
+set [the] (barter|bartering) drops to %object%
+add %object% to [the] (barter|bartering) drops
+remove %object% from [the] (barter|bartering) drops
+(clear|delete|reset) [the] (barter|bartering) drops
+```
+
+In `on piglin barter`: change the drops list the script sees. Pumpkin 0.2.2 copies only `cancelled` back from the event, so the piglin still throws its own drops; cancel the event to stop them.
+
+```carve
+on piglin barter:
+    set barter drops to 3 diamonds
+```
+
+Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
 
 ## Change damage {#damage_change}
 
@@ -486,6 +551,21 @@ Removes a persistent data value from an entity, block or item.
 
 Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
+## Detonate entities {#detonate}
+
+```carve
+detonate %entities%
+```
+
+Explodes creepers, primed TNT and TNT minecarts at once. Other entities are ignored.
+
+```carve
+spawn a tnt at location(0, 70, 0)
+detonate last spawned entity
+```
+
+Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+
 ## Dismount {#dismount}
 
 ```carve
@@ -516,6 +596,44 @@ set display name of player to "&6Boss"
 
 Since **unreleased** · Guide: [op-kick-ban](../syntax/op-kick-ban.md)
 
+## draw %object% at %object% {#draw_object_at_object}
+
+```carve
+draw %object% at %object%
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## Drop {#drop_item}
+
+```carve
+drop %items% [(at|near|above) %location%] [without velocity]
+```
+
+Drops items as item entities, at a location or at the player of the event.
+
+```carve
+drop 3 diamonds at location(0, 70, 0)
+```
+
+Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+
+## Dye item {#dye_item}
+
+```carve
+(dye|color|colour|paint) %item% %color%
+```
+
+Sets the dye color of the item a player holds (leather armor and other dyeable items).
+
+```carve
+dye player's tool red
+```
+
+Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+
 ## Edit the held item {#held_item_meta}
 
 ```carve
@@ -538,6 +656,21 @@ enchant player's tool with sharpness 5 and unbreaking 3
 ```
 
 Since **unreleased** · Guide: [item-meta](../syntax/item-meta.md)
+
+## Enforce whitelist {#enforce_whitelist}
+
+```carve
+enforce [the] [server] whitelist
+unenforce [the] [server] whitelist
+```
+
+When the whitelist is on, kicks every online player who is neither whitelisted nor op.
+
+```carve
+enforce the whitelist
+```
+
+Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
 
 ## Equip {#equip}
 
@@ -591,6 +724,38 @@ loop 10 times:
 
 Since **unreleased** · Guide: [loops](../syntax/loops.md)
 
+## Expand/shrink world border {#border_resize}
+
+```carve
+(expand|grow) [the] [(diameter|radius) of] [the] world border [of %world%] (by|to) %number% [over %timespan%]
+(shrink|contract) [the] [(diameter|radius) of] [the] world border [of %world%] (by|to) %number% [over %timespan%]
+```
+
+Grows or shrinks the world border, at once or over a time.
+
+```carve
+shrink the world border by 100 over 2 seconds
+```
+
+Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+
+## Explode creeper {#creeper_ignite}
+
+```carve
+ignite (creeper|creepers) %entities%
+stop (ignition|explosion) [process] of [creeper] %entities%
+(instantly|immediately) explode [creeper] %entities%
+```
+
+Starts or stops a creeper's fuse, or makes it explode on the next tick.
+
+```carve
+spawn a creeper at location(0, 70, 0)
+ignite creeper last spawned entity
+```
+
+Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+
 ## Extinguish {#extinguish}
 
 ```carve
@@ -600,6 +765,23 @@ Since **unreleased** · Guide: [loops](../syntax/loops.md)
 Puts out a burning player.
 
 Since **unreleased** · Guide: [effects](../syntax/effects.md)
+
+## Fail command execution {#fail_command}
+
+```carve
+fail [the] command execution with [the] error [message] %text%
+```
+
+Sends the error to the sender and stops the command trigger. Only in commands.
+
+```carve
+command /pay <number>:
+    trigger:
+        if arg-1 < 1:
+            fail the command execution with the error message "Pay at least 1."
+```
+
+Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
 
 ## Fall distance {#fall_distance}
 
@@ -651,6 +833,22 @@ make %player% (stop flying|not fly|stop fly|unable to fly)
 Lets a player fly or takes flying away.
 
 Since **unreleased** · Guide: [effects](../syntax/effects.md)
+
+## Force enchantment glint {#force_glint}
+
+```carve
+(force|make) %item% [to] [start] glint[ing]
+(force|make) %item% [to] (not|stop) glint[ing]
+(clear|reset) [the] enchantment glint override of %item%
+```
+
+Makes the held item shine like an enchanted item, never shine, or follow its enchantments again.
+
+```carve
+force player's tool to glint
+```
+
+Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
 
 ## Force respawn {#force_respawn}
 
@@ -813,6 +1011,22 @@ Changes the message shown when a player joins. Use in `on join`.
 
 Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
+## Keep inventory / experience {#keep_inventory}
+
+```carve
+keep [the] (inventory|items) [and (xp|experience)]
+keep [the] (xp|experience) [and (inventory|items)]
+```
+
+In `on death`: the player keeps the inventory, the experience or both. Carve turns the keep_inventory rule on for this death only.
+
+```carve
+on death:
+    keep the inventory and experience
+```
+
+Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+
 ## Kick {#kick}
 
 ```carve
@@ -851,6 +1065,54 @@ knock %player% (toward|towards|to) %location% [with (strength|force) %number%]
 Pushes a player away from or toward a location, with an optional strength.
 
 Since **unreleased** · Guide: [effects](../syntax/effects.md)
+
+## Launch firework {#launch_firework}
+
+```carve
+launch [a] firework at %location%
+launch [a] firework [effect] %object% at %location% [timed %number%]
+```
+
+Sends up a firework rocket that bursts after about a second. Pumpkin ignores firework data on these rockets, so the effect and the time do nothing yet.
+
+```carve
+launch a firework at location(0, 70, 0)
+```
+
+Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+
+## Leash entities {#leash}
+
+```carve
+(leash|lead) %entities% to %entity%
+make %entity% (leash|lead) %entities%
+(unleash|unlead) [holder of] %entities%
+```
+
+Writes the mob's leash data. Pumpkin 0.2.2 keeps it but does not attach the lead while the mob is loaded.
+
+```carve
+spawn a cow at location(0, 70, 0)
+leash last spawned entity to player
+```
+
+Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+
+## Load server icon {#load_server_icon}
+
+```carve
+load [the] server icon (from|of) [the] [image] [file] %text%
+set [the] server icon to [the] last loaded server icon
+```
+
+Loads a 64x64 PNG from Carve's data folder. In `on server list ping`, `set the server icon to the last loaded server icon` sends it.
+
+```carve
+on server list ping:
+    set the server icon to the last loaded server icon
+```
+
+Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
 
 ## Log {#log}
 
@@ -905,6 +1167,38 @@ loop 3 times:
 
 Since **unreleased** · Guide: [loops](../syntax/loops.md)
 
+## Make adult/baby {#make_baby}
+
+```carve
+make %entities% [a] (adult|baby)
+force %entities% to (be|become) [a] (adult|baby)
+```
+
+Turns an ageable mob into a baby or an adult.
+
+```carve
+spawn a cow at location(0, 70, 0)
+make last spawned entity a baby
+```
+
+Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+
+## Make breedable {#make_breedable}
+
+```carve
+make %entities% breedable
+make %entities% (unbreedable|not breedable)
+```
+
+Clears the breeding cooldown, or sets it to 5 minutes.
+
+```carve
+spawn a cow at location(0, 70, 0)
+make last spawned entity breedable
+```
+
+Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+
 ## Make execute command {#make_execute}
 
 ```carve
@@ -931,6 +1225,21 @@ make %player% say %text%
 Makes a player send a chat message, or run a command when the text starts with `/`.
 
 Since **unreleased** · Guide: [effects](../syntax/effects.md)
+
+## Make sign glow {#sign_glow}
+
+```carve
+make %location% have glowing text
+make %location% have (normal|non-glowing) text
+```
+
+Turns glowing text on or off for the front of the sign at a location.
+
+```carve
+make block at location(2, 70, 2) have glowing text
+```
+
+Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
 
 ## Op / deop {#op}
 
@@ -986,6 +1295,49 @@ show 20 happy villager particles at player with spread 0.5
 
 Since **unreleased** · Guide: [world-effects](../syntax/world-effects.md)
 
+## Pathfind {#pathfind}
+
+```carve
+make %entities% (pathfind|move) (to|towards) %object% [at speed %number%]
+make %entities% stop (pathfinding|moving)
+```
+
+Walks a mob to a location or an entity, for up to a minute, until it arrives or is stopped.
+
+```carve
+spawn a zombie at location(0, 70, 0)
+make last spawned entity pathfind to player at speed 1.5
+```
+
+Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+
+## Persistent {#persistent}
+
+```carve
+make %entities% [not] persist[ent]
+force %entities% to [not] persist
+prevent %entities% from persisting
+```
+
+Sets whether a mob stays when no player is near.
+
+```carve
+spawn a cow at location(0, 70, 0)
+make last spawned entity persistent
+```
+
+Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+
+## play %object% at %object% {#play_object_at_object}
+
+```carve
+play %object% at %object%
+```
+
+_No description yet._
+
+Since **unreleased**
+
 ## Play sound {#play_sound}
 
 ```carve
@@ -1009,6 +1361,22 @@ poison %player% [for %timespan%]
 Poisons a player, for 15 seconds unless a duration is given.
 
 Since **unreleased** · Guide: [effects](../syntax/effects.md)
+
+## Potion effect flags {#potion_flags}
+
+```carve
+make %player%'s potion effects [not] (ambient|infinite)
+(show|hide) [the] [potion] (particles|icon) of %player%'s potion effects
+```
+
+Changes the effects a player has now: ambient, infinite duration, particles shown or hidden, icon shown or hidden.
+
+```carve
+make player's potion effects ambient
+hide the particles of player's potion effects
+```
+
+Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
 
 ## Push forward, backward, away from {#push_facing}
 
@@ -1105,6 +1473,16 @@ replace all "-" with " " in {_t}
 
 Since **unreleased** · Guide: [text-join-split](../syntax/text-join-split.md)
 
+## reset [the] [(client|custom)] weather of %player% {#reset_the_client_custom_weather_of_player}
+
+```carve
+reset [the] [(client|custom)] weather of %player%
+```
+
+_No description yet._
+
+Since **unreleased**
+
 ## Reset title {#reset_title}
 
 ```carve
@@ -1123,8 +1501,8 @@ Since **unreleased** · Guide: [effects](../syntax/effects.md)
 ## Respawn location {#respawn_location}
 
 ```carve
-set %player%'s respawn location to %location%
-set respawn location of %player% to %location%
+set %player%'s (respawn|bed) location to %location%
+set [the] (respawn|bed) location of %player% to %location%
 ```
 
 Sets where a player respawns after death.
@@ -1256,6 +1634,146 @@ set {spawn} to location of player
 
 Since **0.1.0** · Guide: [effects](../syntax/effects.md)
 
+## set [the] (client|custom) weather of %player% to %object% {#set_the_client_custom_weather_of_player_to_object}
+
+```carve
+set [the] (client|custom) weather of %player% to %object%
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## set [the] (client|custom) weather of %player% to (clear|sun|sunny) {#set_the_client_custom_weather_of_player_to_clear_sun_sunny}
+
+```carve
+set [the] (client|custom) weather of %player% to (clear|sun|sunny)
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## set [the] (client|custom) weather of %player% to (rain|rainy|thunder|storm) {#set_the_client_custom_weather_of_player_to_rain_rainy_thunder_storm}
+
+```carve
+set [the] (client|custom) weather of %player% to (rain|rainy|thunder|storm)
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## set [the] [potion] amplifier of %variable% to %number% {#set_the_potion_amplifier_of_variable_to_number}
+
+```carve
+set [the] [potion] amplifier of %variable% to %number%
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## set [the] charge of %object% to %number% {#set_the_charge_of_object_to_number}
+
+```carve
+set [the] charge of %object% to %number%
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## set [the] charges of %object% to %number% {#set_the_charges_of_object_to_number}
+
+```carve
+set [the] charges of %object% to %number%
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## set [the] extra value of %variable% to %number% {#set_the_extra_value_of_variable_to_number}
+
+```carve
+set [the] extra value of %variable% to %number%
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## set [the] particle count of %variable% to %number% {#set_the_particle_count_of_variable_to_number}
+
+```carve
+set [the] particle count of %variable% to %number%
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## set [the] particle distribution of %variable% to %object% {#set_the_particle_distribution_of_variable_to_object}
+
+```carve
+set [the] particle distribution of %variable% to %object%
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## set [the] particle offset of %variable% to %object% {#set_the_particle_offset_of_variable_to_object}
+
+```carve
+set [the] particle offset of %variable% to %object%
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## set [the] particle speed [value] of %variable% to %number% {#set_the_particle_speed_value_of_variable_to_number}
+
+```carve
+set [the] particle speed [value] of %variable% to %number%
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## set [the] particle velocity of %variable% to %object% {#set_the_particle_velocity_of_variable_to_object}
+
+```carve
+set [the] particle velocity of %variable% to %object%
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## set [the] potion (duration|length) of %variable% to %timespan% {#set_the_potion_duration_length_of_variable_to_timespan}
+
+```carve
+set [the] potion (duration|length) of %variable% to %timespan%
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## set [the] potion (tier|level) of %variable% to %number% {#set_the_potion_tier_level_of_variable_to_number}
+
+```carve
+set [the] potion (tier|level) of %variable% to %number%
+```
+
+_No description yet._
+
+Since **unreleased**
+
 ## Set block {#set_block}
 
 ```carve
@@ -1349,6 +1867,31 @@ set velocity of player to vector(0, 1, 0)
 ```
 
 Since **unreleased** · Guide: [entities](../syntax/entities.md)
+
+## Shoot (section) {#c6_shoot}
+
+```carve
+shoot %entity type% [from %entity%] [(at|with) (speed|velocity) %number%]:
+```
+
+Spawns a projectile in front of the shooter's eyes moving where they look (default speed 5) and runs the body with `event-entity` as the projectile. The projectile has no owner.
+
+```carve
+shoot an arrow from player at speed 2:
+    send "%type of event-entity%"
+```
+
+Since **unreleased** · Guide: [w5-chunk6](../syntax/w5-chunk6.md)
+
+## show %object% at %object% {#show_object_at_object}
+
+```carve
+show %object% at %object%
+```
+
+_No description yet._
+
+Since **unreleased**
 
 ## Sort list {#sort}
 
