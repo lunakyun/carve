@@ -1640,7 +1640,12 @@ impl Engine {
         Ok(())
     }
 
-    fn get_var(&mut self, v: &VarRef, ex: &mut Exec, host: &mut dyn Host) -> Result<Value, String> {
+    pub(crate) fn get_var(
+        &mut self,
+        v: &VarRef,
+        ex: &mut Exec,
+        host: &mut dyn Host,
+    ) -> Result<Value, String> {
         if v.list {
             return self.list_text(v, ex, host);
         }
@@ -2150,6 +2155,7 @@ impl Engine {
                 crate::w4_skbee_raytrace_world::apply(n.op, &vals, host)?
             }
             Expr::C6(n) => self.eval_c6(n, ex, host)?,
+            Expr::W6C4(n) => self.w6c4_expr(n, ex, host)?,
             Expr::W7(n) => {
                 let mut vals = Vec::with_capacity(n.args.len());
                 for a in &n.args {
@@ -2679,6 +2685,7 @@ impl Engine {
             Effect::Inv(i) => self.inv_effect(i, ex, host)?,
             Effect::Gap(g) => self.gap_effect(g, ex, host)?,
             Effect::C6(c) => self.exec_c6(c, ex, host)?,
+            Effect::W6C4(c) => self.w6c4_effect(c, ex, host)?,
             Effect::C4(c) => self.c4_effect(c, ex, host)?,
             Effect::Bound(b) => self.bound_effect(b, ex, host)?,
             Effect::Wt(w) => self.wt_effect(w, ex, host)?,

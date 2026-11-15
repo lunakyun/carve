@@ -240,6 +240,8 @@ pub enum Expr {
     W5c5(Box<crate::w5_chunk5::Node>),
     /// Scale, targets, text displays, sea pickles, borders, ... (see `w5_chunk6`).
     C6(Box<crate::w5_chunk6::Node>),
+    /// Block properties, element ranges, dequeue, ... (see `w6_chunk4`).
+    W6C4(Box<crate::w6_chunk4::Node>),
     /// Block data, block spheres, books, borders, attributes, ... (see `w5_chunk4`).
     C4(Box<crate::w5_chunk4::Node>),
 }
@@ -478,6 +480,7 @@ impl Expr {
             Expr::W5c5(n) => n.ty,
             Expr::W5c3(n) => n.ty(),
             Expr::C6(n) => n.ty,
+            Expr::W6C4(n) => n.ty,
             Expr::Gap(g) => g.ty(),
             Expr::C4(n) => n.ty,
             Expr::Items(_) => Ty::List,
@@ -1708,6 +1711,9 @@ impl P<'_> {
                     return Ok(e);
                 }
                 if let Some(e) = self.w5c3_head(&lw)? {
+                    return Ok(e);
+                }
+                if let Some(e) = self.w6c4_head(&lw)? {
                     return Ok(e);
                 }
                 if let Some(e) = self.c6_head(&lw)? {
@@ -3364,7 +3370,8 @@ impl P<'_> {
     fn try_agg(&mut self, agg: Agg) -> Option<Result<Expr, String>> {
         match parse_src_at(self.toks, self.pos, self.env, false) {
             Ok((ListSrc::One(e), _))
-                if agg == Agg::Size && !matches!(e, Expr::X2(_) | Expr::Gap(_) | Expr::C4(_)) =>
+                if agg == Agg::Size
+                    && !matches!(e, Expr::X2(_) | Expr::Gap(_) | Expr::C4(_) | Expr::W6C4(_)) =>
             {
                 None
             }

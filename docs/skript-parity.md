@@ -595,13 +595,13 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Active Item — the plugin API cannot see the item being used
 - ⛔ Active Item Use Time — the plugin API cannot see item use time
 - ⛔ Affected Entities — Pumpkin 0.2.2 never fires the area effect cloud event
-- ⛔ Age of Block/Entity — no block-state API, and only players are reachable as entities
+- 🟡 Age of Block/Entity — `age of <block>`, `max age of <block>` (set, add, remove, reset; clamped to the block's max age, from the block-state `age` property); entities not done yet (the API has living-entity get-age/set-age but it is not wired)
 - ✅ All Banned Players/IPs — `all banned players`, `banned ips`
 - ⛔ All Commands — the plugin API cannot list commands
 - ⛔ All Groups — needs a permissions plugin
 - ✅ All Operators — `all operators`
 - ⛔ All Permissions — the plugin API cannot list permissions
-- ⛔ All Persistent Data Keys — the plugin API cannot list data keys
+- ✅ All Persistent Data Keys — `[all] persistent data keys of <thing>`, sorted texts; Carve keeps persistent data in its own store, so this lists the keys Carve scripts set
 - ✅ All Scripts — `all scripts`: file names of the loaded scripts, usable as a list
 - 🟡 All Tags of a Type — `minecraft block tag "logs"`, `minecraft item tag "x"`; built-in list of the vanilla block and item tags
 - ⛔ Allay Duplication Cooldown — no mob-specific API
@@ -629,7 +629,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Attacked — `victim`
 - ✅ Attacker — the attacking player or entity; in `on death` the last hit within 5 seconds
 - ⛔ Banner Pattern — the banner block entity API has no patterns
-- ⛔ Banner Pattern Item — the banner block entity API has no patterns
+- ✅ Banner Pattern Item — `banner pattern item of "creeper"` (the 10 patterns that have a loom item)
 - ⛔ Banner Patterns — the banner block entity API has no patterns
 - 🟡 Barter Drops — `barter drops` in `on piglin barter`; changes stay in the script, Pumpkin 0.2.2 copies only `cancelled` back
 - ✅ Barter Input — `barter input` in `on piglin barter`
@@ -637,7 +637,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Beacon Range — `beacon range of {loc}`
 - ✅ Beacon Tier — `beacon tier of {loc}`
 - ✅ Bed — `bed location of player`, `set player's bed location to ...` (the respawn location)
-- ⛔ Beehive Honey Level — needs block-state properties; the plugin API has none
+- ✅ Beehive Honey Level — `[max] [beehive] honey level of <block>` (set, add, remove, reset, clamped to 0 to 5; read from the block-state property)
 - ⛔ Beehive Target Flower — the plugin API has no beehive flower data
 - ✅ Biome — `biome at {loc}`, `biome of player`: a text like `birch_forest`
 - ⛔ Blank Equippable Component — no item component builder in the plugin API
@@ -660,7 +660,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Brewing Stand Slot — `first/second/third bottle slot`, `ingredient slot`, `fuel slot of block at loc` (get and set)
 - ✅ Brewing Time — `brewing time of {loc}`: a time span
 - ✅ Broadcast Message — `broadcast message` in `on broadcast` (read only)
-- ⛔ Brushing Stage — the plugin API has no brushable block state
+- ✅ Brushing Stage — `[max] brushing stage|progress of <block>` (the `dusted` property, 0 to 3; set, add, remove, reset)
 - ⛔ Buried Item — the decorated pot API has no item access
 - ✅ Burn/Cook Time — `burn time of {loc}`, `cook time of {loc}`, `total cook time of {loc}`: time spans
 - ✅ Case Text ⭐ — `uppercase of x`, `x in lower case`, `capitalized x`, `x in proper case`
@@ -711,7 +711,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Damage Value/Durability — `damage of`, `durability of` item values; set, add and remove on the held item
 - ✅ Damaged Item — `diamond sword with damage 10`, `iron pickaxe damaged by 10`
 - ✅ Date Ago/Later ⭐ — `5 minutes ago`, `2 hours later`
-- ⛔ De-queue Queue (Experimental) — Carve has no queue type
+- ✅ De-queue Queue (Experimental) — `dequeue {_q}`, `de-queue first N elements of {_q}`; removes from the variable and gives the elements, `<none>` when empty
 - ✅ Death Message ⭐ — `death message` in `on death`; `set death message to "..."` with colors
 - ⛔ Debug Info — Skript internals only, no meaning in Carve
 - ✅ Default Value — `a ? b`
@@ -734,7 +734,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Dropped Item Thrower — the plugin API has no item entity thrower
 - ⛔ Drops — the death events in the plugin API carry no drop list
 - ⛔ Drops Of Block — the plugin API has no block loot or drop lookup
-- 🟡 Elements — `first element of`, `last element of`, `element N of {list::*}`; no `first N elements`
+- ✅ Elements — `first element of`, `last element of`, `element N of`, `first N elements of`, `last N elements of`, `elements N to M of {list::*}`
 - ✅ Enchant Item — `enchant item` in `on enchant prepare` and `on enchant` (read only)
 - ✅ Enchanting Experience Cost — `exp cost` in `on enchant` (read only)
 - ✅ Enchantment Bonus — `enchantment bonus` in `on enchant prepare` (read only)
