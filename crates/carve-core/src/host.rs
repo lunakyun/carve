@@ -1121,6 +1121,16 @@ pub trait Host {
         self.set_join_message(text);
     }
 
+    /// A question from `w6_chunk6` (portal cooldown, protocol, vehicle, whitelist, ...).
+    fn w6c6_get(&mut self, _q: crate::w6_chunk6::Get<'_>) -> Option<crate::value::Value> {
+        None
+    }
+
+    /// A change from `w6_chunk6`. Returns whether it was done.
+    fn w6c6_set(&mut self, _s: crate::w6_chunk6::Set<'_>) -> bool {
+        false
+    }
+
     /// A question from `w5_chunk6` (scale, targets, text displays, borders, boss bars).
     fn c6_get(&mut self, _q: crate::w5_chunk6::Get<'_>) -> Option<crate::value::Value> {
         None
