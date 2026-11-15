@@ -157,6 +157,10 @@ fn data_text(state: u16) -> Option<String> {
     Some(s)
 }
 
+pub(super) fn resolve_block(data: &str) -> Option<u16> {
+    resolve(data)
+}
+
 fn resolve(data: &str) -> Option<u16> {
     let (name, props) = split_data(data);
     wapi::resolve_block_state(&name, &props)

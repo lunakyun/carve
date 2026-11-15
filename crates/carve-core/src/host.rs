@@ -356,6 +356,12 @@ pub trait Host {
         }
     }
 
+    /// Ban that ends after `seconds` (`ban x for 1 day`). `false`: not possible
+    /// here (the target has to be online on Pumpkin).
+    fn ban_for(&mut self, _name: &str, _reason: Option<&str>, _ip: bool, _seconds: u64) -> bool {
+        false
+    }
+
     /// Lift a ban. Default: `pardon` / `pardon-ip`.
     fn unban(&mut self, name: &str, ip: bool) {
         let cmd = if ip { "pardon-ip" } else { "pardon" };

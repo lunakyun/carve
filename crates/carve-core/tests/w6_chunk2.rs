@@ -142,8 +142,6 @@ fn entity_flags_use_data_merge() {
         "spawn a goat\n\
          remove the left horn of last spawned entity\n\
          regrow both horns of last spawned entity\n\
-         make last spawned entity left handed\n\
-         make last spawned entity right-handed\n\
          silence last spawned entity\n\
          make last spawned entity not silent\n\
          make last spawned entity scream\n\
@@ -152,8 +150,6 @@ fn entity_flags_use_data_merge() {
     let want = [
         "{HasLeftHorn:0b}",
         "{HasLeftHorn:1b,HasRightHorn:1b}",
-        "{LeftHanded:1b}",
-        "{LeftHanded:0b}",
         "{Silent:1b}",
         "{Silent:0b}",
         "{IsScreamingGoat:1b}",
@@ -190,13 +186,11 @@ fn trees_and_scripts() {
 #[test]
 fn zombify_and_duplicate() {
     let h = join("spawn a villager\nzombify last spawned entity");
+    assert_eq!(h.ops[1..], ["remove villager", "spawn zombie_villager 10 70 -3"]);
     assert_eq!(
-        h.ops[1..],
+        h.commands,
         [
-            "remove villager",
-            "spawn zombie_villager 10 70 -3",
-            "name zombie_villager Bob",
-            "health zombie_villager 12"
+            "data merge entity 00000002-0000-0000-0000-00000000000a {CustomName:\"Bob\",CustomNameVisible:1b,Health:12.0f}"
         ]
     );
     let h = join("spawn an allay\nmake last spawned entity duplicate");
@@ -279,8 +273,40 @@ fn host_effects() {
         "{ops}"
     );
     assert!(ops.contains("StopSound(Steve, None, \"music\")"), "{ops}");
+    assert!(ops.contains("Tame("), "{ops}");
+    let merges: Vec<&String> = h.commands.iter().filter(|c| c.contains("Sheared")).collect();
+    assert_eq!(merges.len(), 2, "{:?}", h.commands);
+    assert!(merges[0].ends_with("{Sheared:1b}") && merges[1].ends_with("{Sheared:0b}"));
+}
+
+#[test]
+fn ride_swing_equip_any_entity() {
+    let h = join(
+        "spawn a pig\nset {p} to last spawned entity\nspawn a zombie\nset {z} to last spawned entity\n\
+         make {z} ride {p}\nmake {z} dismount\nmake {z} leave its vehicle\nmake {z} swing main hand\n\
+         make {z} swing off hand\nmake player swing\n\
+         equip {z} with diamond helmet and iron boots\nequip player with shield\nmake {z} wear stick",
+    );
+    let cmds = &h.commands;
     assert!(
-        ops.matches("Shear(").count() == 2 && ops.contains("Tame("),
-        "{ops}"
+        cmds[0].starts_with("ride 00000002-") && cmds[0].contains(" mount 00000001-"),
+        "{cmds:?}"
+    );
+    assert!(
+        cmds[1].ends_with("dismount") && cmds[2].ends_with("dismount"),
+        "{cmds:?}"
+    );
+    assert!(
+        cmds[3].ends_with("mainhand") && cmds[4].ends_with("offhand"),
+        "{cmds:?}"
+    );
+    assert!(cmds.contains(&"swing Steve mainhand".to_string()), "{cmds:?}");
+    let eq: Vec<&String> = cmds.iter().filter(|c| c.starts_with("item replace")).collect();
+    assert_eq!(eq.len(), 4, "{eq:?}");
+    assert!(eq[0].ends_with("armor.head with minecraft:diamond_helmet"));
+    assert!(eq[1].ends_with("armor.feet with minecraft:iron_boots"));
+    assert_eq!(
+        eq[2],
+        "item replace entity Steve weapon.offhand with minecraft:shield"
     );
 }

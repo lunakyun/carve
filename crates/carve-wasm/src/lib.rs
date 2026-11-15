@@ -72,6 +72,7 @@ mod w5_chunk3;
 mod w5_chunk4;
 mod w5_chunk5;
 mod w5_chunk6;
+mod w6_chunk2;
 
 const SCRIPTS_DIR: &str = "scripts";
 const VARS_FILE: &str = "variables.json";
@@ -1510,6 +1511,42 @@ impl WasmHost<'_> {
         self.w5c1_impl(op)
     }
 
+    fn w6c2(&mut self, op: carve_core::w6_chunk2::HostOp<'_>) -> Option<bool> {
+        self.w6c2_impl(op)
+    }
+
+    fn create_world(
+        &mut self,
+        name: &str,
+        env: carve_core::w4_skbee_raytrace_world::Env,
+    ) -> Result<(), String> {
+        use carve_core::w4_skbee_raytrace_world::Env;
+        let dimension = match env {
+            Env::Normal => pumpkin_plugin_api::Dimension::Overworld,
+            Env::Nether => pumpkin_plugin_api::Dimension::Nether,
+            Env::End => pumpkin_plugin_api::Dimension::End,
+        };
+        self.server.create_world(name, dimension);
+        Ok(())
+    }
+
+    fn unload_world(&mut self, name: &str) -> Result<(), String> {
+        self.server.unload_world(name)
+    }
+
+    fn world_loaded(&mut self, name: &str) -> bool {
+        self.server.get_world_by_name(name).is_some()
+            || self
+                .server
+                .get_all_worlds()
+                .iter()
+                .any(|w| world_name(w).eq_ignore_ascii_case(name))
+    }
+
+    fn ban_for(&mut self, name: &str, reason: Option<&str>, ip: bool, seconds: u64) -> bool {
+        self.ban_for_impl(name, reason, ip, seconds)
+    }
+
     fn read_data_file(&mut self, path: &str) -> Option<Vec<u8>> {
         w5_chunk1::read_data_file(path)
     }
@@ -1874,6 +1911,30 @@ impl Host for TickHost<'_, '_> {
 
     fn w5c1(&mut self, op: carve_core::w5_chunk1::HostOp<'_>) -> Option<bool> {
         self.inner.w5c1(op)
+    }
+
+    fn w6c2(&mut self, op: carve_core::w6_chunk2::HostOp<'_>) -> Option<bool> {
+        self.inner.w6c2(op)
+    }
+
+    fn create_world(
+        &mut self,
+        name: &str,
+        env: carve_core::w4_skbee_raytrace_world::Env,
+    ) -> Result<(), String> {
+        self.inner.create_world(name, env)
+    }
+
+    fn unload_world(&mut self, name: &str) -> Result<(), String> {
+        self.inner.unload_world(name)
+    }
+
+    fn world_loaded(&mut self, name: &str) -> bool {
+        self.inner.world_loaded(name)
+    }
+
+    fn ban_for(&mut self, name: &str, reason: Option<&str>, ip: bool, seconds: u64) -> bool {
+        self.inner.ban_for(name, reason, ip, seconds)
     }
 
     fn read_data_file(&mut self, path: &str) -> Option<Vec<u8>> {
