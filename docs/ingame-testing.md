@@ -42,7 +42,8 @@ The runner copies `carve.wasm`, the examples and `tests/ingame/carve-test.carve`
 into the server. It deletes `variables.json` first. It prints one line per
 case and exits with code 1 if anything fails. The server log is saved to
 `.test/server/last-run.log`. Set `CARVE_SERVER_DIR` or `PUMPKIN_EXE` to use
-another folder or binary.
+another folder or binary, and `CARVE_PORT` when that server listens on another
+port than 25565 (set the same port in its `pumpkin.toml`).
 
 ## What it covers
 
@@ -63,6 +64,16 @@ for new commands, and the runaway guard.
 - `on damage` (from the console `damage` command), `on death` (`kill`) and
   `on respawn`
 - right and left click with filters
+
+**Inventories, held items and the rest:**
+- a chest inventory value built in a variable, opened (the bot sees the window
+  title), changed after opening, and clicked: `name of event-inventory`,
+  `event-inventory is {var}`, the real clicked stack
+- name, lore, enchant and disenchant of the held item, `items in player's inventory`
+- `sorted ... by`, `{t}'s minutes`, regex replace, `rgb()` in text and particles,
+  `do if`, `filter`, `event is cancelled`
+- `spawn ... named`, `set velocity ... to vector(...)`, push away from and forward,
+  `on death of zombie` (console `kill`), `set quit message`
 
 **`/carve`:**
 - every subcommand, including single-file reload with and without errors and
