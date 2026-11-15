@@ -50,7 +50,8 @@ in front is the amount: `16 oak logs`.
 
 | Expression | Notes |
 |---|---|
-| `world "name"` | A world by name, like `world "world_nether"`. |
+| `world "name"`, `world("name")` | A world by name, like `world "world_nether"`. |
+| `entity("uuid")`, `entity from uuid "..."` | A player or any live entity with that UUID, or `<none>`. |
 | `world of %player%`, `%player%'s world` | The world the player is in. |
 
 A world equals text with its name: `if world of player is "world":`.

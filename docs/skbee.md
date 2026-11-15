@@ -102,9 +102,7 @@ for what that means.
 - ✅ Team of a player, members of a team, team size, is in team, team exists.
 - ✅ Prefix, suffix, display name, color.
 - ✅ Friendly fire, see friendly invisibles.
-- ✅ Nametag visibility, collision rule.
-- 🟡 Death message visibility. Pumpkin has the command, Carve does not use it
-  yet.
+- ✅ Nametag visibility, death message visibility, collision rule.
 - ⛔ Teams and members made outside Carve are unknown to Carve.
 - ⛔ Per-player scoreboard objects (`scoreboard of player`) as values.
 

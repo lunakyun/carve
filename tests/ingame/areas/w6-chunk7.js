@@ -64,13 +64,22 @@ t.run(async () => {
   s = await run('c7player', 'player')
   t.check('entity(uuid) of a player gives the player', s === `c7:player ${NAME}`, s || 'no reply')
   s = await run('c7axis', 'axis')
-  t.check('axisAngle quaternions come out', !!s && /0\.7071/.test(s), s || 'no reply')
+  t.check('axisAngle and quaternion() come out', !!s && /w: 0, x: 0, y: 1, z: 0 w: 0\.7071, x: 0\.7071, y: 0, z: 0 w: 1, x: 0, y: 2, z: 0$/.test(s), s || 'no reply')
   s = await run('c7each', 'each')
   t.check('for each sets the loop variable', s === 'c7:each 1,2,3,', s || 'no reply')
   s = await run('c7alias', 'alias')
   t.check('alias pattern and plural give items', s === 'c7:alias', s || 'no reply')
   s = await run('c7suppress', 'suppress')
   t.check('locally suppress line runs', s === 'c7:suppress', s || 'no reply')
+
+  s = await run('c7types', 'types')
+  t.check('abstract and loose types work as function parameter types', s === 'c7:types types-ok', s || 'no reply')
+
+  const mark = srv.mark()
+  s = await run('c7team', 'team')
+  t.check('death message visibility of a team reads back', s === 'c7:team hide for other teams', s || 'no reply')
+  const dm = await srv.waitLog(/deathmessagevisibility|death message visibility/i, 3000, mark)
+  t.check('death message visibility reached /team modify', !!dm, dm || 'no server log line')
 
   // ---- server icon (type Server Icon) ----
   await run('c7icon', 'icon')

@@ -29,6 +29,10 @@ inside the loop doesn't confuse it.
 - `loop-value` is the item.
 - `loop-index` is its index, as text.
 
+`for each {_x} in {warps::*}:` is the same loop, and it also sets `{_x}` to the
+value on every round. `for each value in {list::*}:` (a type word instead of a
+variable) is a plain `loop`.
+
 ## `loop all players:`
 
 ```

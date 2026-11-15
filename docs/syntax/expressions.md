@@ -146,10 +146,10 @@ set {_name} to {nick::%uuid of player%} ? name of player
 
 | Expression | Result |
 |---|---|
-| `floor(x)`, `ceil(x)`, `round(x)` | Rounded down, up, to the nearest |
+| `floor(x)`, `ceil(x)`, `round(x)`, `round(x, places)` | Rounded down, up, to the nearest, or to that many decimal places |
 | `abs(x)` | Without the minus sign |
 | `sqrt(x)` | Square root (a negative number is an error) |
-| `min(a, b)`, `max(a, b)` | The smaller or bigger one |
+| `min(a, b, ...)`, `max(a, b, ...)` | The smallest or biggest of two or more |
 | `mod(a, b)` | Remainder, always 0 or more: `mod(-1, 5)` is 4 |
 
 A script function with the same name wins over these.

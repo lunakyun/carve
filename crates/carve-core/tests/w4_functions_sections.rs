@@ -343,7 +343,7 @@ on join:
 }
 
 #[test]
-fn entity_function_is_refused_at_load() {
+fn entity_function_loads_since_wave_6() {
     let mut e = Engine::default();
     let (_, errs) = e.load(&[(
         "t.carve".into(),
@@ -352,5 +352,5 @@ fn entity_function_is_refused_at_load() {
 "
         .into(),
     )]);
-    assert!(!errs.is_empty());
+    assert!(errs.is_empty(), "{errs:?}");
 }

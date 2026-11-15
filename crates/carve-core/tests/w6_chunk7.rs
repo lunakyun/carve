@@ -6,6 +6,7 @@ use carve_core::*;
 struct Mock {
     sent: Vec<String>,
     errors: Vec<String>,
+    commands: Vec<String>,
 }
 
 impl Host for Mock {
@@ -19,7 +20,9 @@ impl Host for Mock {
     fn set_health(&mut self, _p: &PlayerRef, _h: f64) {}
     fn kill(&mut self, _p: &PlayerRef) {}
     fn teleport(&mut self, _p: &PlayerRef, _x: f64, _y: f64, _z: f64) {}
-    fn execute_command(&mut self, _c: &str) {}
+    fn execute_command(&mut self, c: &str) {
+        self.commands.push(c.to_string());
+    }
     fn resolve_player(&mut self, uuid: &str) -> Option<String> {
         (uuid == "u1").then(|| "Steve".to_string())
     }
@@ -61,6 +64,10 @@ fn script_for(body: &str) -> String {
 }
 
 fn run_src(src: String) -> Vec<String> {
+    run_cmds(src).0
+}
+
+fn run_cmds(src: String) -> (Vec<String>, Vec<String>) {
     let mut h = Mock::default();
     let mut e = Engine::default();
     let (_, errs) = e.load(&[("t.carve".into(), src)]);
@@ -71,7 +78,7 @@ fn run_src(src: String) -> Vec<String> {
     );
     e.fire(EventKind::Join, EventCtx::player(steve()), &mut h);
     assert!(h.errors.is_empty(), "{:?}", h.errors);
-    h.sent
+    (h.sent, h.commands)
 }
 
 fn run(body: &str) -> Vec<String> {
@@ -179,4 +186,19 @@ fn suppress_warning_and_using_lines_are_accepted() {
         "using 3d vectors\n\non join:\n    locally suppress conflict warnings\n    send \"ok\"\n".to_string(),
     );
     assert_eq!(out, ["ok"]);
+}
+
+#[test]
+fn team_death_message_visibility_uses_team_modify() {
+    let (out, cmds) = run_cmds(script_for(
+        "register team \"t\"
+set death message visibility of team \"t\" to hide for other teams
+send \"%team death message visibility of \"\"t\"\"%\"",
+    ));
+    assert_eq!(out, ["hide for other teams"]);
+    assert!(
+        cmds.iter()
+            .any(|c| c == "team modify t deathMessageVisibility hideForOtherTeams"),
+        "{cmds:?}"
+    );
 }

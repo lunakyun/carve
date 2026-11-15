@@ -41,10 +41,12 @@ on right click with magic wand:
 ```
 
 - The format is `name = replacement`. Names ignore case.
-- Whole words only: `gem` does not change `gems`.
+- Whole words only: `gem` does not change `gems`, but every name also works
+  in the plural (`gems`) unless you define that name yourself.
 - Longer names win, so `iron sword` beats `iron`.
-- There are no plural forms or variants, and a name can't hold `:`, `%`, `{` or
-  quotes.
+- Names can hold variants: `(fast|quick) blade` makes `fast blade` and
+  `quick blade`, and `the [big] key` makes `the big key` and `the key`.
+- A name can't hold `:`, `%`, `{` or quotes.
 
 ## Inline conditions
 
