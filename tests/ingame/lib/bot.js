@@ -6,7 +6,7 @@
 //   const p = await bot.waitPacket('block_update', (d) => d.block === 'stone')
 'use strict'
 const { Bot } = require('../mc.js')
-const { Reader, nameOf, packetNames, packetIds } = require('./proto.js')
+const { Reader, nameOf, packetNames, packetIds, asset } = require('./proto.js')
 
 const CB_NAMES = packetNames('play', 'clientbound')
 const SB = packetIds('play', 'serverbound')
@@ -207,6 +207,30 @@ const DECODE = {
   disconnect: (r) => r.component(),
   damage_event: (r) => ({ entityId: r.varint(), sourceType: r.varint() }),
   hurt_animation: (r) => ({ entityId: r.varint(), yaw: r.f32() }),
+  player_combat_kill: (r) => { const playerId = r.varint(); return { playerId, ...r.component() } },
+  player_abilities: (r) => {
+    const flags = r.i8()
+    return { flags, invulnerable: !!(flags & 1), flying: !!(flags & 2), allowFlying: !!(flags & 4), instantBreak: !!(flags & 8), flySpeed: r.f32(), walkSpeed: r.f32() }
+  },
+  update_attributes: (r) => {
+    const entityId = r.varint(); const n = r.varint(); const attributes = {}
+    const names = attributeNames()
+    for (let i = 0; i < n; i++) {
+      const id = r.varint(); const value = r.f64(); const mods = r.varint(); const modifiers = []
+      for (let j = 0; j < mods; j++) modifiers.push({ id: r.str(), amount: r.f64(), operation: r.i8() })
+      attributes[names[id] || `#${id}`] = { value, modifiers }
+    }
+    return { entityId, attributes }
+  },
+}
+
+let ATTRIBUTE_NAMES
+function attributeNames () {
+  if (!ATTRIBUTE_NAMES) {
+    ATTRIBUTE_NAMES = []
+    for (const [name, v] of Object.entries(asset('attributes.json') || {})) ATTRIBUTE_NAMES[v.id] = name
+  }
+  return ATTRIBUTE_NAMES
 }
 
 // Text-ish packets that also count as `text` for waitText.

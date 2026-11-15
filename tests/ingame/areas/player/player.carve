@@ -1,0 +1,386 @@
+# In-game checks for the player area (tests/ingame/areas/player.js).
+# Every command replies with a "p:" marker the bot waits for.
+
+command /p_hp:
+    trigger:
+        # Food below 18 stops natural regeneration from changing health mid-test.
+        set food level of player to 10
+        set saturation of player to 0
+        set max health of player to 40
+        set health of player to 30
+        send "p:hp %health of player%/%max health of player%"
+
+command /p_hp2:
+    trigger:
+        add 4 to health of player
+        remove 10 from player's health
+        send "p:hp2 %player's health%"
+
+command /p_heal:
+    trigger:
+        heal player
+        send "p:heal %health of player%"
+
+command /p_maxdown:
+    trigger:
+        set max health of player to 20
+        send "p:maxdown %health of player%/%player's max health%"
+
+command /p_healby:
+    trigger:
+        set health of player to 10
+        heal player by 3
+        send "p:healby %health of player%"
+
+command /p_dmg:
+    trigger:
+        damage player by 5
+        send "p:dmg %health of player%"
+
+command /p_kill:
+    trigger:
+        kill player
+
+on death:
+    send "p:died" to console
+
+command /p_food:
+    trigger:
+        set food level of player to 5
+        set saturation of player to 3
+        send "p:food %food level of player% %saturation of player% %hunger of player%"
+
+command /p_food2:
+    trigger:
+        add 2 to hunger of player
+        remove 1 from player's food level
+        send "p:food2 %player's food level%"
+
+command /p_feed:
+    trigger:
+        feed player
+        send "p:feed %food level of player% %player's saturation%"
+
+command /p_feedby:
+    trigger:
+        set food level of player to 10
+        feed player by 4
+        send "p:feedby %food level of player%"
+
+command /p_lvl:
+    trigger:
+        set level of player to 10
+        set level progress of player to 0.5
+        send "p:lvl %level of player% %level progress of player%"
+
+command /p_xp:
+    trigger:
+        set xp of player to 500
+        send "p:xp %xp of player% %level of player% %total experience of player%"
+
+command /p_xp2:
+    trigger:
+        set level of player to 2
+        give player 3 levels
+        add 1 to level of player
+        remove 1 level from player
+        send "p:xp2 %player's level%"
+
+command /p_xp3:
+    trigger:
+        set xp of player to 0
+        give player 10 xp
+        add 5 exp points to player
+        remove 3 xp from player
+        send "p:xp3 %exp of player%"
+
+command /p_gm <text>:
+    trigger:
+        set gamemode of player to arg-1
+        send "p:gm %gamemode of player% %game mode of player% %player's gamemode%"
+        if player is in creative:
+            send "p:gm-is-creative"
+        if gamemode of player is not survival:
+            send "p:gm-not-survival"
+
+command /p_gmc:
+    trigger:
+        set player's gamemode to creative mode
+        send "p:gmc %gamemode of player%"
+
+command /p_fly:
+    trigger:
+        make player fly
+        if player can fly:
+            send "p:fly can"
+        if player is flying:
+            send "p:fly flying"
+
+command /p_nofly:
+    trigger:
+        make player stop flying
+        if player is not flying:
+            send "p:nofly not-flying"
+
+command /p_opcheck:
+    trigger:
+        if player is op:
+            send "p:op yes"
+        else:
+            send "p:op no"
+
+command /p_op <text>:
+    trigger:
+        op arg-1
+        send "p:opped %arg-1%"
+
+command /p_deop <text>:
+    trigger:
+        deop arg-1
+        send "p:deopped %arg-1%"
+
+command /p_kick <text>:
+    trigger:
+        kick arg-1 due to "p:bye now"
+
+command /p_ban <text>:
+    trigger:
+        ban arg-1 because of "p:banned"
+        if arg-1 is banned:
+            send "p:isbanned yes"
+        else:
+            send "p:isbanned no"
+
+command /p_unban <text>:
+    trigger:
+        unban arg-1
+        send "p:unbanned %arg-1%"
+
+command /p_dname:
+    trigger:
+        set display name of player to "&6Boss"
+        send "p:dname %display name of player% %nickname of player%"
+
+command /p_dreset:
+    trigger:
+        reset display name of player
+        send "p:dreset %player's display name%"
+
+command /p_tab:
+    trigger:
+        set tab list name of player to "&a[VIP] Tester"
+        send "p:tab %tab list name of player%"
+
+command /p_tabreset:
+    trigger:
+        reset player's tab list name
+        send "p:tabreset %player's tab list name%"
+
+command /p_prio:
+    trigger:
+        set player list priority of player to 5
+
+command /p_ids:
+    trigger:
+        send "p:ids ping=%ping of player% uuid=%uuid of player% ip=%ip of player% name=%name of player%"
+
+command /p_title:
+    trigger:
+        send title "p:t1" with subtitle "p:s1" to player for 3 seconds with fade in 5 ticks and fade out 1 second
+
+command /p_titleall:
+    trigger:
+        send title "p:tall" to all players
+
+command /p_tclear:
+    trigger:
+        clear title of player
+
+command /p_treset:
+    trigger:
+        reset title of player
+
+command /p_ab:
+    trigger:
+        send actionbar "p:ab" to player
+        send action bar "p:aball" to all players
+
+command /p_bb:
+    trigger:
+        create bossbar "praid" with title "&cp:raid" with color red with style notched 10 with progress 40
+        show bossbar "praid" to player
+
+command /p_bb2:
+    trigger:
+        set progress of bossbar "praid" to 75
+        set title of bossbar "praid" to "p:raid2"
+        set color of bossbar "praid" to blue
+        set style of bossbar "praid" to solid
+        add darken sky flag to bossbar "praid"
+
+command /p_bbhide:
+    trigger:
+        hide bossbar "praid" from player
+
+command /p_bbshow:
+    trigger:
+        add player to bossbar "praid"
+
+command /p_bbrm:
+    trigger:
+        remove bossbar "praid"
+
+command /p_side:
+    trigger:
+        set title of player's scoreboard to "&6p:side"
+        set line 1 of player's scoreboard to "p:line1"
+        set line 2 of scoreboard of player to "&7p:line2"
+
+command /p_sideclr2:
+    trigger:
+        clear line 2 of player's scoreboard
+
+command /p_sideclr:
+    trigger:
+        clear player's scoreboard
+
+command /p_board:
+    trigger:
+        set title of board of player to "p:board"
+        set lines of board of player to "p:b1", "p:b2" and "p:b3"
+
+command /p_boarddel:
+    trigger:
+        delete board of player
+
+command /p_obj:
+    trigger:
+        register a new objective "pkills" with criteria "dummy" named "&cKills"
+        set score of player in objective "pkills" to 5
+        add 3 to score of player in "pkills"
+        send "p:obj %score of player in ""pkills""% %objective display name of ""pkills""%"
+        if objective "pkills" exists:
+            send "p:obj exists"
+
+command /p_objrm:
+    trigger:
+        reset score of player in "pkills"
+        unregister objective "pkills"
+        if objective "pkills" doesn't exist:
+            send "p:objrm gone"
+
+command /p_team:
+    trigger:
+        register team "pred"
+        set prefix of team "pred" to "&c[R] "
+        set suffix of team "pred" to " &7!"
+        set color of team "pred" to dark red
+        add player to team "pred"
+        send "p:team %team of player% %prefix of team ""pred""% %team color of ""pred""% %team size of ""pred""%"
+        if player is in team "pred":
+            send "p:team member"
+
+command /p_teamrm:
+    trigger:
+        remove player from team "pred"
+        unregister team "pred"
+        send "p:teamrm"
+
+command /p_tabhf:
+    trigger:
+        set tab list header of player to "&6p:head"
+        set tab list footer of player to "&7p:foot"
+
+command /p_tabhf2:
+    trigger:
+        set tab list header for all players to "p:head2"
+
+command /p_tabhfreset:
+    trigger:
+        reset tab list of player
+
+command /p_col:
+    trigger:
+        send "<#ff8000>p:hex &ap:legacy <red>p:named <dark_blue>p:dblue"
+
+command /p_col2:
+    trigger:
+        send "&#00ff7fp:amphex &x&1&2&3&4&5&6p:xhex <bold>p:bold</bold>"
+
+command /p_grad:
+    trigger:
+        send "<gradient:red:blue>p:gradient</gradient> <rainbow>p:rainbow</rainbow>"
+
+command /p_colfn:
+    trigger:
+        set {_t} to colored "<red>p:colfn"
+        send "%uncolored {_t}%" to player
+
+command /p_click:
+    trigger:
+        send "<click:run_command:'/p_ids'><hover:show_text:'p:hov'>p:clk</hover></click>"
+
+command /p_click2:
+    trigger:
+        set {_c} to text component from "&6p:comp"
+        set hover event of {_c} to hover event showing "p:hov2"
+        set click event of {_c} to click event to open url "https://example.com/rules"
+        send component {_c} to player
+
+command /p_click3:
+    trigger:
+        send "<click:suggest_command:'/msg '>p:sugg</click> <click:copy_to_clipboard:'p:copy'>p:cpy</click>"
+
+command /p_ph:
+    trigger:
+        send parse placeholders in "p:ph %%player_name%% %%player_gamemode%%" for player
+        send "p:ph2 %placeholder ""player_name"" for player%"
+
+on placeholder request for prefix "ptest":
+    if the identifier is "hello":
+        set the result to "world"
+
+command /p_ph3:
+    trigger:
+        send parse placeholders in "p:ph3 %%ptest_hello%%" for player
+
+command /p_sender:
+    trigger:
+        if sender is a player:
+            send "p:sender player %me%" to sender
+        if sender is console:
+            send "p:sender console" to console
+        send "p:toconsole" to console
+
+command /p_target:
+    trigger:
+        send "p:target %player%"
+
+command /p_make:
+    trigger:
+        make player execute command "/p_target"
+
+command /p_make2:
+    trigger:
+        execute command "/p_target" by player
+
+command /p_console:
+    trigger:
+        execute console command "say p:say"
+        make console execute command "p_sender"
+
+command /p_snd:
+    trigger:
+        play sound "entity.experience_orb.pickup" with volume 0.5 and pitch 2 to player
+
+command /p_sndat:
+    trigger:
+        play sound "block.anvil.land" to player at location(10, 70, 20)
+
+command /p_sndstop:
+    trigger:
+        stop sound "music.game" from player
+
+command /p_sndstopall:
+    trigger:
+        stop all sounds for player
