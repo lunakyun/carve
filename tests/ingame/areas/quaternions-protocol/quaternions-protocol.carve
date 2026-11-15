@@ -1,0 +1,114 @@
+# Wave 6 chunk 6 area: portal cooldown, protocol version, rotation maths,
+# vector components, N times, plain item, villager data, vehicle and passengers,
+# whitelist, world border add/remove, yaw/pitch, NBT block reads.
+# Every command reports back with a "qpr:" message the test reads.
+
+command /qppure:
+    trigger:
+        set {_q} to quaternion(0.5, 0.5, 0.5, 0.5)
+        send "qpr:quat w=%w of {_q}% x=%x of {_q}% angle=%rotation angle of {_q}% axis=%rotation axis of {_q}%" to player
+        set {_v} to vector(1, 0, 0)
+        set {_r} to {_v} rotated around z by 90
+        send "qpr:rot %x of {_r}% %y of {_r}% %z of {_r}%" to player
+        set x of {_v} to 5
+        add 2 to y of {_v}
+        remove 1 from z of {_v}
+        send "qpr:vec %x of {_v}% %y of {_v}% %z of {_v}%" to player
+        set {_l::*} to 3 times
+        send "qpr:times %size of {_l::*}% %{_l::3}%" to player
+        set {_i} to diamond sword
+        set {_p} to plain {_i}
+        send "qpr:plain %{_p}%" to player
+
+command /qpportal:
+    trigger:
+        set portal cooldown of player to 7 seconds
+        send "qpr:portal %portal cooldown of player%" to player
+
+command /qpproto:
+    trigger:
+        send "qpr:proto %protocol version of player% %protocol version%" to player
+
+command /qpwl:
+    trigger:
+        send "qpr:wl0 %whitelist enabled%" to player
+        set whitelist to true
+        send "qpr:wl1 %whitelist enabled%" to player
+        set whitelist to false
+        set {_w::*} to whitelisted players
+        send "qpr:wl2 %whitelist enabled% %size of {_w::*}%" to player
+
+command /qpyaw:
+    trigger:
+        set yaw of player to 90
+        send "qpr:yaw %yaw of player%" to player
+        add 45 to yaw of player
+        send "qpr:yaw2 %yaw of player%" to player
+        set pitch of player to 30
+        send "qpr:pitch %pitch of player%" to player
+
+command /qpborder:
+    trigger:
+        set world border size to 100
+        add 10 to world border size
+        remove 30 from world border size
+        send "qpr:border %world border size%" to player
+
+command /qpvillager:
+    trigger:
+        spawn a villager at location(4, 100, 4)
+        set {_v} to last spawned entity
+        send "qpr:villager %villager level of {_v}% %villager experience of {_v}% %villager profession of {_v}%" to player
+
+command /qpride:
+    trigger:
+        spawn a pig at location(0, 100, 3)
+        set {_p} to last spawned entity
+        execute console command "ride %name of player% mount %uuid of {_p}%"
+        wait 10 ticks
+        send "qpr:vehicle %vehicle of player%" to player
+        set {_x::*} to passengers of {_p}
+        send "qpr:passengers %size of {_x::*}% %{_x::1}%" to player
+
+command /qpnbt:
+    trigger:
+        set block at location(9, 100, 9) to oak sign
+        set {_s::*} to sign text of location(9, 100, 9)
+        send "qpr:sign %size of {_s::*}%" to player
+        set block at location(10, 100, 9) to skeleton skull
+        send "qpr:skull %skull owner of location(10, 100, 9)% %skull texture of location(10, 100, 9)%" to player
+        set block at location(11, 100, 9) to chest
+        send "qpr:loot %loot table seed of location(11, 100, 9)%" to player
+        set block at location(12, 100, 9) to spawner
+        send "qpr:spawner %spawner type of location(12, 100, 9)%" to player
+        set block at location(13, 100, 9) to bell
+        send "qpr:bell %ringing time of location(13, 100, 9)%" to player
+
+command /qpspawn:
+    trigger:
+        set spawn of world "world" to location(7, 100, 7)
+        wait 10 ticks
+        send "qpr:spawnat %spawn of world "world"%" to player
+
+
+command /qpmisc:
+    trigger:
+        set {_l::*} to 1, 2, 3 and 4
+        send "qpr:random %size of ({_l::*})%" to player
+        set {_s} to reduce {_l::*} with [reduced value + input]
+        send "qpr:reduce %{_s}%" to player
+        set {_n::a::b} to 1
+        set {_n::c} to 2
+        set {_r::*} to recursive {_n::*}
+        send "qpr:recursive %size of {_r::*}%" to player
+        send "qpr:round %2.567 rounded to 2 decimal places% %round(2.5)% %floor(2.9)% %ceil(2.1)%" to player
+        set {_t1} to 1 if 2 > 1 else 3
+        set {_t2} to 1 if 2 < 1 else 3
+        send "qpr:ternary %{_t1}% %{_t2}%" to player
+        send "qpr:sea %sea level of world "world"% %simulation distance%" to player
+        send "qpr:ver %server version% | %minecraft version% | %server version string%" to player
+        set {_q} to quaternion(1, 0, 0, 0) rotated around y by 180
+        send "qpr:qrot %w of {_q}% %y of {_q}%" to player
+        set {_d} to vector(0, 0, 1)
+        set yaw of {_d} to 90
+        send "qpr:vyaw %x of {_d}% %z of {_d}%" to player

@@ -306,7 +306,7 @@ fn world_border_size_is_clamped() {
 fn server_list_ping_event_compiles_and_fires() {
     let src = "on server list ping:\n    set {x} to online players count\n";
     let mut e = engine(src);
-    let k = EventKind::Ext4(carve_core::w2_events_4::ExtEvent::ServerListPing);
+    let k = EventKind::Ext4(carve_core::events_world_vehicles::ExtEvent::ServerListPing);
     assert!(e.table().has_event(k));
     let mut h = Mock::with_steve();
     e.fire(k, EventCtx::console(), &mut h);

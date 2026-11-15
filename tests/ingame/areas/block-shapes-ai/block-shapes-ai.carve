@@ -1,0 +1,158 @@
+# Wave 5 chunk 4: block data, block lists, books, borders, effects, items,
+# ender chests, entities, enchanting and event values. Every line the test
+# reads starts with "bsa:".
+
+command /bsabd <number> <number> <number>:
+    trigger:
+        set {_l} to location(arg-1, arg-2, arg-3)
+        set block at {_l} to oak stairs
+        set block data of block at {_l} to "oak_stairs[facing=west,half=top]"
+        send "bsa:bd %block data of block at {_l}%" to player
+
+command /bsasphere <number> <number> <number>:
+    trigger:
+        set {_c} to location(arg-1 + 0.5, arg-2 + 0.5, arg-3 + 0.5)
+        set {_a::*} to blocks in radius 1 of {_c}
+        loop {_a::*}:
+            set block at loop-value to glass
+        send "bsa:sphere %size of {_a::*}%|%type of block at location(arg-1, arg-2 + 1, arg-3)%|%type of block at location(arg-1 + 1, arg-2 + 1, arg-3)%" to player
+
+command /bsablocks <number> <number> <number>:
+    trigger:
+        set {_a} to location(arg-1, arg-2, arg-3)
+        set {_box::*} to blocks between {_a} and location(arg-1 + 1, arg-2 + 1, arg-3 + 1)
+        set {_line::*} to blocks from {_a} to location(arg-1 + 3, arg-2, arg-3)
+        set {_up::*} to blocks above {_a}
+        loop {_line::*}:
+            set block at loop-value to stone
+        send "bsa:blocks %size of {_box::*}%|%size of {_line::*}%|%size of {_up::*}%|%type of block at location(arg-1 + 3, arg-2, arg-3)%" to player
+
+command /bsabook:
+    trigger:
+        clear player's inventory
+        give written book to player
+        wait 2 ticks
+        set book title of player's tool to "Tales"
+        set book author of player's tool to "Ann"
+        set book pages of player's tool to "page one"
+        set page 2 of player's tool to "page two"
+        send "bsa:book %book title of player's tool%|%book author of player's tool%|%size of book pages of player's tool%|%page 2 of player's tool%" to player
+
+command /bsabar:
+    trigger:
+        create bossbar "bsabar" with title "C4 bar"
+        set {_b} to boss bar with id "bsabar"
+        show bossbar {_b} to player
+        send "bsa:bar %{_b}%|%boss bar with id "nope"%" to player
+
+command /bsabrew <number> <number> <number>:
+    trigger:
+        set {_l} to location(arg-1, arg-2, arg-3)
+        set block at {_l} to brewing stand
+        set first bottle slot of block at {_l} to potion
+        set ingredient slot of block at {_l} to nether wart
+        send "bsa:brew %first bottle slot of block at {_l}%|%ingredient slot of block at {_l}%|%third bottle slot of block at {_l}%" to player
+
+command /bsaborder:
+    trigger:
+        set {_b} to world border of world of player
+        set world border center of {_b} to location(10, 0, 20)
+        set world border damage amount of {_b} to 2
+        set world border damage buffer of {_b} to 7
+        send "bsa:border %x of world border center of {_b}%|%z of world border center of {_b}%|%world border damage amount of {_b}%|%world border damage buffer of {_b}%" to player
+        reset world border center of {_b}
+
+command /bsaeffect:
+    trigger:
+        set {_e} to potion effect of speed of tier 2 for 10 seconds
+        apply {_e} to player
+        set {_f} to ambient potion effect of jump boost without particles for 5 seconds
+        apply {_f} to player
+        send "bsa:effect done" to player
+
+command /bsadmg:
+    trigger:
+        clear player's inventory
+        give diamond sword with damage 10 to player
+        wait 5 ticks
+        send "bsa:dmg1 %damage of player's tool%|%durability of player's tool%" to player
+        set damage of player's tool to 5
+        send "bsa:dmg2 %damage of player's tool%|%durability of player's tool%" to player
+
+command /bsaender:
+    trigger:
+        set slot 0 of ender chest of player to diamond
+        set slot 1 of player's ender chest to 3 emeralds
+        send "bsa:ender %slot 0 of ender chest of player%|%slot 1 of player's ender chest%|%size of ender chest of player%" to player
+        open player's ender chest to player
+
+command /bsaenderclear:
+    trigger:
+        clear ender chest of player
+        send "bsa:enderclear %size of ender chest of player%" to player
+
+command /bsamobs:
+    trigger:
+        spawn an enderman at location(x of player + 3, y of player, z of player)
+        set {_m} to last spawned entity
+        set carried block of {_m} to "grass_block"
+        send "bsa:carry %carried block of {_m}%" to player
+        set ai of {_m} to false
+        send "bsa:ai %ai of {_m}%|%ai of player%" to player
+        set ai of {_m} to true
+        send "bsa:ai2 %ai of {_m}%" to player
+        kill {_m}
+
+command /bsaattr:
+    trigger:
+        set movement speed attribute of player to 0.3
+        send "bsa:attr %movement speed attribute of player%|%max health total attribute of player%" to player
+
+command /bsaattrreset:
+    trigger:
+        reset movement speed attribute of player
+        send "bsa:attrreset %movement speed attribute of player%" to player
+
+command /bsaench <number> <number> <number>:
+    trigger:
+        clear player's inventory
+        give diamond sword to player
+        give 10 lapis lazuli to player
+        set level of player to 30
+        set block at location(arg-1, arg-2, arg-3) to enchanting table
+        send "bsa:enchready" to player
+
+command /bsalevel:
+    trigger:
+        send "bsa:level %enchantment level of "sharpness 5"%|%enchant level of "sharpness IV"%" to player
+
+command /bsazombie:
+    trigger:
+        spawn a zombie at location(x of player + 4, y of player, z of player)
+        send "bsa:zombie" to player
+
+command /bsabread:
+    trigger:
+        clear player's inventory
+        give 2 bread to player
+        send "bsa:bread" to player
+
+on enchant prepare:
+    send "bsa:prep %size of enchantment offers%|%enchantment bonus%|%enchant item%|%cost of enchantment offer 1%|%enchantment offer 1%" to player
+
+on enchant:
+    send "bsa:ench %enchant item%|%exp cost%|%enchantment hint%|%enchantment hint level%" to player
+
+on inventory click:
+    send "bsa:click %inventory action%|%cursor slot of player%|%click type%" to player
+
+on broadcast:
+    loop all players:
+        send "bsa:bc %broadcast message%" to loop-player
+
+on consume:
+    send "bsa:consumed %consumed item%" to player
+
+on death:
+    loop all players:
+        send "bsa:dead %the zombie%|%the creature%|%event-skeleton%" to loop-player

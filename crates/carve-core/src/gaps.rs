@@ -16,7 +16,7 @@ use crate::compile::{Cond, Effect};
 use crate::expr::{Env, Expr, P, Ty, VarRef, parse_expr, parse_varref};
 use crate::inventories::{InvTarget, inv_target, inv_target_len};
 use crate::lexer::Tok;
-use crate::types_1::T_INVENTORY;
+use crate::named_types::T_INVENTORY;
 use crate::value::Value;
 
 /// The inventory type, for `Expr::ty`.
@@ -880,7 +880,7 @@ impl P<'_> {
 /// Replace the first or every match of `pattern` in `text`. The replacement is
 /// plain text (no `$1` groups: the regex engine has no captures).
 pub fn regex_replace_text(text: &str, pattern: &str, with: &str, all: bool) -> Result<String, String> {
-    use crate::w2_conditions_3::regex::Regex;
+    use crate::conditions_entity_block::regex::Regex;
     let re = Regex::new(pattern).map_err(|e| format!("invalid regex '{pattern}': {e}"))?;
     let t: Vec<char> = text.chars().collect();
     let mut out = String::with_capacity(text.len());

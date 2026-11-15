@@ -147,7 +147,7 @@ impl EventHandler<EntityDamageEvent> for OnDamage {
             if !st.engine.table().has_event(EventKind::Damage) {
                 return None;
             }
-            let cause = carve_core::w2_expressions_2::snake_case(&format!("{:?}", data.damage_type));
+            let cause = carve_core::expr_text_directions::snake_case(&format!("{:?}", data.damage_type));
             if has_attacker(data.damage_type) {
                 st.damage_pending = Some((data.entity_id, false, st.hs.tick));
                 st.late_hit = Some(LateHit {
@@ -240,7 +240,7 @@ impl EventHandler<PlayerDeathEvent> for OnDeath {
             };
             let player = ctx.player.clone();
             let o = st.engine.fire(EventKind::Death, ctx, &mut th);
-            let (keep_inv, keep_xp, no_drops) = super::w5_chunk1::death_flags(&o.set);
+            let (keep_inv, keep_xp, no_drops) = super::drops_border_leashes::death_flags(&o.set);
             if let Some(p) = player {
                 host.w5_death(&p, keep_inv, keep_xp, no_drops);
             }

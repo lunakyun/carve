@@ -1,0 +1,135 @@
+# Wave 5 chunk 6 area: scale, targets, the spectator camera, text displays,
+# sea pickles, block data, temperature, world border warnings, boss bar and
+# inventory reads, all <type>s, slot index, spawn eggs, stored enchantments,
+# the shoot section and event value names.
+# Every command reports back with a "ebp:" message the test reads.
+
+command /ebppad:
+    trigger:
+        set block at location(0, 99, 0) to stone
+        set block at location(1, 99, 0) to stone
+        set block at location(2, 99, 0) to stone
+        set block at location(0, 99, 1) to stone
+        set block at location(1, 99, 1) to stone
+        set block at location(2, 99, 1) to stone
+        send "ebp:pad" to player
+
+command /ebpborder:
+    trigger:
+        send "ebp:border %world border of player%" to player
+        set world border warning distance to 12
+        set world border warning time of player's world border to 30 seconds
+        send "ebp:warn %world border warning distance% %world border warning time%" to player
+
+command /ebppickle:
+    trigger:
+        set block at location(6, 100, 6) to sea pickle
+        set sea pickles of location(6, 100, 6) to 3
+        send "ebp:pickles %sea pickles of location(6, 100, 6)% %max pickles of location(6, 100, 6)%" to player
+
+command /ebpdata:
+    trigger:
+        set block data of location(7, 100, 6) to "oak_log[axis=z]"
+        send "ebp:data %block data of location(7, 100, 6)%" to player
+
+command /ebptemp:
+    trigger:
+        send "ebp:temp %biome of player% %temperature of block below player%" to player
+
+command /ebpscale:
+    trigger:
+        set scale of player to 2
+        send "ebp:scale %scale of player%" to player
+
+command /ebpunscale:
+    trigger:
+        reset scale of player
+        send "ebp:unscale %player's scale%" to player
+
+command /ebptarget:
+    trigger:
+        spawn a zombie at location(3, 100, 3)
+        set {ebp::zombie} to last spawned entity
+        set target of last spawned entity to player
+        send "ebp:target %target of last spawned entity%" to player
+
+command /ebpspec:
+    trigger:
+        spawn a pig at location(-3, 100, 3)
+        set spectator target of player to last spawned entity
+        send "ebp:spec %type of spectator target of player%" to player
+
+command /ebpunspec:
+    trigger:
+        reset spectator target of player
+        send "ebp:unspec %spectator target of player%" to player
+
+command /ebptd:
+    trigger:
+        spawn text display at location(0, 102, 3) with text "hello"
+        set {_d} to last spawned entity
+        set text alignment of {_d} to left
+        set line width of {_d} to 80
+        set text opacity of {_d} to 128
+        set scale of {_d} to vector(2, 2, 2)
+        send "ebp:td %text alignment of {_d}% %line width of {_d}% %{_d}'s text opacity% %scale of {_d}%" to player
+
+command /ebpbar:
+    trigger:
+        create bossbar "ebp" with title "Raid" with style notched 10 with progress 50
+        add player to viewers of bossbar "ebp"
+        send "ebp:bar %title of bossbar "ebp"% %style of bossbar "ebp"% %viewers of bossbar "ebp"%" to player
+
+command /ebpinv:
+    trigger:
+        set {_i} to chest inventory with 3 rows named "Shop"
+        set title of {_i} to "Bank"
+        add player to viewers of {_i}
+        send "ebp:inv %title of {_i}% %viewers of {_i}%" to player
+
+command /ebpall:
+    trigger:
+        loop all difficulties:
+            add loop-value to {_d::*}
+        send "ebp:all %{_d::*}%" to player
+
+command /ebpegg:
+    trigger:
+        set {_e} to 1 zombie spawn egg
+        send "ebp:egg %spawn egg entity of {_e}%" to player
+        set spawn egg entity of {_e} to cow
+        give {_e} to player
+        send "ebp:egg2 %{_e}%" to player
+
+command /ebpstored:
+    trigger:
+        set stored enchantments of player's tool to "sharpness 5"
+        send "ebp:stored %stored enchantments of player's tool%" to player
+
+command /ebpslot:
+    trigger:
+        send "ebp:slot %index of slot 5 of player's inventory%" to player
+
+command /ebpshoot:
+    trigger:
+        shoot an arrow from player at speed 2:
+            send "ebp:shot %type of event-entity%" to player
+
+command /ebphints:
+    trigger:
+        suppress type hints:
+            send "ebp:hints ok" to player
+
+on spawn:
+    if "%event-entity%" is "cow":
+        broadcast "ebp:reason %spawning reason%"
+
+on tame:
+    broadcast "ebp:tamer %tamer%"
+
+on spread:
+    broadcast "ebp:source %type of source block%"
+
+on shoot:
+    broadcast "ebp:shooter %shooter%"
+

@@ -208,7 +208,7 @@ pub fn parse_effect(toks: &[Tok], env: &Env) -> Result<Option<Effect>, String> {
         }
         "apply" => apply(toks, env)?,
         "remove" | "clear" => clear(toks, env)?,
-        // `ignite`, `extinguish`, `set <player> on fire` are `w2_effects_2`'s.
+        // `ignite`, `extinguish`, `set <player> on fire` are `effects_player_actions`'s.
         _ => None,
     };
     Ok(fx.map(|f| Effect::World(Box::new(f))))
@@ -352,7 +352,7 @@ fn particles(toks: &[Tok], env: &Env) -> Result<Option<WorldFx>, String> {
 
 /// `apply [potion of] speed [2] to <player> [for 10 seconds]`.
 fn apply(toks: &[Tok], env: &Env) -> Result<Option<WorldFx>, String> {
-    // A potion effect value written inline is `w5_chunk5`'s `apply %object% to %player%`.
+    // A potion effect value written inline is `potions_particles_queues`'s `apply %object% to %player%`.
     if toks.get(1).is_some_and(|t| {
         ["a", "an", "ambient", "infinite", "permanent"]
             .iter()

@@ -137,9 +137,9 @@ pub fn filter_ok(k: EventKind, what: &str) -> bool {
         "entity" => k == EventKind::MobSpawn,
         "victim" => matches!(k, EventKind::Damage | EventKind::Death),
         "mode" => k == EventKind::GamemodeChange,
-        "prefix" => k == EventKind::Ext4(crate::w2_events_4::ExtEvent::PlaceholderRequest),
-        "command" => k == EventKind::Mv(crate::w4_events_movement::MvEvent::Command),
-        "stepon" => k == EventKind::Ext4(crate::w2_events_4::ExtEvent::StepOn),
+        "prefix" => k == EventKind::Ext4(crate::events_world_vehicles::ExtEvent::PlaceholderRequest),
+        "command" => k == EventKind::Mv(crate::events_movement::MvEvent::Command),
+        "stepon" => k == EventKind::Ext4(crate::events_world_vehicles::ExtEvent::StepOn),
         _ => false,
     }
 }

@@ -88,7 +88,7 @@ fn division(s: BarStyle) -> BossBarDivision {
     }
 }
 
-/// Plain title of a bar (`w5_chunk6`).
+/// Plain title of a bar (`entity_block_properties`).
 pub fn bar_title(id: &str) -> Option<String> {
     SB.with(|s| {
         s.borrow()

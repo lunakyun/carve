@@ -1,0 +1,106 @@
+# In-game checks for the potion, particle, queue and small-expression syntax (tests/ingame/areas/potions-particles-queues.js).
+
+function double(n: number) :: number:
+    return {_n} * 2
+
+command /ppqpot:
+    trigger:
+        set {_e} to potion effect of speed of tier 2 for 30 seconds
+        apply {_e} to player
+        send "p:%potion tier of {_e}%/%potion amplifier of {_e}%/%potion duration of {_e}%"
+
+command /ppqambient:
+    trigger:
+        apply ambient potion effect of jump boost without particles for 20 seconds to player
+        send "amb:done"
+
+command /ppqeffs:
+    trigger:
+        send "pe:%potion effects of player%|%speed potion effect of player%|%tier of speed of player%|%potion category of speed%|%potion category of poison%"
+
+command /ppqpart:
+    trigger:
+        set {_p} to flame particle with offset vector(1, 2, 3) with particle speed 0.25
+        set particle count of {_p} to 7
+        draw {_p} at player
+        send "pt:%particle count of {_p}%/%particle speed of {_p}%/%particle offset of {_p}%"
+
+command /ppqvel:
+    trigger:
+        set {_v} to end rod particle with a velocity of vector(0, 1, 0)
+        draw {_v} at player
+        send "pv:%particle count of {_v}%/%particle distribution of {_v}%"
+
+command /ppqskull:
+    trigger:
+        give skull of player to player
+        send "sk:%raw name of skull of player%"
+
+command /ppqpotitem:
+    trigger:
+        give splash potion of poison to player
+        send "pi:done"
+
+command /ppqrain:
+    trigger:
+        set client weather of player to rain
+        send "w:%client weather of player%"
+
+command /ppqclear:
+    trigger:
+        reset client weather of player
+        send "wc:%client weather of player%"
+
+command /ppqanchor:
+    trigger:
+        set {_l} to location of player
+        set {_b} to location(x of {_l} + 2, y of {_l} - 1, z of {_l})
+        set block at {_b} to respawn anchor
+        set charges of block at {_b} to 3
+        send "a:%charges of block at {_b}%/%max charges of block at {_b}%"
+
+command /ppqred:
+    trigger:
+        set {_l} to location of player
+        set {_b} to location(x of {_l} - 2, y of {_l} - 1, z of {_l})
+        set block at {_b} to redstone block
+        send "r:%redstone power of block at {_b}%"
+
+command /ppqbar:
+    trigger:
+        create bossbar "ppq" with title "W5" with progress 40
+        show bossbar "ppq" to player
+        send "b:%bossbar key of bossbar "ppq"%/%progress of bossbar "ppq"%/%boss bar id of "nope"%"
+
+command /ppqinv:
+    trigger:
+        set {_g} to chest inventory with 3 rows named "W5"
+        open {_g} to player
+        wait 5 ticks
+        send "i:%rows of {_g}%/%amount of slots of {_g}%/%holder of {_g}%/%viewers of {_g}%"
+
+command /ppqmisc:
+    trigger:
+        set {_q} to a new queue of 1, 2 and 3
+        send "q:%start of {_q}%/%end of {_q}%"
+        send "raw:%raw name of diamond sword%"
+        send "el:%max enchantment level of sharpness%/%minimum enchantment level of mending%"
+        send "res:%result of function "double" with arguments 21%"
+        catch runtime errors:
+            set {_x} to potion effect of {_none}
+        send "err:%last caught runtime errors%"
+
+command /ppqskel:
+    trigger:
+        set {_l} to location of player
+        spawn skeleton at location(x of {_l} + 4, y of {_l}, z of {_l})
+        send "skel:spawned"
+
+on respawn:
+    broadcast "rr:%respawn reason%"
+
+on kick:
+    broadcast "kick:%on-screen kick message%"
+
+on entity shoot bow:
+    broadcast "force:%projectile force%"

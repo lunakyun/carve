@@ -109,15 +109,15 @@ pub fn looks_like_list_op(toks: &[Tok], env: &Env) -> bool {
     }
     crate::skbee_bound::is_list_head(toks)
         || crate::skbee_scoreboard_teams::is_list_expr(toks)
-        || crate::w2_expressions_2::starts_list(toks)
-        || crate::w4_skbee_raytrace_world::is_list_expr(toks)
-        || crate::w5_chunk5::is_list_expr(toks)
-        || crate::w5_chunk3::is_list_expr(toks)
-        || crate::w5_chunk6::is_list_expr(toks)
-        || crate::w6_chunk4::is_list_expr(toks)
-        || crate::w6_chunk6::is_list_expr(toks)
-        || crate::w2_expressions_5::is_numbers_loop(toks)
-        || crate::w5_chunk4::is_list_expr(toks, env)
+        || crate::expr_text_directions::starts_list(toks)
+        || crate::skbee_raytrace_world::is_list_expr(toks)
+        || crate::potions_particles_queues::is_list_expr(toks)
+        || crate::conditions_mobs_items::is_list_expr(toks)
+        || crate::entity_block_properties::is_list_expr(toks)
+        || crate::block_state_lists::is_list_expr(toks)
+        || crate::quaternions_protocol::is_list_expr(toks)
+        || crate::expr_numbers_metadata::is_numbers_loop(toks)
+        || crate::block_shapes_ai::is_list_expr(toks, env)
         || toks.iter().any(|t| t.is_lit("where") || t.is_lit("except"))
 }
 
@@ -156,7 +156,7 @@ impl Cur<'_> {
         // `{a::*} except {b::*}`
         while self.toks.get(pos).is_some_and(|t| t.is_lit("except")) {
             let (rhs, np) = self.base(pos + 1)?;
-            let f = crate::w2_expressions_3::ExtFn::Except;
+            let f = crate::expr_player_state::ExtFn::Except;
             s = ListSrc::One(Expr::Ext(
                 f,
                 vec![Expr::Items(Box::new(s)), Expr::Items(Box::new(rhs))],

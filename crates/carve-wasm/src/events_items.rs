@@ -40,7 +40,7 @@ impl EventAccess for PlayerItemConsumeEvent {
     /// Pumpkin fires this for every right click with any item (even an empty
     /// hand), so only food and drinks reach `on consume`.
     fn skip(d: &EventData<Self>) -> bool {
-        !carve_core::w2_conditions_2::is_edible(&short(&d.item_name))
+        !carve_core::conditions_values::is_edible(&short(&d.item_name))
     }
     fn ctx(d: &EventData<Self>) -> EventCtx {
         let extra = EventExtra {

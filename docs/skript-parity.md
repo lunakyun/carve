@@ -551,7 +551,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Is Sprinting ⭐
 - ✅ Is Stackable — `diamond is stackable` (max stack size above 1)
 - ✅ Is Swimming
-- ✅ Is Tagged — `stone is tagged with minecraft tag "base_stone_overworld"` (built-in vanilla tag list; see syntax/w4-skbee-raytrace-world.md)
+- ✅ Is Tagged — `stone is tagged with minecraft tag "base_stone_overworld"` (built-in vanilla tag list; see syntax/skbee-raytrace-world.md)
 - ✅ Is Tameable — `{_e} is tameable` (wolves, cats, parrots, horses, llamas, camels, ...)
 - 🟡 Is Tamed — wolves and cats only; other tameable mobs have no data in the plugin API
 - ⛔ Is Ticking — not done: the server and world forms could compare `get-world-age` between two tick events, but there is no tick-manager getter in the plugin API, so it would only be a guess; entity ticking is not exposed
@@ -1167,48 +1167,48 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 ## Functions (45)
 
 - ✅ abs
-- ✅ acos — see syntax/w4-functions-sections
-- ✅ asin — see syntax/w4-functions-sections
-- ✅ atan — see syntax/w4-functions-sections
-- ✅ atan2 — see syntax/w4-functions-sections
+- ✅ acos — see syntax/functions-builtin-sections
+- ✅ asin — see syntax/functions-builtin-sections
+- ✅ atan — see syntax/functions-builtin-sections
+- ✅ atan2 — see syntax/functions-builtin-sections
 - ✅ axisAngle — `axisAngle(degrees, x, y, z)` and `axisAngle(degrees, vector)`; the axis is normalised, a zero axis is an error
-- ✅ calcExperience — see syntax/w4-functions-sections
+- ✅ calcExperience — see syntax/functions-builtin-sections
 - ✅ ceil
 - ✅ ceiling
-- ✅ clamp — see syntax/w4-functions-sections
-- ✅ combinations — see syntax/w4-functions-sections
-- ✅ concat — see syntax/w4-functions-sections
-- ✅ cos — see syntax/w4-functions-sections
+- ✅ clamp — see syntax/functions-builtin-sections
+- ✅ combinations — see syntax/functions-builtin-sections
+- ✅ concat — see syntax/functions-builtin-sections
+- ✅ cos — see syntax/functions-builtin-sections
 - ✅ date
 - ✅ entity — `entity(uuid)` and `entity from uuid "..."`: an online player, or any live entity found by scanning the worlds; `<none>` when nothing has that UUID
-- ✅ exp — see syntax/w4-functions-sections
-- ✅ factorial — see syntax/w4-functions-sections
+- ✅ exp — see syntax/functions-builtin-sections
+- ✅ factorial — see syntax/functions-builtin-sections
 - ✅ floor
-- ✅ formatNumber — see syntax/w4-functions-sections
-- ✅ fromBase — see syntax/w4-functions-sections
-- ✅ isNaN — see syntax/w4-functions-sections
-- ✅ ln — see syntax/w4-functions-sections
+- ✅ formatNumber — see syntax/functions-builtin-sections
+- ✅ fromBase — see syntax/functions-builtin-sections
+- ✅ isNaN — see syntax/functions-builtin-sections
+- ✅ ln — see syntax/functions-builtin-sections
 - 🟡 location — `location(x, y, z[, world])`; no yaw/pitch arguments: Carve's location value holds only x, y, z and a world, so there is no field to keep a rotation in (the WIT calls for rotation exist: teleport options and set-rotation)
-- ✅ log — see syntax/w4-functions-sections
+- ✅ log — see syntax/functions-builtin-sections
 - ✅ max — `max(a, b, c, ...)` with two or more numbers, or `max of {x::*}`
 - ✅ mean — `average of {x::*}`
-- ✅ median — see syntax/w4-functions-sections
+- ✅ median — see syntax/functions-builtin-sections
 - ✅ min — `min(a, b, c, ...)` with two or more numbers, or `min of {x::*}`
 - ✅ mod
-- ✅ offlineplayer — see syntax/w4-functions-sections
-- ✅ permutations — see syntax/w4-functions-sections
-- ✅ player — see syntax/w4-functions-sections
-- ✅ product — see syntax/w4-functions-sections
+- ✅ offlineplayer — see syntax/functions-builtin-sections
+- ✅ permutations — see syntax/functions-builtin-sections
+- ✅ player — see syntax/functions-builtin-sections
+- ✅ product — see syntax/functions-builtin-sections
 - ✅ quaternion — `quaternion(w, x, y, z)`
-- ✅ rgb — see syntax/w4-functions-sections
-- ✅ root — see syntax/w4-functions-sections
+- ✅ rgb — see syntax/functions-builtin-sections
+- ✅ root — see syntax/functions-builtin-sections
 - ✅ round — `round(n)` and `round(n, places)`
-- ✅ sin — see syntax/w4-functions-sections
+- ✅ sin — see syntax/functions-builtin-sections
 - ✅ sqrt
 - ✅ sum — `sum of {x::*}`
-- ✅ tan — see syntax/w4-functions-sections
-- ✅ toBase — see syntax/w4-functions-sections
-- ✅ uuid — see syntax/w4-functions-sections
+- ✅ tan — see syntax/functions-builtin-sections
+- ✅ toBase — see syntax/functions-builtin-sections
+- ✅ uuid — see syntax/functions-builtin-sections
 - ✅ vector — `vector(x, y, z)`
 - ✅ world — `world("name")` and `world "name"`
 

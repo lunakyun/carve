@@ -25,7 +25,7 @@ add 10 to world border size
 remove 30 from world border size
 ```
 
-Since **unreleased** · Guide: [w6-chunk6](../syntax/w6-chunk6.md)
+Since **unreleased** · Guide: [quaternions-protocol](../syntax/quaternions-protocol.md)
 
 ## Age of a block {#w6c4_age}
 
@@ -39,7 +39,7 @@ The age of a block that has one (crops, nether wart, ...), and its maximum. Can 
 add 1 to age of block at location(0, 64, 0)
 ```
 
-Since **unreleased** · Guide: [w6-chunk4](../syntax/w6-chunk4.md)
+Since **unreleased** · Guide: [block-state-lists](../syntax/block-state-lists.md)
 
 ## Ago / later {#ago}
 
@@ -72,7 +72,7 @@ loop all banned players:
     send "%loop-value%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
 ## All operators {#w5c3_operators}
 
@@ -86,7 +86,7 @@ Every operator in `ops.json`, online or not.
 send "%all operators%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
 ## All values of a type {#c6_sets}
 
@@ -101,7 +101,7 @@ loop all difficulties:
     send "%loop-value%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk6](../syntax/w5-chunk6.md)
+Since **unreleased** · Guide: [entity-block-properties](../syntax/entity-block-properties.md)
 
 ## Anvil text input / repair cost {#w5c3_anvil}
 
@@ -117,7 +117,7 @@ on anvil prepare:
     send "%anvil text input%" to player
 ```
 
-Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
 ## Any of {#w5c3_any_of_expr}
 
@@ -132,7 +132,7 @@ set {_l::*} to 1, 2 and 3
 send "%any of {_l::*}%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
 ## Applied enchantments {#w5c3_applied}
 
@@ -147,7 +147,7 @@ on enchant:
     send "%applied enchantments%" to player
 ```
 
-Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
 ## Argument {#arg}
 
@@ -194,7 +194,7 @@ The loom item for a banner pattern type such as `creeper`, `flower`, `globe`, `m
 give 1 of banner pattern item of "creeper" to player
 ```
 
-Since **unreleased** · Guide: [w6-chunk4](../syntax/w6-chunk4.md)
+Since **unreleased** · Guide: [block-state-lists](../syntax/block-state-lists.md)
 
 ## Barter input / drops {#w5c3_barter}
 
@@ -210,7 +210,7 @@ on piglin barter:
     broadcast "%barter drops%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
 ## Beacon effects {#w5c3_beacon}
 
@@ -225,7 +225,7 @@ The effect a beacon gives (`speed`), or `<none>`. Read only; Pumpkin 0.2.2 has n
 send "%primary beacon effect of location(0, 64, 0, world "world")%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
 ## Bed location {#w5c3_bed}
 
@@ -240,7 +240,7 @@ Where the player respawns, the same as `respawn location`. Can be set.
 set player's bed location to location(0, 70, 0)
 ```
 
-Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
 ## Beehive honey level {#w6c4_honey}
 
@@ -254,7 +254,7 @@ The honey level (0 to 5) of a beehive or bee nest block; `max` gives 5. Can be s
 set honey level of block at location(0, 64, 0) to 5
 ```
 
-Since **unreleased** · Guide: [w6-chunk4](../syntax/w6-chunk4.md)
+Since **unreleased** · Guide: [block-state-lists](../syntax/block-state-lists.md)
 
 ## Block {#block}
 
@@ -287,7 +287,7 @@ The block id and its state properties as a text like `oak_log[axis=y]`. Setting 
 set block data of block at location(0, 64, 0) to "oak_log[axis=x]"
 ```
 
-Since **unreleased** · Guide: [w5-chunk6](../syntax/w5-chunk6.md)
+Since **unreleased** · Guide: [entity-block-properties](../syntax/entity-block-properties.md)
 
 ## Block sphere {#block_sphere}
 
@@ -304,7 +304,7 @@ loop blocks in radius 3 of player:
         set block at loop-value to glass
 ```
 
-Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+Since **unreleased** · Guide: [block-shapes-ai](../syntax/block-shapes-ai.md)
 
 ## Block type {#block_type}
 
@@ -335,7 +335,7 @@ loop blocks from player to location(0, 64, 0):
     set block at loop-value to glass
 ```
 
-Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+Since **unreleased** · Guide: [block-shapes-ai](../syntax/block-shapes-ai.md)
 
 ## Book author, title and pages {#book_values}
 
@@ -354,7 +354,7 @@ set book title of player's tool to "Rules"
 set page 1 of player's tool to "Be nice"
 ```
 
-Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+Since **unreleased** · Guide: [block-shapes-ai](../syntax/block-shapes-ai.md)
 
 ## Boolean {#boolean}
 
@@ -384,7 +384,7 @@ if {_b} is set:
     show bossbar {_b} to player
 ```
 
-Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+Since **unreleased** · Guide: [block-shapes-ai](../syntax/block-shapes-ai.md)
 
 ## Boss bar key and progress {#bossbar_key}
 
@@ -400,7 +400,7 @@ create bossbar "raid" with progress 40
 send "%progress of bossbar "raid"%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+Since **unreleased** · Guide: [potions-particles-queues](../syntax/potions-particles-queues.md)
 
 ## Brewing stand slot {#brewing_slot}
 
@@ -415,7 +415,7 @@ An item in a brewing stand, read from and written to the block entity data. Can 
 set ingredient slot of block at {_stand} to nether wart
 ```
 
-Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+Since **unreleased** · Guide: [block-shapes-ai](../syntax/block-shapes-ai.md)
 
 ## Broadcast message {#broadcast_message}
 
@@ -430,7 +430,7 @@ on broadcast:
     send "[log] %broadcast message%" to console
 ```
 
-Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+Since **unreleased** · Guide: [block-shapes-ai](../syntax/block-shapes-ai.md)
 
 ## Brushing stage {#w6c4_brushing}
 
@@ -444,7 +444,7 @@ How far a suspicious sand or gravel block has been brushed (0 to 3); `max` gives
 send "%brushing stage of block at location(0, 64, 0)%"
 ```
 
-Since **unreleased** · Guide: [w6-chunk4](../syntax/w6-chunk4.md)
+Since **unreleased** · Guide: [block-state-lists](../syntax/block-state-lists.md)
 
 ## Chat message {#message}
 
@@ -493,7 +493,7 @@ on join:
     send "%size of {_c::*}%"
 ```
 
-Since **unreleased** · Guide: [w4-skbee-raytrace-world](../syntax/w4-skbee-raytrace-world.md)
+Since **unreleased** · Guide: [skbee-raytrace-world](../syntax/skbee-raytrace-world.md)
 
 ## Clicked block {#clicked_block}
 
@@ -525,7 +525,7 @@ set client weather of player to rain
 send "%client weather of player%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+Since **unreleased** · Guide: [potions-particles-queues](../syntax/potions-particles-queues.md)
 
 ## Colored / uncolored {#colored}
 
@@ -555,7 +555,7 @@ on consume:
     send "you ate %consumed item%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+Since **unreleased** · Guide: [block-shapes-ai](../syntax/block-shapes-ai.md)
 
 ## Coordinates {#coordinates}
 
@@ -587,7 +587,7 @@ on death:
         broadcast "a zombie fell"
 ```
 
-Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+Since **unreleased** · Guide: [block-shapes-ai](../syntax/block-shapes-ai.md)
 
 ## Cursor slot {#cursor_slot}
 
@@ -602,7 +602,7 @@ on inventory click:
     send "holding %cursor slot of player%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+Since **unreleased** · Guide: [block-shapes-ai](../syntax/block-shapes-ai.md)
 
 ## Damage value and durability {#item_damage_value}
 
@@ -617,7 +617,7 @@ set damage of player's tool to 0
 send "%durability of player's tool% uses left"
 ```
 
-Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+Since **unreleased** · Guide: [block-shapes-ai](../syntax/block-shapes-ai.md)
 
 ## Damage values {#damage_values}
 
@@ -650,7 +650,7 @@ An item with that much durability used up.
 give diamond sword with damage 500 to player
 ```
 
-Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+Since **unreleased** · Guide: [block-shapes-ai](../syntax/block-shapes-ai.md)
 
 ## De-queue {#w6c4_dequeue}
 
@@ -664,7 +664,7 @@ Removes the first value (or the first N values) from a queue variable and gives 
 set {_next} to dequeue {_queue}
 ```
 
-Since **unreleased** · Guide: [w6-chunk4](../syntax/w6-chunk4.md)
+Since **unreleased** · Guide: [block-state-lists](../syntax/block-state-lists.md)
 
 ## Default value {#default}
 
@@ -727,7 +727,7 @@ on enchant:
     send "%enchant item% for %exp cost% levels: %enchantment hint%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+Since **unreleased** · Guide: [block-shapes-ai](../syntax/block-shapes-ai.md)
 
 ## Enchantment level {#enchantment_level}
 
@@ -741,7 +741,7 @@ The level of an enchantment written like `sharpness 5` or `sharpness V` (1 when 
 send "%enchantment level of "sharpness 5"%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+Since **unreleased** · Guide: [block-shapes-ai](../syntax/block-shapes-ai.md)
 
 ## Enchantment offer {#enchantment_offers}
 
@@ -758,7 +758,7 @@ on enchant prepare:
     send "%enchantment offer 1%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+Since **unreleased** · Guide: [block-shapes-ai](../syntax/block-shapes-ai.md)
 
 ## Enchantment offer cost {#enchantment_offer_cost}
 
@@ -773,7 +773,7 @@ on enchant prepare:
     send "%cost of enchantment offer 1% levels"
 ```
 
-Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+Since **unreleased** · Guide: [block-shapes-ai](../syntax/block-shapes-ai.md)
 
 ## Ender chest {#ender_chest}
 
@@ -790,7 +790,7 @@ set slot 0 of ender chest of player to diamond
 open player's ender chest to player
 ```
 
-Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+Since **unreleased** · Guide: [block-shapes-ai](../syntax/block-shapes-ai.md)
 
 ## Enderman carrying block data {#carried_block}
 
@@ -806,7 +806,7 @@ spawn an enderman at player
 set carried block of last spawned entity to "tnt"
 ```
 
-Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+Since **unreleased** · Guide: [block-shapes-ai](../syntax/block-shapes-ai.md)
 
 ## Entity AI {#entity_ai}
 
@@ -822,7 +822,7 @@ spawn a zombie at player
 set ai of last spawned entity to false
 ```
 
-Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+Since **unreleased** · Guide: [block-shapes-ai](../syntax/block-shapes-ai.md)
 
 ## Entity attribute {#entity_attribute}
 
@@ -837,7 +837,7 @@ set movement speed attribute of player to 0.2
 reset scale attribute of player
 ```
 
-Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+Since **unreleased** · Guide: [block-shapes-ai](../syntax/block-shapes-ai.md)
 
 ## Event entity {#event_entity}
 
@@ -949,7 +949,7 @@ Part of a list variable: the first or last N values, or the values from position
 send "%first 3 elements of {top::*}%"
 ```
 
-Since **unreleased** · Guide: [w6-chunk4](../syntax/w6-chunk4.md)
+Since **unreleased** · Guide: [block-state-lists](../syntax/block-state-lists.md)
 
 ## Food and saturation {#food}
 
@@ -1060,7 +1060,7 @@ on inventory click:
         cancel event
 ```
 
-Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+Since **unreleased** · Guide: [block-shapes-ai](../syntax/block-shapes-ai.md)
 
 ## Inventory click values {#click_values}
 
@@ -1095,7 +1095,7 @@ set {_g} to chest inventory with 3 rows named "Shop"
 send "%rows of {_g}%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+Since **unreleased** · Guide: [potions-particles-queues](../syntax/potions-particles-queues.md)
 
 ## Inventory slot {#slot}
 
@@ -1310,7 +1310,7 @@ on join:
     send "%size of {_l::*}%"
 ```
 
-Since **unreleased** · Guide: [w4-skbee-raytrace-world](../syntax/w4-skbee-raytrace-world.md)
+Since **unreleased** · Guide: [skbee-raytrace-world](../syntax/skbee-raytrace-world.md)
 
 ## Minimum and maximum enchantment level {#enchant_level_bounds}
 
@@ -1324,7 +1324,7 @@ The lowest (always 1) and highest vanilla level of an enchantment.
 send "%max enchantment level of sharpness%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+Since **unreleased** · Guide: [potions-particles-queues](../syntax/potions-particles-queues.md)
 
 ## N times {#z6_times}
 
@@ -1338,7 +1338,7 @@ The list 1, 2, ... N.
 set {_l::*} to 3 times
 ```
 
-Since **unreleased** · Guide: [w6-chunk6](../syntax/w6-chunk6.md)
+Since **unreleased** · Guide: [quaternions-protocol](../syntax/quaternions-protocol.md)
 
 ## Name {#name}
 
@@ -1369,7 +1369,7 @@ set {_e} to potion effect of speed of tier 2 for 30 seconds
 apply {_e} to player
 ```
 
-Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+Since **unreleased** · Guide: [potions-particles-queues](../syntax/potions-particles-queues.md)
 
 ## Newline, trimmed, reversed {#text_misc}
 
@@ -1463,7 +1463,7 @@ on kick:
     broadcast "%player% was kicked: %on-screen kick message%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+Since **unreleased** · Guide: [potions-particles-queues](../syntax/potions-particles-queues.md)
 
 ## Option {#option}
 
@@ -1494,7 +1494,7 @@ Replaces every `%name%` placeholder in the text. Write `%%name%%` in a script st
 send parse placeholders in "Hi %%player_name%%, %%server_online%% online" for player
 ```
 
-Since **unreleased** · Guide: [w4-placeholders](../syntax/w4-placeholders.md)
+Since **unreleased** · Guide: [placeholders](../syntax/placeholders.md)
 
 ## Parsed as integer, boolean or player {#w6c5_parsed}
 
@@ -1542,7 +1542,7 @@ set particle count of {_p} to 5
 send "%particle count of {_p}%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+Since **unreleased** · Guide: [potions-particles-queues](../syntax/potions-particles-queues.md)
 
 ## Particle value {#particle_value}
 
@@ -1561,7 +1561,7 @@ set {_p} to flame particle with offset vector(1, 0, 1) with particle speed 0.1
 draw {_p} at player
 ```
 
-Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+Since **unreleased** · Guide: [potions-particles-queues](../syntax/potions-particles-queues.md)
 
 ## Persistent data keys {#w6c4_data_keys}
 
@@ -1575,7 +1575,7 @@ The keys of the persistent data Carve scripts stored on a player, entity, block 
 send "%persistent data keys of player%"
 ```
 
-Since **unreleased** · Guide: [w6-chunk4](../syntax/w6-chunk4.md)
+Since **unreleased** · Guide: [block-state-lists](../syntax/block-state-lists.md)
 
 ## Ping and IP {#ping}
 
@@ -1605,7 +1605,7 @@ Value of one placeholder (no percent signs), like `"player_name"`, `"server_onli
 send placeholder "player_health" for player
 ```
 
-Since **unreleased** · Guide: [w4-placeholders](../syntax/w4-placeholders.md)
+Since **unreleased** · Guide: [placeholders](../syntax/placeholders.md)
 
 ## Placeholder request values {#placeholder_request_values}
 
@@ -1622,7 +1622,7 @@ on placeholder request for prefix "x":
     set the result to "you asked for %the identifier%"
 ```
 
-Since **unreleased** · Guide: [w4-placeholders](../syntax/w4-placeholders.md)
+Since **unreleased** · Guide: [placeholders](../syntax/placeholders.md)
 
 ## Plain item {#z6_plain_item}
 
@@ -1637,7 +1637,7 @@ set {_i} to diamond sword
 set {_p} to plain {_i}
 ```
 
-Since **unreleased** · Guide: [w6-chunk6](../syntax/w6-chunk6.md)
+Since **unreleased** · Guide: [quaternions-protocol](../syntax/quaternions-protocol.md)
 
 ## Player {#player}
 
@@ -1665,7 +1665,7 @@ A player head with that player's skin, for `give`.
 give skull of player to player
 ```
 
-Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+Since **unreleased** · Guide: [potions-particles-queues](../syntax/potions-particles-queues.md)
 
 ## Portal cooldown {#z6_portal_cooldown}
 
@@ -1680,7 +1680,7 @@ set portal cooldown of player to 7 seconds
 send "%portal cooldown of player%" to player
 ```
 
-Since **unreleased** · Guide: [w6-chunk6](../syntax/w6-chunk6.md)
+Since **unreleased** · Guide: [quaternions-protocol](../syntax/quaternions-protocol.md)
 
 ## Potion effect amplifier, tier and duration {#potion_effect_parts}
 
@@ -1697,7 +1697,7 @@ set {_e} to potion effect of speed 2
 send "%potion tier of {_e}% for %potion duration of {_e}%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+Since **unreleased** · Guide: [potions-particles-queues](../syntax/potions-particles-queues.md)
 
 ## Potion effect type category {#potion_category}
 
@@ -1711,7 +1711,7 @@ Whether an effect type is `beneficial`, `harmful` or `neutral`.
 send "%potion category of poison%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+Since **unreleased** · Guide: [potions-particles-queues](../syntax/potions-particles-queues.md)
 
 ## Potion effects of a player {#potion_effects_of}
 
@@ -1728,7 +1728,7 @@ send "%potion effects of player%"
 send "%tier of speed of player%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+Since **unreleased** · Guide: [potions-particles-queues](../syntax/potions-particles-queues.md)
 
 ## Potion item {#potion_item}
 
@@ -1743,7 +1743,7 @@ A potion, splash potion or lingering potion item with that effect, for `give`.
 give splash potion of poison to player
 ```
 
-Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+Since **unreleased** · Guide: [potions-particles-queues](../syntax/potions-particles-queues.md)
 
 ## Projectile force {#projectile_force}
 
@@ -1758,7 +1758,7 @@ on entity shoot bow:
     broadcast "force %projectile force%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+Since **unreleased** · Guide: [potions-particles-queues](../syntax/potions-particles-queues.md)
 
 ## Protocol version {#z6_protocol_version}
 
@@ -1772,7 +1772,7 @@ The protocol number of a Java player's client, or of the server when no player i
 send "%protocol version of player% / %protocol version%" to player
 ```
 
-Since **unreleased** · Guide: [w6-chunk6](../syntax/w6-chunk6.md)
+Since **unreleased** · Guide: [quaternions-protocol](../syntax/quaternions-protocol.md)
 
 ## Queue and its start and end {#new_queue}
 
@@ -1788,7 +1788,7 @@ set {_q} to a new queue of 1, 2 and 3
 send "%start of {_q}%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+Since **unreleased** · Guide: [potions-particles-queues](../syntax/potions-particles-queues.md)
 
 ## Random number {#random_number}
 
@@ -1817,7 +1817,7 @@ The namespaced id of an item, like `minecraft:diamond_sword`.
 send "%raw name of player's tool%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+Since **unreleased** · Guide: [potions-particles-queues](../syntax/potions-particles-queues.md)
 
 ## Ray trace {#ray_trace}
 
@@ -1834,7 +1834,7 @@ on join:
     send "you look at %hit block of {_r}%"
 ```
 
-Since **unreleased** · Guide: [w4-skbee-raytrace-world](../syntax/w4-skbee-raytrace-world.md)
+Since **unreleased** · Guide: [skbee-raytrace-world](../syntax/skbee-raytrace-world.md)
 
 ## Redstone power {#redstone_power}
 
@@ -1848,7 +1848,7 @@ The power level read from a block's state: wire, weighted plates, targets and da
 send "%redstone power of targeted block of player%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+Since **unreleased** · Guide: [potions-particles-queues](../syntax/potions-particles-queues.md)
 
 ## Regex replaced text {#regex_replaced}
 
@@ -1890,7 +1890,7 @@ Charges of a respawn anchor (0 to 4), or 4 for the maximum. Set with `set charge
 send "%charges of targeted block of player%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+Since **unreleased** · Guide: [potions-particles-queues](../syntax/potions-particles-queues.md)
 
 ## Respawn reason {#respawn_reason}
 
@@ -1905,7 +1905,7 @@ on respawn:
     send "%respawn reason%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+Since **unreleased** · Guide: [potions-particles-queues](../syntax/potions-particles-queues.md)
 
 ## Result of a function {#result_of_function}
 
@@ -1923,7 +1923,7 @@ on join:
     send "%result of function "double" with arguments 21%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+Since **unreleased** · Guide: [potions-particles-queues](../syntax/potions-particles-queues.md)
 
 ## Ringing time {#z6_ringing_time}
 
@@ -1937,7 +1937,7 @@ How long a bell block has been ringing, as a timespan.
 set {_t} to ringing time of block at player
 ```
 
-Since **unreleased** · Guide: [w6-chunk6](../syntax/w6-chunk6.md)
+Since **unreleased** · Guide: [quaternions-protocol](../syntax/quaternions-protocol.md)
 
 ## Rotation angle, axis and rotated {#z6_rotation}
 
@@ -1953,7 +1953,7 @@ The angle (degrees) and unit axis of a quaternion, and a vector or quaternion tu
 set {_v} to vector(1, 0, 0) rotated around z by 90
 ```
 
-Since **unreleased** · Guide: [w6-chunk6](../syntax/w6-chunk6.md)
+Since **unreleased** · Guide: [quaternions-protocol](../syntax/quaternions-protocol.md)
 
 ## Scale {#c6_scale}
 
@@ -1969,7 +1969,7 @@ set scale of player to 2
 reset scale of player
 ```
 
-Since **unreleased** · Guide: [w5-chunk6](../syntax/w5-chunk6.md)
+Since **unreleased** · Guide: [entity-block-properties](../syntax/entity-block-properties.md)
 
 ## Sea pickles {#c6_sea_pickles}
 
@@ -1983,7 +1983,7 @@ The pickle count of a sea pickle block (1 to 4); `min` and `max` are 1 and 4. Th
 add 1 to sea pickles of block at location(0, 64, 0)
 ```
 
-Since **unreleased** · Guide: [w5-chunk6](../syntax/w5-chunk6.md)
+Since **unreleased** · Guide: [entity-block-properties](../syntax/entity-block-properties.md)
 
 ## Sender {#sender}
 
@@ -2015,7 +2015,7 @@ Moves the world spawn with `setworldspawn`; only the main world can be set.
 set spawn of world "world" to location(7, 100, 7)
 ```
 
-Since **unreleased** · Guide: [w6-chunk6](../syntax/w6-chunk6.md)
+Since **unreleased** · Guide: [quaternions-protocol](../syntax/quaternions-protocol.md)
 
 ## Sign text, skull owner and texture, spawner type, loot table seed {#z6_block_entity}
 
@@ -2034,7 +2034,7 @@ set {_lines::*} to sign text of block at player
 set {_type} to spawner type of block at player
 ```
 
-Since **unreleased** · Guide: [w6-chunk6](../syntax/w6-chunk6.md)
+Since **unreleased** · Guide: [quaternions-protocol](../syntax/quaternions-protocol.md)
 
 ## Size of list {#size}
 
@@ -2062,7 +2062,7 @@ The number of `clicked slot` or `slot N of <inventory>`.
 send "%index of slot 5 of player's inventory%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk6](../syntax/w5-chunk6.md)
+Since **unreleased** · Guide: [entity-block-properties](../syntax/entity-block-properties.md)
 
 ## Slot of an inventory value {#inventory_slot_value}
 
@@ -2127,7 +2127,7 @@ on tame:
     broadcast "%tamer% tamed a pet"
 ```
 
-Since **unreleased** · Guide: [w5-chunk6](../syntax/w5-chunk6.md)
+Since **unreleased** · Guide: [entity-block-properties](../syntax/entity-block-properties.md)
 
 ## Spawn egg entity {#c6_spawn_egg_entity}
 
@@ -2143,7 +2143,7 @@ set {_e} to 1 zombie spawn egg
 set spawn egg entity of {_e} to "cow"
 ```
 
-Since **unreleased** · Guide: [w5-chunk6](../syntax/w5-chunk6.md)
+Since **unreleased** · Guide: [entity-block-properties](../syntax/entity-block-properties.md)
 
 ## Spectator target {#c6_spectator_target}
 
@@ -2159,7 +2159,7 @@ spawn a pig at player
 set spectator target of player to last spawned entity
 ```
 
-Since **unreleased** · Guide: [w5-chunk6](../syntax/w5-chunk6.md)
+Since **unreleased** · Guide: [entity-block-properties](../syntax/entity-block-properties.md)
 
 ## Split text {#split}
 
@@ -2187,7 +2187,7 @@ The enchantments kept in an enchanted book in the main hand, as texts like `shar
 set stored enchantments of player's tool to "sharpness 5"
 ```
 
-Since **unreleased** · Guide: [w5-chunk6](../syntax/w5-chunk6.md)
+Since **unreleased** · Guide: [entity-block-properties](../syntax/entity-block-properties.md)
 
 ## Substring {#substring}
 
@@ -2233,7 +2233,7 @@ What a mob attacks, or the entity a player looks at (up to 100 blocks). Set it o
 send "you look at %target of player%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk6](../syntax/w5-chunk6.md)
+Since **unreleased** · Guide: [entity-block-properties](../syntax/entity-block-properties.md)
 
 ## Temperature {#c6_temperature}
 
@@ -2248,7 +2248,7 @@ The temperature at a block: the biome's base temperature, lower above y 80 as in
 send "%temperature of block below player%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk6](../syntax/w5-chunk6.md)
+Since **unreleased** · Guide: [entity-block-properties](../syntax/entity-block-properties.md)
 
 ## Text {#text}
 
@@ -2295,7 +2295,7 @@ spawn text display at player with text "hi"
 set text alignment of last spawned entity to left
 ```
 
-Since **unreleased** · Guide: [w5-chunk6](../syntax/w5-chunk6.md)
+Since **unreleased** · Guide: [entity-block-properties](../syntax/entity-block-properties.md)
 
 ## Timespan {#timespan}
 
@@ -2371,7 +2371,7 @@ add player to viewers of {_i}
 send "%viewers of {_i}%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk6](../syntax/w5-chunk6.md)
+Since **unreleased** · Guide: [entity-block-properties](../syntax/entity-block-properties.md)
 
 ## Tool {#tool}
 
@@ -2438,7 +2438,7 @@ set x of {_v} to 5
 add 2 to y of {_v}
 ```
 
-Since **unreleased** · Guide: [w6-chunk6](../syntax/w6-chunk6.md)
+Since **unreleased** · Guide: [quaternions-protocol](../syntax/quaternions-protocol.md)
 
 ## Vehicle and passengers {#z6_vehicle}
 
@@ -2453,7 +2453,7 @@ The entity something rides, and the list of entities riding it. Read only.
 set {_v} to vehicle of player
 ```
 
-Since **unreleased** · Guide: [w6-chunk6](../syntax/w6-chunk6.md)
+Since **unreleased** · Guide: [quaternions-protocol](../syntax/quaternions-protocol.md)
 
 ## Villager level, experience and profession {#z6_villager}
 
@@ -2469,7 +2469,7 @@ Villager data: level and experience as numbers, the profession as text like `lib
 set {_lvl} to villager level of last spawned entity
 ```
 
-Since **unreleased** · Guide: [w6-chunk6](../syntax/w6-chunk6.md)
+Since **unreleased** · Guide: [quaternions-protocol](../syntax/quaternions-protocol.md)
 
 ## Whitelist state and players {#z6_whitelist}
 
@@ -2486,7 +2486,7 @@ set whitelist to true
 set {_w::*} to whitelisted players
 ```
 
-Since **unreleased** · Guide: [w6-chunk6](../syntax/w6-chunk6.md)
+Since **unreleased** · Guide: [quaternions-protocol](../syntax/quaternions-protocol.md)
 
 ## World {#world}
 
@@ -2520,7 +2520,7 @@ set world border warning distance to 10
 add 30 seconds to world border warning time
 ```
 
-Since **unreleased** · Guide: [w5-chunk6](../syntax/w5-chunk6.md)
+Since **unreleased** · Guide: [entity-block-properties](../syntax/entity-block-properties.md)
 
 ## World border center and damage {#border_settings}
 
@@ -2537,5 +2537,5 @@ set world border center of world border of world of player to location(0, 0, 0)
 set world border damage amount of world of player to 1
 ```
 
-Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+Since **unreleased** · Guide: [block-shapes-ai](../syntax/block-shapes-ai.md)
 

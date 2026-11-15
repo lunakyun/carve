@@ -54,7 +54,7 @@ on armor change:
     send "%event-slot% changed" to player
 ```
 
-Since **unreleased** · Guide: [w6-chunk1](../syntax/w6-chunk1.md)
+Since **unreleased** · Guide: [events-step-jump](../syntax/events-step-jump.md)
 
 ## Bed enter {#bed_enter}
 
@@ -388,7 +388,7 @@ on command:
         send "No." to player
 ```
 
-Since **unreleased** · Guide: [w4-events-movement](../syntax/w4-events-movement.md)
+Since **unreleased** · Guide: [events-movement](../syntax/events-movement.md)
 
 ## Connect {#connect}
 
@@ -571,7 +571,7 @@ on entity break door:
     cancel event
 ```
 
-Since **unreleased** · Guide: [w6-chunk1](../syntax/w6-chunk1.md)
+Since **unreleased** · Guide: [events-step-jump](../syntax/events-step-jump.md)
 
 ## Entity breed {#entity_breed}
 
@@ -676,7 +676,7 @@ on experience spawn:
     broadcast "orb at %event-location%"
 ```
 
-Since **unreleased** · Guide: [w6-chunk1](../syntax/w6-chunk1.md)
+Since **unreleased** · Guide: [events-step-jump](../syntax/events-step-jump.md)
 
 ## Explode {#explode}
 
@@ -733,7 +733,7 @@ on first join:
     broadcast "Welcome %player% to the server!"
 ```
 
-Since **unreleased** · Guide: [w4-events-movement](../syntax/w4-events-movement.md)
+Since **unreleased** · Guide: [events-movement](../syntax/events-movement.md)
 
 ## Fishing {#fishing}
 
@@ -1055,7 +1055,7 @@ on jump:
     send "Boing" to player
 ```
 
-Since **unreleased** · Guide: [w6-chunk1](../syntax/w6-chunk1.md)
+Since **unreleased** · Guide: [events-step-jump](../syntax/events-step-jump.md)
 
 ## Kick {#kick}
 
@@ -1197,7 +1197,7 @@ on move:
         teleport player to spawn of world "world"
 ```
 
-Since **unreleased** · Guide: [w4-events-movement](../syntax/w4-events-movement.md)
+Since **unreleased** · Guide: [events-movement](../syntax/events-movement.md)
 
 ## on at time {#on_at_time}
 
@@ -1307,7 +1307,7 @@ on placeholder request for prefix "shop":
         set the result to "%{coins::%player%} ? 0%"
 ```
 
-Since **unreleased** · Guide: [w4-placeholders](../syntax/w4-placeholders.md)
+Since **unreleased** · Guide: [placeholders](../syntax/placeholders.md)
 
 ## Player chunk enter {#player_chunk_enter}
 
@@ -1323,7 +1323,7 @@ on player chunk enter:
     send "chunk %event-chunk-x% %event-chunk-z%" to player
 ```
 
-Since **unreleased** · Guide: [w6-chunk1](../syntax/w6-chunk1.md)
+Since **unreleased** · Guide: [events-step-jump](../syntax/events-step-jump.md)
 
 ## Player input {#player_input}
 
@@ -1348,7 +1348,7 @@ on player pickup arrow:
     send "Got it" to player
 ```
 
-Since **unreleased** · Guide: [w6-chunk1](../syntax/w6-chunk1.md)
+Since **unreleased** · Guide: [events-step-jump](../syntax/events-step-jump.md)
 
 ## Portal {#portal}
 
@@ -1395,7 +1395,7 @@ on preparing craft:
     send "You can make %event-item%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+Since **unreleased** · Guide: [drops-border-leashes](../syntax/drops-border-leashes.md)
 
 ## Pressure plate {#pressure_plate}
 
@@ -1411,7 +1411,7 @@ on pressure plate:
     broadcast "pressed at %event-location%"
 ```
 
-Since **unreleased** · Guide: [w6-chunk1](../syntax/w6-chunk1.md)
+Since **unreleased** · Guide: [events-step-jump](../syntax/events-step-jump.md)
 
 ## Projectile collide {#projectile_collide}
 
@@ -1426,7 +1426,7 @@ on projectile collide:
     broadcast "hit a %type of event-hit-entity%"
 ```
 
-Since **unreleased** · Guide: [w6-chunk1](../syntax/w6-chunk1.md)
+Since **unreleased** · Guide: [events-step-jump](../syntax/events-step-jump.md)
 
 ## Projectile hit {#projectile_hit}
 
@@ -1531,7 +1531,7 @@ on riptide:
     send "Wheee" to player
 ```
 
-Since **unreleased** · Guide: [w6-chunk1](../syntax/w6-chunk1.md)
+Since **unreleased** · Guide: [events-step-jump](../syntax/events-step-jump.md)
 
 ## Script unload {#script_unload}
 
@@ -1547,7 +1547,7 @@ on unload:
     send "bye" to console
 ```
 
-Since **unreleased** · Guide: [w6-chunk1](../syntax/w6-chunk1.md)
+Since **unreleased** · Guide: [events-step-jump](../syntax/events-step-jump.md)
 
 ## Send command list {#send_command_list}
 
@@ -1582,7 +1582,7 @@ on server stop:
     send "stopping" to console
 ```
 
-Since **unreleased** · Guide: [w6-chunk1](../syntax/w6-chunk1.md)
+Since **unreleased** · Guide: [events-step-jump](../syntax/events-step-jump.md)
 
 ## Sheep regrow wool {#sheep_regrow_wool}
 
@@ -1675,7 +1675,7 @@ on spectate:
     send "Watching a %type of event-entity%" to player
 ```
 
-Since **unreleased** · Guide: [w6-chunk1](../syntax/w6-chunk1.md)
+Since **unreleased** · Guide: [events-step-jump](../syntax/events-step-jump.md)
 
 ## Sponge absorb {#sponge_absorb}
 
@@ -1738,7 +1738,7 @@ on step on stone:
     send "Stone!" to player
 ```
 
-Since **unreleased** · Guide: [w6-chunk1](../syntax/w6-chunk1.md)
+Since **unreleased** · Guide: [events-step-jump](../syntax/events-step-jump.md)
 
 ## Swap hand items {#swap-hand-items}
 
@@ -1755,7 +1755,7 @@ on swap hand items:
     cancel event
 ```
 
-Since **unreleased** · Guide: [w4-events-movement](../syntax/w4-events-movement.md)
+Since **unreleased** · Guide: [events-movement](../syntax/events-movement.md)
 
 ## Swim toggle {#swim_toggle}
 
@@ -1801,7 +1801,7 @@ on teleport:
     send "Zoom!" to player
 ```
 
-Since **unreleased** · Guide: [w4-events-movement](../syntax/w4-events-movement.md)
+Since **unreleased** · Guide: [events-movement](../syntax/events-movement.md)
 
 ## Tool change {#tool_change}
 
@@ -1938,7 +1938,7 @@ on world border bounds change:
     broadcast "%event-old-size% to %event-new-size%"
 ```
 
-Since **unreleased** · Guide: [w6-chunk1](../syntax/w6-chunk1.md)
+Since **unreleased** · Guide: [events-step-jump](../syntax/events-step-jump.md)
 
 ## World border center change {#world_border_center_change}
 
@@ -1953,7 +1953,7 @@ on world border center change:
     broadcast "now at %event-new-x% %event-new-z%"
 ```
 
-Since **unreleased** · Guide: [w6-chunk1](../syntax/w6-chunk1.md)
+Since **unreleased** · Guide: [events-step-jump](../syntax/events-step-jump.md)
 
 ## World change {#world-change}
 
@@ -1970,7 +1970,7 @@ on world change:
     send "Now in %event-world%" to player
 ```
 
-Since **unreleased** · Guide: [w4-events-movement](../syntax/w4-events-movement.md)
+Since **unreleased** · Guide: [events-movement](../syntax/events-movement.md)
 
 ## World init {#world_init}
 

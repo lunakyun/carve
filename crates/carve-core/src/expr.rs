@@ -3,11 +3,11 @@
 
 use std::cell::Cell;
 
+use crate::expr_text_directions::W2Op;
 use crate::lexer::{Tok, lex};
 use crate::list_literals::ElemSel;
 use crate::list_ops::{Agg, ListSrc, parse_src_at};
 use crate::value::format_num;
-use crate::w2_expressions_2::W2Op;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Ty {
@@ -21,7 +21,7 @@ pub enum Ty {
     Timespan,
     Date,
     Vector,
-    /// A type from `types_1`: a named-value type, color, quaternion, ...
+    /// A type from `named_types`: a named-value type, color, quaternion, ...
     T1(u8),
     /// Unknown until runtime (variables).
     Object,
@@ -42,7 +42,7 @@ impl Ty {
             Ty::Timespan => "timespan",
             Ty::Date => "date",
             Ty::Vector => "vector",
-            Ty::T1(id) => crate::types_1::ty_name(id),
+            Ty::T1(id) => crate::named_types::ty_name(id),
             Ty::Object => "object",
             Ty::List => "list",
         }
@@ -139,12 +139,12 @@ pub enum Expr {
     Distance(Box<Expr>, Box<Expr>),
     /// `random integer between a and b` (true) / `random number between a and b`.
     Random(bool, Box<Expr>, Box<Expr>),
-    /// `event-<name>` of a `w2_events_4` event: index into the event values.
+    /// `event-<name>` of a `events_world_vehicles` event: index into the event values.
     Ev4Val(u8),
     /// `damage` in `on damage`.
     Damage,
-    /// A value of one of the extra events (`w2_events_2`).
-    Ev2Val(crate::w2_events_2::Slot),
+    /// A value of one of the extra events (`events_game`).
+    Ev2Val(crate::events_game::Slot),
     /// `attacker` in `on damage` / `on death` (a player, or `<none>`).
     Attacker,
     /// `clicked block` in click events (an item value of the block type).
@@ -175,8 +175,8 @@ pub enum Expr {
     TextFn(crate::text_case_substring::TextFn, Vec<Expr>),
     /// SkBee utilities: number formatting, roman, hex, json, random uuid, client info.
     Util(crate::skbee_utilities::UtilFn, Vec<Expr>),
-    /// Rare expressions of `w2_expressions_2`, boxed so `Expr` stays small.
-    X2(Box<crate::w2_expressions_2::W2>),
+    /// Rare expressions of `expr_text_directions`, boxed so `Expr` stays small.
+    X2(Box<crate::expr_text_directions::W2>),
     /// `indices of {x::*}`: the index of every item, as text.
     Indices(VarRef),
     /// `first element of {x::*}`, `element 2 of {x::*}`.
@@ -213,42 +213,42 @@ pub enum Expr {
     Skb(Box<crate::skbee_recipes_advancements::SkbExpr>),
     /// Player count, MOTD, version, worlds, spawn, world border size.
     Server(crate::server_misc::ServerQ, Option<Box<Expr>>),
-    /// Rare expressions of `w2_expressions_1` (eternity, biome, armor, block entities, ...).
-    W2(Box<crate::w2_expressions_1::W2>),
-    /// Player stats, hashes, memory, uuid lookups and friends (see `w2_expressions_3`).
-    Ext(crate::w2_expressions_3::ExtFn, Vec<Expr>),
-    /// A rare expression from `w2_expressions_4`.
-    W4(Box<crate::w2_expressions_4::W4>),
+    /// Rare expressions of `expr_item_world_facts` (eternity, biome, armor, block entities, ...).
+    W2(Box<crate::expr_item_world_facts::W2>),
+    /// Player stats, hashes, memory, uuid lookups and friends (see `expr_player_state`).
+    Ext(crate::expr_player_state::ExtFn, Vec<Expr>),
+    /// A rare expression from `expr_item_damage_facts`.
+    W4(Box<crate::expr_item_damage_facts::W4>),
     /// Rare wave 2 expressions (numbers, midpoint, metadata, ...), boxed to keep this enum small.
-    W5(Box<crate::w2_expressions_5::W5>),
+    W5(Box<crate::expr_numbers_metadata::W5>),
     /// `placeholder "x" for player` and `parse placeholders in ...`.
     Ph(Box<crate::placeholders::Ph>),
-    /// Rare wave-2 expressions (see `w2_expressions_6.rs`).
-    W6(Box<crate::w2_expressions_6::W6>),
-    /// Vectors, server facts and other rare expressions (see `w2_expressions_7`).
-    W7(Box<crate::w2_expressions_7::Node>),
-    /// Wave-4 functions: trigonometry, `clamp`, `concat`, `formatNumber`, ... (see `w4_functions`).
-    W4F(Box<crate::w4_functions::Node>),
-    /// Colors, named values and other types (see `types_1`).
-    T1(Box<crate::types_1::Node>),
-    /// Ray tracing, chunks and tags (see `w4_skbee_raytrace_world`).
-    Rtw(Box<crate::w4_skbee_raytrace_world::Node>),
-    /// Operator and ban lists, `any of`, beacon effects (see `w5_chunk3`).
-    W5c3(Box<crate::w5_chunk3::Node>),
+    /// Rare wave-2 expressions (see `expr_random_ternary.rs`).
+    W6(Box<crate::expr_random_ternary::W6>),
+    /// Vectors, server facts and other rare expressions (see `expr_vectors_server`).
+    W7(Box<crate::expr_vectors_server::Node>),
+    /// Wave-4 functions: trigonometry, `clamp`, `concat`, `formatNumber`, ... (see `functions_builtin`).
+    W4F(Box<crate::functions_builtin::Node>),
+    /// Colors, named values and other types (see `named_types`).
+    T1(Box<crate::named_types::Node>),
+    /// Ray tracing, chunks and tags (see `skbee_raytrace_world`).
+    Rtw(Box<crate::skbee_raytrace_world::Node>),
+    /// Operator and ban lists, `any of`, beacon effects (see `conditions_mobs_items`).
+    W5c3(Box<crate::conditions_mobs_items::Node>),
     /// Inventory values, `items in`, regex replace (see `gaps`).
     Gap(Box<crate::gaps::GapExpr>),
-    /// Potion effects, particles, queues and more (see `w5_chunk5`).
-    W5c5(Box<crate::w5_chunk5::Node>),
-    /// Parse kinds, loot values, item components (see `w6_chunk5`).
-    W6c5(Box<crate::w6_chunk5::Node>),
-    /// Scale, targets, text displays, sea pickles, borders, ... (see `w5_chunk6`).
-    C6(Box<crate::w5_chunk6::Node>),
-    /// Block properties, element ranges, dequeue, ... (see `w6_chunk4`).
-    W6C4(Box<crate::w6_chunk4::Node>),
-    /// Wave 6 chunk 6: portal cooldown, protocol version, sign text, ... (see `w6_chunk6`).
-    Z6(Box<crate::w6_chunk6::Node>),
-    /// Block data, block spheres, books, borders, attributes, ... (see `w5_chunk4`).
-    C4(Box<crate::w5_chunk4::Node>),
+    /// Potion effects, particles, queues and more (see `potions_particles_queues`).
+    W5c5(Box<crate::potions_particles_queues::Node>),
+    /// Parse kinds, loot values, item components (see `parsing_loot_components`).
+    W6c5(Box<crate::parsing_loot_components::Node>),
+    /// Scale, targets, text displays, sea pickles, borders, ... (see `entity_block_properties`).
+    C6(Box<crate::entity_block_properties::Node>),
+    /// Block properties, element ranges, dequeue, ... (see `block_state_lists`).
+    W6C4(Box<crate::block_state_lists::Node>),
+    /// Wave 6 chunk 6: portal cooldown, protocol version, sign text, ... (see `quaternions_protocol`).
+    Z6(Box<crate::quaternions_protocol::Node>),
+    /// Block data, block spheres, books, borders, attributes, ... (see `block_shapes_ai`).
+    C4(Box<crate::block_shapes_ai::Node>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -415,12 +415,12 @@ pub struct Env {
     pub has_inv: bool,
     /// `on bound enter` / `on bound exit`: `event-bound` exists.
     pub has_bound: bool,
-    /// `event-...` values of the current trigger (see `w2_events_1`).
+    /// `event-...` values of the current trigger (see `events_blocks_players`).
     pub ev_fields: &'static [(&'static str, Ty)],
-    /// Set inside the extra events of `w2_events_2`.
-    pub ext_event: Option<crate::w2_events_2::Ev>,
-    /// The trigger is an event of `w2_events_4` (gives `event-<name>`).
-    pub ext4: Option<crate::w2_events_4::ExtEvent>,
+    /// Set inside the extra events of `events_game`.
+    pub ext_event: Option<crate::events_game::Ev>,
+    /// The trigger is an event of `events_world_vehicles` (gives `event-<name>`).
+    pub ext4: Option<crate::events_world_vehicles::ExtEvent>,
 }
 
 impl Expr {
@@ -496,7 +496,7 @@ impl Expr {
             Expr::Nbt(n) => crate::skbee_nbt::expr_ty(n),
             Expr::Server(q, _) => q.ty(),
             Expr::W2(w) => w.ty(),
-            Expr::Ext(f, _) => crate::w2_expressions_3::ty(*f),
+            Expr::Ext(f, _) => crate::expr_player_state::ty(*f),
             Expr::W4(w) => w.ty(),
             Expr::W5(w) => w.ty(),
             Expr::Ph(p) => p.ty(),
@@ -618,8 +618,8 @@ fn describe(t: &Tok) -> String {
     }
 }
 
-#[path = "w2_expressions_4_parse.rs"]
-mod w4_parse;
+#[path = "expr_item_damage_facts_parse.rs"]
+mod item_damage_facts_parse;
 
 pub(crate) struct P<'a> {
     pub(crate) toks: &'a [Tok],
@@ -713,7 +713,7 @@ impl P<'_> {
     fn bin(&self, l: Expr, op: BinOp, r: Expr) -> Result<Expr, String> {
         let (lt, rt) = (l.ty(self.env), r.ty(self.env));
         if lt == Ty::Vector || rt == Ty::Vector {
-            return crate::w2_expressions_7::vec_bin(l, op, r, lt, rt);
+            return crate::expr_vectors_server::vec_bin(l, op, r, lt, rt);
         }
         if matches!(lt, Ty::Timespan | Ty::Date) || matches!(rt, Ty::Timespan | Ty::Date) {
             if let (Expr::Span(x), Expr::Span(y)) = (&l, &r) {
@@ -759,7 +759,7 @@ impl P<'_> {
             let _depth = NestGuard::enter()?;
             let inner = self.unary()?;
             if inner.ty(self.env) == Ty::Vector {
-                return Ok(crate::w2_expressions_7::neg(inner));
+                return Ok(crate::expr_vectors_server::neg(inner));
             }
             if !Ty::Number.accepts(inner.ty(self.env)) {
                 return Err("'-' needs a number".into());
@@ -798,11 +798,12 @@ impl P<'_> {
         {
             self.hit_end.set(true);
         }
-        if crate::w2_expressions_5::percent_follows(self.toks, self.pos) && Ty::Number.accepts(e.ty(self.env))
+        if crate::expr_numbers_metadata::percent_follows(self.toks, self.pos)
+            && Ty::Number.accepts(e.ty(self.env))
         {
             self.pos += 2;
             let of = self.primary_base()?;
-            e = crate::w2_expressions_5::percent(e, of);
+            e = crate::expr_numbers_metadata::percent(e, of);
         }
         // `arg-1 parsed as number`
         if matches!(self.toks.get(self.pos), Some(t) if t.is_lit("parsed")) && self.pos + 1 >= self.toks.len()
@@ -813,20 +814,21 @@ impl P<'_> {
             && matches!(self.toks.get(self.pos + 1), Some(t) if t.is_lit("as"))
         {
             match self.toks.get(self.pos + 2) {
-                Some(_) if crate::w6_chunk5::parse_kind(self.toks, self.pos + 2).is_some() => {
-                    if let Some((k, n)) = crate::w6_chunk5::parse_kind(self.toks, self.pos + 2) {
+                Some(_) if crate::parsing_loot_components::parse_kind(self.toks, self.pos + 2).is_some() => {
+                    if let Some((k, n)) = crate::parsing_loot_components::parse_kind(self.toks, self.pos + 2)
+                    {
                         self.pos += 2 + n;
-                        e = crate::w6_chunk5::parsed(e, k);
+                        e = crate::parsing_loot_components::parsed(e, k);
                     }
                 }
                 Some(t) if t.is_lit("number") || t.is_lit("integer") || t.is_lit("num") => {
                     self.pos += 3;
                     e = Expr::ParseNum(Box::new(e));
                 }
-                Some(_) => match crate::types_1::type_at(self.toks, self.pos + 2) {
+                Some(_) => match crate::named_types::type_at(self.toks, self.pos + 2) {
                     Some((Ty::T1(id), n)) => {
                         self.pos += 2 + n;
-                        e = crate::types_1::parse_as(e, id);
+                        e = crate::named_types::parse_as(e, id);
                     }
                     _ => {
                         if self
@@ -858,9 +860,9 @@ impl P<'_> {
             && matches!(e.ty(self.env), Ty::Date | Ty::Object)
         {
             self.pos += 1;
-            if let Some(n) = crate::w6_chunk5::human_readable(self.toks, self.pos) {
+            if let Some(n) = crate::parsing_loot_components::human_readable(self.toks, self.pos) {
                 self.pos += n;
-                e = crate::w6_chunk5::human_span_expr(e);
+                e = crate::parsing_loot_components::human_span_expr(e);
                 continue;
             }
             e = self.date_format(e)?;
@@ -919,26 +921,26 @@ impl P<'_> {
                 e = Self::x2(W2Op::CompassTarget, vec![e]);
                 continue;
             }
-            if let Some((f, n)) = crate::w2_expressions_3::of_head(self.toks, self.pos + 1)
+            if let Some((f, n)) = crate::expr_player_state::of_head(self.toks, self.pos + 1)
                 && matches!(e.ty(self.env), Ty::Player | Ty::Object)
             {
                 self.pos += 1 + n;
                 e = Expr::Ext(f, vec![e]);
                 continue;
             }
-            if let Some((ne, np)) = crate::w2_expressions_5::possessive(self.toks, self.pos + 1, &e) {
+            if let Some((ne, np)) = crate::expr_numbers_metadata::possessive(self.toks, self.pos + 1, &e) {
                 e = ne;
                 self.pos = np;
                 continue;
             }
-            if let Some((ne, np)) = crate::w5_chunk6::possessive(self.toks, self.pos + 1, &e) {
+            if let Some((ne, np)) = crate::entity_block_properties::possessive(self.toks, self.pos + 1, &e) {
                 e = ne;
                 self.pos = np;
                 continue;
             }
-            if let Some((read, n)) = crate::w2_expressions_6::possessive(self.toks, self.pos + 1) {
+            if let Some((read, n)) = crate::expr_random_ternary::possessive(self.toks, self.pos + 1) {
                 self.pos += 1 + n;
-                e = Expr::W6(Box::new(crate::w2_expressions_6::W6::Read(read, Some(e))));
+                e = Expr::W6(Box::new(crate::expr_random_ternary::W6::Read(read, Some(e))));
                 continue;
             }
             let (prop, extra) = match crate::health_food::words_from(self.toks, self.pos + 1) {
@@ -1062,19 +1064,19 @@ impl P<'_> {
         Ok(Expr::ItemMeta(Box::new(meta)))
     }
 
-    /// Heads of the expressions in `w2_expressions_3`. `None` when the words
+    /// Heads of the expressions in `expr_player_state`. `None` when the words
     /// do not match one of them, with the position untouched.
     fn w2e3_head(&mut self, lw: &str) -> Result<Option<Expr>, String> {
-        use crate::w2_expressions_3::{ExtFn, IndexSel, MemKind};
+        use crate::expr_player_state::{ExtFn, IndexSel, MemKind};
         let start = self.pos - 1;
         let ext = |f: ExtFn, args: Vec<Expr>| Ok(Some(Expr::Ext(f, args)));
-        if let Some((_, n)) = crate::w2_expressions_3::of_head(self.toks, start) {
+        if let Some((_, n)) = crate::expr_player_state::of_head(self.toks, start) {
             // More tokens could still complete `<words> of <player>`.
             if start + n >= self.toks.len() {
                 self.hit_end.set(true);
             }
         }
-        if let Some((f, n)) = crate::w2_expressions_3::of_head(self.toks, start)
+        if let Some((f, n)) = crate::expr_player_state::of_head(self.toks, start)
             && matches!(self.toks.get(start + n), Some(t) if t.is_lit("of"))
         {
             self.pos = start + n + 1;
@@ -1233,7 +1235,7 @@ impl P<'_> {
 
     /// `<x> hashed with MD5`, `<timespan> formatted`.
     fn w2e3_post(&mut self, e: Expr) -> Result<Expr, String> {
-        use crate::w2_expressions_3::ExtFn;
+        use crate::expr_player_state::ExtFn;
         if matches!(self.toks.get(self.pos), Some(t) if t.is_lit("hashed") || t.is_lit("hash"))
             && self.pos + 1 >= self.toks.len()
         {
@@ -1242,7 +1244,7 @@ impl P<'_> {
         if matches!(self.toks.get(self.pos), Some(t) if t.is_lit("hashed") || t.is_lit("hash"))
             && matches!(self.toks.get(self.pos + 1), Some(t) if t.is_lit("with"))
         {
-            return match crate::w2_expressions_3::alg_at(self.toks, self.pos + 2) {
+            return match crate::expr_player_state::alg_at(self.toks, self.pos + 2) {
                 Some((alg, n)) => {
                     self.pos += 2 + n;
                     Ok(Expr::Ext(ExtFn::Hash(alg), vec![e]))
@@ -1260,9 +1262,9 @@ impl P<'_> {
             && e.ty(self.env) == Ty::Timespan
         {
             self.pos += 1;
-            if let Some(n) = crate::w6_chunk5::human_readable(self.toks, self.pos) {
+            if let Some(n) = crate::parsing_loot_components::human_readable(self.toks, self.pos) {
                 self.pos += n;
-                return Ok(crate::w6_chunk5::human_span_expr(e));
+                return Ok(crate::parsing_loot_components::human_span_expr(e));
             }
             return Ok(Expr::Ext(ExtFn::Clock, vec![e]));
         }
@@ -1734,7 +1736,7 @@ impl P<'_> {
                 if let Some(t) = self.z6_times(n) {
                     return Ok(t);
                 }
-                if let Some((e, np)) = crate::w2_expressions_1::angle_suffix(self.toks, self.pos, n) {
+                if let Some((e, np)) = crate::expr_item_world_facts::angle_suffix(self.toks, self.pos, n) {
                     self.pos = np;
                     return Ok(e);
                 }
@@ -1818,7 +1820,7 @@ impl P<'_> {
                 {
                     let mut more = false;
                     let rest = self.toks.get(self.pos..).unwrap_or(&[]);
-                    if let Some((e, used)) = crate::w2_events_2::parse_value(ev, &lw, rest, &mut more) {
+                    if let Some((e, used)) = crate::events_game::parse_value(ev, &lw, rest, &mut more) {
                         self.pos += used;
                         return Ok(e);
                     }
@@ -1826,12 +1828,12 @@ impl P<'_> {
                         self.hit_end.set(true);
                     }
                 }
-                if crate::w2_expressions_1::starts(&lw) {
+                if crate::expr_item_world_facts::starts(&lw) {
                     // The sub-parsers can't tell us whether they ran off the end,
                     // so say "maybe" and let the pattern matcher try longer spans.
                     let before = self.hit_end.replace(true);
                     if let Some((w2, np)) =
-                        crate::w2_expressions_1::parse(self.toks, self.pos, &lw, self.env)?
+                        crate::expr_item_world_facts::parse(self.toks, self.pos, &lw, self.env)?
                     {
                         self.pos = np;
                         self.hit_end.set(before);
@@ -1905,13 +1907,13 @@ impl P<'_> {
                         return Err(m);
                     }
                 }
-                match crate::w2_expressions_5::parse_word(self.toks, self.pos, self.env, &lw) {
+                match crate::expr_numbers_metadata::parse_word(self.toks, self.pos, self.env, &lw) {
                     Ok(Some((e, end))) => {
                         self.pos = end;
                         return Ok(e);
                     }
                     Ok(None) => {
-                        if crate::w2_expressions_5::may_continue(&lw) && self.pos + 4 > self.toks.len() {
+                        if crate::expr_numbers_metadata::may_continue(&lw) && self.pos + 4 > self.toks.len() {
                             self.hit_end.set(true);
                         }
                     }
@@ -1923,7 +1925,7 @@ impl P<'_> {
                 match lw.as_str() {
                     _ if matches!(self.peek(), Some(t) if t.is_lit("("))
                         && !self.has_function(&lw)
-                        && crate::w4_functions::lookup(&lw).is_some() =>
+                        && crate::functions_builtin::lookup(&lw).is_some() =>
                     {
                         self.w4_function(&lw)
                     }
@@ -2017,13 +2019,17 @@ impl P<'_> {
                     }
                     w if w.starts_with("event-")
                         && !self.env.in_function
-                        && crate::w2_events_1::field_index(self.env.ev_fields, w).is_some() =>
+                        && crate::events_blocks_players::field_index(self.env.ev_fields, w).is_some() =>
                     {
-                        let i = crate::w2_events_1::field_index(self.env.ev_fields, w).map_or(0, |f| f.0);
+                        let i = crate::events_blocks_players::field_index(self.env.ev_fields, w)
+                            .map_or(0, |f| f.0);
                         Ok(Expr::ExtVal(i))
                     }
                     w if w.starts_with("event-") && !self.env.in_function && self.env.ext4.is_some() => {
-                        let ev = self.env.ext4.unwrap_or(crate::w2_events_4::ExtEvent::WorldInit);
+                        let ev = self
+                            .env
+                            .ext4
+                            .unwrap_or(crate::events_world_vehicles::ExtEvent::WorldInit);
                         match ev.slot_index(&w["event-".len()..]) {
                             Some(i) => Ok(Expr::Ev4Val(i as u8)),
                             None => Err(format!(
@@ -2322,7 +2328,10 @@ impl P<'_> {
                         if !matches!(u.ty(self.env), Ty::Text | Ty::Object) {
                             return Err("entity(uuid) needs the UUID as text".into());
                         }
-                        Ok(Expr::Ext(crate::w2_expressions_3::ExtFn::EntityFromUuid, vec![u]))
+                        Ok(Expr::Ext(
+                            crate::expr_player_state::ExtFn::EntityFromUuid,
+                            vec![u],
+                        ))
                     }
                     "random" if matches!(self.peek(), Some(t) if t.is_lit("element")) => {
                         self.pos += 1;
@@ -2479,7 +2488,7 @@ impl P<'_> {
                         if args.iter().any(|a| !Ty::Number.accepts(a.ty(self.env))) {
                             return Err(format!("{lw}() needs numbers"));
                         }
-                        Ok(crate::w6_chunk7::math_call(f, args))
+                        Ok(crate::functions_aliases::math_call(f, args))
                     }
                     _ if matches!(self.peek(), Some(t) if t.is_lit("(")) => self.call(&w),
                     _ => {
@@ -2509,9 +2518,9 @@ impl P<'_> {
         }
     }
 
-    /// Wave-4 functions like `clamp(x, 0, 10)` (see `w4_functions`).
+    /// Wave-4 functions like `clamp(x, 0, 10)` (see `functions_builtin`).
     fn w4_function(&mut self, lw: &str) -> Result<Expr, String> {
-        let (f, min, max) = crate::w4_functions::lookup(lw).ok_or("unknown function")?;
+        let (f, min, max) = crate::functions_builtin::lookup(lw).ok_or("unknown function")?;
         self.pos += 1; // (
         let mut args = Vec::new();
         loop {
@@ -2552,7 +2561,7 @@ impl P<'_> {
                 ));
             }
         }
-        Ok(Expr::W4F(Box::new(crate::w4_functions::Node { f, args })))
+        Ok(Expr::W4F(Box::new(crate::functions_builtin::Node { f, args })))
     }
 
     /// Server expressions: `online players count`, `motd`, `spawn of <world>`, ...
@@ -2859,7 +2868,7 @@ impl P<'_> {
     }
 
     fn x2(op: W2Op, args: Vec<Expr>) -> Expr {
-        Expr::X2(Box::new(crate::w2_expressions_2::W2 { op, args }))
+        Expr::X2(Box::new(crate::expr_text_directions::W2 { op, args }))
     }
 
     /// `3 blocks above loc`, `2 meters north of player's location`. The cursor is
@@ -2878,7 +2887,10 @@ impl P<'_> {
         ) {
             return Ok(None);
         }
-        let Some((dx, dy, dz)) = word(1).as_deref().and_then(crate::w2_expressions_2::direction) else {
+        let Some((dx, dy, dz)) = word(1)
+            .as_deref()
+            .and_then(crate::expr_text_directions::direction)
+        else {
             return Ok(None);
         };
         self.pos += 2;
@@ -2893,9 +2905,9 @@ impl P<'_> {
     }
 
     /// `command`, `full command` and `past event-location` of the
-    /// movement events (`w4_events_movement`).
+    /// movement events (`events_movement`).
     fn mv_value(&mut self, lw: &str) -> Result<Option<Expr>, String> {
-        // `past event-item` in the events of `w2_events_4` reads the slot
+        // `past event-item` in the events of `events_world_vehicles` reads the slot
         // `previous-item`.
         if lw == "past"
             && let (Some(ev4), Some(Tok::Word(w))) = (self.env.ext4, self.toks.get(self.pos))
@@ -2912,7 +2924,7 @@ impl P<'_> {
             "past" if self.is_word(0, "event-world") => ("event-past-world", 1),
             _ => return Ok(None),
         };
-        match crate::w2_events_1::field_index(self.env.ev_fields, field) {
+        match crate::events_blocks_players::field_index(self.env.ev_fields, field) {
             Some((i, _)) => {
                 self.pos += used;
                 Ok(Some(Expr::ExtVal(i)))

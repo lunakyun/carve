@@ -1,0 +1,5 @@
+# The script effects-entity-commands switches on and off.
+
+command /eecb:
+    trigger:
+        send "eec:b here" to player

@@ -77,7 +77,7 @@
       "example": "on armor change:\n    send \"%event-slot% changed\" to player",
       "id": "armor_change",
       "name": "Armor change",
-      "page": "syntax/w6-chunk1",
+      "page": "syntax/events-step-jump",
       "patterns": [
         "on armor change"
       ],
@@ -460,7 +460,7 @@
       "example": "on command:\n    if command is \"op\":\n        cancel event\n        send \"No.\" to player",
       "id": "command-event",
       "name": "Command (event)",
-      "page": "syntax/w4-events-movement",
+      "page": "syntax/events-movement",
       "patterns": [
         "on command",
         "on command \"<name>\"",
@@ -647,7 +647,7 @@
       "example": "on entity break door:\n    cancel event",
       "id": "entity_break_door",
       "name": "Entity break door",
-      "page": "syntax/w6-chunk1",
+      "page": "syntax/events-step-jump",
       "patterns": [
         "on entity break door"
       ],
@@ -777,7 +777,7 @@
       "example": "on experience spawn:\n    broadcast \"orb at %event-location%\"",
       "id": "experience_spawn",
       "name": "Experience spawn",
-      "page": "syntax/w6-chunk1",
+      "page": "syntax/events-step-jump",
       "patterns": [
         "on experience spawn"
       ],
@@ -842,7 +842,7 @@
       "example": "on first join:\n    broadcast \"Welcome %player% to the server!\"",
       "id": "first-join",
       "name": "First join",
-      "page": "syntax/w4-events-movement",
+      "page": "syntax/events-movement",
       "patterns": [
         "on first join",
         "on first login",
@@ -1219,7 +1219,7 @@
       "example": "on jump:\n    send \"Boing\" to player",
       "id": "jump",
       "name": "Jump",
-      "page": "syntax/w6-chunk1",
+      "page": "syntax/events-step-jump",
       "patterns": [
         "on jump"
       ],
@@ -1369,7 +1369,7 @@
       "example": "on move:\n    if y of event-location < 0:\n        teleport player to spawn of world \"world\"",
       "id": "move",
       "name": "Move",
-      "page": "syntax/w4-events-movement",
+      "page": "syntax/events-movement",
       "patterns": [
         "on move",
         "on player move",
@@ -1481,7 +1481,7 @@
       "example": "on placeholder request for prefix \"shop\":\n    if the identifier is \"coins\":\n        set the result to \"%{coins::%player%} ? 0%\"",
       "id": "placeholder_request",
       "name": "Placeholder request",
-      "page": "syntax/w4-placeholders",
+      "page": "syntax/placeholders",
       "patterns": [
         "on placeholder request for prefix \"<prefix>\"",
         "on placeholder request"
@@ -1495,7 +1495,7 @@
       "example": "on player chunk enter:\n    send \"chunk %event-chunk-x% %event-chunk-z%\" to player",
       "id": "player_chunk_enter",
       "name": "Player chunk enter",
-      "page": "syntax/w6-chunk1",
+      "page": "syntax/events-step-jump",
       "patterns": [
         "on player chunk enter",
         "on player chunk enters"
@@ -1522,7 +1522,7 @@
       "example": "on player pickup arrow:\n    send \"Got it\" to player",
       "id": "player_pickup_arrow",
       "name": "Player pickup arrow",
-      "page": "syntax/w6-chunk1",
+      "page": "syntax/events-step-jump",
       "patterns": [
         "on player pickup arrow"
       ],
@@ -1574,7 +1574,7 @@
       "example": "on preparing craft:\n    send \"You can make %event-item%\"",
       "id": "prepare_craft",
       "name": "Prepare craft",
-      "page": "syntax/w5-chunk1",
+      "page": "syntax/drops-border-leashes",
       "patterns": [
         "on preparing craft",
         "on prepare craft",
@@ -1589,7 +1589,7 @@
       "example": "on pressure plate:\n    broadcast \"pressed at %event-location%\"",
       "id": "pressure_plate",
       "name": "Pressure plate",
-      "page": "syntax/w6-chunk1",
+      "page": "syntax/events-step-jump",
       "patterns": [
         "on pressure plate",
         "on trip"
@@ -1603,7 +1603,7 @@
       "example": "on projectile collide:\n    broadcast \"hit a %type of event-hit-entity%\"",
       "id": "projectile_collide",
       "name": "Projectile collide",
-      "page": "syntax/w6-chunk1",
+      "page": "syntax/events-step-jump",
       "patterns": [
         "on projectile collide"
       ],
@@ -1712,7 +1712,7 @@
       "example": "on riptide:\n    send \"Wheee\" to player",
       "id": "riptide",
       "name": "Riptide",
-      "page": "syntax/w6-chunk1",
+      "page": "syntax/events-step-jump",
       "patterns": [
         "on riptide"
       ],
@@ -1725,7 +1725,7 @@
       "example": "on unload:\n    send \"bye\" to console",
       "id": "script_unload",
       "name": "Script unload",
-      "page": "syntax/w6-chunk1",
+      "page": "syntax/events-step-jump",
       "patterns": [
         "on unload",
         "on script unload"
@@ -1765,7 +1765,7 @@
       "example": "on server stop:\n    send \"stopping\" to console",
       "id": "server_stop",
       "name": "Server stop",
-      "page": "syntax/w6-chunk1",
+      "page": "syntax/events-step-jump",
       "patterns": [
         "on server stop"
       ],
@@ -1871,7 +1871,7 @@
       "example": "on spectate:\n    send \"Watching a %type of event-entity%\" to player",
       "id": "spectate",
       "name": "Spectate",
-      "page": "syntax/w6-chunk1",
+      "page": "syntax/events-step-jump",
       "patterns": [
         "on spectate"
       ],
@@ -1938,7 +1938,7 @@
       "example": "on step on stone:\n    send \"Stone!\" to player",
       "id": "step_on",
       "name": "Step on",
-      "page": "syntax/w6-chunk1",
+      "page": "syntax/events-step-jump",
       "patterns": [
         "on step on <block>",
         "on walk on <block>"
@@ -1952,7 +1952,7 @@
       "example": "on swap hand items:\n    cancel event",
       "id": "swap-hand-items",
       "name": "Swap hand items",
-      "page": "syntax/w4-events-movement",
+      "page": "syntax/events-movement",
       "patterns": [
         "on swap hand items",
         "on swap hands",
@@ -2006,7 +2006,7 @@
       "example": "on teleport:\n    send \"Zoom!\" to player",
       "id": "teleport",
       "name": "Teleport",
-      "page": "syntax/w4-events-movement",
+      "page": "syntax/events-movement",
       "patterns": [
         "on teleport",
         "on player teleport"
@@ -2178,7 +2178,7 @@
       "example": "on world border bounds change:\n    broadcast \"%event-old-size% to %event-new-size%\"",
       "id": "world_border_bounds_change",
       "name": "World border bounds change",
-      "page": "syntax/w6-chunk1",
+      "page": "syntax/events-step-jump",
       "patterns": [
         "on world border bounds change"
       ],
@@ -2191,7 +2191,7 @@
       "example": "on world border center change:\n    broadcast \"now at %event-new-x% %event-new-z%\"",
       "id": "world_border_center_change",
       "name": "World border center change",
-      "page": "syntax/w6-chunk1",
+      "page": "syntax/events-step-jump",
       "patterns": [
         "on world border center change"
       ],
@@ -2204,7 +2204,7 @@
       "example": "on world change:\n    send \"Now in %event-world%\" to player",
       "id": "world-change",
       "name": "World change",
-      "page": "syntax/w4-events-movement",
+      "page": "syntax/events-movement",
       "patterns": [
         "on world change",
         "on player world change",
@@ -2311,7 +2311,7 @@
       "example": "allow flight for player",
       "id": "allow_flight",
       "name": "Allow flight",
-      "page": "syntax/w6-chunk2",
+      "page": "syntax/effects-entity-commands",
       "patterns": [
         "(allow|enable) (fly|flight) (for|to) %object%",
         "(disallow|disable) (fly|flight) (for|to) %object%"
@@ -2366,7 +2366,7 @@
       "example": "ban player because of \"spam\" for 2 hours",
       "id": "ban_for",
       "name": "Ban for a time",
-      "page": "syntax/w6-chunk2",
+      "page": "syntax/effects-entity-commands",
       "patterns": [
         "ban %object% [(because of|by reason of|due to|with reason) %text%] for %timespan%",
         "ban ip %object% [(because of|by reason of|due to|with reason) %text%] for %timespan%"
@@ -2419,7 +2419,7 @@
       "example": "command /heal:\n    cooldown: 1 minute\n    cooldown message: Wait %remaining time%.\n    trigger:\n        heal player\n        cancel the cooldown",
       "id": "cancel_cooldown",
       "name": "Cancel command cooldown",
-      "page": "syntax/w5-chunk1",
+      "page": "syntax/drops-border-leashes",
       "patterns": [
         "(cancel|ignore) [the] [current] [command] cooldown",
         "(uncancel|unignore) [the] [current] [command] cooldown"
@@ -2433,7 +2433,7 @@
       "example": "on break:\n    cancel the drops",
       "id": "cancel_drops",
       "name": "Cancel drops",
-      "page": "syntax/w5-chunk1",
+      "page": "syntax/drops-border-leashes",
       "patterns": [
         "(cancel|clear|delete) [the] drops",
         "(cancel|clear|delete) [the] drops of items",
@@ -2476,7 +2476,7 @@
       "example": "on piglin barter:\n    set barter drops to 3 diamonds",
       "id": "w5c3_barter_drops",
       "name": "Change barter drops",
-      "page": "syntax/w5-chunk3",
+      "page": "syntax/conditions-mobs-items",
       "patterns": [
         "set [the] (barter|bartering) drops to %object%",
         "add %object% to [the] (barter|bartering) drops",
@@ -2722,7 +2722,7 @@
       "example": "on join:\n    create world \"arena\" with environment nether",
       "id": "create_world",
       "name": "Create, load or unload a world",
-      "page": "syntax/w4-skbee-raytrace-world",
+      "page": "syntax/skbee-raytrace-world",
       "patterns": [
         "create [a] [new] world [named] %text% [with environment (normal|nether|end)]",
         "load world %text%",
@@ -2837,7 +2837,7 @@
       "example": "spawn a tnt at location(0, 70, 0)\ndetonate last spawned entity",
       "id": "detonate",
       "name": "Detonate entities",
-      "page": "syntax/w5-chunk1",
+      "page": "syntax/drops-border-leashes",
       "patterns": [
         "detonate %entities%"
       ],
@@ -2895,7 +2895,7 @@
       "example": "drop 3 diamonds at location(0, 70, 0)",
       "id": "drop_item",
       "name": "Drop",
-      "page": "syntax/w5-chunk1",
+      "page": "syntax/drops-border-leashes",
       "patterns": [
         "drop %items% [(at|near|above) %location%] [without velocity]"
       ],
@@ -2908,7 +2908,7 @@
       "example": "dye player's tool red",
       "id": "dye_item",
       "name": "Dye item",
-      "page": "syntax/w5-chunk1",
+      "page": "syntax/drops-border-leashes",
       "patterns": [
         "(dye|color|colour|paint) %item% %color%"
       ],
@@ -2940,7 +2940,7 @@
       "example": "reload script \"homes\"",
       "id": "script_switch",
       "name": "Enable, disable and reload script",
-      "page": "syntax/w6-chunk2",
+      "page": "syntax/effects-entity-commands",
       "patterns": [
         "(enable|load) script [(file|named)] %text% [with errors]",
         "reload script [(file|named)] %text% [with errors]",
@@ -2955,7 +2955,7 @@
       "example": "enforce the whitelist",
       "id": "enforce_whitelist",
       "name": "Enforce whitelist",
-      "page": "syntax/w5-chunk1",
+      "page": "syntax/drops-border-leashes",
       "patterns": [
         "enforce [the] [server] whitelist",
         "unenforce [the] [server] whitelist"
@@ -2982,7 +2982,7 @@
       "example": "spawn a zombie at player\nequip last spawned entity with diamond helmet and iron boots",
       "id": "equip_items",
       "name": "Equip",
-      "page": "syntax/w6-chunk2",
+      "page": "syntax/effects-entity-commands",
       "patterns": [
         "equip %object% with %object% [and %object%]",
         "make %object% wear %object% [and %object%]",
@@ -3038,7 +3038,7 @@
       "example": "shrink the world border by 100 over 2 seconds",
       "id": "border_resize",
       "name": "Expand/shrink world border",
-      "page": "syntax/w5-chunk1",
+      "page": "syntax/drops-border-leashes",
       "patterns": [
         "(expand|grow) [the] [(diameter|radius) of] [the] world border [of %world%] (by|to) %number% [over %timespan%]",
         "(shrink|contract) [the] [(diameter|radius) of] [the] world border [of %world%] (by|to) %number% [over %timespan%]"
@@ -3052,7 +3052,7 @@
       "example": "spawn a creeper at location(0, 70, 0)\nignite creeper last spawned entity",
       "id": "creeper_ignite",
       "name": "Explode creeper",
-      "page": "syntax/w5-chunk1",
+      "page": "syntax/drops-border-leashes",
       "patterns": [
         "ignite (creeper|creepers) %entities%",
         "stop (ignition|explosion) [process] of [creeper] %entities%",
@@ -3080,7 +3080,7 @@
       "example": "command /pay <number>:\n    trigger:\n        if arg-1 < 1:\n            fail the command execution with the error message \"Pay at least 1.\"",
       "id": "fail_command",
       "name": "Fail command execution",
-      "page": "syntax/w5-chunk1",
+      "page": "syntax/drops-border-leashes",
       "patterns": [
         "fail [the] command execution with [the] error [message] %text%"
       ],
@@ -3119,7 +3119,7 @@
       "example": "set {_l::*} to 1, 2, 3, 4\nfilter {_l::*} to match:\n    input > 2",
       "id": "w4_filter",
       "name": "Filter section",
-      "page": "syntax/w4-functions-sections",
+      "page": "syntax/functions-builtin-sections",
       "patterns": [
         "filter %list variable% to match:"
       ],
@@ -3146,7 +3146,7 @@
       "example": "force player's tool to glint",
       "id": "force_glint",
       "name": "Force enchantment glint",
-      "page": "syntax/w5-chunk1",
+      "page": "syntax/drops-border-leashes",
       "patterns": [
         "(force|make) %item% [to] [start] glint[ing]",
         "(force|make) %item% [to] (not|stop) glint[ing]",
@@ -3216,7 +3216,7 @@
       "example": "spawn a goat at player\nremove the left horn of last spawned entity\nregrow both horns of last spawned entity",
       "id": "goat_horns",
       "name": "Goat horns",
-      "page": "syntax/w6-chunk2",
+      "page": "syntax/effects-entity-commands",
       "patterns": [
         "remove [the] (left|right|both) (horn|horns) of %object%",
         "remove %object%'s (left|right|both) (horn|horns)",
@@ -3246,7 +3246,7 @@
       "example": "grow oak at location(10, 64, 10)",
       "id": "grow_tree",
       "name": "Grow tree",
-      "page": "syntax/w6-chunk2",
+      "page": "syntax/effects-entity-commands",
       "patterns": [
         "(grow|create|generate) [(a|an)] <type> [tree] (at|on|above) %location%"
       ],
@@ -3372,7 +3372,7 @@
       "example": "on death:\n    keep the inventory and experience",
       "id": "keep_inventory",
       "name": "Keep inventory / experience",
-      "page": "syntax/w5-chunk1",
+      "page": "syntax/drops-border-leashes",
       "patterns": [
         "keep [the] (inventory|items) [and (xp|experience)]",
         "keep [the] (xp|experience) [and (inventory|items)]"
@@ -3426,7 +3426,7 @@
       "example": "launch a firework at location(0, 70, 0)",
       "id": "launch_firework",
       "name": "Launch firework",
-      "page": "syntax/w5-chunk1",
+      "page": "syntax/drops-border-leashes",
       "patterns": [
         "launch [a] firework at %location%",
         "launch [a] firework [effect] %object% at %location% [timed %number%]"
@@ -3440,7 +3440,7 @@
       "example": "spawn a cow at location(0, 70, 0)\nleash last spawned entity to player",
       "id": "leash",
       "name": "Leash entities",
-      "page": "syntax/w5-chunk1",
+      "page": "syntax/drops-border-leashes",
       "patterns": [
         "(leash|lead) %entities% to %entity%",
         "make %entity% (leash|lead) %entities%",
@@ -3455,7 +3455,7 @@
       "example": "on server list ping:\n    set the server icon to the last loaded server icon",
       "id": "load_server_icon",
       "name": "Load server icon",
-      "page": "syntax/w5-chunk1",
+      "page": "syntax/drops-border-leashes",
       "patterns": [
         "load [the] server icon (from|of) [the] [image] [file] %text%",
         "set [the] server icon to [the] last loaded server icon"
@@ -3526,7 +3526,7 @@
       "example": "spawn a cow at location(0, 70, 0)\nmake last spawned entity a baby",
       "id": "make_baby",
       "name": "Make adult/baby",
-      "page": "syntax/w5-chunk1",
+      "page": "syntax/drops-border-leashes",
       "patterns": [
         "make %entities% [a] (adult|baby)",
         "force %entities% to (be|become) [a] (adult|baby)"
@@ -3540,7 +3540,7 @@
       "example": "spawn an allay at player\nmake last spawned entity duplicate",
       "id": "allay_duplicate",
       "name": "Make allay duplicate",
-      "page": "syntax/w6-chunk2",
+      "page": "syntax/effects-entity-commands",
       "patterns": [
         "make %object% (duplicate|clone)"
       ],
@@ -3553,7 +3553,7 @@
       "example": "spawn a cow at location(0, 70, 0)\nmake last spawned entity breedable",
       "id": "make_breedable",
       "name": "Make breedable",
-      "page": "syntax/w5-chunk1",
+      "page": "syntax/drops-border-leashes",
       "patterns": [
         "make %entities% breedable",
         "make %entities% (unbreedable|not breedable)"
@@ -3567,7 +3567,7 @@
       "example": "spawn a goat at player\nmake last spawned entity scream",
       "id": "make_scream",
       "name": "Make entity scream",
-      "page": "syntax/w6-chunk2",
+      "page": "syntax/effects-entity-commands",
       "patterns": [
         "make %object% (start screaming|scream)",
         "force %object% to (start screaming|scream)",
@@ -3599,7 +3599,7 @@
       "example": "spawn an interaction at player\nmake last spawned entity responsive",
       "id": "interaction_responsive",
       "name": "Make interaction responsive",
-      "page": "syntax/w6-chunk2",
+      "page": "syntax/effects-entity-commands",
       "patterns": [
         "make %object% responsive",
         "make %object% (unresponsive|not responsive)"
@@ -3613,7 +3613,7 @@
       "example": "make player see location(5, 101, 5) as diamond_block\nmake player see location(5, 101, 5) as original block",
       "id": "fake_block",
       "name": "Make player see a block",
-      "page": "syntax/w6-chunk2",
+      "page": "syntax/effects-entity-commands",
       "patterns": [
         "make %object% see %location% as %object%",
         "make %object% see %location% as [(the|its|their)] (original|normal|actual) [(block|blocks)]"
@@ -3640,7 +3640,7 @@
       "example": "make block at location(2, 70, 2) have glowing text",
       "id": "sign_glow",
       "name": "Make sign glow",
-      "page": "syntax/w5-chunk1",
+      "page": "syntax/drops-border-leashes",
       "patterns": [
         "make %location% have glowing text",
         "make %location% have (normal|non-glowing) text"
@@ -3708,7 +3708,7 @@
       "example": "spawn a zombie at location(0, 70, 0)\nmake last spawned entity pathfind to player at speed 1.5",
       "id": "pathfind",
       "name": "Pathfind",
-      "page": "syntax/w5-chunk1",
+      "page": "syntax/drops-border-leashes",
       "patterns": [
         "make %entities% (pathfind|move) (to|towards) %object% [at speed %number%]",
         "make %entities% stop (pathfinding|moving)"
@@ -3722,7 +3722,7 @@
       "example": "spawn a cow at location(0, 70, 0)\nmake last spawned entity persistent",
       "id": "persistent",
       "name": "Persistent",
-      "page": "syntax/w5-chunk1",
+      "page": "syntax/drops-border-leashes",
       "patterns": [
         "make %entities% [not] persist[ent]",
         "force %entities% to [not] persist",
@@ -3776,7 +3776,7 @@
       "example": "make player's potion effects ambient\nhide the particles of player's potion effects",
       "id": "potion_flags",
       "name": "Potion effect flags",
-      "page": "syntax/w5-chunk1",
+      "page": "syntax/drops-border-leashes",
       "patterns": [
         "make %player%'s potion effects [not] (ambient|infinite)",
         "(show|hide) [the] [potion] (particles|icon) of %player%'s potion effects"
@@ -3893,7 +3893,7 @@
       "example": "set {n} to 5\nreset {n}\nset {l::*} to 1, 2, 1 and 3\nremove all 1 from {l::*}",
       "id": "reset_variable",
       "name": "Reset and remove all",
-      "page": "syntax/w6-chunk2",
+      "page": "syntax/effects-entity-commands",
       "patterns": [
         "reset %variable%",
         "remove all %object% from %variable%"
@@ -3979,7 +3979,7 @@
       "example": "spawn a pig at player\nmake player ride last spawned entity\nmake player dismount",
       "id": "ride_any",
       "name": "Ride and dismount any entity",
-      "page": "syntax/w6-chunk2",
+      "page": "syntax/effects-entity-commands",
       "patterns": [
         "(make|let|force) %object% [to] (ride|mount) [(in|on)] %object%",
         "(make|let|force) %object% [to] dismount"
@@ -3993,7 +3993,7 @@
       "example": "set {v} to vector(1, 0, 0)\nrotate {v} around the z-axis by 90\nrotate {v} around vector(0, 1, 0) by 45",
       "id": "rotate_vector",
       "name": "Rotate vector",
-      "page": "syntax/w6-chunk2",
+      "page": "syntax/effects-entity-commands",
       "patterns": [
         "rotate %variable% around [the] (x|y|z) [-] axis by %number%",
         "rotate %variable% around %object% by %number%"
@@ -4377,7 +4377,7 @@
       "example": "spawn a sheep at player\nshear last spawned entity",
       "id": "shear",
       "name": "Shear and unshear",
-      "page": "syntax/w6-chunk2",
+      "page": "syntax/effects-entity-commands",
       "patterns": [
         "shear %object%",
         "unshear %object%"
@@ -4391,7 +4391,7 @@
       "example": "shoot an arrow from player at speed 2:\n    send \"%type of event-entity%\"",
       "id": "c6_shoot",
       "name": "Shoot (section)",
-      "page": "syntax/w5-chunk6",
+      "page": "syntax/entity-block-properties",
       "patterns": [
         "shoot %entity type% [from %entity%] [(at|with) (speed|velocity) %number%]:"
       ],
@@ -4417,7 +4417,7 @@
       "example": "spawn a cow at player\nsilence last spawned entity",
       "id": "silence_entity",
       "name": "Silence entity",
-      "page": "syntax/w6-chunk2",
+      "page": "syntax/effects-entity-commands",
       "patterns": [
         "silence %object%",
         "unsilence %object%",
@@ -4459,7 +4459,7 @@
       "example": "spawn a zombie at player:\n    set name of event-entity to \"Bob\"",
       "id": "w4_spawn_section",
       "name": "Spawn section",
-      "page": "syntax/w4-functions-sections",
+      "page": "syntax/functions-builtin-sections",
       "patterns": [
         "spawn %entity% [at %location%]:"
       ],
@@ -4529,7 +4529,7 @@
       "example": "stop sound \"entity.cow.ambient\" in music for player\nstop all sounds in master for player",
       "id": "stop_sound_category",
       "name": "Stop sound in a category",
-      "page": "syntax/w6-chunk2",
+      "page": "syntax/effects-entity-commands",
       "patterns": [
         "stop (sound|sounds) %text% (in|from) [the] <category> [(from playing to|for|to) %object%]",
         "stop all (sound|sounds) (in|from) [the] <category> [(from playing to|for|to) %object%]"
@@ -4570,7 +4570,7 @@
       "example": "spawn a zombie at player\nmake last spawned entity swing main hand",
       "id": "swing_any",
       "name": "Swing hand",
-      "page": "syntax/w6-chunk2",
+      "page": "syntax/effects-entity-commands",
       "patterns": [
         "make %object% swing [their] [main] hand",
         "make %object% swing [their] off hand"
@@ -4633,7 +4633,7 @@
       "example": "spawn a wolf at player\ntame last spawned entity",
       "id": "tame",
       "name": "Tame and untame",
-      "page": "syntax/w6-chunk2",
+      "page": "syntax/effects-entity-commands",
       "patterns": [
         "tame %object%",
         "untame %object%",
@@ -4674,7 +4674,7 @@
       "example": "spawn text display at player with text \"hi\"\napply drop shadow to last spawned entity\nmake last spawned entity visible through blocks",
       "id": "text_display_flags",
       "name": "Text display drop shadow and see through",
-      "page": "syntax/w6-chunk2",
+      "page": "syntax/effects-entity-commands",
       "patterns": [
         "(apply|add) (drop|text) shadow to [[the] text of] %object%",
         "(remove|clear) (drop|text) shadow from [[the] text of] %object%",
@@ -4745,7 +4745,7 @@
       "example": "spawn a villager at player\nzombify last spawned entity",
       "id": "zombify",
       "name": "Zombify villager",
-      "page": "syntax/w6-chunk2",
+      "page": "syntax/effects-entity-commands",
       "patterns": [
         "zombify %object%",
         "unzombify %object%"
@@ -5164,7 +5164,7 @@
       "example": "spawn a cow at location(0, 70, 0)\nif last spawned entity can age:\n    send \"yes\"",
       "id": "can_age",
       "name": "Can age",
-      "page": "syntax/w5-chunk1",
+      "page": "syntax/drops-border-leashes",
       "patterns": [
         "%entity% can (age|grow up)",
         "%entity% (can't|cannot) (age|grow up)"
@@ -5178,7 +5178,7 @@
       "example": "if diamond helmet can be dispensed:\n    send \"yes\"",
       "id": "equip_can_be_dispensed",
       "name": "Can be dispensed",
-      "page": "syntax/w5-chunk2",
+      "page": "syntax/conditions-flags-metadata",
       "patterns": [
         "%object% can be dispensed",
         "%object% (can't|cannot|can not) be dispensed"
@@ -5192,7 +5192,7 @@
       "example": "if saddle can be equipped on entities:\n    send \"yes\"",
       "id": "equip_on_entities",
       "name": "Can be equipped on entities",
-      "page": "syntax/w5-chunk2",
+      "page": "syntax/conditions-flags-metadata",
       "patterns": [
         "%object% can be (equipped|put) (on|onto) entities",
         "%object% can equip (on|onto) entities",
@@ -5208,7 +5208,7 @@
       "example": "if saddle can be sheared off:\n    send \"yes\"",
       "id": "equip_can_be_sheared_off",
       "name": "Can be sheared off",
-      "page": "syntax/w5-chunk2",
+      "page": "syntax/conditions-flags-metadata",
       "patterns": [
         "%object% can be sheared off",
         "%object% (can't|cannot|can not) be sheared off"
@@ -5324,7 +5324,7 @@
       "example": "if carved pumpkin can't swap equipment:\n    send \"no swapping\"",
       "id": "equip_can_swap",
       "name": "Can swap equipment",
-      "page": "syntax/w5-chunk2",
+      "page": "syntax/conditions-flags-metadata",
       "patterns": [
         "%object% can (swap|switch) equipment",
         "%object% can be (swapped|switched)",
@@ -5383,7 +5383,7 @@
       "example": "on damage:\n    if damage was caused by fall:\n        cancel event",
       "id": "damage_was_caused_by",
       "name": "Damage was caused by",
-      "page": "syntax/w5-chunk2",
+      "page": "syntax/conditions-flags-metadata",
       "patterns": [
         "[the] damage (was|is|has) [been] (caused|done|made) by %object%",
         "[the] damage (wasn't|was not|isn't|is not|hasn't|has not) [been] (caused|done|made) by %object%"
@@ -5413,7 +5413,7 @@
       "example": "on throwing of an egg:\n    if the egg will hatch:\n        send \"A chick!\" to player",
       "id": "egg_will_hatch",
       "name": "Egg will hatch",
-      "page": "syntax/w5-chunk2",
+      "page": "syntax/conditions-flags-metadata",
       "patterns": [
         "[the] egg (will|is going to) hatch",
         "[the] egg (won't|will not|isn't going to|is not going to) hatch"
@@ -5441,7 +5441,7 @@
       "example": "if entity storage of block at location(1, 64, 1) is full:\n    send \"The hive is full\"",
       "id": "entity_storage_full",
       "name": "Entity storage is full",
-      "page": "syntax/w5-chunk2",
+      "page": "syntax/conditions-flags-metadata",
       "patterns": [
         "[the] entity storage of %location% (is|are) full",
         "[the] entity storage of %location% (isn't|is not|aren't|are not) full",
@@ -5499,7 +5499,7 @@
       "example": "create bossbar \"raid\" with title \"Raid\"\nadd darken sky flag to bossbar \"raid\"\nif bossbar \"raid\" has darken sky flag:\n    send \"dark\"",
       "id": "has_bossbar_flag",
       "name": "Has boss bar flag",
-      "page": "syntax/w5-chunk2",
+      "page": "syntax/conditions-flags-metadata",
       "patterns": [
         "bossbar %text% (has|have) [the] [flag] (darken sky|darken the sky|sky darkening) [flag]",
         "bossbar %text% (doesn't|does not) have [the] [flag] (darken sky|darken the sky|sky darkening) [flag]",
@@ -5615,7 +5615,7 @@
       "example": "if block at location(1, 64, 1) has a loot table:\n    send \"Not opened yet\"",
       "id": "has_loot_table",
       "name": "Has loot table",
-      "page": "syntax/w5-chunk2",
+      "page": "syntax/conditions-flags-metadata",
       "patterns": [
         "%location% (has|have) [a] loot table",
         "%location% (has|have) [a] loottable",
@@ -5631,7 +5631,7 @@
       "example": "if player has metadata \"frozen\":\n    cancel event",
       "id": "has_metadata",
       "name": "Has metadata",
-      "page": "syntax/w5-chunk2",
+      "page": "syntax/conditions-flags-metadata",
       "patterns": [
         "%object% (has|have) metadata [(value|tag)] %text%",
         "%object% (doesn't|does not|don't|do not) have metadata [(value|tag)] %text%"
@@ -5659,7 +5659,7 @@
       "example": "if player has persistent data tag \"kit\":\n    send \"Kit already claimed\"",
       "id": "has_persistent_data",
       "name": "Has persistent data tag",
-      "page": "syntax/w5-chunk2",
+      "page": "syntax/conditions-flags-metadata",
       "patterns": [
         "%object% (has|have) [persistent] data (tag|tags|value|values) %text%",
         "%object% (doesn't|does not|don't|do not) have [persistent] data (tag|tags|value|values) %text%"
@@ -5673,7 +5673,7 @@
       "example": "on join:\n    if player hasn't played before:\n        send \"Welcome, new player!\" to player",
       "id": "has_played_before",
       "name": "Has played before",
-      "page": "syntax/w5-chunk2",
+      "page": "syntax/conditions-flags-metadata",
       "patterns": [
         "%player% (has|did) [already] (play|played) [on (this|the) server] (before|already)",
         "%player% (hasn't|has not|didn't|did not) [(already|yet)] (play|played) [on (this|the) server] [(before|already|yet)]"
@@ -5758,7 +5758,7 @@
       "example": "if {_cow} is a baby:\n    send \"cute\"",
       "id": "w6c3_age",
       "name": "Is adult / Is baby",
-      "page": "syntax/w6-chunk3",
+      "page": "syntax/conditions-mob-block-state",
       "patterns": [
         "%object% (is|are) [an] adult",
         "%object% (isn't|is not|aren't|are not) [an] adult",
@@ -5804,7 +5804,7 @@
       "example": "if player is any of all operators:\n    send \"op\"",
       "id": "w5c3_any_of",
       "name": "Is any of",
-      "page": "syntax/w5-chunk3",
+      "page": "syntax/conditions-mobs-items",
       "patterns": [
         "%object% (is|are|=) (any|any one|one) of %object%",
         "%object% (isn't|is not|aren't|are not|!=) (any|any one|one) of %object%",
@@ -5834,7 +5834,7 @@
       "example": "on respawn:\n    if the respawn location is a bed spawn:\n        send \"welcome back\"",
       "id": "w6c3_spawn_point",
       "name": "Is bed spawn / anchor spawn",
-      "page": "syntax/w6-chunk3",
+      "page": "syntax/conditions-mob-block-state",
       "patterns": [
         "[the] respawn location (is|was) [a] bed spawn",
         "[the] respawn location (isn't|is not|wasn't|was not) [a] bed spawn",
@@ -5892,7 +5892,7 @@
       "example": "if {_creeper} is charged:\n    send \"boom\"",
       "id": "w6c3_charged",
       "name": "Is charged",
-      "page": "syntax/w6-chunk3",
+      "page": "syntax/conditions-mob-block-state",
       "patterns": [
         "%object% (is|are) charged",
         "%object% (isn't|is not|aren't|are not) charged"
@@ -5906,7 +5906,7 @@
       "example": "if player is climbing:\n    send \"up\"",
       "id": "w6c3_climbing",
       "name": "Is climbing",
-      "page": "syntax/w6-chunk3",
+      "page": "syntax/conditions-mob-block-state",
       "patterns": [
         "%object% (is|are) climbing",
         "%object% (isn't|is not|aren't|are not) climbing"
@@ -5920,7 +5920,7 @@
       "example": "if location(1, 64, 1) is conditional:\n    send \"conditional\"",
       "id": "w6c3_conditional",
       "name": "Is conditional",
-      "page": "syntax/w6-chunk3",
+      "page": "syntax/conditions-mob-block-state",
       "patterns": [
         "%object% (is|are) conditional",
         "%object% (isn't|is not|aren't|are not) conditional"
@@ -6048,7 +6048,7 @@
       "example": "if {_mob} is from a spawner:\n    send \"spawner mob\"",
       "id": "w6c3_spawner",
       "name": "Is from a spawner",
-      "page": "syntax/w6-chunk3",
+      "page": "syntax/conditions-mob-block-state",
       "patterns": [
         "%object% (is|are) (from|spawned from|spawned by) [(a|the)] [(mob|trial|monster)] spawner",
         "%object% (isn't|is not|aren't|are not) (from|spawned from|spawned by) [(a|the)] [(mob|trial|monster)] spawner"
@@ -6120,7 +6120,7 @@
       "example": "if player is holding diamond sword in the off hand:\n    send \"dual\"",
       "id": "w6c3_holding",
       "name": "Is holding",
-      "page": "syntax/w6-chunk3",
+      "page": "syntax/conditions-mob-block-state",
       "patterns": [
         "%object% (is|are) holding %object%",
         "%object% (is|are) holding %object% in [the] main hand",
@@ -6136,7 +6136,7 @@
       "example": "if {_creeper} is igniting:\n    send \"run\"",
       "id": "w6c3_igniting",
       "name": "Is igniting",
-      "page": "syntax/w6-chunk3",
+      "page": "syntax/conditions-mob-block-state",
       "patterns": [
         "%object% (is|are) (igniting|ignited|in [the] ignition process)",
         "%object% (isn't|is not|aren't|are not) (igniting|ignited|in [the] ignition process)"
@@ -6194,7 +6194,7 @@
       "example": "set {_e} to potion effect of speed for 10 seconds\nif {_e} is infinite:\n    send \"forever\"",
       "id": "w6c3_infinite",
       "name": "Is infinite",
-      "page": "syntax/w6-chunk3",
+      "page": "syntax/conditions-mob-block-state",
       "patterns": [
         "%object% (is|are) infinite",
         "%player%'s %object% [potion] effect (is|are) infinite"
@@ -6250,7 +6250,7 @@
       "example": "if player is left handed:\n    send \"lefty\"",
       "id": "w6c3_handed",
       "name": "Is left handed / right handed",
-      "page": "syntax/w6-chunk3",
+      "page": "syntax/conditions-mob-block-state",
       "patterns": [
         "%object% (is|are) left( |-)handed",
         "%object% (isn't|is not|aren't|are not) left( |-)handed",
@@ -6281,7 +6281,7 @@
       "example": "if location(1, 64, 1) is lootable:\n    send \"unopened\"",
       "id": "w6c3_lootable",
       "name": "Is lootable",
-      "page": "syntax/w6-chunk3",
+      "page": "syntax/conditions-mob-block-state",
       "patterns": [
         "%object% (is|are) lootable",
         "%object% (isn't|is not|aren't|are not) lootable"
@@ -6295,7 +6295,7 @@
       "example": "if vector(1, 0, 0) is normalized:\n    send \"unit\"",
       "id": "w6c3_normalized",
       "name": "Is normalized",
-      "page": "syntax/w6-chunk3",
+      "page": "syntax/conditions-mob-block-state",
       "patterns": [
         "%object% (is|are) normalized",
         "%object% (isn't|is not|aren't|are not) normalized"
@@ -6309,7 +6309,7 @@
       "example": "if location(1, 64, 1) is occluding:\n    send \"stone-like\"",
       "id": "w6c3_occluding",
       "name": "Is occluding",
-      "page": "syntax/w6-chunk3",
+      "page": "syntax/conditions-mob-block-state",
       "patterns": [
         "%object% (is|are) occluding",
         "%object% (isn't|is not|aren't|are not) occluding"
@@ -6337,7 +6337,7 @@
       "example": "if {_e} is of type pig:\n    send \"oink\"",
       "id": "w6c3_of_type",
       "name": "Is of type",
-      "page": "syntax/w6-chunk3",
+      "page": "syntax/conditions-mob-block-state",
       "patterns": [
         "%object% (is|are) of type %object%",
         "%object% (isn't|is not|aren't|are not) of type %object%"
@@ -6409,7 +6409,7 @@
       "example": "if {_cow} is pathfinding:\n    send \"walking\"",
       "id": "w6c3_pathfinding",
       "name": "Is pathfinding",
-      "page": "syntax/w6-chunk3",
+      "page": "syntax/conditions-mob-block-state",
       "patterns": [
         "%object% (is|are) pathfinding",
         "%object% (isn't|is not|aren't|are not) pathfinding"
@@ -6423,7 +6423,7 @@
       "example": "if location(1, 64, 1) is persistent:\n    send \"player placed\"",
       "id": "w6c3_persistent",
       "name": "Is persistent",
-      "page": "syntax/w6-chunk3",
+      "page": "syntax/conditions-mob-block-state",
       "patterns": [
         "%object% (is|are) persistent",
         "%object% (isn't|is not|aren't|are not) persistent"
@@ -6437,7 +6437,7 @@
       "example": "if plugin \"carve\" is enabled:\n    send \"yes\"",
       "id": "w6c3_plugin",
       "name": "Is plugin enabled",
-      "page": "syntax/w6-chunk3",
+      "page": "syntax/conditions-mob-block-state",
       "patterns": [
         "[the] plugin %object% (is|are) enabled",
         "[the] plugin %object% (isn't|is not|aren't|are not) enabled"
@@ -6465,7 +6465,7 @@
       "example": "if location(1, 64, 1) is powered:\n    send \"on\"",
       "id": "w6c3_powered",
       "name": "Is powered",
-      "page": "syntax/w6-chunk3",
+      "page": "syntax/conditions-mob-block-state",
       "patterns": [
         "%object% (is|are) [block] [redstone] powered",
         "%object% (isn't|is not|aren't|are not) [block] [redstone] powered",
@@ -6481,7 +6481,7 @@
       "example": "if diamond pickaxe is the preferred tool for obsidian:\n    send \"yes\"",
       "id": "is_preferred_tool",
       "name": "Is preferred tool",
-      "page": "syntax/w5-chunk2",
+      "page": "syntax/conditions-flags-metadata",
       "patterns": [
         "%object% (is|are) %location%'s preferred (tool|tools)",
         "%object% (is|are) [(the|a)] preferred (tool|tools) (for|of) %object%",
@@ -6497,7 +6497,7 @@
       "example": "if player is pressing the jump key:\n    send \"jumping\"",
       "id": "w6c3_key",
       "name": "Is pressing key",
-      "page": "syntax/w6-chunk3",
+      "page": "syntax/conditions-mob-block-state",
       "patterns": [
         "%object% (is|are) pressing [the] forward [key]",
         "%object% (is|are) pressing [the] backward [key]",
@@ -6516,7 +6516,7 @@
       "example": "spawn an interaction at player\nif last spawned entity is responsive:\n    send \"yes\"",
       "id": "is_responsive",
       "name": "Is responsive",
-      "page": "syntax/w5-chunk2",
+      "page": "syntax/conditions-flags-metadata",
       "patterns": [
         "%object% (is|are) responsive",
         "%object% (isn't|is not|aren't|are not) responsive"
@@ -6558,7 +6558,7 @@
       "example": "if player is riptiding:\n    send \"whee\"",
       "id": "w5c3_riptiding",
       "name": "Is riptiding",
-      "page": "syntax/w5-chunk3",
+      "page": "syntax/conditions-mobs-items",
       "patterns": [
         "%object% (is|are) riptiding",
         "%object% (isn't|is not|aren't|are not) riptiding"
@@ -6572,7 +6572,7 @@
       "example": "if running above minecraft \"1.21\":\n    send \"new\"",
       "id": "w6c3_version",
       "name": "Is running Minecraft",
-      "page": "syntax/w6-chunk3",
+      "page": "syntax/conditions-mob-block-state",
       "patterns": [
         "running [(minecraft|mc)] [version] %object%",
         "running (above|newer than|later than) [(minecraft|mc)] [version] %object%",
@@ -6588,7 +6588,7 @@
       "example": "command /sad:\n    trigger:\n        if nearest pig to player is saddled:\n            send \"saddled\"",
       "id": "w5c3_saddled",
       "name": "Is saddled",
-      "page": "syntax/w5-chunk3",
+      "page": "syntax/conditions-mobs-items",
       "patterns": [
         "%object% (is|are) [properly] saddled",
         "%object% (isn't|is not|aren't|are not) [properly] saddled"
@@ -6602,7 +6602,7 @@
       "example": "",
       "id": "w5c3_screaming",
       "name": "Is screaming",
-      "page": "syntax/w5-chunk3",
+      "page": "syntax/conditions-mobs-items",
       "patterns": [
         "%object% (is|are) screaming",
         "%object% (isn't|is not|aren't|are not) screaming"
@@ -6686,7 +6686,7 @@
       "example": "if player is riding a horse:\n    send \"giddy up\"",
       "id": "w6c3_silent_riding",
       "name": "Is silent / Is riding",
-      "page": "syntax/w6-chunk3",
+      "page": "syntax/conditions-mob-block-state",
       "patterns": [
         "%object% (is|are) silent",
         "%object% (isn't|is not|aren't|are not) silent",
@@ -6745,7 +6745,7 @@
       "example": "if \"zombie\" is spawnable in player's world:\n    send \"yes\"",
       "id": "w5c3_spawnable",
       "name": "Is spawnable",
-      "page": "syntax/w5-chunk3",
+      "page": "syntax/conditions-mobs-items",
       "patterns": [
         "%object% (is|are) spawnable [in %world%]",
         "%object% (isn't|is not|aren't|are not) spawnable [in %world%]"
@@ -6773,7 +6773,7 @@
       "example": "if diamond sword is not stackable:\n    send \"one per slot\"",
       "id": "w5c3_stackable",
       "name": "Is stackable",
-      "page": "syntax/w5-chunk3",
+      "page": "syntax/conditions-mobs-items",
       "patterns": [
         "%object% (is|are) stackable",
         "%object% (isn't|is not|aren't|are not) stackable"
@@ -6801,7 +6801,7 @@
       "example": "on join:\n    if stone is tagged with minecraft tag \"base_stone_overworld\":\n        send \"stone\"",
       "id": "is_tagged",
       "name": "Is tagged",
-      "page": "syntax/w4-skbee-raytrace-world",
+      "page": "syntax/skbee-raytrace-world",
       "patterns": [
         "%object% is tagged (as|with) [minecraft] [block|item] tag %text%"
       ],
@@ -6830,7 +6830,7 @@
       "example": "if \"wolf\" is tameable:\n    send \"yes\"",
       "id": "w5c3_tameable",
       "name": "Is tameable",
-      "page": "syntax/w5-chunk3",
+      "page": "syntax/conditions-mobs-items",
       "patterns": [
         "%object% (is|are) tameable",
         "%object% (isn't|is not|aren't|are not) tameable"
@@ -6844,7 +6844,7 @@
       "example": "command /tamed:\n    trigger:\n        set {_w} to nearest wolf to player\n        if {_w} is tamed:\n            send \"tamed\"",
       "id": "w5c3_tamed",
       "name": "Is tamed",
-      "page": "syntax/w5-chunk3",
+      "page": "syntax/conditions-mobs-items",
       "patterns": [
         "%object% (is|are) tamed",
         "%object% (isn't|is not|aren't|are not) tamed"
@@ -6886,7 +6886,7 @@
       "example": "if player's tool is unbreakable:\n    send \"forever\"",
       "id": "w6c3_unbreakable",
       "name": "Is unbreakable",
-      "page": "syntax/w6-chunk3",
+      "page": "syntax/conditions-mob-block-state",
       "patterns": [
         "%player%'s (tool|held item) (is|are) unbreakable",
         "[the] (tool|held item) of %player% (is|are) unbreakable"
@@ -6900,7 +6900,7 @@
       "example": "if feature \"bundle\" is enabled:\n    send \"bundles\"",
       "id": "w6c3_feature",
       "name": "Is using experimental feature",
-      "page": "syntax/w6-chunk3",
+      "page": "syntax/conditions-mob-block-state",
       "patterns": [
         "[the] [experimental] feature %object% (is|are) enabled",
         "[the] [experimental] feature %object% (isn't|is not|aren't|are not) enabled",
@@ -6929,7 +6929,7 @@
       "example": "if player is wearing diamond helmet:\n    send \"shiny\"",
       "id": "w5c3_wearing",
       "name": "Is wearing",
-      "page": "syntax/w5-chunk3",
+      "page": "syntax/conditions-mobs-items",
       "patterns": [
         "%object% (is|are) wearing %object%",
         "%object% (isn't|is not|aren't|are not) wearing %object%"
@@ -6985,7 +6985,7 @@
       "example": "if player's tool has enchantment glint overridden:\n    send \"glint\"",
       "id": "w5c3_glint",
       "name": "Item has enchantment glint override",
-      "page": "syntax/w5-chunk3",
+      "page": "syntax/conditions-mobs-items",
       "patterns": [
         "%player%'s (tool|held item) (has|have) [an] (enchantment glint (overridden|override)|overridden enchantment glint)",
         "%player%'s (tool|held item) (doesn't|does not|don't|do not) have [an] (enchantment glint (overridden|override)|overridden enchantment glint)",
@@ -7001,7 +7001,7 @@
       "example": "if tooltip of diamond sword is shown:\n    send \"yes\"",
       "id": "item_tooltip_shown",
       "name": "Item tooltip is shown",
-      "page": "syntax/w5-chunk2",
+      "page": "syntax/conditions-flags-metadata",
       "patterns": [
         "[the] [(entire|additional)] (tooltip|tooltips) of %object% (is|are) shown",
         "[the] [(entire|additional)] (tooltip|tooltips) of %object% (is|are) hidden",
@@ -7019,7 +7019,7 @@
       "example": "if lid of location(0, 64, 0, world \"world\") is open:\n    send \"someone is looking\"",
       "id": "w5c3_lid",
       "name": "Lid is open/closed",
-      "page": "syntax/w5-chunk3",
+      "page": "syntax/conditions-mobs-items",
       "patterns": [
         "[the] (lid|lids) of %object% (is|are) (open|opened)",
         "[the] (lid|lids) of %object% (isn't|is not|aren't|are not) (open|opened)",
@@ -7081,7 +7081,7 @@
       "example": "if player's speed effect doesn't have particles:\n    send \"hidden speed\"",
       "id": "w5c3_effect_flags",
       "name": "Potion effect has icon / particles / is ambient",
-      "page": "syntax/w5-chunk3",
+      "page": "syntax/conditions-mobs-items",
       "patterns": [
         "[the] [potion] effect of %object% (of|on) %player% (has|have) [an] icon",
         "[the] [potion] effect of %object% (of|on) %player% (doesn't|does not|don't|do not) have [an] icon",
@@ -7121,7 +7121,7 @@
       "example": "on resource pack response:\n    if the resource pack was declined:\n        send \"Please accept the pack\" to player",
       "id": "w5c3_resource_pack",
       "name": "Resource pack state",
-      "page": "syntax/w5-chunk3",
+      "page": "syntax/conditions-mobs-items",
       "patterns": [
         "[the] resource pack (was|is|has) [been] %object%",
         "[the] resource pack (wasn't|was not|isn't|is not|hasn't|has not) [been] %object%"
@@ -7177,7 +7177,7 @@
       "example": "",
       "id": "w5c3_text_display",
       "name": "Text display has drop shadow / is visible through blocks",
-      "page": "syntax/w5-chunk3",
+      "page": "syntax/conditions-mobs-items",
       "patterns": [
         "[the] text of %object% (has|have) [a] (drop|text) shadow",
         "[the] text of %object% (doesn't|does not|don't|do not) have [a] (drop|text) shadow",
@@ -7212,7 +7212,7 @@
       "example": "if elytra won't lose durability:\n    send \"tough\"",
       "id": "equip_loses_durability",
       "name": "Will lose durability",
-      "page": "syntax/w5-chunk2",
+      "page": "syntax/conditions-flags-metadata",
       "patterns": [
         "%object% will (lose durability|be damaged) [(on [wearer's] injury|when [the] wearer [is] (hurt|injured|damaged))]",
         "%object% (won't|will not) (lose durability|be damaged) [(on [wearer's] injury|when [the] wearer [is] (hurt|injured|damaged))]"
@@ -7226,7 +7226,7 @@
       "example": "on join:\n    if chunk of player is loaded:\n        send \"loaded\"",
       "id": "world_loaded",
       "name": "World or chunk is loaded",
-      "page": "syntax/w4-skbee-raytrace-world",
+      "page": "syntax/skbee-raytrace-world",
       "patterns": [
         "%world|chunk% is loaded",
         "%world|chunk% is not loaded"
@@ -7240,7 +7240,7 @@
       "example": "add 10 to world border size\nremove 30 from world border size",
       "id": "z6_border_change",
       "name": "Add to world border size",
-      "page": "syntax/w6-chunk6",
+      "page": "syntax/quaternions-protocol",
       "patterns": [
         "add %number% to [the] world border size [of %world%]",
         "remove %number% from [the] world border size [of %world%]"
@@ -7254,7 +7254,7 @@
       "example": "add 1 to age of block at location(0, 64, 0)",
       "id": "w6c4_age",
       "name": "Age of a block",
-      "page": "syntax/w6-chunk4",
+      "page": "syntax/block-state-lists",
       "patterns": [
         "[the] [max[imum]] age of %block%"
       ],
@@ -7283,7 +7283,7 @@
       "example": "loop all banned players:\n    send \"%loop-value%\"",
       "id": "w5c3_banned",
       "name": "All banned players/IPs",
-      "page": "syntax/w5-chunk3",
+      "page": "syntax/conditions-mobs-items",
       "patterns": [
         "[all [[of] the]] banned (players|ips|ip addresses)"
       ],
@@ -7296,7 +7296,7 @@
       "example": "send \"%all operators%\"",
       "id": "w5c3_operators",
       "name": "All operators",
-      "page": "syntax/w5-chunk3",
+      "page": "syntax/conditions-mobs-items",
       "patterns": [
         "[all [[of] the]] (ops|operators)"
       ],
@@ -7309,7 +7309,7 @@
       "example": "loop all difficulties:\n    send \"%loop-value%\"",
       "id": "c6_sets",
       "name": "All values of a type",
-      "page": "syntax/w5-chunk6",
+      "page": "syntax/entity-block-properties",
       "patterns": [
         "(all [[of] the]|every) %*type%s"
       ],
@@ -7322,7 +7322,7 @@
       "example": "on anvil prepare:\n    send \"%anvil text input%\" to player",
       "id": "w5c3_anvil",
       "name": "Anvil text input / repair cost",
-      "page": "syntax/w5-chunk3",
+      "page": "syntax/conditions-mobs-items",
       "patterns": [
         "anvil text input",
         "anvil [item] repair cost"
@@ -7336,7 +7336,7 @@
       "example": "set {_l::*} to 1, 2 and 3\nsend \"%any of {_l::*}%\"",
       "id": "w5c3_any_of_expr",
       "name": "Any of",
-      "page": "syntax/w5-chunk3",
+      "page": "syntax/conditions-mobs-items",
       "patterns": [
         "(any [one]|one) of [the] %objects%"
       ],
@@ -7349,7 +7349,7 @@
       "example": "on enchant:\n    send \"%applied enchantments%\" to player",
       "id": "w5c3_applied",
       "name": "Applied enchantments",
-      "page": "syntax/w5-chunk3",
+      "page": "syntax/conditions-mobs-items",
       "patterns": [
         "applied (enchantments|enchants)"
       ],
@@ -7391,7 +7391,7 @@
       "example": "give 1 of banner pattern item of \"creeper\" to player",
       "id": "w6c4_banner_item",
       "name": "Banner pattern item",
-      "page": "syntax/w6-chunk4",
+      "page": "syntax/block-state-lists",
       "patterns": [
         "[the] banner pattern item of %text%"
       ],
@@ -7404,7 +7404,7 @@
       "example": "on piglin barter:\n    broadcast \"%barter drops%\"",
       "id": "w5c3_barter",
       "name": "Barter input / drops",
-      "page": "syntax/w5-chunk3",
+      "page": "syntax/conditions-mobs-items",
       "patterns": [
         "(barter|bartering) input",
         "(barter|bartering) drops"
@@ -7418,7 +7418,7 @@
       "example": "send \"%primary beacon effect of location(0, 64, 0, world \"world\")%\"",
       "id": "w5c3_beacon",
       "name": "Beacon effects",
-      "page": "syntax/w5-chunk3",
+      "page": "syntax/conditions-mobs-items",
       "patterns": [
         "(primary|secondary) [beacon] effect of %location%",
         "beacon (primary|secondary) effect of %location%"
@@ -7432,7 +7432,7 @@
       "example": "set player's bed location to location(0, 70, 0)",
       "id": "w5c3_bed",
       "name": "Bed location",
-      "page": "syntax/w5-chunk3",
+      "page": "syntax/conditions-mobs-items",
       "patterns": [
         "bed location of %player%",
         "%player%'s bed location"
@@ -7446,7 +7446,7 @@
       "example": "set honey level of block at location(0, 64, 0) to 5",
       "id": "w6c4_honey",
       "name": "Beehive honey level",
-      "page": "syntax/w6-chunk4",
+      "page": "syntax/block-state-lists",
       "patterns": [
         "[the] [max[imum]] [bee[ ]hive|bee nest] honey level of %block%"
       ],
@@ -7476,7 +7476,7 @@
       "example": "set block data of block at location(0, 64, 0) to \"oak_log[axis=x]\"",
       "id": "c6_block_data",
       "name": "Block data",
-      "page": "syntax/w5-chunk6",
+      "page": "syntax/entity-block-properties",
       "patterns": [
         "[the] block data of %block%",
         "%block%'s block data"
@@ -7490,7 +7490,7 @@
       "example": "loop blocks in radius 3 of player:\n    if type of block at loop-value is stone:\n        set block at loop-value to glass",
       "id": "block_sphere",
       "name": "Block sphere",
-      "page": "syntax/w5-chunk4",
+      "page": "syntax/block-shapes-ai",
       "patterns": [
         "[all [the]] blocks in radius %number% (of|around) %location%",
         "[all [the]] blocks around %location% in radius %number%"
@@ -7517,7 +7517,7 @@
       "example": "loop blocks from player to location(0, 64, 0):\n    set block at loop-value to glass",
       "id": "blocks",
       "name": "Blocks",
-      "page": "syntax/w5-chunk4",
+      "page": "syntax/block-shapes-ai",
       "patterns": [
         "[all [the]] blocks between %location% and %location%",
         "[all [the]] blocks from %location% to %location%",
@@ -7532,7 +7532,7 @@
       "example": "set book title of player's tool to \"Rules\"\nset page 1 of player's tool to \"Be nice\"",
       "id": "book_values",
       "name": "Book author, title and pages",
-      "page": "syntax/w5-chunk4",
+      "page": "syntax/block-shapes-ai",
       "patterns": [
         "[the] book (author|writer|publisher) of %item%",
         "[the] (author|writer|publisher) of %item%",
@@ -7562,7 +7562,7 @@
       "example": "set {_b} to boss bar with id \"raid\"\nif {_b} is set:\n    show bossbar {_b} to player",
       "id": "bossbar_by_id",
       "name": "Boss bar from key",
-      "page": "syntax/w5-chunk4",
+      "page": "syntax/block-shapes-ai",
       "patterns": [
         "(bossbar|boss bar) [with|from] (id|key) %text%"
       ],
@@ -7575,7 +7575,7 @@
       "example": "create bossbar \"raid\" with progress 40\nsend \"%progress of bossbar \"raid\"%\"",
       "id": "bossbar_key",
       "name": "Boss bar key and progress",
-      "page": "syntax/w5-chunk5",
+      "page": "syntax/potions-particles-queues",
       "patterns": [
         "[the] boss[ ]bar (key|id) of [bossbar] %text%",
         "[the] progress of bossbar %text%"
@@ -7589,7 +7589,7 @@
       "example": "set ingredient slot of block at {_stand} to nether wart",
       "id": "brewing_slot",
       "name": "Brewing stand slot",
-      "page": "syntax/w5-chunk4",
+      "page": "syntax/block-shapes-ai",
       "patterns": [
         "[the] [brewing stand['s]] (first|second|third) bottle [slot] of %block%",
         "[the] [brewing stand['s]] (ingredient|fuel) slot of %block%"
@@ -7603,7 +7603,7 @@
       "example": "on broadcast:\n    send \"[log] %broadcast message%\" to console",
       "id": "broadcast_message",
       "name": "Broadcast message",
-      "page": "syntax/w5-chunk4",
+      "page": "syntax/block-shapes-ai",
       "patterns": [
         "[the] broadcast[ed] message"
       ],
@@ -7616,7 +7616,7 @@
       "example": "send \"%brushing stage of block at location(0, 64, 0)%\"",
       "id": "w6c4_brushing",
       "name": "Brushing stage",
-      "page": "syntax/w6-chunk4",
+      "page": "syntax/block-state-lists",
       "patterns": [
         "[the] [max[imum]] brushing (stage|progress) of %block%"
       ],
@@ -7655,7 +7655,7 @@
       "example": "on join:\n    set {_c::*} to chunks in radius 1 around player\n    send \"%size of {_c::*}%\"",
       "id": "chunk_at",
       "name": "Chunk",
-      "page": "syntax/w4-skbee-raytrace-world",
+      "page": "syntax/skbee-raytrace-world",
       "patterns": [
         "chunk at %location%",
         "chunk at %number%, %number% [in %world%]",
@@ -7684,7 +7684,7 @@
       "example": "set client weather of player to rain\nsend \"%client weather of player%\"",
       "id": "client_weather",
       "name": "Client weather",
-      "page": "syntax/w5-chunk5",
+      "page": "syntax/potions-particles-queues",
       "patterns": [
         "[the] (client|custom) weather of %player%"
       ],
@@ -7711,7 +7711,7 @@
       "example": "on consume:\n    send \"you ate %consumed item%\"",
       "id": "consumed_item",
       "name": "Consumed item",
-      "page": "syntax/w5-chunk4",
+      "page": "syntax/block-shapes-ai",
       "patterns": [
         "[the] consumed item"
       ],
@@ -7737,7 +7737,7 @@
       "example": "on death:\n    if the zombie is set:\n        broadcast \"a zombie fell\"",
       "id": "event_entity_typed",
       "name": "Creature / entity / typed event entity",
-      "page": "syntax/w5-chunk4",
+      "page": "syntax/block-shapes-ai",
       "patterns": [
         "[the] (entity|creature|mob|living entity)",
         "[the] %entity type%",
@@ -7752,7 +7752,7 @@
       "example": "on inventory click:\n    send \"holding %cursor slot of player%\"",
       "id": "cursor_slot",
       "name": "Cursor slot",
-      "page": "syntax/w5-chunk4",
+      "page": "syntax/block-shapes-ai",
       "patterns": [
         "[the] cursor slot [of %player%]"
       ],
@@ -7765,7 +7765,7 @@
       "example": "set damage of player's tool to 0\nsend \"%durability of player's tool% uses left\"",
       "id": "item_damage_value",
       "name": "Damage value and durability",
-      "page": "syntax/w5-chunk4",
+      "page": "syntax/block-shapes-ai",
       "patterns": [
         "[the] (damage [value]|durability) of %item%"
       ],
@@ -7793,7 +7793,7 @@
       "example": "give diamond sword with damage 500 to player",
       "id": "damaged_item",
       "name": "Damaged item",
-      "page": "syntax/w5-chunk4",
+      "page": "syntax/block-shapes-ai",
       "patterns": [
         "%item% with (damage|data) [value] %number%",
         "%item% damaged by %number%"
@@ -7807,7 +7807,7 @@
       "example": "set {_next} to dequeue {_queue}",
       "id": "w6c4_dequeue",
       "name": "De-queue",
-      "page": "syntax/w6-chunk4",
+      "page": "syntax/block-state-lists",
       "patterns": [
         "(dequeue|de-queue) [[first] %number% element[s] of] %queue variable%"
       ],
@@ -7862,7 +7862,7 @@
       "example": "on enchant:\n    send \"%enchant item% for %exp cost% levels: %enchantment hint%\"",
       "id": "enchant_event_values",
       "name": "Enchant item, cost, bonus and hint",
-      "page": "syntax/w5-chunk4",
+      "page": "syntax/block-shapes-ai",
       "patterns": [
         "[the] enchant[ed] item",
         "[the] [displayed] (exp|xp|experience|enchanting) cost",
@@ -7878,7 +7878,7 @@
       "example": "send \"%enchantment level of \"sharpness 5\"%\"",
       "id": "enchantment_level",
       "name": "Enchantment level",
-      "page": "syntax/w5-chunk4",
+      "page": "syntax/block-shapes-ai",
       "patterns": [
         "[the] enchant[ment] level[s] of %enchantment type%"
       ],
@@ -7891,7 +7891,7 @@
       "example": "on enchant prepare:\n    send \"%enchantment offer 1%\"",
       "id": "enchantment_offers",
       "name": "Enchantment offer",
-      "page": "syntax/w5-chunk4",
+      "page": "syntax/block-shapes-ai",
       "patterns": [
         "[all [the]] enchant[ment] offers",
         "enchant[ment] offer %number%",
@@ -7906,7 +7906,7 @@
       "example": "on enchant prepare:\n    send \"%cost of enchantment offer 1% levels\"",
       "id": "enchantment_offer_cost",
       "name": "Enchantment offer cost",
-      "page": "syntax/w5-chunk4",
+      "page": "syntax/block-shapes-ai",
       "patterns": [
         "[the] [enchant[ment]] cost of %enchantment offer%"
       ],
@@ -7919,7 +7919,7 @@
       "example": "set slot 0 of ender chest of player to diamond\nopen player's ender chest to player",
       "id": "ender_chest",
       "name": "Ender chest",
-      "page": "syntax/w5-chunk4",
+      "page": "syntax/block-shapes-ai",
       "patterns": [
         "[the] ender[ ]chest [inventory] of %player%",
         "%player%'s ender[ ]chest",
@@ -7934,7 +7934,7 @@
       "example": "spawn an enderman at player\nset carried block of last spawned entity to \"tnt\"",
       "id": "carried_block",
       "name": "Enderman carrying block data",
-      "page": "syntax/w5-chunk4",
+      "page": "syntax/block-shapes-ai",
       "patterns": [
         "[the] carried block[[ ]data] of %entity%",
         "%entity%'s carried block[[ ]data]"
@@ -7948,7 +7948,7 @@
       "example": "spawn a zombie at player\nset ai of last spawned entity to false",
       "id": "entity_ai",
       "name": "Entity AI",
-      "page": "syntax/w5-chunk4",
+      "page": "syntax/block-shapes-ai",
       "patterns": [
         "[the] (ai|artificial intelligence) of %entity%",
         "%entity%'s (ai|artificial intelligence)"
@@ -7962,7 +7962,7 @@
       "example": "set movement speed attribute of player to 0.2\nreset scale attribute of player",
       "id": "entity_attribute",
       "name": "Entity attribute",
-      "page": "syntax/w5-chunk4",
+      "page": "syntax/block-shapes-ai",
       "patterns": [
         "[the] %attribute type% [(total|final|modified)] attribute [value] of %entity%"
       ],
@@ -8057,7 +8057,7 @@
       "example": "send \"%first 3 elements of {top::*}%\"",
       "id": "w6c4_elements",
       "name": "First, last and ranges of elements",
-      "page": "syntax/w6-chunk4",
+      "page": "syntax/block-state-lists",
       "patterns": [
         "[the] first %number% elements of %list%",
         "[the] last %number% elements of %list%",
@@ -8158,7 +8158,7 @@
       "example": "on inventory click:\n    if inventory action is \"pickup all\":\n        cancel event",
       "id": "inventory_action",
       "name": "Inventory action",
-      "page": "syntax/w5-chunk4",
+      "page": "syntax/block-shapes-ai",
       "patterns": [
         "[the] (inventory|click) action"
       ],
@@ -8186,7 +8186,7 @@
       "example": "set {_g} to chest inventory with 3 rows named \"Shop\"\nsend \"%rows of {_g}%\"",
       "id": "inventory_rows",
       "name": "Inventory rows, slots, holder and viewers",
-      "page": "syntax/w5-chunk5",
+      "page": "syntax/potions-particles-queues",
       "patterns": [
         "[amount of] rows of %inventory%",
         "[amount of] slots of %inventory%",
@@ -8385,7 +8385,7 @@
       "example": "on join:\n    set {_l::*} to minecraft block tag \"logs\"\n    send \"%size of {_l::*}%\"",
       "id": "minecraft_tag",
       "name": "Minecraft tag",
-      "page": "syntax/w4-skbee-raytrace-world",
+      "page": "syntax/skbee-raytrace-world",
       "patterns": [
         "minecraft [block|item] tag %text%",
         "minecraft tags of %object%"
@@ -8399,7 +8399,7 @@
       "example": "send \"%max enchantment level of sharpness%\"",
       "id": "enchant_level_bounds",
       "name": "Minimum and maximum enchantment level",
-      "page": "syntax/w5-chunk5",
+      "page": "syntax/potions-particles-queues",
       "patterns": [
         "[the] ((max|min)[imum]|starting) enchant[ment] level of %enchantment%"
       ],
@@ -8412,7 +8412,7 @@
       "example": "set {_l::*} to 3 times",
       "id": "z6_times",
       "name": "N times",
-      "page": "syntax/w6-chunk6",
+      "page": "syntax/quaternions-protocol",
       "patterns": [
         "%number% times"
       ],
@@ -8439,7 +8439,7 @@
       "example": "set {_e} to potion effect of speed of tier 2 for 30 seconds\napply {_e} to player",
       "id": "new_potion_effect",
       "name": "New potion effect",
-      "page": "syntax/w5-chunk5",
+      "page": "syntax/potions-particles-queues",
       "patterns": [
         "[a[n]] [ambient] potion effect of %potion effect type% [[of] tier %number%] [without particles] [for %timespan%]",
         "[an] (infinite|permanent) [ambient] potion effect of %potion effect type% [[of] tier %number%]"
@@ -8525,7 +8525,7 @@
       "example": "on kick:\n    broadcast \"%player% was kicked: %on-screen kick message%\"",
       "id": "on_screen_kick_message",
       "name": "On-screen kick message",
-      "page": "syntax/w5-chunk5",
+      "page": "syntax/potions-particles-queues",
       "patterns": [
         "[the] on-screen kick (message|reason)"
       ],
@@ -8551,7 +8551,7 @@
       "example": "send parse placeholders in \"Hi %%player_name%%, %%server_online%% online\" for player",
       "id": "parse_placeholders",
       "name": "Parse placeholders",
-      "page": "syntax/w4-placeholders",
+      "page": "syntax/placeholders",
       "patterns": [
         "parse placeholders in %text% [for %player%]"
       ],
@@ -8592,7 +8592,7 @@
       "example": "set {_p} to flame particle\nset particle count of {_p} to 5\nsend \"%particle count of {_p}%\"",
       "id": "particle_parts",
       "name": "Particle count, offset and speed",
-      "page": "syntax/w5-chunk5",
+      "page": "syntax/potions-particles-queues",
       "patterns": [
         "[the] particle count of %particle%",
         "[the] particle (offset|distribution|velocity) of %particle%",
@@ -8607,7 +8607,7 @@
       "example": "set {_p} to flame particle with offset vector(1, 0, 1) with particle speed 0.1\ndraw {_p} at player",
       "id": "particle_value",
       "name": "Particle value",
-      "page": "syntax/w5-chunk5",
+      "page": "syntax/potions-particles-queues",
       "patterns": [
         "<particle> particle",
         "%particle% with [an] offset [of] %vector%",
@@ -8624,7 +8624,7 @@
       "example": "send \"%persistent data keys of player%\"",
       "id": "w6c4_data_keys",
       "name": "Persistent data keys",
-      "page": "syntax/w6-chunk4",
+      "page": "syntax/block-state-lists",
       "patterns": [
         "[all] [the] persistent data (keys|tags) of %object%"
       ],
@@ -8652,7 +8652,7 @@
       "example": "send placeholder \"player_health\" for player",
       "id": "placeholder",
       "name": "Placeholder",
-      "page": "syntax/w4-placeholders",
+      "page": "syntax/placeholders",
       "patterns": [
         "placeholder %text% [for %player%]"
       ],
@@ -8665,7 +8665,7 @@
       "example": "on placeholder request for prefix \"x\":\n    set the result to \"you asked for %the identifier%\"",
       "id": "placeholder_request_values",
       "name": "Placeholder request values",
-      "page": "syntax/w4-placeholders",
+      "page": "syntax/placeholders",
       "patterns": [
         "the identifier",
         "the prefix",
@@ -8680,7 +8680,7 @@
       "example": "set {_i} to diamond sword\nset {_p} to plain {_i}",
       "id": "z6_plain_item",
       "name": "Plain item",
-      "page": "syntax/w6-chunk6",
+      "page": "syntax/quaternions-protocol",
       "patterns": [
         "plain %item%"
       ],
@@ -8706,7 +8706,7 @@
       "example": "give skull of player to player",
       "id": "player_skull",
       "name": "Player skull",
-      "page": "syntax/w5-chunk5",
+      "page": "syntax/potions-particles-queues",
       "patterns": [
         "[the] skull of %player|text%"
       ],
@@ -8719,7 +8719,7 @@
       "example": "set portal cooldown of player to 7 seconds\nsend \"%portal cooldown of player%\" to player",
       "id": "z6_portal_cooldown",
       "name": "Portal cooldown",
-      "page": "syntax/w6-chunk6",
+      "page": "syntax/quaternions-protocol",
       "patterns": [
         "[the] portal cooldown of %entity%"
       ],
@@ -8732,7 +8732,7 @@
       "example": "set {_e} to potion effect of speed 2\nsend \"%potion tier of {_e}% for %potion duration of {_e}%\"",
       "id": "potion_effect_parts",
       "name": "Potion effect amplifier, tier and duration",
-      "page": "syntax/w5-chunk5",
+      "page": "syntax/potions-particles-queues",
       "patterns": [
         "[the] [potion] amplifier of %potion effect%",
         "[the] potion (tier|level) of %potion effect%",
@@ -8747,7 +8747,7 @@
       "example": "send \"%potion category of poison%\"",
       "id": "potion_category",
       "name": "Potion effect type category",
-      "page": "syntax/w5-chunk5",
+      "page": "syntax/potions-particles-queues",
       "patterns": [
         "[the] potion [effect [type]] category of %potion effect type%"
       ],
@@ -8760,7 +8760,7 @@
       "example": "send \"%potion effects of player%\"\nsend \"%tier of speed of player%\"",
       "id": "potion_effects_of",
       "name": "Potion effects of a player",
-      "page": "syntax/w5-chunk5",
+      "page": "syntax/potions-particles-queues",
       "patterns": [
         "[the] [active] potion effects of %player%",
         "[the] %potion effect type% [potion] effect of %player%",
@@ -8775,7 +8775,7 @@
       "example": "give splash potion of poison to player",
       "id": "potion_item",
       "name": "Potion item",
-      "page": "syntax/w5-chunk5",
+      "page": "syntax/potions-particles-queues",
       "patterns": [
         "[splash|lingering] potion [item] of %potion effect type%",
         "potion item of %potion effect%"
@@ -8789,7 +8789,7 @@
       "example": "on entity shoot bow:\n    broadcast \"force %projectile force%\"",
       "id": "projectile_force",
       "name": "Projectile force",
-      "page": "syntax/w5-chunk5",
+      "page": "syntax/potions-particles-queues",
       "patterns": [
         "[the] projectile force"
       ],
@@ -8802,7 +8802,7 @@
       "example": "send \"%protocol version of player% / %protocol version%\" to player",
       "id": "z6_protocol_version",
       "name": "Protocol version",
-      "page": "syntax/w6-chunk6",
+      "page": "syntax/quaternions-protocol",
       "patterns": [
         "protocol version [of %player%]"
       ],
@@ -8815,7 +8815,7 @@
       "example": "set {_q} to a new queue of 1, 2 and 3\nsend \"%start of {_q}%\"",
       "id": "new_queue",
       "name": "Queue and its start and end",
-      "page": "syntax/w5-chunk5",
+      "page": "syntax/potions-particles-queues",
       "patterns": [
         "[a] [new] queue [(of|with) %objects%]",
         "[the] (start|end) of %queue%"
@@ -8843,7 +8843,7 @@
       "example": "send \"%raw name of player's tool%\"",
       "id": "raw_name",
       "name": "Raw name",
-      "page": "syntax/w5-chunk5",
+      "page": "syntax/potions-particles-queues",
       "patterns": [
         "(raw|minecraft|vanilla) name[s] of %item%"
       ],
@@ -8856,7 +8856,7 @@
       "example": "on join:\n    set {_r} to ray trace from player with max distance 50\n    send \"you look at %hit block of {_r}%\"",
       "id": "ray_trace",
       "name": "Ray trace",
-      "page": "syntax/w4-skbee-raytrace-world",
+      "page": "syntax/skbee-raytrace-world",
       "patterns": [
         "ray trace from %player|location% [in direction %vector%] [with max distance %number%] [including fluids] [ignoring blocks|entities|fluids]",
         "hit (block|entity|block face|position|distance) of %ray%"
@@ -8870,7 +8870,7 @@
       "example": "send \"%redstone power of targeted block of player%\"",
       "id": "redstone_power",
       "name": "Redstone power",
-      "page": "syntax/w5-chunk5",
+      "page": "syntax/potions-particles-queues",
       "patterns": [
         "[the] redstone power of %block%"
       ],
@@ -8909,7 +8909,7 @@
       "example": "send \"%charges of targeted block of player%\"",
       "id": "anchor_charges",
       "name": "Respawn anchor charges",
-      "page": "syntax/w5-chunk5",
+      "page": "syntax/potions-particles-queues",
       "patterns": [
         "[the] [max[imum]] charge[s] of %block%"
       ],
@@ -8922,7 +8922,7 @@
       "example": "on respawn:\n    send \"%respawn reason%\"",
       "id": "respawn_reason",
       "name": "Respawn reason",
-      "page": "syntax/w5-chunk5",
+      "page": "syntax/potions-particles-queues",
       "patterns": [
         "[the] respawn[ing] reason"
       ],
@@ -8935,7 +8935,7 @@
       "example": "function double(n: number) :: number:\n    return {_n} * 2\n\non join:\n    send \"%result of function \"double\" with arguments 21%\"",
       "id": "result_of_function",
       "name": "Result of a function",
-      "page": "syntax/w5-chunk5",
+      "page": "syntax/potions-particles-queues",
       "patterns": [
         "[the] result[s] of [running|executing] function %text% [with arg[ument]s %objects%]"
       ],
@@ -8948,7 +8948,7 @@
       "example": "set {_t} to ringing time of block at player",
       "id": "z6_ringing_time",
       "name": "Ringing time",
-      "page": "syntax/w6-chunk6",
+      "page": "syntax/quaternions-protocol",
       "patterns": [
         "ringing time of %block%"
       ],
@@ -8961,7 +8961,7 @@
       "example": "set {_v} to vector(1, 0, 0) rotated around z by 90",
       "id": "z6_rotation",
       "name": "Rotation angle, axis and rotated",
-      "page": "syntax/w6-chunk6",
+      "page": "syntax/quaternions-protocol",
       "patterns": [
         "rotation angle of %quaternion%",
         "rotation axis of %quaternion%",
@@ -8976,7 +8976,7 @@
       "example": "set scale of player to 2\nreset scale of player",
       "id": "c6_scale",
       "name": "Scale",
-      "page": "syntax/w5-chunk6",
+      "page": "syntax/entity-block-properties",
       "patterns": [
         "[the] scale of %entity%",
         "%entity%'s scale"
@@ -8990,7 +8990,7 @@
       "example": "add 1 to sea pickles of block at location(0, 64, 0)",
       "id": "c6_sea_pickles",
       "name": "Sea pickles",
-      "page": "syntax/w5-chunk6",
+      "page": "syntax/entity-block-properties",
       "patterns": [
         "[the] [(min|max)[imum]] [sea] pickle(s| count| amount) of %block%"
       ],
@@ -9020,7 +9020,7 @@
       "example": "set spawn of world \"world\" to location(7, 100, 7)",
       "id": "z6_set_spawn",
       "name": "Set world spawn",
-      "page": "syntax/w6-chunk6",
+      "page": "syntax/quaternions-protocol",
       "patterns": [
         "set spawn of %world% to %location%"
       ],
@@ -9033,7 +9033,7 @@
       "example": "set {_lines::*} to sign text of block at player\nset {_type} to spawner type of block at player",
       "id": "z6_block_entity",
       "name": "Sign text, skull owner and texture, spawner type, loot table seed",
-      "page": "syntax/w6-chunk6",
+      "page": "syntax/quaternions-protocol",
       "patterns": [
         "sign (text|lines) of %block%",
         "skull owner of %block%",
@@ -9063,7 +9063,7 @@
       "example": "send \"%index of slot 5 of player's inventory%\"",
       "id": "c6_slot_index",
       "name": "Slot index",
-      "page": "syntax/w5-chunk6",
+      "page": "syntax/entity-block-properties",
       "patterns": [
         "[the] [(raw|unique)] index of %slot%"
       ],
@@ -9117,7 +9117,7 @@
       "example": "on tame:\n    broadcast \"%tamer% tamed a pet\"",
       "id": "c6_event_names",
       "name": "Source block, tamer, shooter, spawning reason",
-      "page": "syntax/w5-chunk6",
+      "page": "syntax/entity-block-properties",
       "patterns": [
         "[the] source block",
         "[the] tamer",
@@ -9133,7 +9133,7 @@
       "example": "set {_e} to 1 zombie spawn egg\nset spawn egg entity of {_e} to \"cow\"",
       "id": "c6_spawn_egg_entity",
       "name": "Spawn egg entity",
-      "page": "syntax/w5-chunk6",
+      "page": "syntax/entity-block-properties",
       "patterns": [
         "[the] spawn egg entity of %item%",
         "%item%'s spawn egg entity"
@@ -9147,7 +9147,7 @@
       "example": "spawn a pig at player\nset spectator target of player to last spawned entity",
       "id": "c6_spectator_target",
       "name": "Spectator target",
-      "page": "syntax/w5-chunk6",
+      "page": "syntax/entity-block-properties",
       "patterns": [
         "spectator target [of %player%]",
         "%player%'s spectator target"
@@ -9174,7 +9174,7 @@
       "example": "set stored enchantments of player's tool to \"sharpness 5\"",
       "id": "c6_stored_enchantments",
       "name": "Stored enchantments",
-      "page": "syntax/w5-chunk6",
+      "page": "syntax/entity-block-properties",
       "patterns": [
         "[the] stored enchant[ment]s of %player%'s tool"
       ],
@@ -9215,7 +9215,7 @@
       "example": "send \"you look at %target of player%\"",
       "id": "c6_target",
       "name": "Target",
-      "page": "syntax/w5-chunk6",
+      "page": "syntax/entity-block-properties",
       "patterns": [
         "[the] target[ed] [entity] [of %entity%]",
         "%entity%'s target[ed] [entity]"
@@ -9229,7 +9229,7 @@
       "example": "send \"%temperature of block below player%\"",
       "id": "c6_temperature",
       "name": "Temperature",
-      "page": "syntax/w5-chunk6",
+      "page": "syntax/entity-block-properties",
       "patterns": [
         "[the] temperature[s] of %block%",
         "%block%'s temperature"
@@ -9271,7 +9271,7 @@
       "example": "spawn text display at player with text \"hi\"\nset text alignment of last spawned entity to left",
       "id": "c6_text_display",
       "name": "Text display alignment, line width, opacity",
-      "page": "syntax/w5-chunk6",
+      "page": "syntax/entity-block-properties",
       "patterns": [
         "[the] text alignment of %display%",
         "[the] line width of %display%",
@@ -9338,7 +9338,7 @@
       "example": "set {_i} to chest inventory with 3 rows named \"Shop\"\nadd player to viewers of {_i}\nsend \"%viewers of {_i}%\"",
       "id": "c6_title_style_viewers",
       "name": "Title, style, viewers",
-      "page": "syntax/w5-chunk6",
+      "page": "syntax/entity-block-properties",
       "patterns": [
         "[the] title of (bossbar %text%|%inventory%)",
         "[the] style of bossbar %text%",
@@ -9398,7 +9398,7 @@
       "example": "set {_v} to vector(1, 2, 3)\nset x of {_v} to 5\nadd 2 to y of {_v}",
       "id": "z6_components",
       "name": "Vector and quaternion components",
-      "page": "syntax/w6-chunk6",
+      "page": "syntax/quaternions-protocol",
       "patterns": [
         "w of %quaternion%",
         "set (x|y|z|w) of %variable% to %number%",
@@ -9413,7 +9413,7 @@
       "example": "set {_v} to vehicle of player",
       "id": "z6_vehicle",
       "name": "Vehicle and passengers",
-      "page": "syntax/w6-chunk6",
+      "page": "syntax/quaternions-protocol",
       "patterns": [
         "vehicle of %entity%",
         "passengers of %entity%"
@@ -9427,7 +9427,7 @@
       "example": "set {_lvl} to villager level of last spawned entity",
       "id": "z6_villager",
       "name": "Villager level, experience and profession",
-      "page": "syntax/w6-chunk6",
+      "page": "syntax/quaternions-protocol",
       "patterns": [
         "villager level of %entity%",
         "villager (experience|xp) of %entity%",
@@ -9442,7 +9442,7 @@
       "example": "set whitelist to true\nset {_w::*} to whitelisted players",
       "id": "z6_whitelist",
       "name": "Whitelist state and players",
-      "page": "syntax/w6-chunk6",
+      "page": "syntax/quaternions-protocol",
       "patterns": [
         "whitelist (enabled|status|state)",
         "set whitelist [(enabled|status|state)] to (true|false|on|off)",
@@ -9472,7 +9472,7 @@
       "example": "set world border warning distance to 10\nadd 30 seconds to world border warning time",
       "id": "c6_world_border",
       "name": "World border",
-      "page": "syntax/w5-chunk6",
+      "page": "syntax/entity-block-properties",
       "patterns": [
         "[the] world border [of %world|player|location%]",
         "%world|player%'s world border",
@@ -9487,7 +9487,7 @@
       "example": "set world border center of world border of world of player to location(0, 0, 0)\nset world border damage amount of world of player to 1",
       "id": "border_settings",
       "name": "World border center and damage",
-      "page": "syntax/w5-chunk4",
+      "page": "syntax/block-shapes-ai",
       "patterns": [
         "[the] world[ ]border (center|middle) of %world border%",
         "[the] world[ ]border damage amount of %world border%",
@@ -9515,7 +9515,7 @@
       "example": "send \"%chunk of location(17, 64, -1)%\"",
       "id": "chunk",
       "name": "Chunk",
-      "page": "syntax/w4-types-1",
+      "page": "syntax/named-types",
       "patterns": [
         "chunk(%number%, %number%[, %world%])",
         "chunk (of|at) %location%"
@@ -9529,7 +9529,7 @@
       "example": "send \"%hex of rgb(255, 128, 0)%\"\nsend \"%red value of lime%\"",
       "id": "color",
       "name": "Color",
-      "page": "syntax/w4-types-1",
+      "page": "syntax/named-types",
       "patterns": [
         "color",
         "rgb(%number%, %number%, %number%)",
@@ -9606,7 +9606,7 @@
       "example": "function describe(c: click type) :: text:\n    return \"click: %{_c}%\"\non join:\n    send describe(shift left)\n    set {_m} to \"waxing crescent\" parsed as moon phase\n    send \"%{_m}%\"",
       "id": "named_values",
       "name": "Named values",
-      "page": "syntax/w4-types-1",
+      "page": "syntax/named-types",
       "patterns": [
         "<value word>",
         "%text% parsed as <type>",
@@ -9667,7 +9667,7 @@
       "example": "set {q} to quaternion(1, 0, 0, 0)\nsend \"%{q}%\"",
       "id": "quaternion",
       "name": "Quaternion",
-      "page": "syntax/w4-types-1",
+      "page": "syntax/named-types",
       "patterns": [
         "quaternion(%number%, %number%, %number%, %number%)",
         "identity quaternion"
@@ -9681,7 +9681,7 @@
       "example": "send \"%queue(1, 2, 3)%\"",
       "id": "queue",
       "name": "Queue",
-      "page": "syntax/w4-types-1",
+      "page": "syntax/named-types",
       "patterns": [
         "queue(%objects%)"
       ],
@@ -9708,7 +9708,7 @@
       "example": "send \"%timeperiod(0, 12000)%\"",
       "id": "timeperiod",
       "name": "Timeperiod",
-      "page": "syntax/w4-types-1",
+      "page": "syntax/named-types",
       "patterns": [
         "timeperiod(%time%, %time%)",
         "time period(%time%, %time%)"
@@ -9761,7 +9761,7 @@
       "example": "set {b} to world border of world of player",
       "id": "world_border",
       "name": "World border",
-      "page": "syntax/w4-types-1",
+      "page": "syntax/named-types",
       "patterns": [
         "world border of %world%"
       ],
@@ -9787,7 +9787,7 @@
       "example": "send \"%clamp(15, 0, 10)%\" to player",
       "id": "w4_clamp",
       "name": "clamp, median, product",
-      "page": "syntax/w4-functions-sections",
+      "page": "syntax/functions-builtin-sections",
       "patterns": [
         "clamp(%number%, %min%, %max%)",
         "median(%numbers%)",
@@ -9802,7 +9802,7 @@
       "example": "send \"%toBase(255, 16)%\" to player",
       "id": "w4_text",
       "name": "concat, formatNumber, toBase, fromBase, rgb, uuid",
-      "page": "syntax/w4-functions-sections",
+      "page": "syntax/functions-builtin-sections",
       "patterns": [
         "concat(%objects%)",
         "formatNumber(%number%, %pattern%)",
@@ -9818,7 +9818,7 @@
       "example": "send \"%combinations(5, 2)%\" to player",
       "id": "w4_math",
       "name": "exp, ln, log, root, factorial, combinations, permutations, isNaN",
-      "page": "syntax/w4-functions-sections",
+      "page": "syntax/functions-builtin-sections",
       "patterns": [
         "log(%number%[, %base%])",
         "root(%number%[, %n%])",
@@ -9890,7 +9890,7 @@
       "example": "send \"%calcExperience(10)%\" to player",
       "id": "w4_player",
       "name": "player, offlinePlayer, calcExperience",
-      "page": "syntax/w4-functions-sections",
+      "page": "syntax/functions-builtin-sections",
       "patterns": [
         "player(%name or uuid%)",
         "offlinePlayer(%name or uuid%)",
@@ -9918,7 +9918,7 @@
       "example": "send \"%sin(30)%\" to player",
       "id": "w4_trig",
       "name": "sin, cos, tan, asin, acos, atan, atan2",
-      "page": "syntax/w4-functions-sections",
+      "page": "syntax/functions-builtin-sections",
       "patterns": [
         "sin(%number%)",
         "atan2(%number%, %number%)"

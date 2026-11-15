@@ -57,10 +57,10 @@ pub struct EventCtx {
     pub extra: Option<Box<crate::events_items::EventExtra>>,
     /// The clicked slot in `on inventory click`.
     pub inv: Option<Box<crate::inventories::InvClick>>,
-    /// `event-...` values, in the order of `ExtEvent::fields` (see `w2_events_1`).
+    /// `event-...` values, in the order of `ExtEvent::fields` (see `events_blocks_players`).
     pub ev: Vec<Value>,
-    /// Values of the extra events in `w2_events_2`.
-    pub ext: Option<Box<crate::w2_events_2::ExtVals>>,
+    /// Values of the extra events in `events_game`.
+    pub ext: Option<Box<crate::events_game::ExtVals>>,
     /// `death message` in `on death`.
     pub death_message: Option<String>,
     /// `damage cause` in `on damage` (lower case, like `fall`).
@@ -235,7 +235,7 @@ impl ScriptTable {
     pub fn has_at(&self) -> bool {
         self.events
             .keys()
-            .any(|k| matches!(k, EventKind::Ext(crate::w2_events_1::ExtEvent::At(_))))
+            .any(|k| matches!(k, EventKind::Ext(crate::events_blocks_players::ExtEvent::At(_))))
     }
 
     pub fn has_every(&self) -> bool {
@@ -321,15 +321,15 @@ mod gaps_eval;
 mod list_eval;
 mod structures_rt;
 pub(crate) use structures_rt::ERROR_KEY;
-mod w2;
-mod w2_eval;
-mod w2_run;
-mod w2e3;
-mod w4_eval;
-mod w5_eval;
-mod w5c2_eval;
-mod w6_eval;
-mod x2_eval;
+mod conditions_flags_metadata;
+mod effects_player_actions;
+mod effects_player_state;
+mod effects_player_visibility;
+mod expr_item_world_facts;
+mod expr_numbers_metadata;
+mod expr_random_ternary;
+mod expr_text_directions;
+mod functions_builtin;
 
 fn join_list(items: &[(String, Value)], out: &mut String) {
     if items.is_empty() {
@@ -559,10 +559,10 @@ pub struct Engine {
     pub bounds: crate::skbee_bound::Bounds,
     /// Sidebar boards by player uuid (not saved).
     pub(crate) boards: crate::skbee_scoreboard_teams::Boards,
-    /// Event values changed by the run in progress (`w2_events_4`).
+    /// Event values changed by the run in progress (`events_world_vehicles`).
     pub(crate) ext_out: Vec<(u8, Value)>,
-    w5: crate::w2_expressions_5::State,
-    pub(crate) w5c1: Box<crate::w5_chunk1::State>,
+    w5: crate::expr_numbers_metadata::State,
+    pub(crate) w5c1: Box<crate::drops_border_leashes::State>,
     /// Nesting of placeholder scripts that parse placeholders themselves.
     ph_depth: u8,
 }
@@ -830,7 +830,7 @@ impl Engine {
     /// went from `prev` to `cur` (ticks of the day). Call once per tick when
     /// `table().has_at()`.
     pub fn fire_at_time(&mut self, prev: i64, cur: i64, host: &mut dyn Host) {
-        use crate::w2_events_1::{ExtEvent, crossed};
+        use crate::events_blocks_players::{ExtEvent, crossed};
         let table = self.table.clone();
         for k in table.events.keys() {
             if let EventKind::Ext(ExtEvent::At(t)) = k
@@ -1229,12 +1229,12 @@ impl Engine {
             return r;
         }
         if let Value::Quaternion { .. } = v
-            && let Some(r) = crate::w6_chunk6::quat_comp(prop, v)
+            && let Some(r) = crate::quaternions_protocol::quat_comp(prop, v)
         {
             return r;
         }
         if let Value::Vector { .. } = v
-            && let Some(r) = crate::w2_expressions_7::component(prop, v)
+            && let Some(r) = crate::expr_vectors_server::component(prop, v)
         {
             return r;
         }
@@ -1536,13 +1536,13 @@ impl Engine {
                     Some(b) => Some(self.eval(b, ex, host)?),
                     None => None,
                 };
-                let hit = if r.kind == crate::w2_conditions_2::W2Kind::ScriptCommand {
+                let hit = if r.kind == crate::conditions_values::W2Kind::ScriptCommand {
                     match &a {
                         Value::Text(t) => self.table.command(t.trim().trim_start_matches('/')).is_some(),
                         _ => false,
                     }
                 } else {
-                    crate::w2_conditions_2::check(r.kind, &a, b.as_ref(), host)
+                    crate::conditions_values::check(r.kind, &a, b.as_ref(), host)
                 };
                 Ok(hit != r.negate)
             }
@@ -1571,7 +1571,7 @@ impl Engine {
                     None => None,
                 };
                 Ok(
-                    crate::w4_conditions_1::check(r.kind, &a, b.as_ref(), ex.cancelled, host)
+                    crate::conditions_entity_checks::check(r.kind, &a, b.as_ref(), ex.cancelled, host)
                         .is_some_and(|hit| hit != r.negate),
                 )
             }
@@ -1584,7 +1584,7 @@ impl Engine {
                     Some(b) => Some(self.eval(b, ex, host)?),
                     None => None,
                 };
-                Ok(crate::w4_skbee_raytrace_world::check(r, &a, b.as_ref(), host))
+                Ok(crate::skbee_raytrace_world::check(r, &a, b.as_ref(), host))
             }
             Cond::PlayerFlag { player, flag, negate } => {
                 let v = self.eval(player, ex, host)?;
@@ -1993,7 +1993,7 @@ impl Engine {
         let x = self.eval(a, ex, host).map_err(|_| err.clone())?;
         let y = self.eval(b, ex, host).map_err(|_| err.clone())?;
         if matches!(x, Value::Vector { .. }) || matches!(y, Value::Vector { .. }) {
-            return crate::w2_expressions_7::arith(&x, op, &y);
+            return crate::expr_vectors_server::arith(&x, op, &y);
         }
         let timey = |v: &Value| matches!(v, Value::Timespan { .. } | Value::Date(_));
         if !timey(&x) && !timey(&y) {
@@ -2028,7 +2028,7 @@ impl Engine {
         }
         let Value::Date(d) = first else {
             if let (Value::Timespan { millis }, DateOp::Format, 1) = (&first, op, args.len()) {
-                return Ok(Value::Text(crate::w2_expressions_3::clock_text(*millis)));
+                return Ok(Value::Text(crate::expr_player_state::clock_text(*millis)));
             }
             return Ok(Value::None);
         };
@@ -2044,7 +2044,7 @@ impl Engine {
         })
     }
 
-    /// Evaluate the arguments of a `w2_expressions_4` expression or effect.
+    /// Evaluate the arguments of a `expr_item_damage_facts` expression or effect.
     /// A player that is offline becomes `<none>`.
     #[inline(never)]
     fn w4_args(&mut self, args: &[Expr], ex: &mut Exec, host: &mut dyn Host) -> Result<Vec<Value>, String> {
@@ -2083,7 +2083,7 @@ impl Engine {
             Expr::Console => Value::Console,
             Expr::Message => ex.ctx.message.clone().map(Value::Text).unwrap_or(Value::None),
             Expr::Damage => ex.ctx.damage.map(Value::Num).unwrap_or(Value::None),
-            Expr::Ev2Val(s) => crate::w2_events_2::read(&ex.ctx, *s),
+            Expr::Ev2Val(s) => crate::events_game::read(&ex.ctx, *s),
             Expr::Attacker => match ex.ctx.attacker.clone() {
                 Some(a) => online(&Value::Player(a), &mut ex.seen, host)
                     .map(Value::Player)
@@ -2227,7 +2227,7 @@ impl Engine {
                 if matches!(**e, Expr::Var(_) | Expr::W2(_) | Expr::W7(_) | Expr::Prop(..))
                     && let Value::Vector { x, y, z } = self.eval(e, ex, host)?
                 {
-                    return Ok(Value::Num(crate::w2_expressions_7::length((x, y, z))));
+                    return Ok(Value::Num(crate::expr_vectors_server::length((x, y, z))));
                 }
                 let t = self.text(e, ex, host)?;
                 Value::Num(crate::text_join_split::char_len(&t) as f64)
@@ -2247,7 +2247,7 @@ impl Engine {
             }
             Expr::W4(w) => {
                 let vals = self.w4_args(&w.args, ex, host)?;
-                crate::w2_expressions_4::apply(w.op, &vals, host)
+                crate::expr_item_damage_facts::apply(w.op, &vals, host)
             }
             Expr::TextFn(f, args) => {
                 let mut vals = Vec::with_capacity(args.len());
@@ -2294,14 +2294,14 @@ impl Engine {
                 for a in &n.args {
                     vals.push(self.eval(a, ex, host)?);
                 }
-                crate::w5_chunk5::apply(n.op, &vals, host)?
+                crate::potions_particles_queues::apply(n.op, &vals, host)?
             }
             Expr::W6c5(n) => {
                 let mut vals = Vec::with_capacity(n.args.len());
                 for a in &n.args {
                     vals.push(self.eval(a, ex, host)?);
                 }
-                crate::w6_chunk5::apply(n.op, &vals, host)?
+                crate::parsing_loot_components::apply(n.op, &vals, host)?
             }
             Expr::W5c3(n) => self.eval_w5c3(n, ex, host)?,
             Expr::Rtw(n) => {
@@ -2309,7 +2309,7 @@ impl Engine {
                 for a in &n.args {
                     vals.push(self.eval(a, ex, host)?);
                 }
-                crate::w4_skbee_raytrace_world::apply(n.op, &vals, host)?
+                crate::skbee_raytrace_world::apply(n.op, &vals, host)?
             }
             Expr::C6(n) => self.eval_c6(n, ex, host)?,
             Expr::W6C4(n) => self.w6c4_expr(n, ex, host)?,
@@ -2319,14 +2319,14 @@ impl Engine {
                 for a in &n.args {
                     vals.push(self.eval(a, ex, host)?);
                 }
-                crate::w2_expressions_7::apply(n.op, &vals, host)?
+                crate::expr_vectors_server::apply(n.op, &vals, host)?
             }
             Expr::T1(n) => {
                 let mut vals = Vec::with_capacity(n.args.len());
                 for a in &n.args {
                     vals.push(self.eval(a, ex, host)?);
                 }
-                crate::types_1::apply(&n.op, &vals)?
+                crate::named_types::apply(&n.op, &vals)?
             }
             Expr::Items(s) => Value::List(self.eval_list(s, ex, host)?),
             Expr::Ext(f, args) => self.eval_ext(*f, args, ex, host)?,
@@ -2754,12 +2754,12 @@ impl Engine {
                 for a in &w.args {
                     vals.push(self.eval(a, ex, host)?);
                 }
-                crate::w5_chunk5::run_effect(w.op, &vals, host)?;
+                crate::potions_particles_queues::run_effect(w.op, &vals, host)?;
             }
             Effect::W5c3(w) => self.run_w5c3(w, ex, host)?,
             Effect::Rtw(w) => {
                 let name = self.eval(&w.name, ex, host)?;
-                crate::w4_skbee_raytrace_world::run_effect(w, &name, host)?;
+                crate::skbee_raytrace_world::run_effect(w, &name, host)?;
             }
             Effect::Hf(h) => {
                 let amount = match &h.amount {
@@ -2787,12 +2787,12 @@ impl Engine {
             Effect::W2c(w) => {
                 let v = self.eval(&w.value, ex, host)?;
                 if let Some(p) = self.player(&w.player, ex, host)? {
-                    crate::w2_expressions_3::run(w, &v, &p, host);
+                    crate::expr_player_state::run(w, &v, &p, host);
                 }
             }
             Effect::W4(w) => {
                 let vals = self.w4_args(&w.args, ex, host)?;
-                crate::w2_expressions_4::run(w.op, &vals, host);
+                crate::expr_item_damage_facts::run(w.op, &vals, host);
             }
             Effect::W6(w) => self.exec_w6(w, ex, host)?,
             Effect::SetGamemode(p, m) => {
@@ -2807,7 +2807,7 @@ impl Engine {
                 }
             }
             Effect::Ext4(x) => match &**x {
-                crate::w2_events_4::ExtEffect::SetVal(i, e) => {
+                crate::events_world_vehicles::ExtEffect::SetVal(i, e) => {
                     let v = self.eval(e, ex, host)?;
                     let i = usize::from(*i);
                     if ex.ctx.args.len() <= i {
@@ -3073,7 +3073,7 @@ fn w2_loc(
     seen: &mut Vec<(String, Option<String>)>,
     host: &mut dyn Host,
 ) -> Option<(f64, f64, f64, Option<String>)> {
-    if let Some((x, y, z, w)) = crate::w2_conditions_3::loc_parts(v) {
+    if let Some((x, y, z, w)) = crate::conditions_entity_block::loc_parts(v) {
         return Some((x, y, z, w.map(str::to_string)));
     }
     let p = online(v, seen, host)?;
@@ -3081,16 +3081,16 @@ fn w2_loc(
 }
 
 impl Engine {
-    /// The rare conditions of `w2_conditions_3`.
+    /// The rare conditions of `conditions_entity_block`.
     #[inline(never)]
     fn cond_w2(
         &mut self,
-        c: &crate::w2_conditions_3::W2Cond,
+        c: &crate::conditions_entity_block::W2Cond,
         ex: &mut Exec,
         host: &mut dyn Host,
     ) -> Result<bool, String> {
-        use crate::w2_conditions_3 as w;
-        use crate::w2_conditions_3::W2Cond as C;
+        use crate::conditions_entity_block as w;
+        use crate::conditions_entity_block::W2Cond as C;
         Ok(match c {
             C::Valid(e, negate) => {
                 let v = self.eval(e, ex, host)?;
@@ -3162,7 +3162,12 @@ impl Engine {
                     Value::World(n) | Value::Text(n) => n.clone(),
                     // `is within chunk ...` and `is within the border of ...`
                     Value::Chunk { .. } | Value::Border(_) => {
-                        return Ok(crate::w6_chunk3::within_area(&l, &wv, &mut ex.seen, host) != *negate);
+                        return Ok(crate::conditions_mob_block_state::within_area(
+                            &l,
+                            &wv,
+                            &mut ex.seen,
+                            host,
+                        ) != *negate);
                     }
                     _ => return Ok(false),
                 };
@@ -3201,7 +3206,10 @@ impl Engine {
                     Value::Text(t) => t,
                     // A placed block: its own state (stairs, slabs, open doors).
                     at @ Value::Location { .. } => {
-                        return Ok(crate::w6_chunk3::placed_block_trait(&at, *tr, host) == Some(!*negate));
+                        return Ok(
+                            crate::conditions_mob_block_state::placed_block_trait(&at, *tr, host)
+                                == Some(!*negate),
+                        );
                     }
                     _ => return Ok(false),
                 };
@@ -3279,7 +3287,7 @@ impl Engine {
         player: Option<&PlayerRef>,
         host: &mut dyn Host,
     ) -> Option<String> {
-        use crate::w2_events_4::ExtEvent;
+        use crate::events_world_vehicles::ExtEvent;
         let kind = EventKind::Ext4(ExtEvent::PlaceholderRequest);
         if self.ph_depth >= crate::placeholders::MAX_DEPTH {
             return None;
@@ -3294,7 +3302,7 @@ impl Engine {
                 Value::None,
                 Value::Text(prefix.to_string()),
             ];
-            let ctx = crate::w2_events_4::ctx(player.cloned(), vals);
+            let ctx = crate::events_world_vehicles::ctx(player.cloned(), vals);
             let mut ex = Exec::new(trig, ctx);
             if self.budget == 0 {
                 self.budget = self.max_instructions;

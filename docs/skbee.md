@@ -233,7 +233,7 @@ Details: [syntax/skbee-utilities.md](syntax/skbee-utilities.md).
 
 ## Ray tracing, worlds, chunks and tags
 
-Details: [syntax/w4-skbee-raytrace-world.md](syntax/w4-skbee-raytrace-world.md).
+Details: [syntax/skbee-raytrace-world.md](syntax/skbee-raytrace-world.md).
 
 - 🟡 Ray trace — `ray trace from player [with max distance 50]`, `... from <location> in direction <vector>`, `hit block|entity|block face|position|distance of {_r}`. Blocks are found by stepping through the world and counting every non-air block as a full cube; entity hits need a host that can find entities. Thin rays only, no `with ray size`.
 - ✅ Create, load and unload worlds — `create world "x" [with environment nether]`, `load world "x"`, `unload world "x"` through Pumpkin's `create-world` and `unload-world`. The main world and a world with players in it can't be unloaded; that is a normal script error with the reason.

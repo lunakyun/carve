@@ -53,7 +53,7 @@ pub fn extract(file: &str, tree: Vec<Line>) -> (Vec<Line>, FileStructs, Vec<Scri
                             && !k.contains(['"', '{', '%', ':']) =>
                     {
                         let k = k.trim().to_ascii_lowercase();
-                        let names = crate::w6_chunk7::alias_names(&k);
+                        let names = crate::functions_aliases::alias_names(&k);
                         if let Some(dup) = names.iter().find(|n| aliases.iter().any(|(m, _)| m == *n)) {
                             let shown = if names.len() == 1 { k.clone() } else { dup.clone() };
                             errors.push(ScriptError::new(
@@ -91,7 +91,7 @@ pub fn extract(file: &str, tree: Vec<Line>) -> (Vec<Line>, FileStructs, Vec<Scri
             rest.push(top);
         }
     }
-    crate::w6_chunk7::add_plurals(&mut aliases);
+    crate::functions_aliases::add_plurals(&mut aliases);
     if !aliases.is_empty() {
         // Longest names first, so `iron sword` wins over `iron`.
         aliases.sort_by_key(|(k, _)| std::cmp::Reverse(k.len()));
@@ -361,7 +361,7 @@ pub(crate) fn section(cx: &mut Cx, line: &Line, lower: &str) -> bool {
         }
         return true;
     }
-    crate::w4_sections::section(cx, line, lower)
+    crate::sections::section(cx, line, lower)
 }
 
 /// `<effect> if <cond>` or `<effect> unless <cond>`, outside text and

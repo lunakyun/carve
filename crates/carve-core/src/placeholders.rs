@@ -5,7 +5,7 @@
 //!   `%%player_name%%` inside a script string, because `%%` is a literal `%`).
 //! * Built-in placeholders ([`builtin`]) and `carve_var_<name>`.
 //! * Scripts add their own with `on placeholder request for prefix "x":`
-//!   (see `w2_events_4::ExtEvent::PlaceholderRequest`): inside, `the
+//!   (see `events_world_vehicles::ExtEvent::PlaceholderRequest`): inside, `the
 //!   identifier` is the text after `x_` and `set the result to ...` answers.
 //! * Other plugins reach all of it through a small IPC protocol, see
 //!   [`handle_ipc`].
@@ -56,7 +56,7 @@ fn player_tail(toks: &[Tok], p: usize, env: &Env) -> Result<(Option<Expr>, usize
 /// Words that start one of these expressions. `pos` is the index after the
 /// word `lw` (already lowercase). `None` when the words are not ours.
 pub fn parse_word(toks: &[Tok], pos: usize, env: &Env, lw: &str) -> Result<Option<(Expr, usize)>, String> {
-    use crate::w2_events_4::ExtEvent;
+    use crate::events_world_vehicles::ExtEvent;
     match lw {
         "identifier" | "result" | "prefix" if env.ext4 == Some(ExtEvent::PlaceholderRequest) => {
             let name = if lw == "prefix" { "prefix" } else { lw };

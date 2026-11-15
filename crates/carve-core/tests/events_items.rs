@@ -291,7 +291,7 @@ fn bad_filters_are_errors() {
 /// and drinks to `on consume`.
 #[test]
 fn only_edible_items_count_as_consumed() {
-    use carve_core::w2_conditions_2::is_edible;
+    use carve_core::conditions_values::is_edible;
     assert!(is_edible("bread") && is_edible("potion") && is_edible("milk_bucket"));
     assert!(!is_edible("stick") && !is_edible("air") && !is_edible("bow"));
 }

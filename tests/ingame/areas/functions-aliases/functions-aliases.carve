@@ -1,0 +1,8 @@
+# Auto reload test script: the area test rewrites this file while the
+# server runs and checks that /falauto answers with the new text.
+
+auto reload
+
+command /falauto:
+    trigger:
+        send "fal:auto v1" to player

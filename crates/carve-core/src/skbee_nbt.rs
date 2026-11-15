@@ -972,9 +972,9 @@ pub enum ItemComp {
     Rarity,
     GlintOverride,
     ItemModel,
-    /// Enchantments kept in an enchanted book (`w5_chunk6`).
+    /// Enchantments kept in an enchanted book (`entity_block_properties`).
     StoredEnchantments,
-    /// Leather and wolf armor color (`dye`, see `w5_chunk1`).
+    /// Leather and wolf armor color (`dye`, see `drops_border_leashes`).
     DyedColor,
 }
 
@@ -1033,7 +1033,7 @@ impl ItemComp {
                 .and_then(|n| RARITIES.get(n as usize))
                 .map_or(Value::None, |r| Value::Text((*r).into())),
             ItemComp::GlintOverride => b.first().map_or(Value::None, |x| Value::Bool(*x != 0)),
-            ItemComp::StoredEnchantments => crate::w5_chunk6::stored_decode(b),
+            ItemComp::StoredEnchantments => crate::entity_block_properties::stored_decode(b),
             ItemComp::DyedColor => match b.get(..4) {
                 Some(x) => Value::Color {
                     r: x[1],
@@ -1091,7 +1091,9 @@ impl ItemComp {
                     .ok_or_else(|| format!("rarity must be common, uncommon, rare or epic, not '{t}'"))?;
                 put_varint(i as u32, &mut out);
             }
-            ItemComp::StoredEnchantments => return crate::w5_chunk6::stored_encode(v).map(Some),
+            ItemComp::StoredEnchantments => {
+                return crate::entity_block_properties::stored_encode(v).map(Some);
+            }
             ItemComp::GlintOverride => match v {
                 Value::Bool(b) => out.push(u8::from(*b)),
                 _ => return Err(bad()),
@@ -1405,8 +1407,8 @@ pub fn build(h: &Head, operand: Expr, env: &Env) -> Result<Expr, String> {
             Some(p) => NbtExpr::Comp(*c, p.clone()),
             // `max stack size of diamond`: the item type's own limit.
             None if *c == ItemComp::MaxStackSize => {
-                return Ok(crate::w2_expressions_5::boxed(
-                    crate::w2_expressions_5::W5::MaxStack(Box::new(operand)),
+                return Ok(crate::expr_numbers_metadata::boxed(
+                    crate::expr_numbers_metadata::W5::MaxStack(Box::new(operand)),
                 ));
             }
             None => return Err(format!("use '{} of player's tool'", c.name())),

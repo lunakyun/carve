@@ -1,0 +1,69 @@
+# Wave 6 chunk 4 area: first/last/range elements, dequeue, banner pattern
+# items, persistent data keys, honey level, brushing stage and block age.
+# Every command reports back with a "bsl:" message the test reads.
+
+command /bslpad:
+    trigger:
+        set block at location(0, 99, 0) to stone
+        set block at location(1, 99, 0) to stone
+        send "bsl:pad" to player
+
+command /bslelements:
+    trigger:
+        set {bsl::*} to 1, 2, 3, 4, 5
+        send "bsl:elements %first 2 elements of {bsl::*}%|%last 2 elements of {bsl::*}%|%elements 2 to 4 of {bsl::*}%|%size of first 3 elements of {bsl::*}%"
+        delete {bsl::*}
+
+command /bslqueue:
+    trigger:
+        set {_q} to a new queue of "a", "b", "c", "d"
+        set {_x} to dequeue {_q}
+        set {_y::*} to dequeue first 2 elements of {_q}
+        set {_z} to de-queue {_q}
+        set {_none} to dequeue {_q}
+        send "bsl:queue %{_x}% %{_y::1}%%{_y::2}% %{_z}% %{_none}%"
+
+command /bslbanner:
+    trigger:
+        give 1 of banner pattern item of "flower" to player
+        send "bsl:banner %banner pattern item of ""creeper""% %banner pattern item of ""stripe_top""%"
+
+command /bslkeys:
+    trigger:
+        set persistent data value "bslzeta" of player to 1
+        set persistent data value "bslalpha" of player to "x"
+        send "bsl:keys %persistent data keys of player%"
+        delete persistent data value "bslzeta" of player
+        delete persistent data value "bslalpha" of player
+        send "bsl:keys2 %size of all persistent data keys of player%"
+
+command /bslhoney:
+    trigger:
+        set block at location(6, 100, 6) to beehive
+        send "bsl:honey0 %honey level of location(6, 100, 6)% %max honey level of location(6, 100, 6)%"
+        set honey level of location(6, 100, 6) to 4
+        add 9 to honey level of location(6, 100, 6)
+        send "bsl:honey1 %honey level of location(6, 100, 6)%"
+        remove 2 from honey level of location(6, 100, 6)
+        send "bsl:honey2 %beehive honey level of location(6, 100, 6)%"
+        reset honey level of location(6, 100, 6)
+        send "bsl:honey3 %honey level of location(6, 100, 6)%"
+        set honey level of location(6, 100, 6) to 5
+
+command /bslbrush:
+    trigger:
+        set block at location(7, 100, 6) to suspicious sand
+        send "bsl:brush0 %brushing stage of location(7, 100, 6)% %max brushing stage of location(7, 100, 6)%"
+        set brushing stage of location(7, 100, 6) to 2
+        send "bsl:brush1 %brushing progress of location(7, 100, 6)%"
+
+command /bslage:
+    trigger:
+        set block at location(8, 100, 6) to wheat
+        send "bsl:age0 %age of location(8, 100, 6)% %max age of location(8, 100, 6)%"
+        add 3 to age of location(8, 100, 6)
+        send "bsl:age1 %age of location(8, 100, 6)%"
+        set age of location(8, 100, 6) to 99
+        send "bsl:age2 %age of location(8, 100, 6)%"
+        set block at location(9, 100, 6) to stone
+        send "bsl:age3 %age of location(9, 100, 6)%"

@@ -1,8 +1,0 @@
-# Auto reload test script: the area test rewrites this file while the
-# server runs and checks that /c7auto answers with the new text.
-
-auto reload
-
-command /c7auto:
-    trigger:
-        send "c7:auto v1" to player

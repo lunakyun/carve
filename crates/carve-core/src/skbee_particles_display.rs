@@ -135,7 +135,7 @@ fn color_src(toks: &[Tok], env: &Env) -> Option<ColorSrc> {
     if let [Tok::Word(w)] = toks {
         return Some(ColorSrc::Text(lit_text(&w.to_ascii_lowercase())));
     }
-    expr_of(toks, env, &[Ty::Text, Ty::T1(crate::types_1::T_COLOR)]).map(ColorSrc::Text)
+    expr_of(toks, env, &[Ty::Text, Ty::T1(crate::named_types::T_COLOR)]).map(ColorSrc::Text)
 }
 
 /// Words joined with `_` (`dark red` to `dark_red`), lowercase.
@@ -693,7 +693,7 @@ impl Engine {
             *t = t.chars().take(MAX_TEXT).collect();
         }
         host.spawn_display(&s);
-        // `last spawned entity` is the display, when the host can name it (`w5_chunk6`).
+        // `last spawned entity` is the display, when the host can name it (`entity_block_properties`).
         if let Some(e) = host.last_display() {
             ex.last_entity = Some(Box::new(e));
         }

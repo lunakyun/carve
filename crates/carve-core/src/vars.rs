@@ -183,7 +183,7 @@ fn value_json(v: &Value) -> Option<Json> {
         Value::Vector { x, y, z } => json!({"vector": {"x": x, "y": y, "z": z}}),
         Value::Inventory(i) if i.viewer.is_none() => i.to_json(),
         Value::Inventory(_) => return None,
-        other => crate::types_1::to_json(other)?,
+        other => crate::named_types::to_json(other)?,
     })
 }
 
@@ -248,7 +248,7 @@ fn object_value(o: &Map<String, Json>) -> Option<Value> {
     if let Some(v) = crate::gaps::InvVal::from_json(o) {
         return Some(v);
     }
-    if let Some(v) = crate::types_1::from_json(o) {
+    if let Some(v) = crate::named_types::from_json(o) {
         return Some(v);
     }
     o.get("world")

@@ -34,7 +34,7 @@ A chunk by its chunk coordinates, or the chunk a location is in. Can be stored a
 send "%chunk of location(17, 64, -1)%"
 ```
 
-Since **unreleased** · Guide: [w4-types-1](../syntax/w4-types-1.md)
+Since **unreleased** · Guide: [named-types](../syntax/named-types.md)
 
 ## Color {#color}
 
@@ -53,7 +53,7 @@ send "%hex of rgb(255, 128, 0)%"
 send "%red value of lime%"
 ```
 
-Since **unreleased** · Guide: [w4-types-1](../syntax/w4-types-1.md)
+Since **unreleased** · Guide: [named-types](../syntax/named-types.md)
 
 ## Date {#date}
 
@@ -128,7 +128,7 @@ on join:
     send "%{_m}%"
 ```
 
-Since **unreleased** · Guide: [w4-types-1](../syntax/w4-types-1.md)
+Since **unreleased** · Guide: [named-types](../syntax/named-types.md)
 
 ## Number {#number}
 
@@ -175,7 +175,7 @@ set {q} to quaternion(1, 0, 0, 0)
 send "%{q}%"
 ```
 
-Since **unreleased** · Guide: [w4-types-1](../syntax/w4-types-1.md)
+Since **unreleased** · Guide: [named-types](../syntax/named-types.md)
 
 ## Queue {#queue}
 
@@ -189,7 +189,7 @@ A first-in-first-out collection made from values. Prints its items; not saved.
 send "%queue(1, 2, 3)%"
 ```
 
-Since **unreleased** · Guide: [w4-types-1](../syntax/w4-types-1.md)
+Since **unreleased** · Guide: [named-types](../syntax/named-types.md)
 
 ## Text {#text}
 
@@ -215,7 +215,7 @@ A stretch of the day between two times, in ticks (0 is 6:00, 12000 is 18:00).
 send "%timeperiod(0, 12000)%"
 ```
 
-Since **unreleased** · Guide: [w4-types-1](../syntax/w4-types-1.md)
+Since **unreleased** · Guide: [named-types](../syntax/named-types.md)
 
 ## Timespan {#timespan}
 
@@ -259,5 +259,5 @@ The world border of a world, as a value you can keep in a variable. Size is read
 set {b} to world border of world of player
 ```
 
-Since **unreleased** · Guide: [w4-types-1](../syntax/w4-types-1.md)
+Since **unreleased** · Guide: [named-types](../syntax/named-types.md)
 

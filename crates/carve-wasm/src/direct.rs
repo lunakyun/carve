@@ -535,7 +535,7 @@ fn apply_given_meta(stack: &ItemStack, m: &ItemMeta) {
             stack.add_enchantment(e, *level);
         }
     }
-    super::w5_chunk4::set_damage(stack, m.damage);
+    super::block_shapes_ai::set_damage(stack, m.damage);
 }
 
 /// Change one setting of a team. `false`: the API has no field for it.

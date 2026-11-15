@@ -56,8 +56,8 @@ pub enum Value {
     Nbt(Box<crate::skbee_nbt::Compound>),
     /// A non-player entity (mob, item, ...). Not saved in global variables.
     Entity(EntityRef),
-    /// A named value like `shift left` or `full moon` (see `types_1`).
-    Enum(crate::types_1::EnumVal),
+    /// A named value like `shift left` or `full moon` (see `named_types`).
+    Enum(crate::named_types::EnumVal),
     Color {
         r: u8,
         g: u8,
@@ -84,11 +84,11 @@ pub enum Value {
     /// The world border of the named world.
     Border(String),
     /// The result of `ray trace ...`. Not saved in global variables.
-    Ray(Box<crate::w4_skbee_raytrace_world::RayHit>),
+    Ray(Box<crate::skbee_raytrace_world::RayHit>),
     /// A chest inventory built by a script (`chest inventory with 3 rows`).
     Inventory(Box<crate::gaps::InvVal>),
-    /// A potion effect or particle value (see `w5_chunk5`). Not saved in global variables.
-    W5(Box<crate::w5_chunk5::Obj>),
+    /// A potion effect or particle value (see `potions_particles_queues`). Not saved in global variables.
+    W5(Box<crate::potions_particles_queues::Obj>),
 }
 
 /// A handle to an entity. Looked up through the host on every use, so a
@@ -121,7 +121,7 @@ impl Value {
             Value::Ray(_) => "ray trace result",
             Value::Inventory(_) => "inventory",
             Value::W5(o) => o.type_name(),
-            v => crate::types_1::type_name(v),
+            v => crate::named_types::type_name(v),
         }
     }
 
@@ -199,7 +199,7 @@ impl Value {
             (Value::World(w), Value::Text(t)) | (Value::Text(t), Value::World(w)) => {
                 w.eq_ignore_ascii_case(t)
             }
-            _ => crate::types_1::loose_eq(self, other).unwrap_or(false),
+            _ => crate::named_types::loose_eq(self, other).unwrap_or(false),
         }
     }
 }
@@ -296,7 +296,7 @@ impl Value {
             | Value::Chunk { .. }
             | Value::Queue(_)
             | Value::Border(_) => {
-                crate::types_1::push_to(self, out);
+                crate::named_types::push_to(self, out);
             }
             Value::List(items) => {
                 if items.is_empty() {

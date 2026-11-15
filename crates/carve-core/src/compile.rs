@@ -49,16 +49,16 @@ pub enum EventKind {
     AdvancementDone,
     /// `on recipe discover`: `recipe id` is the recipe.
     RecipeDiscover,
-    /// Events and `at <time>:` triggers of `w2_events_1`.
-    Ext(crate::w2_events_1::ExtEvent),
-    /// The extra events of `w2_events_2`.
-    Ext2(crate::w2_events_2::Ev),
-    /// Extra events, see `w2_events_3`.
-    Ext3(crate::w2_events_3::Ev3),
-    /// Events of `w2_events_4`.
-    Ext4(crate::w2_events_4::ExtEvent),
-    /// Movement and command events of `w4_events_movement`.
-    Mv(crate::w4_events_movement::MvEvent),
+    /// Events and `at <time>:` triggers of `events_blocks_players`.
+    Ext(crate::events_blocks_players::ExtEvent),
+    /// The extra events of `events_game`.
+    Ext2(crate::events_game::Ev),
+    /// Extra events, see `events_player_server`.
+    Ext3(crate::events_player_server::Ev3),
+    /// Events of `events_world_vehicles`.
+    Ext4(crate::events_world_vehicles::ExtEvent),
+    /// Movement and command events of `events_movement`.
+    Mv(crate::events_movement::MvEvent),
 }
 
 impl EventKind {
@@ -94,7 +94,7 @@ impl EventKind {
             EventKind::AdvancementDone => "advancement done",
             EventKind::RecipeDiscover => "recipe discover",
             EventKind::Ext(e) => e.name(),
-            EventKind::Ext2(e) => crate::w2_events_2::spec(e).names[0],
+            EventKind::Ext2(e) => crate::events_game::spec(e).names[0],
             EventKind::Ext3(e) => e.name(),
             EventKind::Ext4(e) => e.name(),
             EventKind::Mv(e) => e.name(),
@@ -139,11 +139,11 @@ impl EventKind {
             _ => {
                 return crate::events_items::parse_kind(s)
                     .or_else(|| crate::skbee_bound::parse_event(s))
-                    .or_else(|| crate::w2_events_4::ExtEvent::parse(s).map(EventKind::Ext4))
-                    .or_else(|| crate::w2_events_1::ExtEvent::parse(s).map(EventKind::Ext))
-                    .or_else(|| crate::w2_events_2::parse(s).map(EventKind::Ext2))
-                    .or_else(|| crate::w2_events_3::Ev3::parse(s).map(EventKind::Ext3))
-                    .or_else(|| crate::w4_events_movement::MvEvent::parse(s).map(EventKind::Mv));
+                    .or_else(|| crate::events_world_vehicles::ExtEvent::parse(s).map(EventKind::Ext4))
+                    .or_else(|| crate::events_blocks_players::ExtEvent::parse(s).map(EventKind::Ext))
+                    .or_else(|| crate::events_game::parse(s).map(EventKind::Ext2))
+                    .or_else(|| crate::events_player_server::Ev3::parse(s).map(EventKind::Ext3))
+                    .or_else(|| crate::events_movement::MvEvent::parse(s).map(EventKind::Mv));
             }
         })
     }
@@ -152,7 +152,7 @@ impl EventKind {
     pub fn cancellable(self) -> bool {
         match self {
             EventKind::Ext(e) => e.cancellable(),
-            EventKind::Ext2(e) => crate::w2_events_2::spec(e).cancel,
+            EventKind::Ext2(e) => crate::events_game::spec(e).cancel,
             EventKind::Ext4(e) => e.cancellable(),
             EventKind::Mv(e) => e.cancellable(),
             _ => !matches!(
@@ -194,7 +194,7 @@ pub struct CommandDef {
     /// `executable by: players` (true) or `console` (false).
     pub players_only: Option<bool>,
     /// `cooldown:`, `cooldown message:` and `cooldown bypass:`.
-    pub cooldown: Option<Box<crate::w5_chunk1::Cooldown>>,
+    pub cooldown: Option<Box<crate::drops_border_leashes::Cooldown>>,
 }
 
 impl CommandDef {
@@ -243,18 +243,18 @@ pub enum Cond {
     },
     Cmp(Expr, CmpOp, Expr),
     /// Rare conditions, boxed so this enum stays small.
-    Rare3(Box<crate::w2_conditions_3::W2Cond>),
-    Rare4(Box<crate::w4_conditions_1::W4Cond>),
-    /// Conditions from `w5_chunk2`.
-    W5c2(Box<crate::w5_chunk2::C2Cond>),
-    /// Tag and loaded checks (`w4_skbee_raytrace_world`).
-    Rtw(Box<crate::w4_skbee_raytrace_world::RtwCond>),
-    /// Mob, item, block and effect checks (`w5_chunk3`).
-    W5c3(Box<crate::w5_chunk3::W5Cond>),
+    Rare3(Box<crate::conditions_entity_block::W2Cond>),
+    Rare4(Box<crate::conditions_entity_checks::W4Cond>),
+    /// Conditions from `conditions_flags_metadata`.
+    W5c2(Box<crate::conditions_flags_metadata::C2Cond>),
+    /// Tag and loaded checks (`skbee_raytrace_world`).
+    Rtw(Box<crate::skbee_raytrace_world::RtwCond>),
+    /// Mob, item, block and effect checks (`conditions_mobs_items`).
+    W5c3(Box<crate::conditions_mobs_items::W5Cond>),
     /// Conditions the game can answer after all ().
-    W6c3(Box<crate::w6_chunk3::C3Cond>),
-    /// `can age` (`w5_chunk1`).
-    W5c1(Box<crate::w5_chunk1::CanAge>),
+    W6c3(Box<crate::conditions_mob_block_state::C3Cond>),
+    /// `can age` (`drops_border_leashes`).
+    W5c1(Box<crate::drops_border_leashes::CanAge>),
     /// `{_gui} contains diamond` (see `gaps`).
     Gap(Box<crate::gaps::GapCond>),
     HasPerm {
@@ -264,7 +264,7 @@ pub enum Cond {
     },
     IsSet(Expr, bool),
     /// Rare conditions (boxed to keep this enum small).
-    Rare(Box<crate::w2_conditions_2::Rare>),
+    Rare(Box<crate::conditions_values::Rare>),
     /// `chance of 25%`
     Chance(Expr),
     /// `player has 2 diamonds`, `player's inventory contains stone`.
@@ -356,38 +356,38 @@ pub enum Effect {
     Hf(Box<crate::health_food::HfEffect>),
     /// NBT and item component changes.
     Nbt(Box<crate::skbee_nbt::NbtEffect>),
-    W2(Box<crate::w2_effects_1::W2Effect>),
-    W2b(Box<crate::w2_effects_2::W2Effect>),
-    X2(crate::w2_expressions_2::W2Eff, Box<(Expr, Expr)>),
+    W2(Box<crate::effects_player_visibility::W2Effect>),
+    W2b(Box<crate::effects_player_actions::W2Effect>),
+    X2(crate::expr_text_directions::W2Eff, Box<(Expr, Expr)>),
     /// `set exhaustion of player to 2` and friends.
-    W2c(Box<crate::w2_expressions_3::StatEffect>),
-    W4(Box<crate::w2_expressions_4::W4Effect>),
-    W2e3(Box<crate::w2_effects_3::W2Eff>),
-    W2Transform(Box<crate::w2_effects_3::Transform>),
-    W6(Box<crate::w2_expressions_6::W6Effect>),
-    /// `create world`, `unload world` (`w4_skbee_raytrace_world`).
-    Rtw(Box<crate::w4_skbee_raytrace_world::RtwEffect>),
-    /// Potion effect, particle and weather effects (`w5_chunk5`).
-    W5c5(Box<crate::w5_chunk5::W5Effect>),
-    /// Barter drop changes (`w5_chunk3`).
-    W5c3(Box<crate::w5_chunk3::W5Effect>),
-    /// Changes of `w5_chunk6` expressions (scale, target, sea pickles, ...).
-    C6(Box<crate::w5_chunk6::C6Effect>),
-    /// Changes of `w6_chunk4` block properties.
-    W6C4(Box<crate::w6_chunk4::W6Eff>),
-    /// Changes of `w6_chunk6` (portal cooldown, whitelist, rotation, ...).
-    Z6(Box<crate::w6_chunk6::W6Fx>),
-    /// Effects of `w5_chunk1` (cooldowns, drops, creepers, leashes, ...).
-    W5c1(Box<crate::w5_chunk1::Fx>),
-    /// Effects of `w6_chunk2` (horns, silence, trees, script switching, ...).
-    W6c2(Box<crate::w6_chunk2::Fx>),
+    W2c(Box<crate::expr_player_state::StatEffect>),
+    W4(Box<crate::expr_item_damage_facts::W4Effect>),
+    W2e3(Box<crate::effects_player_state::W2Eff>),
+    W2Transform(Box<crate::effects_player_state::Transform>),
+    W6(Box<crate::expr_random_ternary::W6Effect>),
+    /// `create world`, `unload world` (`skbee_raytrace_world`).
+    Rtw(Box<crate::skbee_raytrace_world::RtwEffect>),
+    /// Potion effect, particle and weather effects (`potions_particles_queues`).
+    W5c5(Box<crate::potions_particles_queues::W5Effect>),
+    /// Barter drop changes (`conditions_mobs_items`).
+    W5c3(Box<crate::conditions_mobs_items::W5Effect>),
+    /// Changes of `entity_block_properties` expressions (scale, target, sea pickles, ...).
+    C6(Box<crate::entity_block_properties::C6Effect>),
+    /// Changes of `block_state_lists` block properties.
+    W6C4(Box<crate::block_state_lists::W6Eff>),
+    /// Changes of `quaternions_protocol` (portal cooldown, whitelist, rotation, ...).
+    Z6(Box<crate::quaternions_protocol::W6Fx>),
+    /// Effects of `drops_border_leashes` (cooldowns, drops, creepers, leashes, ...).
+    W5c1(Box<crate::drops_border_leashes::Fx>),
+    /// Effects of `effects_entity_commands` (horns, silence, trees, script switching, ...).
+    W6c2(Box<crate::effects_entity_commands::Fx>),
     SetHealth(Expr, Expr),
     SetGamemode(Expr, Expr),
     /// Experience change; the two expressions are in pattern order.
     Xp(crate::xp_level::XpOp, Expr, Expr),
-    /// Effects of `w2_events_4`.
-    Ext4(Box<crate::w2_events_4::ExtEffect>),
-    W5(Box<crate::w2_expressions_5::W5Effect>),
+    /// Effects of `events_world_vehicles`.
+    Ext4(Box<crate::events_world_vehicles::ExtEffect>),
+    W5(Box<crate::expr_numbers_metadata::W5Effect>),
     Kill(Expr),
     Teleport(Expr, Expr, Expr, Expr),
     TeleportTo(Expr, Expr),
@@ -434,8 +434,8 @@ pub enum Effect {
     Inv(Box<crate::inventories::InvEff>),
     /// Inventory values, held item edits and the other `gaps` effects.
     Gap(Box<crate::gaps::GapEff>),
-    /// Effects of `w5_chunk4` (set block data, apply a potion effect value, ...).
-    C4(Box<crate::w5_chunk4::C4Eff>),
+    /// Effects of `block_shapes_ai` (set block data, apply a potion effect value, ...).
+    C4(Box<crate::block_shapes_ai::C4Eff>),
     /// Create, delete and change bounds.
     Bound(Box<crate::skbee_bound::BoundEff>),
     /// Time, weather, game rule and difficulty changes.
@@ -551,20 +551,20 @@ pub enum EffKind {
     Broadcast,
     Heal,
     Hf(crate::health_food::HfOp),
-    W2(crate::w2_effects_1::W2Op),
-    W2b(crate::w2_effects_2::W2Op),
-    X2(crate::w2_expressions_2::W2Eff),
-    W2c(crate::w2_expressions_3::PStat, crate::w2_expressions_3::Mode),
-    W4(crate::w2_expressions_4::W4Eff),
-    W2e3(crate::w2_effects_3::W2Op),
-    W6(crate::w2_expressions_6::W6Op),
-    Rtw(crate::w4_skbee_raytrace_world::EOp),
-    W5c5(crate::w5_chunk5::EOp),
-    W5c3(crate::w5_chunk3::EOp),
+    W2(crate::effects_player_visibility::W2Op),
+    W2b(crate::effects_player_actions::W2Op),
+    X2(crate::expr_text_directions::W2Eff),
+    W2c(crate::expr_player_state::PStat, crate::expr_player_state::Mode),
+    W4(crate::expr_item_damage_facts::W4Eff),
+    W2e3(crate::effects_player_state::W2Op),
+    W6(crate::expr_random_ternary::W6Op),
+    Rtw(crate::skbee_raytrace_world::EOp),
+    W5c5(crate::potions_particles_queues::EOp),
+    W5c3(crate::conditions_mobs_items::EOp),
     SetHealth,
     SetGamemode,
     Xp(crate::xp_level::XpOp),
-    W5(crate::w2_expressions_5::W5Op),
+    W5(crate::expr_numbers_metadata::W5Op),
     Kill,
     Teleport,
     TeleportTo,
@@ -629,16 +629,16 @@ pub enum CondKind {
     Flag(PlayerFlag, bool),
     /// negated
     Admin(AdminCond, bool),
-    /// Rare checks from `w2_conditions_2`; the bool is negation.
-    W2(crate::w2_conditions_2::W2Kind, bool),
-    /// Rare conditions from `w2_conditions_3`.
-    W3(crate::w2_conditions_3::W2Kind),
-    /// Conditions from `w4_conditions_1`; the bool is negation.
-    W4(crate::w4_conditions_1::Kind, bool),
-    /// Tag and loaded checks from `w4_skbee_raytrace_world`; the bool is negation.
-    Rtw(crate::w4_skbee_raytrace_world::CKind, bool),
-    /// Conditions from `w5_chunk3`; the bool is negation.
-    W5c3(crate::w5_chunk3::Kind, bool),
+    /// Rare checks from `conditions_values`; the bool is negation.
+    W2(crate::conditions_values::W2Kind, bool),
+    /// Rare conditions from `conditions_entity_block`.
+    W3(crate::conditions_entity_block::W2Kind),
+    /// Conditions from `conditions_entity_checks`; the bool is negation.
+    W4(crate::conditions_entity_checks::Kind, bool),
+    /// Tag and loaded checks from `skbee_raytrace_world`; the bool is negation.
+    Rtw(crate::skbee_raytrace_world::CKind, bool),
+    /// Conditions from `conditions_mobs_items`; the bool is negation.
+    W5c3(crate::conditions_mobs_items::Kind, bool),
 }
 
 /// Text effects (`replace ...`). Kept apart from `EFFECT_PATTERNS` so the
@@ -772,73 +772,73 @@ fn registry() -> &'static Registry {
                     .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
             )
             .chain(
-                crate::w2_effects_1::EFFECT_PATTERNS
+                crate::effects_player_visibility::EFFECT_PATTERNS
                     .iter()
                     .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
             )
             .chain(
-                crate::w2_effects_2::EFFECT_PATTERNS
+                crate::effects_player_actions::EFFECT_PATTERNS
                     .iter()
                     .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
             )
             .chain(
-                crate::w2_expressions_2::EFFECT_PATTERNS
+                crate::expr_text_directions::EFFECT_PATTERNS
                     .iter()
                     .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
             )
             .chain(
-                crate::w2_expressions_3::EFFECT_PATTERNS
+                crate::expr_player_state::EFFECT_PATTERNS
                     .iter()
                     .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
             )
             .chain(
-                crate::w2_expressions_4::EFFECT_PATTERNS
+                crate::expr_item_damage_facts::EFFECT_PATTERNS
                     .iter()
                     .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
             )
             .chain(
-                crate::w2_effects_3::EFFECT_PATTERNS
+                crate::effects_player_state::EFFECT_PATTERNS
                     .iter()
                     .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
             )
             .chain(
-                crate::w2_expressions_5::EFFECT_PATTERNS
+                crate::expr_numbers_metadata::EFFECT_PATTERNS
                     .iter()
                     .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
             )
             .chain(
-                crate::w2_expressions_6::EFFECT_PATTERNS
+                crate::expr_random_ternary::EFFECT_PATTERNS
                     .iter()
                     .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
             )
             .chain(
-                crate::w4_skbee_raytrace_world::EFFECT_PATTERNS
+                crate::skbee_raytrace_world::EFFECT_PATTERNS
                     .iter()
                     .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
             )
             .chain(
-                crate::w5_chunk5::EFFECT_PATTERNS
+                crate::potions_particles_queues::EFFECT_PATTERNS
                     .iter()
                     .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
             )
             .chain(
-                crate::w5_chunk3::EFFECT_PATTERNS
+                crate::conditions_mobs_items::EFFECT_PATTERNS
                     .iter()
                     .filter_map(|(s, k)| Pattern::new(s, *k).ok()),
             )
             .collect(),
         conditions: crate::op_kick_ban::CONDITION_PATTERNS
             .iter()
-            .chain(crate::w2_conditions_2::CONDITION_PATTERNS)
+            .chain(crate::conditions_values::CONDITION_PATTERNS)
             .chain(crate::senders::SENDER_CONDITION_PATTERNS)
             .chain(crate::gamemode::CONDITION_PATTERNS)
             .chain(crate::item_meta::CONDITION_PATTERNS)
             .chain(PLAYER_FLAG_PATTERNS)
-            .chain(crate::w2_conditions_2::FLAG_PATTERNS)
-            .chain(crate::w2_conditions_3::W2_CONDITION_PATTERNS)
-            .chain(crate::w4_conditions_1::CONDITION_PATTERNS)
-            .chain(crate::w4_skbee_raytrace_world::CONDITION_PATTERNS)
-            .chain(crate::w5_chunk3::CONDITION_PATTERNS)
+            .chain(crate::conditions_values::FLAG_PATTERNS)
+            .chain(crate::conditions_entity_block::W2_CONDITION_PATTERNS)
+            .chain(crate::conditions_entity_checks::CONDITION_PATTERNS)
+            .chain(crate::skbee_raytrace_world::CONDITION_PATTERNS)
+            .chain(crate::conditions_mobs_items::CONDITION_PATTERNS)
             .chain(CONDITION_PATTERNS)
             .filter_map(|(s, k)| Pattern::new(s, *k).ok())
             .collect(),
@@ -856,17 +856,17 @@ pub fn check_registry() -> Result<(), String> {
         .chain(crate::sounds::SOUND_PATTERNS)
         .chain(TEXT_EFFECT_PATTERNS)
         .chain(crate::health_food::EFFECT_PATTERNS)
-        .chain(crate::w2_effects_1::EFFECT_PATTERNS)
-        .chain(crate::w2_effects_2::EFFECT_PATTERNS)
-        .chain(crate::w2_expressions_2::EFFECT_PATTERNS)
-        .chain(crate::w2_expressions_3::EFFECT_PATTERNS)
-        .chain(crate::w2_expressions_4::EFFECT_PATTERNS)
-        .chain(crate::w2_effects_3::EFFECT_PATTERNS)
-        .chain(crate::w2_expressions_5::EFFECT_PATTERNS)
-        .chain(crate::w2_expressions_6::EFFECT_PATTERNS)
-        .chain(crate::w4_skbee_raytrace_world::EFFECT_PATTERNS)
-        .chain(crate::w5_chunk5::EFFECT_PATTERNS)
-        .chain(crate::w5_chunk3::EFFECT_PATTERNS)
+        .chain(crate::effects_player_visibility::EFFECT_PATTERNS)
+        .chain(crate::effects_player_actions::EFFECT_PATTERNS)
+        .chain(crate::expr_text_directions::EFFECT_PATTERNS)
+        .chain(crate::expr_player_state::EFFECT_PATTERNS)
+        .chain(crate::expr_item_damage_facts::EFFECT_PATTERNS)
+        .chain(crate::effects_player_state::EFFECT_PATTERNS)
+        .chain(crate::expr_numbers_metadata::EFFECT_PATTERNS)
+        .chain(crate::expr_random_ternary::EFFECT_PATTERNS)
+        .chain(crate::skbee_raytrace_world::EFFECT_PATTERNS)
+        .chain(crate::potions_particles_queues::EFFECT_PATTERNS)
+        .chain(crate::conditions_mobs_items::EFFECT_PATTERNS)
     {
         Pattern::new(s, *k)?;
     }
@@ -879,12 +879,12 @@ pub fn check_registry() -> Result<(), String> {
         .chain(crate::gamemode::CONDITION_PATTERNS)
         .chain(crate::item_meta::CONDITION_PATTERNS)
         .chain(PLAYER_FLAG_PATTERNS)
-        .chain(crate::w2_conditions_2::CONDITION_PATTERNS)
-        .chain(crate::w2_conditions_2::FLAG_PATTERNS)
-        .chain(crate::w2_conditions_3::W2_CONDITION_PATTERNS)
-        .chain(crate::w4_conditions_1::CONDITION_PATTERNS)
-        .chain(crate::w4_skbee_raytrace_world::CONDITION_PATTERNS)
-        .chain(crate::w5_chunk3::CONDITION_PATTERNS)
+        .chain(crate::conditions_values::CONDITION_PATTERNS)
+        .chain(crate::conditions_values::FLAG_PATTERNS)
+        .chain(crate::conditions_entity_block::W2_CONDITION_PATTERNS)
+        .chain(crate::conditions_entity_checks::CONDITION_PATTERNS)
+        .chain(crate::skbee_raytrace_world::CONDITION_PATTERNS)
+        .chain(crate::conditions_mobs_items::CONDITION_PATTERNS)
         .chain(CONDITION_PATTERNS)
     {
         Pattern::new(s, *k)?;
@@ -1039,7 +1039,7 @@ impl Cx<'_> {
             }
             if lower.starts_with("for each ")
                 && line.opens_block()
-                && let Some(l) = crate::w6_chunk7::for_each_line(line)
+                && let Some(l) = crate::functions_aliases::for_each_line(line)
             {
                 self.loop_block(&l);
                 i += 1;
@@ -1378,8 +1378,8 @@ impl Cx<'_> {
         }
         let mut type_err = None;
         let mut memo = Memo::default();
-        let rtw = crate::w4_skbee_raytrace_world::line_may_match(&toks);
-        let w5c3 = crate::w5_chunk3::line_may_match(&toks);
+        let rtw = crate::skbee_raytrace_world::line_may_match(&toks);
+        let w5c3 = crate::conditions_mobs_items::line_may_match(&toks);
         for p in &registry().conditions {
             if !rtw && matches!(p.kind, CondKind::Rtw(..)) || !w5c3 && matches!(p.kind, CondKind::W5c3(..)) {
                 continue;
@@ -1395,12 +1395,12 @@ impl Cx<'_> {
         let srcs: Vec<&'static str> = crate::op_kick_ban::CONDITION_PATTERNS
             .iter()
             .chain(PLAYER_FLAG_PATTERNS)
-            .chain(crate::w2_conditions_2::CONDITION_PATTERNS)
-            .chain(crate::w2_conditions_2::FLAG_PATTERNS)
-            .chain(crate::w2_conditions_3::W2_CONDITION_PATTERNS)
-            .chain(crate::w4_conditions_1::CONDITION_PATTERNS)
-            .chain(crate::w4_skbee_raytrace_world::CONDITION_PATTERNS)
-            .chain(crate::w5_chunk3::CONDITION_PATTERNS)
+            .chain(crate::conditions_values::CONDITION_PATTERNS)
+            .chain(crate::conditions_values::FLAG_PATTERNS)
+            .chain(crate::conditions_entity_block::W2_CONDITION_PATTERNS)
+            .chain(crate::conditions_entity_checks::CONDITION_PATTERNS)
+            .chain(crate::skbee_raytrace_world::CONDITION_PATTERNS)
+            .chain(crate::conditions_mobs_items::CONDITION_PATTERNS)
             .chain(CONDITION_PATTERNS)
             .map(|(s, _)| *s)
             .collect();
@@ -1490,17 +1490,17 @@ impl Cx<'_> {
         if let Some(c) = crate::skbee_recipes_advancements::parse_cond(toks, &self.env) {
             return Some(c);
         }
-        if let Some(c) = crate::w5_chunk2::parse_cond(toks, &self.env) {
+        if let Some(c) = crate::conditions_flags_metadata::parse_cond(toks, &self.env) {
             return Some(c);
         }
-        if let Some(c) = crate::w5_chunk1::parse_cond(toks, &self.env) {
+        if let Some(c) = crate::drops_border_leashes::parse_cond(toks, &self.env) {
             return Some(c);
         }
-        if let Some(c) = crate::w6_chunk3::parse_cond(toks, &self.env) {
+        if let Some(c) = crate::conditions_mob_block_state::parse_cond(toks, &self.env) {
             return Some(c);
         }
         let mut memo = Memo::default();
-        let w5c3 = crate::w5_chunk3::line_may_match(toks);
+        let w5c3 = crate::conditions_mobs_items::line_may_match(toks);
         registry()
             .conditions
             .iter()
@@ -1623,7 +1623,7 @@ impl Cx<'_> {
         if self.call_stmt(num, &toks) {
             return;
         }
-        match crate::w6_chunk2::parse_effect(&toks, &self.env) {
+        match crate::effects_entity_commands::parse_effect(&toks, &self.env) {
             Ok(Some(eff)) => {
                 self.emit(Instr::Eff(eff), num);
                 return;
@@ -1634,7 +1634,7 @@ impl Cx<'_> {
                 return;
             }
         }
-        match crate::w5_chunk4::parse_effect(&toks, &self.env) {
+        match crate::block_shapes_ai::parse_effect(&toks, &self.env) {
             Ok(Some(eff)) => {
                 self.emit(Instr::Eff(eff), num);
                 return;
@@ -1645,7 +1645,7 @@ impl Cx<'_> {
                 return;
             }
         }
-        match crate::w5_chunk1::parse_effect(&toks, &self.env, self.is_command) {
+        match crate::drops_border_leashes::parse_effect(&toks, &self.env, self.is_command) {
             Ok(Some((eff, stop))) => {
                 self.emit(Instr::Eff(eff), num);
                 if stop {
@@ -1670,7 +1670,7 @@ impl Cx<'_> {
                 return;
             }
         }
-        match crate::w6_chunk4::parse_effect(&toks, &self.env) {
+        match crate::block_state_lists::parse_effect(&toks, &self.env) {
             Some(Ok(eff)) => {
                 self.emit(Instr::Eff(eff), num);
                 return;
@@ -1681,7 +1681,7 @@ impl Cx<'_> {
             }
             None => {}
         }
-        match crate::w6_chunk6::parse_effect(&toks, &self.env) {
+        match crate::quaternions_protocol::parse_effect(&toks, &self.env) {
             Some(Ok(eff)) => {
                 self.emit(Instr::Eff(eff), num);
                 return;
@@ -1692,7 +1692,7 @@ impl Cx<'_> {
             }
             None => {}
         }
-        match crate::w5_chunk6::parse_effect(&toks, &self.env) {
+        match crate::entity_block_properties::parse_effect(&toks, &self.env) {
             Some(Ok(eff)) => {
                 self.emit(Instr::Eff(eff), num);
                 return;
@@ -1717,7 +1717,7 @@ impl Cx<'_> {
             }
         }
         if !self.env.ev_fields.is_empty() {
-            match crate::w6_chunk1::parse_can_build_set(&toks, &self.env) {
+            match crate::events_step_jump::parse_can_build_set(&toks, &self.env) {
                 Some(Ok(eff)) => {
                     self.emit(Instr::Eff(eff), num);
                     return;
@@ -1730,7 +1730,7 @@ impl Cx<'_> {
             }
         }
         if self.env.ext4.is_some() {
-            match crate::w2_events_4::parse_effect(&toks, &self.env) {
+            match crate::events_world_vehicles::parse_effect(&toks, &self.env) {
                 Some(Ok(eff)) => {
                     self.emit(Instr::Eff(eff), num);
                     return;
@@ -1747,7 +1747,7 @@ impl Cx<'_> {
                 && toks
                     .get(3..)
                     .is_some_and(|r| crate::list_ops::looks_like_list_op(r, &self.env)));
-        let parsed = if let Some(t) = crate::w2_effects_3::parse_transform(&toks, &self.env) {
+        let parsed = if let Some(t) = crate::effects_player_state::parse_transform(&toks, &self.env) {
             Some(t)
         } else if ops_first {
             crate::list_ops::parse_effect(&toks, &self.env)
@@ -1952,16 +1952,16 @@ impl Cx<'_> {
             .iter()
             .chain(TEXT_EFFECT_PATTERNS)
             .chain(crate::health_food::EFFECT_PATTERNS)
-            .chain(crate::w2_effects_1::EFFECT_PATTERNS)
-            .chain(crate::w2_effects_2::EFFECT_PATTERNS)
-            .chain(crate::w2_expressions_2::EFFECT_PATTERNS)
-            .chain(crate::w2_expressions_3::EFFECT_PATTERNS)
-            .chain(crate::w2_expressions_4::EFFECT_PATTERNS)
-            .chain(crate::w2_effects_3::EFFECT_PATTERNS)
-            .chain(crate::w2_expressions_6::EFFECT_PATTERNS)
-            .chain(crate::w4_skbee_raytrace_world::EFFECT_PATTERNS)
-            .chain(crate::w5_chunk5::EFFECT_PATTERNS)
-            .chain(crate::w5_chunk3::EFFECT_PATTERNS)
+            .chain(crate::effects_player_visibility::EFFECT_PATTERNS)
+            .chain(crate::effects_player_actions::EFFECT_PATTERNS)
+            .chain(crate::expr_text_directions::EFFECT_PATTERNS)
+            .chain(crate::expr_player_state::EFFECT_PATTERNS)
+            .chain(crate::expr_item_damage_facts::EFFECT_PATTERNS)
+            .chain(crate::effects_player_state::EFFECT_PATTERNS)
+            .chain(crate::expr_random_ternary::EFFECT_PATTERNS)
+            .chain(crate::skbee_raytrace_world::EFFECT_PATTERNS)
+            .chain(crate::potions_particles_queues::EFFECT_PATTERNS)
+            .chain(crate::conditions_mobs_items::EFFECT_PATTERNS)
             .map(|(s, _)| *s)
             .collect();
         let mut e = ScriptError::new(
@@ -2058,15 +2058,13 @@ fn build_cond(kind: CondKind, mut c: Vec<Option<Capture>>) -> Cond {
     if let CondKind::Rtw(k, negate) = kind {
         let a = take_expr(&mut c, 0).unwrap_or(Expr::Num(0.0));
         let b = take_expr(&mut c, 1);
-        return Cond::Rtw(Box::new(crate::w4_skbee_raytrace_world::build_cond(
-            k, negate, a, b,
-        )));
+        return Cond::Rtw(Box::new(crate::skbee_raytrace_world::build_cond(k, negate, a, b)));
     }
     if let CondKind::W5c3(k, negate) = kind {
-        return Cond::W5c3(Box::new(crate::w5_chunk3::build_cond(k, negate, c)));
+        return Cond::W5c3(Box::new(crate::conditions_mobs_items::build_cond(k, negate, c)));
     }
     if let CondKind::W3(k) = kind {
-        return match crate::w2_conditions_3::build(k, c) {
+        return match crate::conditions_entity_block::build(k, c) {
             Some(w) => Cond::Rare3(Box::new(w)),
             None => Cond::Cmp(Expr::Num(0.0), CmpOp::Eq, Expr::Num(1.0)),
         };
@@ -2091,16 +2089,18 @@ fn build_cond(kind: CondKind, mut c: Vec<Option<Capture>>) -> Cond {
         CondKind::Admin(k, negate) => return Cond::Admin(k, a, negate),
         CondKind::W2(kind, negate) => {
             let b = (kind_has_b(kind)).then_some(b);
-            return Cond::Rare(Box::new(crate::w2_conditions_2::build(kind, negate, a, b)));
+            return Cond::Rare(Box::new(crate::conditions_values::build(kind, negate, a, b)));
         }
         CondKind::W4(kind, negate) => {
-            let a = if crate::w4_conditions_1::has_a(kind) {
+            let a = if crate::conditions_entity_checks::has_a(kind) {
                 a
             } else {
                 Expr::Num(0.0)
             };
-            let b = crate::w4_conditions_1::has_b(kind).then_some(b);
-            return Cond::Rare4(Box::new(crate::w4_conditions_1::build(kind, negate, a, b)));
+            let b = crate::conditions_entity_checks::has_b(kind).then_some(b);
+            return Cond::Rare4(Box::new(crate::conditions_entity_checks::build(
+                kind, negate, a, b,
+            )));
         }
         CondKind::W3(_) | CondKind::Rtw(..) | CondKind::W5c3(..) => CmpOp::Eq,
         CondKind::IsSet => return Cond::IsSet(a, true),
@@ -2208,19 +2208,19 @@ fn build_effect(kind: EffKind, mut c: Vec<Option<Capture>>) -> Option<Effect> {
         },
         EffKind::Broadcast => Effect::Broadcast(take_expr(c, 0)?),
         EffKind::Hf(op) => return crate::health_food::build(op, c),
-        EffKind::W2(op) => return crate::w2_effects_1::build(op, c),
-        EffKind::W2b(op) => return crate::w2_effects_2::build(op, c),
-        EffKind::X2(k) => return crate::w2_expressions_2::build(k, c),
+        EffKind::W2(op) => return crate::effects_player_visibility::build(op, c),
+        EffKind::W2b(op) => return crate::effects_player_actions::build(op, c),
+        EffKind::X2(k) => return crate::expr_text_directions::build(k, c),
         EffKind::W2c(stat, mode) => {
-            return crate::w2_expressions_3::build(stat, mode, c).map(|e| Effect::W2c(Box::new(e)));
+            return crate::expr_player_state::build(stat, mode, c).map(|e| Effect::W2c(Box::new(e)));
         }
-        EffKind::W4(op) => return crate::w2_expressions_4::build(op, c),
-        EffKind::W2e3(op) => return crate::w2_effects_3::build(op, c),
-        EffKind::W5(op) => return crate::w2_expressions_5::build(op, c),
-        EffKind::W6(op) => return crate::w2_expressions_6::build(op, c),
-        EffKind::Rtw(op) => return crate::w4_skbee_raytrace_world::build(op, c),
-        EffKind::W5c5(op) => return crate::w5_chunk5::build(op, c),
-        EffKind::W5c3(op) => return crate::w5_chunk3::build_effect(op, c),
+        EffKind::W4(op) => return crate::expr_item_damage_facts::build(op, c),
+        EffKind::W2e3(op) => return crate::effects_player_state::build(op, c),
+        EffKind::W5(op) => return crate::expr_numbers_metadata::build(op, c),
+        EffKind::W6(op) => return crate::expr_random_ternary::build(op, c),
+        EffKind::Rtw(op) => return crate::skbee_raytrace_world::build(op, c),
+        EffKind::W5c5(op) => return crate::potions_particles_queues::build(op, c),
+        EffKind::W5c3(op) => return crate::conditions_mobs_items::build_effect(op, c),
         EffKind::Heal => Effect::Heal(take_expr(c, 0)?),
         EffKind::SetHealth => Effect::SetHealth(take_expr(c, 0)?, take_expr(c, 1)?),
         EffKind::SetGamemode => Effect::SetGamemode(take_expr(c, 0)?, take_expr(c, 1)?),
@@ -2608,7 +2608,7 @@ pub fn type_from_name(name: &str) -> Option<Ty> {
         "object" => Ty::Object,
         "numbers" | "integers" | "texts" | "strings" | "players" | "booleans" | "items" | "itemtypes"
         | "locations" | "worlds" | "objects" => Ty::List,
-        _ => return crate::types_1::ty_from_name(name),
+        _ => return crate::named_types::ty_from_name(name),
     })
 }
 
@@ -2777,8 +2777,8 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
         {
             let (ev, ev_filter) = crate::events_items::split_filter(ev.trim());
             let (ev, ph_prefix) = crate::placeholders::split_header(ev);
-            let (ev, cmd_filter) = crate::w4_events_movement::split_command_filter(ev);
-            let (ev, step_filter) = crate::w6_chunk1::split_step_on(ev);
+            let (ev, cmd_filter) = crate::events_movement::split_command_filter(ev);
+            let (ev, step_filter) = crate::events_step_jump::split_step_on(ev);
             let (ev, mut filters) = split_click_filters(ev);
             filters.extend(step_filter);
             filters.extend(ev_filter);
@@ -2789,9 +2789,9 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                         file,
                         top.num,
                         format!(
-                            "unknown event '{ev}', known: join, quit, chat, break, place, death, damage, respawn, click, right click, left click, inventory click, inventory close, sneak toggle, sprint toggle, flight toggle, bound enter, bound exit, load, {}, {}, and the extra events in docs/syntax/w2-events-3.md (and 'every N seconds:')",
+                            "unknown event '{ev}', known: join, quit, chat, break, place, death, damage, respawn, click, right click, left click, inventory click, inventory close, sneak toggle, sprint toggle, flight toggle, bound enter, bound exit, load, {}, {}, and the extra events in docs/syntax/events-player-server.md (and 'every N seconds:')",
                             crate::events_items::NAMES,
-                            crate::w2_events_2::known_names()
+                            crate::events_game::known_names()
                         ),
                     ));
                 continue;
@@ -2829,21 +2829,22 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                 ..Env::default()
             };
             if let EventKind::Ext2(e) = k {
-                crate::w2_events_2::apply_env(&mut env, e);
+                crate::events_game::apply_env(&mut env, e);
             }
             click_filters.extend(filters);
             (TriggerKind::Event(k), &top.children, env, false)
-        } else if let Some(minute) = crate::w2_events_4::parse_at_real_time(&lower) {
-            let k = EventKind::Ext4(crate::w2_events_4::ExtEvent::SystemTime(minute));
+        } else if let Some(minute) = crate::events_world_vehicles::parse_at_real_time(&lower) {
+            let k = EventKind::Ext4(crate::events_world_vehicles::ExtEvent::SystemTime(minute));
             let env = Env {
                 trigger_name: format!("'at {:02}:{:02} in real time'", minute / 60, minute % 60),
                 no_player: true,
-                ext4: Some(crate::w2_events_4::ExtEvent::SystemTime(minute)),
+                ext4: Some(crate::events_world_vehicles::ExtEvent::SystemTime(minute)),
                 ..Env::default()
             };
             (TriggerKind::Event(k), &top.children, env, false)
         } else if let Some(rest) = lower.strip_prefix("at ") {
-            let Some(t) = crate::w2_events_1::parse_at_time(rest.trim().trim_end_matches(':')) else {
+            let Some(t) = crate::events_blocks_players::parse_at_time(rest.trim().trim_end_matches(':'))
+            else {
                 errors.push(ScriptError::new(
                     file,
                     top.num,
@@ -2857,7 +2858,7 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                 ..Env::default()
             };
             (
-                TriggerKind::Event(EventKind::Ext(crate::w2_events_1::ExtEvent::At(t))),
+                TriggerKind::Event(EventKind::Ext(crate::events_blocks_players::ExtEvent::At(t))),
                 &top.children,
                 env,
                 false,
@@ -2918,7 +2919,7 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                         }
                     };
                 } else if el.starts_with("cooldown") {
-                    match crate::w5_chunk1::command_entry(&mut def.cooldown, &el, &entry.text) {
+                    match crate::drops_border_leashes::command_entry(&mut def.cooldown, &el, &entry.text) {
                         Ok(true) => {}
                         Ok(false) => errors.push(ScriptError::new(
                             file,
@@ -3007,7 +3008,7 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
         let mut header_ok = true;
         for (what, text) in std::mem::take(&mut click_filters) {
             if what == "stepon" {
-                let Some(right) = crate::w6_chunk1::step_rhs(&text) else {
+                let Some(right) = crate::events_step_jump::step_rhs(&text) else {
                     cx.err(top.num, format!("'{text}' is not a block name"));
                     header_ok = false;
                     continue;
@@ -3020,7 +3021,7 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                 continue;
             }
             if what == "command" {
-                let (left, right) = crate::w4_events_movement::command_guard(&text);
+                let (left, right) = crate::events_movement::command_guard(&text);
                 let at = cx.emit(
                     Instr::JumpIfNot(Cond::Cmp(left, CmpOp::Eq, right), usize::MAX),
                     top.num,
@@ -3085,7 +3086,7 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
     (triggers, errors)
 }
 
-fn kind_has_b(k: crate::w2_conditions_2::W2Kind) -> bool {
-    use crate::w2_conditions_2::W2Kind::*;
+fn kind_has_b(k: crate::conditions_values::W2Kind) -> bool {
+    use crate::conditions_values::W2Kind::*;
     matches!(k, Divisible | InWorld | OfType)
 }

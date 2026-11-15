@@ -1,11 +1,11 @@
-//! Running `Expr::Ext` (see `w2_expressions_3.rs`). Kept out of the hot
+//! Running `Expr::Ext` (see `expr_player_state.rs`). Kept out of the hot
 //! `eval` match.
 
 use super::{Engine, Exec, online};
 use crate::expr::Expr;
+use crate::expr_player_state::{ExtFn, IndexSel, apply, key_value, takes_player};
 use crate::host::Host;
 use crate::value::Value;
-use crate::w2_expressions_3::{ExtFn, IndexSel, apply, key_value, takes_player};
 
 impl Engine {
     #[inline(never)]

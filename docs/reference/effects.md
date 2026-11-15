@@ -53,7 +53,7 @@ Lets a player fly (double-tap jump) or takes it away. Only the permission change
 allow flight for player
 ```
 
-Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
+Since **unreleased** · Guide: [effects-entity-commands](../syntax/effects-entity-commands.md)
 
 ## apply %object% to %player% {#apply_object_to_player}
 
@@ -108,7 +108,7 @@ A ban that ends by itself. The player has to be online; Pumpkin's ban list needs
 ban player because of "spam" for 2 hours
 ```
 
-Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
+Since **unreleased** · Guide: [effects-entity-commands](../syntax/effects-entity-commands.md)
 
 ## Break block {#break_block}
 
@@ -166,7 +166,7 @@ command /heal:
         cancel the cooldown
 ```
 
-Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+Since **unreleased** · Guide: [drops-border-leashes](../syntax/drops-border-leashes.md)
 
 ## Cancel drops {#cancel_drops}
 
@@ -183,7 +183,7 @@ on break:
     cancel the drops
 ```
 
-Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+Since **unreleased** · Guide: [drops-border-leashes](../syntax/drops-border-leashes.md)
 
 ## Cancel event {#cancel}
 
@@ -235,7 +235,7 @@ on piglin barter:
     set barter drops to 3 diamonds
 ```
 
-Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
 ## Change damage {#damage_change}
 
@@ -492,7 +492,7 @@ on join:
     create world "arena" with environment nether
 ```
 
-Since **unreleased** · Guide: [w4-skbee-raytrace-world](../syntax/w4-skbee-raytrace-world.md)
+Since **unreleased** · Guide: [skbee-raytrace-world](../syntax/skbee-raytrace-world.md)
 
 ## Cure poison {#cure_poison}
 
@@ -594,7 +594,7 @@ spawn a tnt at location(0, 70, 0)
 detonate last spawned entity
 ```
 
-Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+Since **unreleased** · Guide: [drops-border-leashes](../syntax/drops-border-leashes.md)
 
 ## Dismount {#dismount}
 
@@ -648,7 +648,7 @@ Drops items as item entities, at a location or at the player of the event.
 drop 3 diamonds at location(0, 70, 0)
 ```
 
-Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+Since **unreleased** · Guide: [drops-border-leashes](../syntax/drops-border-leashes.md)
 
 ## Dye item {#dye_item}
 
@@ -662,7 +662,7 @@ Sets the dye color of the item a player holds (leather armor and other dyeable i
 dye player's tool red
 ```
 
-Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+Since **unreleased** · Guide: [drops-border-leashes](../syntax/drops-border-leashes.md)
 
 ## Edit the held item {#held_item_meta}
 
@@ -701,7 +701,7 @@ Runs `/carve enable`, `/carve reload` or `/carve disable` for a script file. `un
 reload script "homes"
 ```
 
-Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
+Since **unreleased** · Guide: [effects-entity-commands](../syntax/effects-entity-commands.md)
 
 ## Enforce whitelist {#enforce_whitelist}
 
@@ -716,7 +716,7 @@ When the whitelist is on, kicks every online player who is neither whitelisted n
 enforce the whitelist
 ```
 
-Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+Since **unreleased** · Guide: [drops-border-leashes](../syntax/drops-border-leashes.md)
 
 ## Equip {#equip}
 
@@ -743,7 +743,7 @@ spawn a zombie at player
 equip last spawned entity with diamond helmet and iron boots
 ```
 
-Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
+Since **unreleased** · Guide: [effects-entity-commands](../syntax/effects-entity-commands.md)
 
 ## Execute console command {#console_command}
 
@@ -800,7 +800,7 @@ Grows or shrinks the world border, at once or over a time.
 shrink the world border by 100 over 2 seconds
 ```
 
-Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+Since **unreleased** · Guide: [drops-border-leashes](../syntax/drops-border-leashes.md)
 
 ## Explode creeper {#creeper_ignite}
 
@@ -817,7 +817,7 @@ spawn a creeper at location(0, 70, 0)
 ignite creeper last spawned entity
 ```
 
-Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+Since **unreleased** · Guide: [drops-border-leashes](../syntax/drops-border-leashes.md)
 
 ## Extinguish {#extinguish}
 
@@ -844,7 +844,7 @@ command /pay <number>:
             fail the command execution with the error message "Pay at least 1."
 ```
 
-Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+Since **unreleased** · Guide: [drops-border-leashes](../syntax/drops-border-leashes.md)
 
 ## Fall distance {#fall_distance}
 
@@ -884,7 +884,7 @@ filter {_l::*} to match:
     input > 2
 ```
 
-Since **unreleased** · Guide: [w4-functions-sections](../syntax/w4-functions-sections.md)
+Since **unreleased** · Guide: [functions-builtin-sections](../syntax/functions-builtin-sections.md)
 
 ## Flight {#flight}
 
@@ -911,7 +911,7 @@ Makes the held item shine like an enchanted item, never shine, or follow its enc
 force player's tool to glint
 ```
 
-Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+Since **unreleased** · Guide: [drops-border-leashes](../syntax/drops-border-leashes.md)
 
 ## Force respawn {#force_respawn}
 
@@ -978,7 +978,7 @@ remove the left horn of last spawned entity
 regrow both horns of last spawned entity
 ```
 
-Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
+Since **unreleased** · Guide: [effects-entity-commands](../syntax/effects-entity-commands.md)
 
 ## Gravity state {#gravity_state}
 
@@ -1002,7 +1002,7 @@ Grows a tree at a location with Pumpkin's `place feature` command. Types: oak, t
 grow oak at location(10, 64, 10)
 ```
 
-Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
+Since **unreleased** · Guide: [effects-entity-commands](../syntax/effects-entity-commands.md)
 
 ## Heal {#heal}
 
@@ -1122,7 +1122,7 @@ on death:
     keep the inventory and experience
 ```
 
-Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+Since **unreleased** · Guide: [drops-border-leashes](../syntax/drops-border-leashes.md)
 
 ## Kick {#kick}
 
@@ -1176,7 +1176,7 @@ Sends up a firework rocket that bursts after about a second. Pumpkin ignores fir
 launch a firework at location(0, 70, 0)
 ```
 
-Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+Since **unreleased** · Guide: [drops-border-leashes](../syntax/drops-border-leashes.md)
 
 ## Leash entities {#leash}
 
@@ -1193,7 +1193,7 @@ spawn a cow at location(0, 70, 0)
 leash last spawned entity to player
 ```
 
-Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+Since **unreleased** · Guide: [drops-border-leashes](../syntax/drops-border-leashes.md)
 
 ## Load server icon {#load_server_icon}
 
@@ -1209,7 +1209,7 @@ on server list ping:
     set the server icon to the last loaded server icon
 ```
 
-Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+Since **unreleased** · Guide: [drops-border-leashes](../syntax/drops-border-leashes.md)
 
 ## Log {#log}
 
@@ -1280,7 +1280,7 @@ spawn a cow at location(0, 70, 0)
 make last spawned entity a baby
 ```
 
-Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+Since **unreleased** · Guide: [drops-border-leashes](../syntax/drops-border-leashes.md)
 
 ## Make allay duplicate {#allay_duplicate}
 
@@ -1295,7 +1295,7 @@ spawn an allay at player
 make last spawned entity duplicate
 ```
 
-Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
+Since **unreleased** · Guide: [effects-entity-commands](../syntax/effects-entity-commands.md)
 
 ## Make breedable {#make_breedable}
 
@@ -1311,7 +1311,7 @@ spawn a cow at location(0, 70, 0)
 make last spawned entity breedable
 ```
 
-Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+Since **unreleased** · Guide: [drops-border-leashes](../syntax/drops-border-leashes.md)
 
 ## Make entity scream {#make_scream}
 
@@ -1329,7 +1329,7 @@ spawn a goat at player
 make last spawned entity scream
 ```
 
-Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
+Since **unreleased** · Guide: [effects-entity-commands](../syntax/effects-entity-commands.md)
 
 ## Make execute command {#make_execute}
 
@@ -1362,7 +1362,7 @@ spawn an interaction at player
 make last spawned entity responsive
 ```
 
-Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
+Since **unreleased** · Guide: [effects-entity-commands](../syntax/effects-entity-commands.md)
 
 ## Make player see a block {#fake_block}
 
@@ -1378,7 +1378,7 @@ make player see location(5, 101, 5) as diamond_block
 make player see location(5, 101, 5) as original block
 ```
 
-Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
+Since **unreleased** · Guide: [effects-entity-commands](../syntax/effects-entity-commands.md)
 
 ## Make say {#make_say}
 
@@ -1403,7 +1403,7 @@ Turns glowing text on or off for the front of the sign at a location.
 make block at location(2, 70, 2) have glowing text
 ```
 
-Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+Since **unreleased** · Guide: [drops-border-leashes](../syntax/drops-border-leashes.md)
 
 ## Op / deop {#op}
 
@@ -1473,7 +1473,7 @@ spawn a zombie at location(0, 70, 0)
 make last spawned entity pathfind to player at speed 1.5
 ```
 
-Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+Since **unreleased** · Guide: [drops-border-leashes](../syntax/drops-border-leashes.md)
 
 ## Persistent {#persistent}
 
@@ -1490,7 +1490,7 @@ spawn a cow at location(0, 70, 0)
 make last spawned entity persistent
 ```
 
-Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+Since **unreleased** · Guide: [drops-border-leashes](../syntax/drops-border-leashes.md)
 
 ## play %object% at %object% {#play_object_at_object}
 
@@ -1540,7 +1540,7 @@ make player's potion effects ambient
 hide the particles of player's potion effects
 ```
 
-Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+Since **unreleased** · Guide: [drops-border-leashes](../syntax/drops-border-leashes.md)
 
 ## Push forward, backward, away from {#push_facing}
 
@@ -1663,7 +1663,7 @@ set {l::*} to 1, 2, 1 and 3
 remove all 1 from {l::*}
 ```
 
-Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
+Since **unreleased** · Guide: [effects-entity-commands](../syntax/effects-entity-commands.md)
 
 ## Reset title {#reset_title}
 
@@ -1742,7 +1742,7 @@ make player ride last spawned entity
 make player dismount
 ```
 
-Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
+Since **unreleased** · Guide: [effects-entity-commands](../syntax/effects-entity-commands.md)
 
 ## Rotate vector {#rotate_vector}
 
@@ -1759,7 +1759,7 @@ rotate {v} around the z-axis by 90
 rotate {v} around vector(0, 1, 0) by 45
 ```
 
-Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
+Since **unreleased** · Guide: [effects-entity-commands](../syntax/effects-entity-commands.md)
 
 ## Save worlds {#save_worlds}
 
@@ -2098,7 +2098,7 @@ spawn a sheep at player
 shear last spawned entity
 ```
 
-Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
+Since **unreleased** · Guide: [effects-entity-commands](../syntax/effects-entity-commands.md)
 
 ## Shoot (section) {#c6_shoot}
 
@@ -2113,7 +2113,7 @@ shoot an arrow from player at speed 2:
     send "%type of event-entity%"
 ```
 
-Since **unreleased** · Guide: [w5-chunk6](../syntax/w5-chunk6.md)
+Since **unreleased** · Guide: [entity-block-properties](../syntax/entity-block-properties.md)
 
 ## show %object% at %object% {#show_object_at_object}
 
@@ -2141,7 +2141,7 @@ spawn a cow at player
 silence last spawned entity
 ```
 
-Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
+Since **unreleased** · Guide: [effects-entity-commands](../syntax/effects-entity-commands.md)
 
 ## Sort list {#sort}
 
@@ -2185,7 +2185,7 @@ spawn a zombie at player:
     set name of event-entity to "Bob"
 ```
 
-Since **unreleased** · Guide: [w4-functions-sections](../syntax/w4-functions-sections.md)
+Since **unreleased** · Guide: [functions-builtin-sections](../syntax/functions-builtin-sections.md)
 
 ## Sprint {#sprint}
 
@@ -2255,7 +2255,7 @@ stop sound "entity.cow.ambient" in music for player
 stop all sounds in master for player
 ```
 
-Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
+Since **unreleased** · Guide: [effects-entity-commands](../syntax/effects-entity-commands.md)
 
 ## Strike lightning {#lightning}
 
@@ -2296,7 +2296,7 @@ spawn a zombie at player
 make last spawned entity swing main hand
 ```
 
-Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
+Since **unreleased** · Guide: [effects-entity-commands](../syntax/effects-entity-commands.md)
 
 ## Swing hand {#swing_hand}
 
@@ -2357,7 +2357,7 @@ spawn a wolf at player
 tame last spawned entity
 ```
 
-Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
+Since **unreleased** · Guide: [effects-entity-commands](../syntax/effects-entity-commands.md)
 
 ## Teleport {#teleport}
 
@@ -2404,7 +2404,7 @@ apply drop shadow to last spawned entity
 make last spawned entity visible through blocks
 ```
 
-Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
+Since **unreleased** · Guide: [effects-entity-commands](../syntax/effects-entity-commands.md)
 
 ## Toggle {#toggle}
 
@@ -2478,5 +2478,5 @@ spawn a villager at player
 zombify last spawned entity
 ```
 
-Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
+Since **unreleased** · Guide: [effects-entity-commands](../syntax/effects-entity-commands.md)
 

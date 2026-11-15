@@ -80,7 +80,7 @@ pub fn apply_meta(stack: &ItemStack, m: &ItemMeta) {
             stack.add_enchantment(e, *level);
         }
     }
-    super::w5_chunk4::set_damage(stack, m.damage);
+    super::block_shapes_ai::set_damage(stack, m.damage);
 }
 
 /// A stack for an item value, with its meta. `None` for anything else.
@@ -110,7 +110,7 @@ pub fn value_of(stack: &ItemStack) -> Value {
             .into_iter()
             .map(|e| (enchant_id(&format!("{:?}", e.enchantment)), e.level))
             .collect(),
-        damage: super::w5_chunk4::damage_of(stack),
+        damage: super::block_shapes_ai::damage_of(stack),
         ..ItemMeta::default()
     };
     Value::Item {

@@ -2,25 +2,25 @@
 //! [`WasmHost`], which implements the core's `Host` trait.
 #![allow(clippy::missing_const_for_thread_local)]
 
-mod w2_events_4;
+mod events_world_vehicles;
 
 use std::collections::BTreeSet;
 use std::sync::{Arc, Mutex};
 
 use carve_core::block_ops::BlockPos;
+use carve_core::expr_vectors_server::Query;
 use carve_core::health_food::Vital;
 use carve_core::inventories::InvClick;
 use carve_core::skbee_recipes_advancements::{CookKind, Ingredient as RIngredient, RecipeDef, RecipeKind};
 use carve_core::skbee_text::{Click, Hover, Kind, Part};
 use carve_core::skbee_utilities::Info;
-use carve_core::w2_expressions_7::Query;
 use carve_core::weather_time::Weather;
 use carve_core::world_effects::{FxPos, ParticleFx};
 use carve_core::{
     CommandOutcome, Engine, EventCtx, EventKind, Host, LogLevel, PlayerFlag, PlayerRef, Recipient, Value,
     Variables,
 };
-mod w2_events_3;
+mod events_player_server;
 
 use pumpkin_plugin_api::CustomStatistic;
 use pumpkin_plugin_api::DamageType;
@@ -63,23 +63,23 @@ mod inv;
 mod sb;
 mod store;
 
-mod w2_events_2;
-mod w2_expressions_3;
-mod w4;
-mod w4_conditions_1;
-mod w4_events_movement;
-mod w5_chunk1;
-mod w5_chunk2;
-mod w5_chunk3;
-mod w5_chunk4;
-mod w5_chunk5;
-mod w5_chunk6;
-mod w6_chunk1;
-mod w6_chunk2;
-mod w6_chunk3;
-mod w6_chunk5;
-mod w6_chunk6;
-mod w6_chunk7;
+mod block_shapes_ai;
+mod conditions_entity_checks;
+mod conditions_flags_metadata;
+mod conditions_mob_block_state;
+mod conditions_mobs_items;
+mod drops_border_leashes;
+mod effects_entity_commands;
+mod entity_block_properties;
+mod events_game;
+mod events_movement;
+mod events_step_jump;
+mod expr_item_damage_facts;
+mod expr_player_state;
+mod functions_aliases;
+mod parsing_loot_components;
+mod potions_particles_queues;
+mod quaternions_protocol;
 
 const SCRIPTS_DIR: &str = "scripts";
 const ADMIN_PERM: &str = "carve:admin";
@@ -89,7 +89,7 @@ struct HostState {
     tick: u64,
     /// (due tick, resume token)
     pending: Vec<(u64, u64)>,
-    w4: w4::W4State,
+    w4: expr_item_damage_facts::W4State,
 }
 
 struct State {
@@ -108,8 +108,8 @@ struct State {
     damage_pending: Option<(i32, bool, u64)>,
     /// A hit whose by-entity event may still follow (see `combat`).
     late_hit: Option<combat::LateHit>,
-    /// Extra events (`w2_events_1`) that have a listener on the server.
-    ext_registered: Vec<carve_core::w2_events_1::ExtEvent>,
+    /// Extra events (`events_blocks_players`) that have a listener on the server.
+    ext_registered: Vec<carve_core::events_blocks_players::ExtEvent>,
     /// World time of the previous tick, for `at <time>:` triggers.
     at_prev: Option<i64>,
 }
@@ -612,7 +612,7 @@ impl WasmHost<'_> {
                 .into_iter()
                 .map(|e| (enchant_id(&format!("{:?}", e.enchantment)), e.level))
                 .collect(),
-            damage: w5_chunk4::damage_of(&stack),
+            damage: block_shapes_ai::damage_of(&stack),
             ..ItemMeta::default()
         };
         (!meta.is_empty()).then_some(meta)
@@ -662,9 +662,9 @@ impl WasmHost<'_> {
     fn armor_item(
         &mut self,
         p: &PlayerRef,
-        slot: carve_core::w2_expressions_1::ArmorSlot,
+        slot: carve_core::expr_item_world_facts::ArmorSlot,
     ) -> Option<(String, u32)> {
-        use carve_core::w2_expressions_1::ArmorSlot;
+        use carve_core::expr_item_world_facts::ArmorSlot;
         use pumpkin_plugin_api::world::EquipmentSlot;
         let slot = match slot {
             ArmorSlot::Helmet => EquipmentSlot::Head,
@@ -742,8 +742,12 @@ impl WasmHost<'_> {
         }
     }
 
-    fn player_state(&mut self, p: &PlayerRef, state: carve_core::w2_conditions_3::PlayerState) -> bool {
-        use carve_core::w2_conditions_3::PlayerState;
+    fn player_state(
+        &mut self,
+        p: &PlayerRef,
+        state: carve_core::conditions_entity_block::PlayerState,
+    ) -> bool {
+        use carve_core::conditions_entity_block::PlayerState;
         let Some(pl) = self.get(p) else {
             return false;
         };
@@ -765,8 +769,8 @@ impl WasmHost<'_> {
         }
     }
 
-    fn block_trait(&mut self, id: &str, t: carve_core::w2_conditions_3::BlockTrait) -> Option<bool> {
-        use carve_core::w2_conditions_3::BlockTrait;
+    fn block_trait(&mut self, id: &str, t: carve_core::conditions_entity_block::BlockTrait) -> Option<bool> {
+        use carve_core::conditions_entity_block::BlockTrait;
         let block = Block::from_name(id)?;
         match t {
             BlockTrait::Solid => Some(block.is_solid),
@@ -807,7 +811,7 @@ impl WasmHost<'_> {
                 world: at.world.clone(),
             }];
             self.late.push((
-                EventKind::Ext3(carve_core::w2_events_3::Ev3::LightningStrike),
+                EventKind::Ext3(carve_core::events_player_server::Ev3::LightningStrike),
                 ctx,
             ));
         }
@@ -818,8 +822,8 @@ impl WasmHost<'_> {
             w.create_explosion((at.x, at.y, at.z), power as f32, fire, ExplosionInteraction::Tnt);
             // Same values as Pumpkin's block explode event: yield 1 / power, no entity.
             let yield_rate = if power > 0.0 { 1.0 / power } else { 1.0 };
-            let ev = carve_core::w2_events_2::Ev::Explode;
-            let ctx = carve_core::w2_events_2::make_ctx(
+            let ev = carve_core::events_game::Ev::Explode;
+            let ctx = carve_core::events_game::make_ctx(
                 ev,
                 None,
                 &[yield_rate, at.x.floor(), at.y.floor(), at.z.floor(), -1.0],
@@ -1151,7 +1155,7 @@ impl WasmHost<'_> {
         // the state, so it is fired again here, after the script.
         let rain = to != Weather::Clear;
         if rain != was_raining {
-            use carve_core::w2_events_4::{ExtEvent as E4, ctx};
+            use carve_core::events_world_vehicles::{ExtEvent as E4, ctx};
             let name = if rain { "rain" } else { "clear" };
             let to_kind = if rain {
                 E4::WeatherToRain
@@ -1570,11 +1574,11 @@ impl WasmHost<'_> {
         Some(i64::from(self.server.get_simulation_distance()))
     }
 
-    fn w4c1_check(&mut self, c: carve_core::w4_conditions_1::Check, v: &Value) -> Option<bool> {
+    fn w4c1_check(&mut self, c: carve_core::conditions_entity_checks::Check, v: &Value) -> Option<bool> {
         self.w4c1_check_impl(c, v)
     }
 
-    fn w5c2_query(&mut self, q: carve_core::w5_chunk2::Query<'_>) -> Option<Value> {
+    fn w5c2_query(&mut self, q: carve_core::conditions_flags_metadata::Query<'_>) -> Option<Value> {
         self.w5c2_query_impl(q)
     }
 
@@ -1582,19 +1586,19 @@ impl WasmHost<'_> {
         self.server.get_all_worlds().first().map(world_name)
     }
 
-    fn w5c5(&mut self, q: carve_core::w5_chunk5::Q<'_>) -> Value {
+    fn w5c5(&mut self, q: carve_core::potions_particles_queues::Q<'_>) -> Value {
         self.w5c5_impl(q)
     }
 
-    fn w6c5(&mut self, q: carve_core::w6_chunk5::Q<'_>) -> Option<Value> {
+    fn w6c5(&mut self, q: carve_core::parsing_loot_components::Q<'_>) -> Option<Value> {
         self.w6c5_impl(q)
     }
 
-    fn w5c3(&mut self, q: carve_core::w5_chunk3::Q<'_>) -> Option<Value> {
+    fn w5c3(&mut self, q: carve_core::conditions_mobs_items::Q<'_>) -> Option<Value> {
         self.w5c3_impl(q)
     }
 
-    fn w6c3(&mut self, q: carve_core::w6_chunk3::Q<'_>) -> Option<Value> {
+    fn w6c3(&mut self, q: carve_core::conditions_mob_block_state::Q<'_>) -> Option<Value> {
         self.w6c3_impl(q)
     }
 
@@ -1608,20 +1612,16 @@ impl WasmHost<'_> {
             .any(|b| b.name.eq_ignore_ascii_case(name) || uuid::to_string(b.uuid) == name)
     }
 
-    fn w5c1(&mut self, op: carve_core::w5_chunk1::HostOp<'_>) -> Option<bool> {
+    fn w5c1(&mut self, op: carve_core::drops_border_leashes::HostOp<'_>) -> Option<bool> {
         self.w5c1_impl(op)
     }
 
-    fn w6c2(&mut self, op: carve_core::w6_chunk2::HostOp<'_>) -> Option<bool> {
+    fn w6c2(&mut self, op: carve_core::effects_entity_commands::HostOp<'_>) -> Option<bool> {
         self.w6c2_impl(op)
     }
 
-    fn create_world(
-        &mut self,
-        name: &str,
-        env: carve_core::w4_skbee_raytrace_world::Env,
-    ) -> Result<(), String> {
-        use carve_core::w4_skbee_raytrace_world::Env;
+    fn create_world(&mut self, name: &str, env: carve_core::skbee_raytrace_world::Env) -> Result<(), String> {
+        use carve_core::skbee_raytrace_world::Env;
         let dimension = match env {
             Env::Normal => pumpkin_plugin_api::Dimension::Overworld,
             Env::Nether => pumpkin_plugin_api::Dimension::Nether,
@@ -1649,10 +1649,10 @@ impl WasmHost<'_> {
     }
 
     fn read_data_file(&mut self, path: &str) -> Option<Vec<u8>> {
-        w5_chunk1::read_data_file(path)
+        drops_border_leashes::read_data_file(path)
     }
 
-    fn w5c4(&mut self, q: carve_core::w5_chunk4::Q<'_>) -> Option<Value> {
+    fn w5c4(&mut self, q: carve_core::block_shapes_ai::Q<'_>) -> Option<Value> {
         self.w5c4_impl(q)
     }
 
@@ -1741,7 +1741,7 @@ struct TickHost<'a, 'b> {
 /// `Biome::DarkForest` (the Debug form of a WIT enum) as `dark_forest`.
 fn enum_name(debug: &str) -> String {
     let last = debug.rsplit("::").next().unwrap_or(debug);
-    carve_core::w2_expressions_1::snake(last)
+    carve_core::expr_item_world_facts::snake(last)
 }
 
 macro_rules! delegate {
@@ -1779,9 +1779,9 @@ impl Host for TickHost<'_, '_> {
         gamemode(p: &PlayerRef) -> Option<String>;
         set_gamemode(p: &PlayerRef, mode: &str);
         player_flag(p: &PlayerRef, flag: PlayerFlag) -> bool;
-        player_state(p: &PlayerRef, state: carve_core::w2_conditions_3::PlayerState) -> bool;
+        player_state(p: &PlayerRef, state: carve_core::conditions_entity_block::PlayerState) -> bool;
         pvp_enabled(world: Option<&str>) -> Option<bool>;
-        block_trait(id: &str, t: carve_core::w2_conditions_3::BlockTrait) -> Option<bool>;
+        block_trait(id: &str, t: carve_core::conditions_entity_block::BlockTrait) -> Option<bool>;
         xp_get(p: &PlayerRef, field: carve_core::xp_level::XpField) -> Option<f64>;
         xp_set(p: &PlayerRef, field: carve_core::xp_level::XpField, value: f64);
         vital(p: &PlayerRef, v: Vital) -> Option<f64>;
@@ -1899,17 +1899,17 @@ impl Host for TickHost<'_, '_> {
     }
     delegate! {
         biome_at(world: &str, x: i32, y: i32, z: i32) -> Option<String>;
-        armor_item(p: &PlayerRef, slot: carve_core::w2_expressions_1::ArmorSlot) -> Option<(String, u32)>;
+        armor_item(p: &PlayerRef, slot: carve_core::expr_item_world_facts::ArmorSlot) -> Option<(String, u32)>;
         block_entity_nbt(world: &str, x: i32, y: i32, z: i32) -> Option<Vec<u8>>;
         compass_target(p: &PlayerRef) -> Option<(f64, f64, f64, Option<String>)>;
         set_compass_target(p: &PlayerRef, x: f64, y: f64, z: f64, world: Option<&str>);
     }
 
-    fn pstat(&mut self, p: &PlayerRef, s: carve_core::w2_expressions_3::PStat) -> Option<f64> {
+    fn pstat(&mut self, p: &PlayerRef, s: carve_core::expr_player_state::PStat) -> Option<f64> {
         self.inner.pstat_impl(p, s)
     }
 
-    fn set_pstat(&mut self, p: &PlayerRef, s: carve_core::w2_expressions_3::PStat, v: f64) {
+    fn set_pstat(&mut self, p: &PlayerRef, s: carve_core::expr_player_state::PStat, v: f64) {
         self.inner.set_pstat_impl(p, s, v);
     }
 
@@ -1975,7 +1975,7 @@ impl Host for TickHost<'_, '_> {
         self.hs.w4.deaths.get(&p.uuid).cloned()
     }
 
-    fn last_damage(&mut self, p: &PlayerRef) -> Option<carve_core::w2_expressions_4::DamageInfo> {
+    fn last_damage(&mut self, p: &PlayerRef) -> Option<carve_core::expr_item_damage_facts::DamageInfo> {
         self.hs.w4.hits.get(&p.uuid).cloned()
     }
 
@@ -1996,11 +1996,11 @@ impl Host for TickHost<'_, '_> {
         self.inner.w2e7_query(q)
     }
 
-    fn w4c1_check(&mut self, c: carve_core::w4_conditions_1::Check, v: &Value) -> Option<bool> {
+    fn w4c1_check(&mut self, c: carve_core::conditions_entity_checks::Check, v: &Value) -> Option<bool> {
         self.inner.w4c1_check(c, v)
     }
 
-    fn w5c2_query(&mut self, q: carve_core::w5_chunk2::Query<'_>) -> Option<Value> {
+    fn w5c2_query(&mut self, q: carve_core::conditions_flags_metadata::Query<'_>) -> Option<Value> {
         self.inner.w5c2_query(q)
     }
 
@@ -2008,27 +2008,27 @@ impl Host for TickHost<'_, '_> {
         self.inner.default_world()
     }
 
-    fn w5c5(&mut self, q: carve_core::w5_chunk5::Q<'_>) -> Value {
+    fn w5c5(&mut self, q: carve_core::potions_particles_queues::Q<'_>) -> Value {
         self.inner.w5c5(q)
     }
 
-    fn w6c5(&mut self, q: carve_core::w6_chunk5::Q<'_>) -> Option<Value> {
+    fn w6c5(&mut self, q: carve_core::parsing_loot_components::Q<'_>) -> Option<Value> {
         self.inner.w6c5(q)
     }
 
-    fn w5c3(&mut self, q: carve_core::w5_chunk3::Q<'_>) -> Option<Value> {
+    fn w5c3(&mut self, q: carve_core::conditions_mobs_items::Q<'_>) -> Option<Value> {
         self.inner.w5c3(q)
     }
 
-    fn w6c6_get(&mut self, q: carve_core::w6_chunk6::Get<'_>) -> Option<Value> {
+    fn w6c6_get(&mut self, q: carve_core::quaternions_protocol::Get<'_>) -> Option<Value> {
         self.inner.w6c6_get_impl(q)
     }
 
-    fn w6c6_set(&mut self, s: carve_core::w6_chunk6::Set<'_>) -> bool {
+    fn w6c6_set(&mut self, s: carve_core::quaternions_protocol::Set<'_>) -> bool {
         self.inner.w6c6_set_impl(s)
     }
 
-    fn w6c3(&mut self, q: carve_core::w6_chunk3::Q<'_>) -> Option<Value> {
+    fn w6c3(&mut self, q: carve_core::conditions_mob_block_state::Q<'_>) -> Option<Value> {
         self.inner.w6c3(q)
     }
 
@@ -2036,15 +2036,15 @@ impl Host for TickHost<'_, '_> {
         self.inner.is_banned(name)
     }
 
-    fn c6_get(&mut self, q: carve_core::w5_chunk6::Get<'_>) -> Option<Value> {
+    fn c6_get(&mut self, q: carve_core::entity_block_properties::Get<'_>) -> Option<Value> {
         self.inner.c6_get_impl(q)
     }
 
-    fn c6_set(&mut self, s: carve_core::w5_chunk6::Set<'_>) -> bool {
+    fn c6_set(&mut self, s: carve_core::entity_block_properties::Set<'_>) -> bool {
         self.inner.c6_set_impl(s)
     }
 
-    fn c6_block_state(&mut self, at: &BlockPos) -> Option<carve_core::w5_chunk6::BlockState> {
+    fn c6_block_state(&mut self, at: &BlockPos) -> Option<carve_core::entity_block_properties::BlockState> {
         self.inner.c6_block_state_impl(at)
     }
 
@@ -2052,19 +2052,15 @@ impl Host for TickHost<'_, '_> {
         displays::take_last()
     }
 
-    fn w5c1(&mut self, op: carve_core::w5_chunk1::HostOp<'_>) -> Option<bool> {
+    fn w5c1(&mut self, op: carve_core::drops_border_leashes::HostOp<'_>) -> Option<bool> {
         self.inner.w5c1(op)
     }
 
-    fn w6c2(&mut self, op: carve_core::w6_chunk2::HostOp<'_>) -> Option<bool> {
+    fn w6c2(&mut self, op: carve_core::effects_entity_commands::HostOp<'_>) -> Option<bool> {
         self.inner.w6c2(op)
     }
 
-    fn create_world(
-        &mut self,
-        name: &str,
-        env: carve_core::w4_skbee_raytrace_world::Env,
-    ) -> Result<(), String> {
+    fn create_world(&mut self, name: &str, env: carve_core::skbee_raytrace_world::Env) -> Result<(), String> {
         self.inner.create_world(name, env)
     }
 
@@ -2084,7 +2080,7 @@ impl Host for TickHost<'_, '_> {
         self.inner.read_data_file(path)
     }
 
-    fn w5c4(&mut self, q: carve_core::w5_chunk4::Q<'_>) -> Option<Value> {
+    fn w5c4(&mut self, q: carve_core::block_shapes_ai::Q<'_>) -> Option<Value> {
         self.inner.w5c4(q)
     }
 
@@ -2245,7 +2241,7 @@ impl EventAccess for BlockBreakEvent {
         }
     }
     fn apply_out(d: &mut EventData<Self>, out: &[(u8, Value)]) {
-        use carve_core::w5_chunk1::{SLOT_NO_ITEM_DROPS, SLOT_NO_XP_DROPS};
+        use carve_core::drops_border_leashes::{SLOT_NO_ITEM_DROPS, SLOT_NO_XP_DROPS};
         for (slot, _) in out {
             match *slot {
                 SLOT_NO_ITEM_DROPS => d.should_drop = false,
@@ -2507,7 +2503,7 @@ impl<E: EventAccess> EventHandler<E> for OnEvent<E> {
             }
         }
         if let Some(u) = &left {
-            w4_events_movement::left(u);
+            events_movement::left(u);
         }
         data
     }
@@ -2523,9 +2519,9 @@ fn register_event<E: EventAccess + Send + Sync + 'static>(ctx: &Context, kind: E
     }
 }
 
-// ---------- extra events (carve-core `w2_events_1`) ----------
+// ---------- extra events (carve-core `events_blocks_players`) ----------
 
-use carve_core::w2_events_1::ExtEvent;
+use carve_core::events_blocks_players::ExtEvent;
 use pumpkin_plugin_api::events as ev;
 
 /// Like `EventAccess`, but the event kind may depend on the data (a book
@@ -2548,7 +2544,7 @@ impl<E: ExtAccess> EventHandler<E> for OnExt<E> {
                 return false;
             }
             let mut ctx = E::ctx(&data);
-            w6_chunk1::ext_fixup(st, host, E::kind(&data), &mut ctx);
+            events_step_jump::ext_fixup(st, host, E::kind(&data), &mut ctx);
             let mut th = TickHost {
                 inner: host,
                 hs: &mut st.hs,
@@ -3126,7 +3122,7 @@ impl CommandHandler for AdminCommand {
                 // Write what changed before the scripts are replaced.
                 persist_now(st);
                 // The old scripts see `on unload` before they are replaced.
-                w6_chunk1::fire_unload_here(st, host, false);
+                events_step_jump::fire_unload_here(st, host, false);
             }
             let mut store = DirStore(st.scripts_dir());
             let env = carve_core::admin::AdminEnv {
@@ -3182,7 +3178,7 @@ fn tick(server: Server) {
                 true
             }
         });
-        w2_events_4::poll_clock(st, host);
+        events_world_vehicles::poll_clock(st, host);
         due.sort();
         for (_, tok) in due {
             let mut th = TickHost {
@@ -3199,11 +3195,11 @@ fn tick(server: Server) {
             st.engine.tick(now, &mut th);
         }
         tick_at_time(&server, st, host);
-        w6_chunk1::tick(&server, st, host, now);
+        events_step_jump::tick(&server, st, host, now);
         // One transaction per tick, and only when something changed.
         store_flush(st.engine.persist_due(now * 50));
-        if now % w6_chunk7::AUTO_RELOAD_TICKS == 0 {
-            return w6_chunk7::auto_reload(st, host);
+        if now % functions_aliases::AUTO_RELOAD_TICKS == 0 {
+            return functions_aliases::auto_reload(st, host);
         }
         false
     });
@@ -3285,7 +3281,7 @@ fn load_saved(data_dir: &str) -> (Variables, carve_core::skbee_bound::Bounds) {
             store::install(s);
         }
     }
-    w4_events_movement::init_seen(seen);
+    events_movement::init_seen(seen);
     (vars, bounds)
 }
 
@@ -3312,7 +3308,7 @@ impl Plugin for Carve {
 
     fn on_load(&self, context: Context) -> Result<(), String> {
         let data_dir = context.get_data_folder();
-        w5_chunk1::set_data_dir(&data_dir);
+        drops_border_leashes::set_data_dir(&data_dir);
         let scripts = format!("{data_dir}/{SCRIPTS_DIR}");
         if let Err(e) = std::fs::create_dir_all(&scripts) {
             plog(ApiLevel::Error, &format!("can't create {scripts}: {e}"));
@@ -3464,34 +3460,34 @@ impl Plugin for Carve {
         register_event::<InventoryClickEvent>(&context, EventKind::InventoryClick);
         register_event::<PlayerAdvancementDoneEvent>(&context, EventKind::AdvancementDone);
         register_event::<PlayerRecipeDiscoverEvent>(&context, EventKind::RecipeDiscover);
-        w2_events_2::register_all(&context);
-        w2_events_3::register_all(&context, &|ev| engine.table().has_event(EventKind::Ext3(ev)));
-        w2_events_4::register_all(&context);
-        w6_chunk1::register_all(&context, &|k| engine.table().has_event(EventKind::Ext4(k)));
-        if carve_core::w6_chunk3::keys_used() {
+        events_game::register_all(&context);
+        events_player_server::register_all(&context, &|ev| engine.table().has_event(EventKind::Ext3(ev)));
+        events_world_vehicles::register_all(&context);
+        events_step_jump::register_all(&context, &|k| engine.table().has_event(EventKind::Ext4(k)));
+        if carve_core::conditions_mob_block_state::keys_used() {
             let _ = context.register_event_handler::<pumpkin_plugin_api::events::PlayerInputEvent, _>(
-                w6_chunk3::OnInput,
+                conditions_mob_block_state::OnInput,
                 EventPriority::Normal,
                 true,
             );
         }
-        if carve_core::w6_chunk3::spawner_used() {
+        if carve_core::conditions_mob_block_state::spawner_used() {
             let _ = context.register_event_handler::<pumpkin_plugin_api::events::SpawnerSpawnEvent, _>(
-                w6_chunk3::OnSpawner,
+                conditions_mob_block_state::OnSpawner,
                 EventPriority::Normal,
                 true,
             );
             let _ = context.register_event_handler::<pumpkin_plugin_api::events::TrialSpawnerSpawnEvent, _>(
-                w6_chunk3::OnTrialSpawner,
+                conditions_mob_block_state::OnTrialSpawner,
                 EventPriority::Normal,
                 true,
             );
         }
-        w4_events_movement::register_all(
+        events_movement::register_all(
             &context,
             engine
                 .table()
-                .has_event(EventKind::Mv(carve_core::w4_events_movement::MvEvent::Move)),
+                .has_event(EventKind::Mv(carve_core::events_movement::MvEvent::Move)),
         );
         for r in [
             context.register_event_handler::<PlayerInteractEvent, _>(OnInteract, EventPriority::Normal, true),
@@ -3536,7 +3532,7 @@ impl Plugin for Carve {
                 hs: HostState {
                     tick: 0,
                     pending: Vec::new(),
-                    w4: w4::W4State::default(),
+                    w4: expr_item_damage_facts::W4State::default(),
                 },
                 data_dir,
                 registered,
@@ -3548,8 +3544,8 @@ impl Plugin for Carve {
             });
         }
         schedule_repeating_task(1, 1, tick);
-        if carve_core::w6_chunk3::version_used() {
-            let _ = w6_chunk3::version(&context.get_server());
+        if carve_core::conditions_mob_block_state::version_used() {
+            let _ = conditions_mob_block_state::version(&context.get_server());
         }
         PH_SERVER.with(|s| *s.borrow_mut() = Some(context.get_server()));
         fire_load(&context.get_server());
@@ -3575,7 +3571,7 @@ impl Plugin for Carve {
     fn on_unload(&self, _context: Context) -> Result<(), String> {
         PH_SERVER.with(|s| {
             if let Some(server) = s.borrow().as_ref() {
-                w6_chunk1::fire_unload(server, true);
+                events_step_jump::fire_unload(server, true);
             }
         });
         if let Ok(mut g) = STATE.try_lock()

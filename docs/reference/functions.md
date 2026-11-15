@@ -39,7 +39,7 @@ Keeps a number between two bounds; median and product take numbers or a list.
 send "%clamp(15, 0, 10)%" to player
 ```
 
-Since **unreleased** · Guide: [w4-functions-sections](../syntax/w4-functions-sections.md)
+Since **unreleased** · Guide: [functions-builtin-sections](../syntax/functions-builtin-sections.md)
 
 ## concat, formatNumber, toBase, fromBase, rgb, uuid {#w4_text}
 
@@ -56,7 +56,7 @@ Text helpers: join values, format a number with a pattern, convert between bases
 send "%toBase(255, 16)%" to player
 ```
 
-Since **unreleased** · Guide: [w4-functions-sections](../syntax/w4-functions-sections.md)
+Since **unreleased** · Guide: [functions-builtin-sections](../syntax/functions-builtin-sections.md)
 
 ## exp, ln, log, root, factorial, combinations, permutations, isNaN {#w4_math}
 
@@ -72,7 +72,7 @@ Exponent, logarithms, roots and counting functions. `log` is base 10 unless a ba
 send "%combinations(5, 2)%" to player
 ```
 
-Since **unreleased** · Guide: [w4-functions-sections](../syntax/w4-functions-sections.md)
+Since **unreleased** · Guide: [functions-builtin-sections](../syntax/functions-builtin-sections.md)
 
 ## floor / ceil / round {#floor}
 
@@ -149,7 +149,7 @@ Looks a player up by name or UUID, and gives the experience points a level needs
 send "%calcExperience(10)%" to player
 ```
 
-Since **unreleased** · Guide: [w4-functions-sections](../syntax/w4-functions-sections.md)
+Since **unreleased** · Guide: [functions-builtin-sections](../syntax/functions-builtin-sections.md)
 
 ## Script functions {#script_function}
 
@@ -181,7 +181,7 @@ Trigonometry in degrees. The inverse functions return degrees.
 send "%sin(30)%" to player
 ```
 
-Since **unreleased** · Guide: [w4-functions-sections](../syntax/w4-functions-sections.md)
+Since **unreleased** · Guide: [functions-builtin-sections](../syntax/functions-builtin-sections.md)
 
 ## sqrt {#sqrt}
 

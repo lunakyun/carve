@@ -1,0 +1,91 @@
+# Wave 6 chunk 1 area. Every result goes to chat as esj:<key> <value>.
+
+on step on stone:
+    send "esj:step %event-block%" to player
+
+on walk on dirt:
+    send "esj:walkdirt %event-block%" to player
+
+on player chunk enter:
+    send "esj:chunk %event-chunk-x% %event-chunk-z% from %event-previous-chunk-x% %event-previous-chunk-z%" to player
+
+on player chunk enters:
+    send "esj:chunks" to player
+
+on jump:
+    send "esj:jump" to player
+
+on tool change:
+    send "esj:tool %event-item% / %past event-item%" to player
+
+on redstone:
+    broadcast "esj:redstone %event-location% %event-number%"
+
+on piston retract:
+    broadcast "esj:pistonr %event-text% %event-location%"
+
+on spectate:
+    broadcast "esj:spectate %type of event-entity%"
+
+on pressure plate:
+    broadcast "esj:plate %event-location% %event-power%"
+
+on spawn change:
+    broadcast "esj:spawn %event-new-location%"
+
+on world border bounds change:
+    broadcast "esj:wbb %event-old-size% -> %event-new-size%"
+
+on world border center change:
+    broadcast "esj:wbc %event-old-x% %event-old-z% -> %event-new-x% %event-new-z%"
+
+on armor change:
+    send "esj:armor %event-slot% %event-item% / %past event-item%" to player
+
+on experience spawn:
+    broadcast "esj:xp %event-location%"
+
+on piston extend:
+    broadcast "esj:piston %event-text% %event-location%"
+
+on lightning strike:
+    broadcast "esj:bolt %event-location%"
+
+on block drop:
+    broadcast "esj:drop %event-items%"
+
+on bell ring:
+    broadcast "esj:bell %player% %event-location%"
+
+on bucket catch entity:
+    broadcast "esj:bucket %type of event-entity%"
+
+on combust:
+    broadcast "esj:combust %type of event-entity%"
+
+on can build check:
+    if event-block is dirt:
+        set event-boolean to false
+        broadcast "esj:nobuild"
+
+on leash:
+    broadcast "esj:leash %type of event-entity%"
+
+on love mode enter:
+    broadcast "esj:love %type of event-entity% %event-number%"
+
+on unload:
+    send "esj:unload" to console
+
+on server stop:
+    send "esj:stop" to console
+
+command /cignite:
+    trigger:
+        ignite player for 3 seconds
+        send "esj:ignitecmd" to player
+
+command /cbolt:
+    trigger:
+        strike lightning at location(10.5, 101, 10.5, world "world")
+        send "esj:boltcmd" to player

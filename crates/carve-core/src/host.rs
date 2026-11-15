@@ -240,7 +240,7 @@ pub trait Host {
     fn armor_item(
         &mut self,
         _player: &PlayerRef,
-        _slot: crate::w2_expressions_1::ArmorSlot,
+        _slot: crate::expr_item_world_facts::ArmorSlot,
     ) -> Option<(String, u32)> {
         None
     }
@@ -260,12 +260,12 @@ pub trait Host {
 
     /// Read a number or yes/no (as 0 or 1) state of a player: exhaustion,
     /// fall distance, fire/freeze ticks, hotbar slot, yaw, pitch, ...
-    fn pstat(&mut self, _player: &PlayerRef, _stat: crate::w2_expressions_3::PStat) -> Option<f64> {
+    fn pstat(&mut self, _player: &PlayerRef, _stat: crate::expr_player_state::PStat) -> Option<f64> {
         None
     }
 
     /// Write one of those states. The core has already clamped it.
-    fn set_pstat(&mut self, _player: &PlayerRef, _stat: crate::w2_expressions_3::PStat, _value: f64) {}
+    fn set_pstat(&mut self, _player: &PlayerRef, _stat: crate::expr_player_state::PStat, _value: f64) {}
 
     /// Eye position and world name. The default is the feet position plus 1.62.
     fn eye_location(&mut self, player: &PlayerRef) -> Option<(f64, f64, f64, String)> {
@@ -321,19 +321,19 @@ pub trait Host {
     }
 
     /// Server facts and per-player numbers for vectors, `tps`, versions and
-    /// play time (see `w2_expressions_7::Query`). `None` means unknown.
-    fn w2e7_query(&mut self, _q: crate::w2_expressions_7::Query<'_>) -> Option<crate::value::Value> {
+    /// play time (see `expr_vectors_server::Query`). `None` means unknown.
+    fn w2e7_query(&mut self, _q: crate::expr_vectors_server::Query<'_>) -> Option<crate::value::Value> {
         None
     }
 
-    /// Game facts for `w6_chunk5` (see `w6_chunk5::Q`). `None` means unknown.
-    fn w6c5(&mut self, _q: crate::w6_chunk5::Q<'_>) -> Option<crate::value::Value> {
+    /// Game facts for `parsing_loot_components` (see `parsing_loot_components::Q`). `None` means unknown.
+    fn w6c5(&mut self, _q: crate::parsing_loot_components::Q<'_>) -> Option<crate::value::Value> {
         None
     }
 
     /// Potion effects, boss bar progress, client weather, block states and
-    /// menu viewers (see `w5_chunk5::Q`). `Value::None` means unknown.
-    fn w5c5(&mut self, _q: crate::w5_chunk5::Q<'_>) -> crate::value::Value {
+    /// menu viewers (see `potions_particles_queues::Q`). `Value::None` means unknown.
+    fn w5c5(&mut self, _q: crate::potions_particles_queues::Q<'_>) -> crate::value::Value {
         crate::value::Value::None
     }
 
@@ -974,7 +974,11 @@ pub trait Host {
     }
 
     /// Poisoned, silent or riding (players only). Hosts that cannot tell answer `false`.
-    fn player_state(&mut self, _player: &PlayerRef, _state: crate::w2_conditions_3::PlayerState) -> bool {
+    fn player_state(
+        &mut self,
+        _player: &PlayerRef,
+        _state: crate::conditions_entity_block::PlayerState,
+    ) -> bool {
         false
     }
 
@@ -985,35 +989,35 @@ pub trait Host {
     }
 
     /// A property of a block type (`stone`, no namespace). `None` if unknown.
-    fn block_trait(&mut self, _id: &str, _t: crate::w2_conditions_3::BlockTrait) -> Option<bool> {
+    fn block_trait(&mut self, _id: &str, _t: crate::conditions_entity_block::BlockTrait) -> Option<bool> {
         None
     }
-    // ---- w2_expressions_4 ----
+    // ---- expr_item_damage_facts ----
 
-    /// Answer one of the `w6_chunk3` questions (see [`crate::w6_chunk3::Q`]).
-    fn w6c3(&mut self, _q: crate::w6_chunk3::Q<'_>) -> Option<crate::value::Value> {
+    /// Answer one of the `conditions_mob_block_state` questions (see [`crate::conditions_mob_block_state::Q`]).
+    fn w6c3(&mut self, _q: crate::conditions_mob_block_state::Q<'_>) -> Option<crate::value::Value> {
         None
     }
 
-    /// Answer one of the `w5_chunk3` questions (see [`crate::w5_chunk3::Q`]).
+    /// Answer one of the `conditions_mobs_items` questions (see [`crate::conditions_mobs_items::Q`]).
     /// `None` when the game cannot tell.
-    fn w5c3(&mut self, _q: crate::w5_chunk3::Q<'_>) -> Option<crate::value::Value> {
+    fn w5c3(&mut self, _q: crate::conditions_mobs_items::Q<'_>) -> Option<crate::value::Value> {
         None
     }
 
     /// Answer a yes/no question about a player, entity or block (see
-    /// `w4_conditions_1::Check`). `None` means the game cannot tell.
+    /// `conditions_entity_checks::Check`). `None` means the game cannot tell.
     fn w4c1_check(
         &mut self,
-        _c: crate::w4_conditions_1::Check,
+        _c: crate::conditions_entity_checks::Check,
         _subject: &crate::value::Value,
     ) -> Option<bool> {
         None
     }
 
-    /// Answer a question for the `w5_chunk2` conditions. `None` means the game
+    /// Answer a question for the `conditions_flags_metadata` conditions. `None` means the game
     /// cannot tell.
-    fn w5c2_query(&mut self, _q: crate::w5_chunk2::Query<'_>) -> Option<crate::value::Value> {
+    fn w5c2_query(&mut self, _q: crate::conditions_flags_metadata::Query<'_>) -> Option<crate::value::Value> {
         None
     }
 
@@ -1031,7 +1035,7 @@ pub trait Host {
     }
 
     /// The last hit the player took.
-    fn last_damage(&mut self, _player: &PlayerRef) -> Option<crate::w2_expressions_4::DamageInfo> {
+    fn last_damage(&mut self, _player: &PlayerRef) -> Option<crate::expr_item_damage_facts::DamageInfo> {
         None
     }
 
@@ -1083,7 +1087,7 @@ pub trait Host {
     /// Play the arm swing. The default runs the vanilla `swing` command. The plugin API v0.1
     /// can send entity animations but not the swing packet 26.3 clients read, so Carve keeps the command.
     fn swing_hand(&mut self, player: &PlayerRef, main: bool) {
-        let cmd = crate::w2_effects_3::swing_command(&player.name, main);
+        let cmd = crate::effects_player_state::swing_command(&player.name, main);
         self.execute_command(&cmd);
     }
 
@@ -1104,20 +1108,20 @@ pub trait Host {
 
     /// Offer a resource pack. `id` is a UUID string that is the same for the same URL.
     fn send_resource_pack(&mut self, _player: &PlayerRef, _url: &str, _hash: &str, _id: &str) {}
-    // ---- ray tracing, worlds and chunks (`w4_skbee_raytrace_world`) ----
+    // ---- ray tracing, worlds and chunks (`skbee_raytrace_world`) ----
 
     /// Cast a ray and report the first block and the first entity on it.
     /// The default walks the blocks with `block_type` (every solid block counts
     /// as a full cube) and finds no entities.
     fn ray_trace(
         &mut self,
-        req: &crate::w4_skbee_raytrace_world::RayReq,
-    ) -> crate::w4_skbee_raytrace_world::RayRaw {
-        crate::w4_skbee_raytrace_world::walk_blocks(req, self)
+        req: &crate::skbee_raytrace_world::RayReq,
+    ) -> crate::skbee_raytrace_world::RayRaw {
+        crate::skbee_raytrace_world::walk_blocks(req, self)
     }
 
     /// Create a world, or load it when it exists.
-    fn create_world(&mut self, _name: &str, _env: crate::w4_skbee_raytrace_world::Env) -> Result<(), String> {
+    fn create_world(&mut self, _name: &str, _env: crate::skbee_raytrace_world::Env) -> Result<(), String> {
         Err("this server cannot create worlds".into())
     }
 
@@ -1189,8 +1193,8 @@ pub trait Host {
 
     /// `set quit message to` in `on quit`.
     /// Block data, world border settings, books, ender chests, AI and
-    /// attributes (see `w5_chunk4::Q`). `None` means unknown or not done.
-    fn w5c4(&mut self, _q: crate::w5_chunk4::Q<'_>) -> Option<crate::value::Value> {
+    /// attributes (see `block_shapes_ai::Q`). `None` means unknown or not done.
+    fn w5c4(&mut self, _q: crate::block_shapes_ai::Q<'_>) -> Option<crate::value::Value> {
         None
     }
 
@@ -1198,29 +1202,29 @@ pub trait Host {
         self.set_join_message(text);
     }
 
-    /// A question from `w6_chunk6` (portal cooldown, protocol, vehicle, whitelist, ...).
-    fn w6c6_get(&mut self, _q: crate::w6_chunk6::Get<'_>) -> Option<crate::value::Value> {
+    /// A question from `quaternions_protocol` (portal cooldown, protocol, vehicle, whitelist, ...).
+    fn w6c6_get(&mut self, _q: crate::quaternions_protocol::Get<'_>) -> Option<crate::value::Value> {
         None
     }
 
-    /// A change from `w6_chunk6`. Returns whether it was done.
-    fn w6c6_set(&mut self, _s: crate::w6_chunk6::Set<'_>) -> bool {
+    /// A change from `quaternions_protocol`. Returns whether it was done.
+    fn w6c6_set(&mut self, _s: crate::quaternions_protocol::Set<'_>) -> bool {
         false
     }
 
-    /// A game-side change of `w6_chunk2` (flight, fake blocks, display flags,
+    /// A game-side change of `effects_entity_commands` (flight, fake blocks, display flags,
     /// sound categories, shearing, taming). `None`: this host can't.
-    fn w6c2(&mut self, _op: crate::w6_chunk2::HostOp<'_>) -> Option<bool> {
+    fn w6c2(&mut self, _op: crate::effects_entity_commands::HostOp<'_>) -> Option<bool> {
         None
     }
 
-    /// A question from `w5_chunk6` (scale, targets, text displays, borders, boss bars).
-    fn c6_get(&mut self, _q: crate::w5_chunk6::Get<'_>) -> Option<crate::value::Value> {
+    /// A question from `entity_block_properties` (scale, targets, text displays, borders, boss bars).
+    fn c6_get(&mut self, _q: crate::entity_block_properties::Get<'_>) -> Option<crate::value::Value> {
         None
     }
 
-    /// A change from `w5_chunk6`. Returns whether it was done.
-    fn c6_set(&mut self, _s: crate::w5_chunk6::Set<'_>) -> bool {
+    /// A change from `entity_block_properties`. Returns whether it was done.
+    fn c6_set(&mut self, _s: crate::entity_block_properties::Set<'_>) -> bool {
         false
     }
 
@@ -1230,14 +1234,14 @@ pub trait Host {
     }
 
     /// Block id, state id and the block's first state id at a position.
-    fn c6_block_state(&mut self, _at: &BlockPos) -> Option<crate::w5_chunk6::BlockState> {
+    fn c6_block_state(&mut self, _at: &BlockPos) -> Option<crate::entity_block_properties::BlockState> {
         None
     }
 
-    /// Mob, sign and potion changes of `w5_chunk1` (creepers, babies,
+    /// Mob, sign and potion changes of `drops_border_leashes` (creepers, babies,
     /// pathfinding, glowing sign text, potion flags). `None`: not supported
     /// or no such target.
-    fn w5c1(&mut self, _op: crate::w5_chunk1::HostOp<'_>) -> Option<bool> {
+    fn w5c1(&mut self, _op: crate::drops_border_leashes::HostOp<'_>) -> Option<bool> {
         None
     }
 

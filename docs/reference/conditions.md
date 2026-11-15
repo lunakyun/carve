@@ -348,7 +348,7 @@ if last spawned entity can age:
     send "yes"
 ```
 
-Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+Since **unreleased** · Guide: [drops-border-leashes](../syntax/drops-border-leashes.md)
 
 ## Can be dispensed {#equip_can_be_dispensed}
 
@@ -364,7 +364,7 @@ if diamond helmet can be dispensed:
     send "yes"
 ```
 
-Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
+Since **unreleased** · Guide: [conditions-flags-metadata](../syntax/conditions-flags-metadata.md)
 
 ## Can be equipped on entities {#equip_on_entities}
 
@@ -382,7 +382,7 @@ if saddle can be equipped on entities:
     send "yes"
 ```
 
-Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
+Since **unreleased** · Guide: [conditions-flags-metadata](../syntax/conditions-flags-metadata.md)
 
 ## Can be sheared off {#equip_can_be_sheared_off}
 
@@ -398,7 +398,7 @@ if saddle can be sheared off:
     send "yes"
 ```
 
-Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
+Since **unreleased** · Guide: [conditions-flags-metadata](../syntax/conditions-flags-metadata.md)
 
 ## Can breed {#can_breed}
 
@@ -502,7 +502,7 @@ if carved pumpkin can't swap equipment:
     send "no swapping"
 ```
 
-Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
+Since **unreleased** · Guide: [conditions-flags-metadata](../syntax/conditions-flags-metadata.md)
 
 ## Chance {#chance}
 
@@ -563,7 +563,7 @@ on damage:
         cancel event
 ```
 
-Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
+Since **unreleased** · Guide: [conditions-flags-metadata](../syntax/conditions-flags-metadata.md)
 
 ## Date in future or past {#date_future_past}
 
@@ -593,7 +593,7 @@ on throwing of an egg:
         send "A chick!" to player
 ```
 
-Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
+Since **unreleased** · Guide: [conditions-flags-metadata](../syntax/conditions-flags-metadata.md)
 
 ## Ends with {#ends_with}
 
@@ -628,7 +628,7 @@ if entity storage of block at location(1, 64, 1) is full:
     send "The hive is full"
 ```
 
-Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
+Since **unreleased** · Guide: [conditions-flags-metadata](../syntax/conditions-flags-metadata.md)
 
 ## Event is cancelled {#event_cancelled}
 
@@ -683,7 +683,7 @@ if bossbar "raid" has darken sky flag:
     send "dark"
 ```
 
-Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
+Since **unreleased** · Guide: [conditions-flags-metadata](../syntax/conditions-flags-metadata.md)
 
 ## Has chat filtering {#chat_filtering}
 
@@ -783,7 +783,7 @@ if block at location(1, 64, 1) has a loot table:
     send "Not opened yet"
 ```
 
-Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
+Since **unreleased** · Guide: [conditions-flags-metadata](../syntax/conditions-flags-metadata.md)
 
 ## Has metadata {#has_metadata}
 
@@ -799,7 +799,7 @@ if player has metadata "frozen":
     cancel event
 ```
 
-Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
+Since **unreleased** · Guide: [conditions-flags-metadata](../syntax/conditions-flags-metadata.md)
 
 ## Has permission {#permission}
 
@@ -831,7 +831,7 @@ if player has persistent data tag "kit":
     send "Kit already claimed"
 ```
 
-Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
+Since **unreleased** · Guide: [conditions-flags-metadata](../syntax/conditions-flags-metadata.md)
 
 ## Has played before {#has_played_before}
 
@@ -848,7 +848,7 @@ on join:
         send "Welcome, new player!" to player
 ```
 
-Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
+Since **unreleased** · Guide: [conditions-flags-metadata](../syntax/conditions-flags-metadata.md)
 
 ## Has potion effect {#potion}
 
@@ -943,7 +943,7 @@ if {_cow} is a baby:
     send "cute"
 ```
 
-Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
 ## Is alive {#alive}
 
@@ -985,7 +985,7 @@ if player is any of all operators:
     send "op"
 ```
 
-Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
 ## Is banned {#banned}
 
@@ -1020,7 +1020,7 @@ on respawn:
         send "welcome back"
 ```
 
-Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
 ## Is between {#between}
 
@@ -1079,7 +1079,7 @@ if {_creeper} is charged:
     send "boom"
 ```
 
-Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
 ## Is climbing {#w6c3_climbing}
 
@@ -1095,7 +1095,7 @@ if player is climbing:
     send "up"
 ```
 
-Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
 ## Is conditional {#w6c3_conditional}
 
@@ -1111,7 +1111,7 @@ if location(1, 64, 1) is conditional:
     send "conditional"
 ```
 
-Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
 ## Is divisible {#divisible}
 
@@ -1229,7 +1229,7 @@ if {_mob} is from a spawner:
     send "spawner mob"
 ```
 
-Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
 ## Is frozen {#frozen}
 
@@ -1293,7 +1293,7 @@ if player is holding diamond sword in the off hand:
     send "dual"
 ```
 
-Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
 ## Is igniting {#w6c3_igniting}
 
@@ -1309,7 +1309,7 @@ if {_creeper} is igniting:
     send "run"
 ```
 
-Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
 ## Is in gamemode {#in_gamemode}
 
@@ -1366,7 +1366,7 @@ if {_e} is infinite:
     send "forever"
 ```
 
-Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
 ## Is instant {#instant}
 
@@ -1417,7 +1417,7 @@ if player is left handed:
     send "lefty"
 ```
 
-Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
 ## Is loaded {#loaded}
 
@@ -1445,7 +1445,7 @@ if location(1, 64, 1) is lootable:
     send "unopened"
 ```
 
-Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
 ## Is normalized {#w6c3_normalized}
 
@@ -1461,7 +1461,7 @@ if vector(1, 0, 0) is normalized:
     send "unit"
 ```
 
-Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
 ## Is occluding {#w6c3_occluding}
 
@@ -1477,7 +1477,7 @@ if location(1, 64, 1) is occluding:
     send "stone-like"
 ```
 
-Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
 ## Is of type {#of_type}
 
@@ -1504,7 +1504,7 @@ if {_e} is of type pig:
     send "oink"
 ```
 
-Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
 ## Is on ground {#on_ground}
 
@@ -1576,7 +1576,7 @@ if {_cow} is pathfinding:
     send "walking"
 ```
 
-Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
 ## Is persistent {#w6c3_persistent}
 
@@ -1592,7 +1592,7 @@ if location(1, 64, 1) is persistent:
     send "player placed"
 ```
 
-Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
 ## Is plugin enabled {#w6c3_plugin}
 
@@ -1608,7 +1608,7 @@ if plugin "carve" is enabled:
     send "yes"
 ```
 
-Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
 ## Is poisoned {#poisoned}
 
@@ -1637,7 +1637,7 @@ if location(1, 64, 1) is powered:
     send "on"
 ```
 
-Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
 ## Is preferred tool {#is_preferred_tool}
 
@@ -1655,7 +1655,7 @@ if diamond pickaxe is the preferred tool for obsidian:
     send "yes"
 ```
 
-Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
+Since **unreleased** · Guide: [conditions-flags-metadata](../syntax/conditions-flags-metadata.md)
 
 ## Is pressing key {#w6c3_key}
 
@@ -1676,7 +1676,7 @@ if player is pressing the jump key:
     send "jumping"
 ```
 
-Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
 ## Is responsive {#is_responsive}
 
@@ -1693,7 +1693,7 @@ if last spawned entity is responsive:
     send "yes"
 ```
 
-Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
+Since **unreleased** · Guide: [conditions-flags-metadata](../syntax/conditions-flags-metadata.md)
 
 ## Is riding {#riding}
 
@@ -1731,7 +1731,7 @@ if player is riptiding:
     send "whee"
 ```
 
-Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
 ## Is running Minecraft {#w6c3_version}
 
@@ -1749,7 +1749,7 @@ if running above minecraft "1.21":
     send "new"
 ```
 
-Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
 ## Is saddled {#w5c3_saddled}
 
@@ -1767,7 +1767,7 @@ command /sad:
             send "saddled"
 ```
 
-Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
 ## Is screaming {#w5c3_screaming}
 
@@ -1778,7 +1778,7 @@ Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
 
 Whether an enderman is screaming. Goats have no data in the plugin API.
 
-Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
 ## Is script command {#script_command}
 
@@ -1857,7 +1857,7 @@ if player is riding a horse:
     send "giddy up"
 ```
 
-Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
 ## Is sleeping {#sleeping}
 
@@ -1916,7 +1916,7 @@ if "zombie" is spawnable in player's world:
     send "yes"
 ```
 
-Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
 ## Is sprinting {#sprinting}
 
@@ -1948,7 +1948,7 @@ if diamond sword is not stackable:
     send "one per slot"
 ```
 
-Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
 ## Is swimming {#swimming}
 
@@ -1980,7 +1980,7 @@ on join:
         send "stone"
 ```
 
-Since **unreleased** · Guide: [w4-skbee-raytrace-world](../syntax/w4-skbee-raytrace-world.md)
+Since **unreleased** · Guide: [skbee-raytrace-world](../syntax/skbee-raytrace-world.md)
 
 ## Is tagged {#tagged}
 
@@ -2009,7 +2009,7 @@ if "wolf" is tameable:
     send "yes"
 ```
 
-Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
 ## Is tamed {#w5c3_tamed}
 
@@ -2028,7 +2028,7 @@ command /tamed:
             send "tamed"
 ```
 
-Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
 ## Is the console {#is_console}
 
@@ -2071,7 +2071,7 @@ if player's tool is unbreakable:
     send "forever"
 ```
 
-Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
 ## Is using experimental feature {#w6c3_feature}
 
@@ -2088,7 +2088,7 @@ if feature "bundle" is enabled:
     send "bundles"
 ```
 
-Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+Since **unreleased** · Guide: [conditions-mob-block-state](../syntax/conditions-mob-block-state.md)
 
 ## Is valid {#valid}
 
@@ -2115,7 +2115,7 @@ if player is wearing diamond helmet:
     send "shiny"
 ```
 
-Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
 ## Is wet {#wet}
 
@@ -2166,7 +2166,7 @@ if player's tool has enchantment glint overridden:
     send "glint"
 ```
 
-Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
 ## Item tooltip is shown {#item_tooltip_shown}
 
@@ -2186,7 +2186,7 @@ if tooltip of diamond sword is shown:
     send "yes"
 ```
 
-Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
+Since **unreleased** · Guide: [conditions-flags-metadata](../syntax/conditions-flags-metadata.md)
 
 ## Lid is open/closed {#w5c3_lid}
 
@@ -2208,7 +2208,7 @@ if lid of location(0, 64, 0, world "world") is open:
     send "someone is looking"
 ```
 
-Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
 ## Matches regex {#regex}
 
@@ -2267,7 +2267,7 @@ if player's speed effect doesn't have particles:
     send "hidden speed"
 ```
 
-Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
 ## PvP enabled {#pvp}
 
@@ -2297,7 +2297,7 @@ on resource pack response:
         send "Please accept the pack" to player
 ```
 
-Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
 ## Respawn anchors work {#respawn_anchors}
 
@@ -2353,7 +2353,7 @@ Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
 Flags of a text display entity.
 
-Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+Since **unreleased** · Guide: [conditions-mobs-items](../syntax/conditions-mobs-items.md)
 
 ## Text or list contains {#contains}
 
@@ -2387,7 +2387,7 @@ if elytra won't lose durability:
     send "tough"
 ```
 
-Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
+Since **unreleased** · Guide: [conditions-flags-metadata](../syntax/conditions-flags-metadata.md)
 
 ## World or chunk is loaded {#world_loaded}
 
@@ -2404,5 +2404,5 @@ on join:
         send "loaded"
 ```
 
-Since **unreleased** · Guide: [w4-skbee-raytrace-world](../syntax/w4-skbee-raytrace-world.md)
+Since **unreleased** · Guide: [skbee-raytrace-world](../syntax/skbee-raytrace-world.md)
 

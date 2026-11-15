@@ -341,7 +341,7 @@ t.run(async () => {
   const hr = await health(s, (d) => d.health < 20, 15000)
   t.check('respawn restores full health', !!hr && Math.abs(hr.health - 19) < 0.01, hr ? `health after 1 damage: ${hr.health}` : 'no set_health')
 
-  t.skip('projectiles (on damage by arrow, shoot)', 'the test bot cannot draw a bow; the shoot section is checked in the w5-chunk6 area')
+  t.skip('projectiles (on damage by arrow, shoot)', 'the test bot cannot draw a bow; the shoot section is checked in the entity-block-properties area')
   await sleep(300)
   t.check('bot still connected', !bot.closed)
   const errs = bot.packets.filter((p) => p.error)

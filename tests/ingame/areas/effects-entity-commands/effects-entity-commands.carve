@@ -1,0 +1,269 @@
+# Wave 6 chunk 2 area. Every result goes to chat as eec:<key> <value>.
+
+command /eecping:
+    trigger:
+        send "eec:ping" to player
+
+command /eechorn:
+    trigger:
+        spawn a goat at location(3, 101, 3)
+        set {goat} to last spawned entity
+        remove the left horn of {goat}
+        send "eec:horn" to player
+
+command /eechorn2:
+    trigger:
+        remove {goat}'s right horn
+        send "eec:horn2" to player
+
+command /eechorn3:
+    trigger:
+        regrow both horns of {goat}
+        send "eec:horn3" to player
+
+command /eecsilent:
+    trigger:
+        spawn a cow at location(9, 101, 3)
+        set {cow} to last spawned entity
+        silence {cow}
+        send "eec:silent" to player
+
+command /eecsilent2:
+    trigger:
+        unsilence {cow}
+        send "eec:silent2" to player
+
+command /eecscream:
+    trigger:
+        make {goat} scream
+        send "eec:scream" to player
+
+command /eectree:
+    trigger:
+        grow oak at location(30, 101, 30)
+        send "eec:tree" to player
+
+command /eectreeat:
+    trigger:
+        set {_n} to 0
+        loop 6 times:
+            if "%type of block at location(30, 100 + loop-number, 30)%" contains "log":
+                add 1 to {_n}
+        send "eec:treeat %{_n}%" to player
+
+command /eeczomb0:
+    trigger:
+        spawn a villager at location(12, 101, 3)
+        set {v} to last spawned entity
+        set name of {v} to "Bob"
+        send "eec:zomb0 %name of {v}% %health of {v}%" to player
+
+command /eeczomb:
+    trigger:
+        zombify {v}
+        send "eec:zomb" to player
+
+command /eecallay:
+    trigger:
+        spawn an allay at location(15, 102, 3)
+        set {allay} to last spawned entity
+        make {allay} duplicate
+        send "eec:allay" to player
+
+command /eecdis:
+    trigger:
+        disable script "effects-entity-commands-1"
+        send "eec:dis" to player
+
+command /eecen:
+    trigger:
+        enable script "effects-entity-commands-1"
+        send "eec:en" to player
+
+command /eecrel:
+    trigger:
+        reload script "effects-entity-commands-1"
+        send "eec:rel" to player
+
+command /eecreset:
+    trigger:
+        set {_n} to 5
+        set {_t} to "hi"
+        set {_b} to true
+        set {_l::*} to 1, 2, 1 and 3
+        reset {_n}
+        reset {_t}
+        reset {_b}
+        remove all 1 from {_l::*}
+        send "eec:reset %{_n}%|%{_t}%|%{_b}%|%{_l::*}%" to player
+        reset {_l::*}
+        send "eec:reset2 %size of {_l::*}%" to player
+
+command /eecrot:
+    trigger:
+        set {_v} to vector(1, 0, 0)
+        rotate {_v} around the z-axis by 90
+        set {_w} to vector(0, 0, 1)
+        rotate {_w} around vector(0, 1, 0) by 90
+        set {_l::1} to vector(0, 1, 0)
+        set {_l::2} to vector(0, 0, 1)
+        rotate {_l::*} around the x axis by 90
+        send "eec:rot %{_v}%|%{_w}%|%{_l::1}%|%{_l::2}%" to player
+
+command /eecwarn:
+    trigger:
+        locally suppress conflict warnings
+        suppress type hints:
+            send "eec:warn body ran" to player
+
+command /eecfly:
+    trigger:
+        allow flight for player
+        send "eec:fly" to player
+
+command /eecnofly:
+    trigger:
+        disallow flight for player
+        send "eec:nofly" to player
+
+command /eecfake:
+    trigger:
+        make player see location(5, 101, 5) as diamond_block
+        send "eec:fake" to player
+
+command /eecunfake:
+    trigger:
+        make player see location(5, 101, 5) as original block
+        send "eec:unfake" to player
+
+command /eecinter:
+    trigger:
+        spawn an interaction at location(24, 101, 5)
+        set {inter} to last spawned entity
+        make {inter} responsive
+        set {_a} to "no"
+        if {inter} is responsive:
+            set {_a} to "yes"
+        send "eec:inter %{_a}%" to player
+
+command /eecinter2:
+    trigger:
+        make {inter} unresponsive
+        set {_a} to "no"
+        if {inter} is responsive:
+            set {_a} to "yes"
+        send "eec:inter2 %{_a}%" to player
+
+command /eectd:
+    trigger:
+        spawn text display at location(0, 102, 6) with text "hi"
+        set {td} to last spawned entity
+        remove drop shadow from {td}
+        make {td} visible through blocks
+        send "eec:td" to player
+
+command /eectd2:
+    trigger:
+        apply drop shadow to {td}
+        prevent {td} from being visible through blocks
+        send "eec:td2" to player
+
+command /eecstop:
+    trigger:
+        stop sound "entity.cow.ambient" in music for player
+        send "eec:stop" to player
+
+command /eecstopall:
+    trigger:
+        stop all sounds in master for player
+        send "eec:stopall" to player
+
+command /eecsheep:
+    trigger:
+        spawn a sheep at location(18, 101, 3)
+        set {sheep} to last spawned entity
+        shear {sheep}
+        send "eec:sheep" to player
+
+command /eecsheep2:
+    trigger:
+        unshear {sheep}
+        send "eec:sheep2" to player
+
+command /eectame:
+    trigger:
+        spawn a wolf at location(21, 101, 3)
+        set {wolf} to last spawned entity
+        tame {wolf}
+        send "eec:tame" to player
+
+command /eecuntame:
+    trigger:
+        untame {wolf}
+        send "eec:untame" to player
+
+command /eecban:
+    trigger:
+        ban "Pleb" because of "eec test" for 2 minutes
+        send "eec:ban" to player
+
+command /eecride:
+    trigger:
+        spawn a pig at location(3, 101, 9)
+        set {pig} to last spawned entity
+        spawn a zombie at location(3, 101, 9)
+        set {z2} to last spawned entity
+        make {z2} ride {pig}
+        send "eec:ride" to player
+
+command /eecdismount:
+    trigger:
+        make {z2} dismount
+        send "eec:dismount" to player
+
+command /eecswing:
+    trigger:
+        make {z2} swing main hand
+        send "eec:swing" to player
+
+command /eecswing2:
+    trigger:
+        make {z2} swing off hand
+        send "eec:swing2" to player
+
+command /eecequip:
+    trigger:
+        equip {z2} with diamond helmet and iron boots
+        send "eec:equip" to player
+
+command /eecworld:
+    trigger:
+        create world "eectest" with environment nether
+        send "eec:world" to player
+
+command /eecworldchk:
+    trigger:
+        set {_a} to "no"
+        if world "eectest" is loaded:
+            set {_a} to "yes"
+        send "eec:worldchk %{_a}% %all worlds%" to player
+
+command /eecworld2:
+    trigger:
+        unload world "eectest"
+        set {_a} to "no"
+        if world "eectest" is loaded:
+            set {_a} to "yes"
+        send "eec:world2 %{_a}%" to player
+
+command /eecbar:
+    trigger:
+        create bossbar "eecbar" with title "k" with color red
+        add darken sky flag to bossbar "eecbar"
+        set {_r} to ""
+        if bossbar "eecbar" has darken sky flag:
+            set {_r} to "dark"
+        if bossbar "eecbar" has fog flag:
+            set {_r} to "%{_r}%,fog"
+        remove bossbar "eecbar"
+        send "eec:bar %{_r}%" to player
