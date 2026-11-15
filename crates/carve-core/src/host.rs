@@ -1121,6 +1121,12 @@ pub trait Host {
         self.set_join_message(text);
     }
 
+    /// A game-side change of `w6_chunk2` (flight, fake blocks, display flags,
+    /// sound categories, shearing, taming). `None`: this host can't.
+    fn w6c2(&mut self, _op: crate::w6_chunk2::HostOp<'_>) -> Option<bool> {
+        None
+    }
+
     /// A question from `w5_chunk6` (scale, targets, text displays, borders, boss bars).
     fn c6_get(&mut self, _q: crate::w5_chunk6::Get<'_>) -> Option<crate::value::Value> {
         None
