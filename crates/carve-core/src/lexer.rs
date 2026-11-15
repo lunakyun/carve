@@ -209,16 +209,31 @@ pub fn lex(s: &str) -> Result<Vec<Tok>, String> {
     Ok(out)
 }
 
-/// Remove a `#` comment, ignoring `#` inside quotes or braces.
+/// Remove a `#` comment, ignoring `#` inside quotes or braces. Quotes nest
+/// inside `%...%` in a text (`"%f("#,##0")%"`); `""` and `%%` are escapes.
 pub fn strip_comment(line: &str) -> &str {
-    let mut in_str = false;
-    let mut depth = 0i32;
-    for (idx, ch) in line.char_indices() {
-        match ch {
-            '"' => in_str = !in_str,
-            '{' if !in_str => depth += 1,
-            '}' if !in_str => depth -= 1,
-            '#' if !in_str && depth <= 0 => return &line[..idx],
+    #[derive(Clone, Copy)]
+    enum Ctx {
+        Str,
+        Interp,
+        Brace,
+    }
+    let mut stack: Vec<Ctx> = Vec::new();
+    let mut chars = line.char_indices().peekable();
+    while let Some((idx, ch)) = chars.next() {
+        let next = chars.peek().map(|&(_, c)| c);
+        match (stack.last().copied(), ch) {
+            (Some(Ctx::Str), '"' | '%') if next == Some(ch) => {
+                chars.next();
+            }
+            (Some(Ctx::Str), '"') | (Some(Ctx::Interp), '%') | (Some(Ctx::Brace), '}') => {
+                stack.pop();
+            }
+            (Some(Ctx::Str | Ctx::Brace), '%') => stack.push(Ctx::Interp),
+            (Some(Ctx::Str), _) => {}
+            (_, '"') => stack.push(Ctx::Str),
+            (_, '{') => stack.push(Ctx::Brace),
+            (None, '#') => return &line[..idx],
             _ => {}
         }
     }

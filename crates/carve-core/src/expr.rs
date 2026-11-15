@@ -2100,6 +2100,9 @@ impl P<'_> {
                     "sorted" | "reversed" | "shuffled" if self.peek().is_some() => {
                         self.list_expr(self.pos - 1)
                     }
+                    "alphabetically" | "alphabetical" if matches!(self.peek(), Some(t) if t.is_lit("sorted")) => {
+                        self.list_expr(self.pos - 1)
+                    }
                     "random" if matches!(self.peek(), Some(Tok::Num(_) | Tok::Var(_))) => {
                         self.list_expr(self.pos - 1)
                     }
