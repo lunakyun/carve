@@ -67,6 +67,7 @@ mod w4;
 mod w4_conditions_1;
 mod w4_events_movement;
 mod w5_chunk2;
+mod w5_chunk5;
 
 const SCRIPTS_DIR: &str = "scripts";
 const VARS_FILE: &str = "variables.json";
@@ -531,6 +532,7 @@ impl WasmHost<'_> {
                 .into_iter()
                 .map(|e| (enchant_id(&format!("{:?}", e.enchantment)), e.level))
                 .collect(),
+            ..ItemMeta::default()
         };
         (!meta.is_empty()).then_some(meta)
     }
@@ -1476,6 +1478,10 @@ impl WasmHost<'_> {
         self.server.get_all_worlds().first().map(world_name)
     }
 
+    fn w5c5(&mut self, q: carve_core::w5_chunk5::Q<'_>) -> Value {
+        self.w5c5_impl(q)
+    }
+
     fn w2e7_query(&mut self, q: Query<'_>) -> Option<Value> {
         let num = |n: f64| Some(Value::Num(n));
         match q {
@@ -1806,6 +1812,10 @@ impl Host for TickHost<'_, '_> {
         self.inner.default_world()
     }
 
+    fn w5c5(&mut self, q: carve_core::w5_chunk5::Q<'_>) -> Value {
+        self.inner.w5c5(q)
+    }
+
     sb::sb_host_methods!();
 
     fn schedule_wait(&mut self, ticks: u64, token: u64) {
@@ -2068,7 +2078,10 @@ impl EventAccess for PlayerRecipeDiscoverEvent {
 
 impl EventAccess for PlayerRespawnEvent {
     fn ctx(d: &EventData<Self>) -> EventCtx {
-        EventCtx::player(player_ref(&d.player))
+        let mut ctx = EventCtx::player(player_ref(&d.player));
+        // `respawn reason`: Pumpkin fires this after a death, `alive` when leaving the End.
+        ctx.message = Some(if d.alive { "end_portal" } else { "death" }.to_string());
+        ctx
     }
     fn set_cancelled(_d: &mut EventData<Self>) {}
 }

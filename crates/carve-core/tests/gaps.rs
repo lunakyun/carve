@@ -383,6 +383,7 @@ fn held_mock() -> Mock {
         name: Some("Old".into()),
         lore: vec!["one".into()],
         enchants: vec![("unbreaking".into(), 1)],
+        ..ItemMeta::default()
     });
     h
 }

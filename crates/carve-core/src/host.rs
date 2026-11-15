@@ -304,6 +304,12 @@ pub trait Host {
         None
     }
 
+    /// Potion effects, boss bar progress, client weather, block states and
+    /// menu viewers (see `w5_chunk5::Q`). `Value::None` means unknown.
+    fn w5c5(&mut self, _q: crate::w5_chunk5::Q<'_>) -> crate::value::Value {
+        crate::value::Value::None
+    }
+
     /// Hurt the player. The default lowers health and kills at zero.
     fn damage(&mut self, player: &PlayerRef, amount: f64) {
         if let Some(h) = self.health(player) {

@@ -17,11 +17,14 @@ pub struct ItemMeta {
     pub lore: Vec<String>,
     /// Enchantment id (`sharpness`, `sweeping_edge`) and level.
     pub enchants: Vec<(String, u32)>,
+    /// Other item components, as name and SNBT value (`profile`, `"Notch"`).
+    /// They go into the `give` command.
+    pub comps: Vec<(String, String)>,
 }
 
 impl ItemMeta {
     pub fn is_empty(&self) -> bool {
-        self.name.is_none() && self.lore.is_empty() && self.enchants.is_empty()
+        self.name.is_none() && self.lore.is_empty() && self.enchants.is_empty() && self.comps.is_empty()
     }
 
     /// Add an enchantment, replacing the level when it is already there.
@@ -49,6 +52,10 @@ impl ItemMeta {
             let e: Map<String, Json> = self.enchants.iter().map(|(k, v)| (k.clone(), json!(v))).collect();
             o.insert("enchants".into(), Json::Object(e));
         }
+        if !self.comps.is_empty() {
+            let c: Map<String, Json> = self.comps.iter().map(|(k, v)| (k.clone(), json!(v))).collect();
+            o.insert("comps".into(), Json::Object(c));
+        }
         Json::Object(o)
     }
 
@@ -66,6 +73,13 @@ impl ItemMeta {
             for (k, v) in e {
                 if let Some(n) = v.as_u64().and_then(|n| u32::try_from(n).ok()) {
                     m.enchants.push((k.clone(), n));
+                }
+            }
+        }
+        if let Some(c) = o.get("comps").and_then(Json::as_object) {
+            for (k, v) in c {
+                if let Some(s) = v.as_str() {
+                    m.comps.push((k.clone(), s.to_string()));
                 }
             }
         }
@@ -296,6 +310,9 @@ pub fn give_command(player: &str, id: &str, count: u32, meta: &ItemMeta) -> Stri
             .map(|(k, v)| format!("\"minecraft:{k}\":{v}"))
             .collect();
         parts.push(format!("enchantments={{{}}}", e.join(",")));
+    }
+    for (k, v) in &meta.comps {
+        parts.push(format!("{k}={v}"));
     }
     if parts.is_empty() {
         format!("give {player} minecraft:{id} {count}")

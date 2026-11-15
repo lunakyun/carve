@@ -352,6 +352,15 @@ fn particles(toks: &[Tok], env: &Env) -> Result<Option<WorldFx>, String> {
 
 /// `apply [potion of] speed [2] to <player> [for 10 seconds]`.
 fn apply(toks: &[Tok], env: &Env) -> Result<Option<WorldFx>, String> {
+    // A potion effect value written inline is `w5_chunk5`'s `apply %object% to %player%`.
+    if toks.get(1).is_some_and(|t| {
+        ["a", "an", "ambient", "infinite", "permanent"]
+            .iter()
+            .any(|w| is(t, w))
+    }) || toks.iter().any(|t| is(t, "without"))
+    {
+        return Ok(None);
+    }
     let mut i = 1;
     for w in ["potion", "effect", "of"] {
         if toks.get(i).is_some_and(|t| is(t, w)) {

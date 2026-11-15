@@ -828,8 +828,8 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Interaction Height/Width — Pumpkin's API has no interaction entities
 - ✅ Inventory ⭐ — `player's inventory`, `player's current inventory`, chest inventory values in variables, `event-inventory`
 - ⬜ Inventory Action
-- ⬜ Inventory Close Reason
-- ⬜ Inventory Holder/Viewers/Rows/Slots
+- ⛔ Inventory Close Reason — Pumpkin's inventory close event carries no reason
+- ✅ Inventory Holder/Viewers/Rows/Slots — `rows of`, `amount of slots of`, `viewers of` and `holder of` chest menus made by scripts (holder is always none, as in Skript)
 - ✅ Inventory Slot ⭐ — `slot 3 of player's inventory`, `set slot 3 of player's current inventory to diamond`
 - ✅ Inverse Boolean — `not x`
 - ✅ IP — `ip of player`
@@ -839,7 +839,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Item Cooldown — `cooldown of <item> for <player>`, `set`/`reset cooldown of ...`
 - ⛔ Item Display Transform — Pumpkin's API has no display entities with transforms to set from scripts
 - ✅ Item Enchantments — `enchantments of x`
-- ⬜ Item Flags
+- ⛔ Item Flags — the API only exposes raw component bytes, so item flags can be neither read nor set
 - ⛔ Item Model — the API only exposes raw component bytes, not typed access
 - ⛔ Item of an Entity — the API cannot read the stack held by an item entity
 - 🟡 Item Rarity — get, set and reset on `player's tool` only
@@ -853,12 +853,12 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Items In ⭐ — `items in {_gui}`, `items in player's inventory`, `items in event-inventory`
 - ✅ Join & Split ⭐
 - ✅ Join Message ⭐ — `join message`, `set join message to "..."` in `on join`
-- ⬜ Key Of Boss Bar
+- ✅ Key Of Boss Bar — `bossbar key of bossbar "id"`, none when there is no such bar
 - 🟡 Keyed — `key of <item>` gives `minecraft:id`; items only
-- ⬜ Kick Message
+- ⛔ Kick Message — Pumpkin's kick event has only the on-screen reason (see On-Screen Kick Message), no chat leave message
 - ✅ Language — `language of <player>`, `locale of <player>`
 - 🟡 Last Attacker — `last attacker of <player>`; players only, remembered since the plugin loaded
-- ⬜ Last Caught Errors
+- ✅ Last Caught Errors — the messages of `catch runtime errors`
 - ✅ Last Color — `last color of <text>`: a color name like `red`, or `#rrggbb`
 - 🟡 Last Damage — `last damage of <player>`; remembered since the plugin loaded
 - 🟡 Last Damage Cause — `last damage cause of <player>`: text like `fall` or `player_attack`
@@ -915,7 +915,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Minimum Float Value — `minimum float value`
 - ✅ Minimum Integer Value — `minimum integer value`
 - ✅ Minimum Long Value — `minimum long value`
-- ⬜ Minimum/Maximum Enchantment Level
+- ✅ Minimum/Maximum Enchantment Level — vanilla values per enchantment
 - ⛔ Money — needs an economy plugin
 - ✅ Moon Phase — `moon phase of <world|location|player>`, gives text like `full moon`
 - ⛔ Moved blocks — needs the piston events, which are not wired
@@ -926,7 +926,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Nearest Entity — `nearest [type] to <place> [within N]`
 - ✅ Negative Infinity — `negative infinity`
 - ✅ New Line ⭐ — `nl`, `new line`
-- ⬜ New Potion Effect
+- ✅ New Potion Effect — tier, duration, `infinite`, `ambient` and `without particles`; apply it with `apply`; not saved in global variables
 - ⛔ No Damage Ticks — the plugin API cannot read hurt immunity ticks
 - ⛔ No Damage Time — the plugin API cannot read hurt immunity time
 - ⛔ Node — Carve has no config node tree
@@ -935,19 +935,19 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Number of Characters — `number of uppercase letters in <text>` (also lowercase, digits, spaces)
 - ✅ Numbers — `numbers from 1 to 5`, `integers from 1 to 5`; works in `loop`, `set {x::*} to`; at most a million
 - ⛔ Offline players — the plugin API has no offline player lookup
-- ⬜ On-Screen Kick Message
+- ✅ On-Screen Kick Message — in `on kick`; changing it has no effect on Pumpkin
 - ✅ Online Player Count ⭐ — `online players count`, `amount of players`, `player count`
 - 🟡 Opened Inventory — `current inventory` of a player, for menus opened by Carve
 - ⛔ Panda Gene — the plugin API has no panda access
 - 🟡 Parse — `parsed as number` only
 - ✅ Parse Error — `parse error` after a failed `parsed as number`
-- ⬜ Particle Count
-- ⬜ Particle Distribution
-- ⬜ Particle Offset
-- ⬜ Particle Speed/Extra Value
-- ⬜ Particle with Offset/Distribution/Velocity
-- ⬜ Particle with Speed/Extra Value
-- ⬜ Particles with Data
+- ✅ Particle Count — of particle values; settable
+- ✅ Particle Distribution — of particle values; settable
+- ✅ Particle Offset — of particle values; settable
+- ✅ Particle Speed/Extra Value — of particle values; settable
+- ✅ Particle with Offset/Distribution/Velocity — velocity sends count 0 so the vector is the direction
+- ✅ Particle with Speed/Extra Value
+- ⛔ Particles with Data — Pumpkin's particle API and `/particle` take no particle data (dust colours, blocks, items); drawing one logs a warning
 - ⛔ Passenger — the plugin API has no passenger access
 - ⛔ Pathfinding Target Entity — the plugin API has no pathfinding access
 - ⛔ Pathfinding Target Location — the plugin API has no pathfinding access
@@ -964,36 +964,36 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Player List Name — `player list name of <player>`, `<player>'s tab list name`; set and reset
 - 🟡 Player List Priority — `set player list priority of <player> to <number>`; write only
 - ⛔ Player Protocol Version — the plugin API does not give the client version
-- ⬜ Player Skull
-- ⬜ Player Weather
+- ✅ Player Skull — `skull of player` / `skull of "Name"`, given with its profile through `/give`; inside chest menus the profile is not set
+- ✅ Player Weather — `client weather of player`: set, reset and read; only that player sees it
 - ⛔ Portal — the plugin API has no portal access
 - ⛔ Portal Cooldown — the plugin API has no portal cooldown
-- ⬜ Potion (item)
-- ⬜ Potion Effect - Amplifier
-- ⬜ Potion Effect - Duration
-- ⬜ Potion Effect of Entity/Item
-- ⬜ Potion Effect Tier
-- ⬜ Potion Effect Type Category
-- ⬜ Potion Effects of Entity/Item
+- ✅ Potion (item) — `[splash|lingering] potion of <effect>` and `potion item of <potion effect>`, given with its contents through `/give`; inside chest menus the contents are not set
+- ✅ Potion Effect - Amplifier — readable and settable on potion effect values
+- ✅ Potion Effect - Duration — readable and settable on potion effect values
+- 🟡 Potion Effect of Entity/Item — players only: the API has no effects for other entities, and item values carry no potion contents
+- ✅ Potion Effect Tier
+- ✅ Potion Effect Type Category — beneficial, harmful or neutral
+- 🟡 Potion Effects of Entity/Item — players only: the API has no effects for other entities, and item values carry no potion contents
 - ⛔ Prefix/Suffix — needs a chat plugin (Vault)
-- ⬜ Progress
-- ⬜ Projectile Critical State
-- ⬜ Projectile Force
+- ✅ Progress — `progress of bossbar "id"` (0 to 100)
+- ⛔ Projectile Critical State — the API has no arrow state, and `/data` cannot report back to a plugin
+- ✅ Projectile Force — in `on entity shoot bow`; Pumpkin fires that event only for mobs
 - ⛔ Protocol Version — the plugin API does not give the client protocol version of Java players
-- ⬜ Queue (Experimental)
-- ⬜ Queue Start/End (Experimental)
+- ✅ Queue (Experimental) — `a new queue of ...`, `queue with ...`
+- ✅ Queue Start/End (Experimental)
 - ✅ Quit Message ⭐ — `quit message` in `on quit`, `set quit message to "..."`
 - ⛔ Quit Reason — the leave event has no reason field
 - 🟡 Random — `random element of {list::*}`, `random N elements of {list::*}`
 - ✅ Random Character — `a random character`, `random alphanumeric character`, `random character between "a" and "z"`
 - ✅ Random Numbers
 - ✅ Random UUID ⭐ — `random uuid` (version 4, as text)
-- ⬜ Raw Name
+- ✅ Raw Name — the namespaced id, like `minecraft:diamond_sword`
 - 🟡 Raw String — `raw "&aHi"` stops colour codes and tags from turning into colours by adding an invisible character, so it does not compare equal to the plain text
-- ⬜ Readied Arrow/Bow
+- ⛔ Readied Arrow/Bow — Pumpkin has no ready-arrow event
 - 🟡 Recursive — `recursive {x::*}` in `loop` and `set {y::*} to`
 - ✅ Recursive Size — `recursive size of {x::*}`
-- ⬜ Redstone Block Power
+- 🟡 Redstone Block Power — read from the block state (wire, plates, targets, detectors, redstone blocks, powered levers, buttons, torches, repeaters); power from neighbours is not seen
 - 🟡 Reduce — `reduce {x::*} with [reduced value + input]` or `{x::*} reduced with [...]`; starts from the first element
 - 🟡 Reduced Value — `reduced value` inside `reduce`; the current item is `input`
 - ⛔ Region — needs WorldGuard
@@ -1001,12 +1001,12 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 Regions At — `bounds at <location>` (Carve bounds, not WorldGuard)
 - ✅ Remaining Air — `remaining air of player`, set / add / remove with a timespan
 - ✅ Repeat String — `"ab" repeated 3 times`; capped at 1,000,000 characters
-- ⬜ Resolve Text Component
+- ⛔ Resolve Text Component — no text component values in Carve
 - ⛔ Resonating Time — bell block entity is not exposed
-- ⬜ Respawn Anchor Charges
+- ✅ Respawn Anchor Charges — read and set, 0 to 4
 - ✅ Respawn Location — `respawn location of player`, `set respawn location of player to <location>`
-- ⬜ Respawn Reason
-- ⬜ Result
+- ✅ Respawn Reason — `death`, or `end_portal` when leaving the End (Pumpkin fires `on respawn` for no other reason)
+- ✅ Result — `result of function "name" with arguments ...`; no function values yet
 - ✅ Reversed List ⭐ — `reversed {x::*}`
 - ⛔ Ringing Time — bell block entity is not exposed
 - ⛔ Rotated Quaternion/Vector — Carve has no vector or quaternion types
