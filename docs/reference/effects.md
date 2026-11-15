@@ -7,7 +7,7 @@ editLink: false
 
 # Effects
 
-Effects are lines that do something. 155 entries. Search all of them on the [reference home](./index.md).
+Effects are lines that do something. 175 entries. Search all of them on the [reference home](./index.md).
 
 In a pattern, `%type%` is a value, `[...]` is optional and `(a|b)` means one of the words.
 
@@ -39,6 +39,21 @@ remove 2 diamonds from player
 ```
 
 Since **unreleased** · Guide: [inventories](../syntax/inventories.md)
+
+## Allow flight {#allow_flight}
+
+```carve
+(allow|enable) (fly|flight) (for|to) %object%
+(disallow|disable) (fly|flight) (for|to) %object%
+```
+
+Lets a player fly (double-tap jump) or takes it away. Only the permission changes; `make player fly` also starts the flight.
+
+```carve
+allow flight for player
+```
+
+Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
 
 ## apply %object% to %player% {#apply_object_to_player}
 
@@ -79,6 +94,21 @@ ban "Alex" because of "cheating"
 ```
 
 Since **unreleased** · Guide: [op-kick-ban](../syntax/op-kick-ban.md)
+
+## Ban for a time {#ban_for}
+
+```carve
+ban %object% [(because of|by reason of|due to|with reason) %text%] for %timespan%
+ban ip %object% [(because of|by reason of|due to|with reason) %text%] for %timespan%
+```
+
+A ban that ends by itself. The player has to be online; Pumpkin's ban list needs a UUID, which a plain name does not give. A later `ban` without a time is permanent.
+
+```carve
+ban player because of "spam" for 2 hours
+```
+
+Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
 
 ## Break block {#break_block}
 
@@ -657,6 +687,22 @@ enchant player's tool with sharpness 5 and unbreaking 3
 
 Since **unreleased** · Guide: [item-meta](../syntax/item-meta.md)
 
+## Enable, disable and reload script {#script_switch}
+
+```carve
+(enable|load) script [(file|named)] %text% [with errors]
+reload script [(file|named)] %text% [with errors]
+(disable|unload) script [(file|named)] %text% [with errors]
+```
+
+Runs `/carve enable`, `/carve reload` or `/carve disable` for a script file. `unload` disables the script (the file is renamed with a `-`).
+
+```carve
+reload script "homes"
+```
+
+Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
+
 ## Enforce whitelist {#enforce_whitelist}
 
 ```carve
@@ -681,6 +727,23 @@ equip %player% with %item%
 Puts an item into the matching armour or hand slot of a player.
 
 Since **unreleased** · Guide: [effects](../syntax/effects.md)
+
+## Equip {#equip_items}
+
+```carve
+equip %object% with %object% [and %object%]
+make %object% wear %object% [and %object%]
+equip with %object%
+```
+
+Puts up to four items on a player or a mob. Each item goes to its own slot: helmets on the head, shields in the off hand, everything else in the main hand.
+
+```carve
+spawn a zombie at player
+equip last spawned entity with diamond helmet and iron boots
+```
+
+Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
 
 ## Execute console command {#console_command}
 
@@ -897,6 +960,26 @@ Turns the glowing outline of an entity on or off.
 
 Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
+## Goat horns {#goat_horns}
+
+```carve
+remove [the] (left|right|both) (horn|horns) of %object%
+remove %object%'s (left|right|both) (horn|horns)
+(regrow|replace) [the] (left|right|both) (horn|horns) of %object%
+remove [the] horns of %object%
+(regrow|replace) [the] horns of %object%
+```
+
+Takes the horns off a goat, or grows them back. Goats only.
+
+```carve
+spawn a goat at player
+remove the left horn of last spawned entity
+regrow both horns of last spawned entity
+```
+
+Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
+
 ## Gravity state {#gravity_state}
 
 ```carve
@@ -906,6 +989,20 @@ gravity [state]
 Turns gravity for an entity on or off.
 
 Since **unreleased** · Guide: [effects](../syntax/effects.md)
+
+## Grow tree {#grow_tree}
+
+```carve
+(grow|create|generate) [(a|an)] <type> [tree] (at|on|above) %location%
+```
+
+Grows a tree at a location with Pumpkin's `place feature` command. Types: oak, tree, big tree, birch, jungle, acacia, dark oak, spruce, redwood, cherry, mangrove. The tree needs the right ground, like a sapling.
+
+```carve
+grow oak at location(10, 64, 10)
+```
+
+Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
 
 ## Heal {#heal}
 
@@ -1185,6 +1282,21 @@ make last spawned entity a baby
 
 Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
 
+## Make allay duplicate {#allay_duplicate}
+
+```carve
+make %object% (duplicate|clone)
+```
+
+An allay makes a copy of itself. Both allays then wait before they can do it again.
+
+```carve
+spawn an allay at player
+make last spawned entity duplicate
+```
+
+Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
+
 ## Make breedable {#make_breedable}
 
 ```carve
@@ -1200,6 +1312,24 @@ make last spawned entity breedable
 ```
 
 Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+
+## Make entity scream {#make_scream}
+
+```carve
+make %object% (start screaming|scream)
+force %object% to (start screaming|scream)
+make %object% stop screaming
+force %object% to stop screaming
+```
+
+Switches the screaming goat voice. Goats only.
+
+```carve
+spawn a goat at player
+make last spawned entity scream
+```
+
+Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
 
 ## Make execute command {#make_execute}
 
@@ -1217,6 +1347,38 @@ make player execute command "/spawn"
 ```
 
 Since **unreleased** · Guide: [senders](../syntax/senders.md)
+
+## Make interaction responsive {#interaction_responsive}
+
+```carve
+make %object% responsive
+make %object% (unresponsive|not responsive)
+```
+
+Makes an interaction entity answer clicks with the swing animation.
+
+```carve
+spawn an interaction at player
+make last spawned entity responsive
+```
+
+Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
+
+## Make player see a block {#fake_block}
+
+```carve
+make %object% see %location% as %object%
+make %object% see %location% as [(the|its|their)] (original|normal|actual) [(block|blocks)]
+```
+
+Shows a player a block that is not there (only that player sees it), or puts the real block back.
+
+```carve
+make player see location(5, 101, 5) as diamond_block
+make player see location(5, 101, 5) as original block
+```
+
+Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
 
 ## Make say {#make_say}
 
@@ -1485,6 +1647,24 @@ _No description yet._
 
 Since **unreleased**
 
+## Reset and remove all {#reset_variable}
+
+```carve
+reset %variable%
+remove all %object% from %variable%
+```
+
+`reset` sets a number to 0, a text to empty and a boolean to false; any other value, and a list, is deleted. `remove all x from {list::*}` removes every x.
+
+```carve
+set {n} to 5
+reset {n}
+set {l::*} to 1, 2, 1 and 3
+remove all 1 from {l::*}
+```
+
+Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
+
 ## Reset title {#reset_title}
 
 ```carve
@@ -1546,6 +1726,40 @@ make %player% (ride|mount) %player%
 Makes a player ride another player.
 
 Since **unreleased** · Guide: [effects](../syntax/effects.md)
+
+## Ride and dismount any entity {#ride_any}
+
+```carve
+(make|let|force) %object% [to] (ride|mount) [(in|on)] %object%
+(make|let|force) %object% [to] dismount
+```
+
+Puts any entity or player on another entity, or takes it off. A player can not be the vehicle.
+
+```carve
+spawn a pig at player
+make player ride last spawned entity
+make player dismount
+```
+
+Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
+
+## Rotate vector {#rotate_vector}
+
+```carve
+rotate %variable% around [the] (x|y|z) [-] axis by %number%
+rotate %variable% around %object% by %number%
+```
+
+Rotates the vector in a variable (every vector of a list variable) by degrees, around an axis or around another vector.
+
+```carve
+set {v} to vector(1, 0, 0)
+rotate {v} around the z-axis by 90
+rotate {v} around vector(0, 1, 0) by 45
+```
+
+Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
 
 ## Save worlds {#save_worlds}
 
@@ -1870,6 +2084,22 @@ set velocity of player to vector(0, 1, 0)
 
 Since **unreleased** · Guide: [entities](../syntax/entities.md)
 
+## Shear and unshear {#shear}
+
+```carve
+shear %object%
+unshear %object%
+```
+
+Shears a sheep (the wool grows back with `unshear`). Sheep only; the wool is not dropped.
+
+```carve
+spawn a sheep at player
+shear last spawned entity
+```
+
+Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
+
 ## Shoot (section) {#c6_shoot}
 
 ```carve
@@ -1894,6 +2124,24 @@ show %object% at %object%
 _No description yet._
 
 Since **unreleased**
+
+## Silence entity {#silence_entity}
+
+```carve
+silence %object%
+unsilence %object%
+make %object% silent
+make %object% not silent
+```
+
+Stops an entity from making sounds, or lets it again.
+
+```carve
+spawn a cow at player
+silence last spawned entity
+```
+
+Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
 
 ## Sort list {#sort}
 
@@ -1993,6 +2241,22 @@ stop all sounds for player
 
 Since **unreleased** · Guide: [sounds](../syntax/sounds.md)
 
+## Stop sound in a category {#stop_sound_category}
+
+```carve
+stop (sound|sounds) %text% (in|from) [the] <category> [(from playing to|for|to) %object%]
+stop all (sound|sounds) (in|from) [the] <category> [(from playing to|for|to) %object%]
+```
+
+Stops a named sound, or every sound, of one category: master, music, record, weather, block, hostile, neutral, player, ambient, voice. Without a player it goes to the one who started the trigger.
+
+```carve
+stop sound "entity.cow.ambient" in music for player
+stop all sounds in master for player
+```
+
+Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
+
 ## Strike lightning {#lightning}
 
 ```carve
@@ -2017,6 +2281,22 @@ Since **unreleased** · Guide: [world-effects](../syntax/world-effects.md)
 Turns off a kind of compiler warning for the script, or for the next lines with `locally`.
 
 Since **unreleased** · Guide: [effects](../syntax/effects.md)
+
+## Swing hand {#swing_any}
+
+```carve
+make %object% swing [their] [main] hand
+make %object% swing [their] off hand
+```
+
+Plays the arm swing of any living entity.
+
+```carve
+spawn a zombie at player
+make last spawned entity swing main hand
+```
+
+Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
 
 ## Swing hand {#swing_hand}
 
@@ -2062,6 +2342,23 @@ Sets where a player is sorted in the tab list.
 
 Since **unreleased** · Guide: [effects](../syntax/effects.md)
 
+## Tame and untame {#tame}
+
+```carve
+tame %object%
+untame %object%
+domesticate %object%
+```
+
+Tames a wolf or a cat, with the player who started the trigger as the owner, or frees it. Other tameable animals are not supported.
+
+```carve
+spawn a wolf at player
+tame last spawned entity
+```
+
+Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
+
 ## Teleport {#teleport}
 
 ```carve
@@ -2089,6 +2386,25 @@ teleport player to location(0, 64, 0, world "world")
 ```
 
 Since **unreleased** · Guide: [effects](../syntax/effects.md)
+
+## Text display drop shadow and see through {#text_display_flags}
+
+```carve
+(apply|add) (drop|text) shadow to [[the] text of] %object%
+(remove|clear) (drop|text) shadow from [[the] text of] %object%
+make %object% visible through (blocks|walls)
+(prevent|block) %object% from being (visible|seen) through (blocks|walls)
+```
+
+Switches the drop shadow of a text display and whether it shows through blocks.
+
+```carve
+spawn text display at player with text "hi"
+apply drop shadow to last spawned entity
+make last spawned entity visible through blocks
+```
+
+Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
 
 ## Toggle {#toggle}
 
@@ -2147,4 +2463,20 @@ while {_i} < 5:
 ```
 
 Since **unreleased** · Guide: [loops](../syntax/loops.md)
+
+## Zombify villager {#zombify}
+
+```carve
+zombify %object%
+unzombify %object%
+```
+
+Replaces a villager with a zombie villager at the same spot, keeping its name and health (and back). Pumpkin has no conversion call, so this is a replacement.
+
+```carve
+spawn a villager at player
+zombify last spawned entity
+```
+
+Since **unreleased** · Guide: [w6-chunk2](../syntax/w6-chunk2.md)
 

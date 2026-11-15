@@ -429,7 +429,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Can Breed
 - ✅ Can Build
 - ⛔ Can Despawn — the plugin API can't read a mob's persistence flag
-- 🟡 Can Fly (follows game mode: creative and spectator)
+- ✅ Can Fly — `player can fly` reads the player's allow-flying ability (creative and spectator yes, survival no)
 - ✅ Can Hold
 - ✅ Can Pick Up Items — `player can pick up items` (players; false in spectator)
 - ✅ Can See — `player can see {_other}`, follows `hide`/`reveal`
@@ -475,78 +475,78 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Has Played Before — `player has played before` (from `first_join.txt`; false for the whole first session)
 - ✅ Has Potion Effect ⭐ — `player has potion effect speed`, `player doesn't have potion effect speed`
 - ✅ Has Resource Pack — `player has a resource pack` (set when the pack finishes loading)
-- ⛔ Has Scoreboard Tag — the plugin API has no entity tags to read
-- ⛔ Ignition Process — needs TNT entities, not in the plugin API
+- ⛔ Has Scoreboard Tag — the v0.1 plugin API can only write entity tags (the `tag` command); reading needs the v0.2 `has-scoreboard-tag`
+- 🟡 Ignition Process — creepers with a lit fuse (checked in game); primed TNT is not in the plugin API
 - ✅ In The Past/Future
 - ✅ Is a Script Command — `command "hello" is a script command`
-- ⛔ Is a Skript command — not Skript
-- ⛔ Is Adult — no ageable entities in the plugin API
+- ✅ Is a Skript command — `the command "x" is a script command`, checks Carve's own command table
+- ✅ Is Adult — `{_cow} is an adult`; animals read their age data, zombies their baby flag, other living mobs count as adults
 - ✅ Is Alive
-- ⛔ Is Baby — no ageable entities in the plugin API
-- ⛔ Is Banned — condition parses, but Pumpkin has no way to read the ban list, so it is always false
-- ⛔ Is Bed/Anchor Spawn — the API gives the respawn point but not what it is
+- ✅ Is Baby — `{_cow} is a baby`; same data as `is an adult`
+- ✅ Is Banned — `"Name" is banned`, by name, UUID or IP address, read from Pumpkin's ban list
+- ✅ Is Bed/Anchor Spawn — `the respawn location is a bed spawn` / `a respawn anchor spawn`, from the block at the respawn point
 - ✅ Is Block — `block at <loc> is stone`
-- ⛔ Is Block Redstone Powered — no redstone power query in the plugin API
-- ⛔ Is Blocking (no shield state in the plugin API; always false)
+- 🟡 Is Block Redstone Powered — reads the `powered`, `power` or `lit` property (levers, doors, lamps, repeaters, wire; checked in game); a solid block that is only powered through a neighbour has no such property and reads as not powered
+- ⛔ Is Blocking — needs the v0.2 `living-entity.is-blocking`; v0.1 has no shield or item-use state
 - ✅ Is Burning
-- ⛔ Is Charged — creepers and crossbows are not reachable
-- ⛔ Is Charging Fireball — ghasts are not reachable
-- ⛔ Is Climbing — no climbing state in the plugin API
-- ⛔ Is Conditional — no command blocks
+- 🟡 Is Charged — creepers (struck by lightning) are checked in game; a crossbow in the main hand reads the `charged_projectiles` component, which the test bot can't load
+- ⛔ Is Charging Fireball — Pumpkin's `mob-data` has no ghast variant in v0.1 or v0.2, and nothing else exposes the charging state
+- 🟡 Is Climbing — approximation checked in game: off the ground and standing in a ladder, vine, scaffolding or cave, twisting or weeping vine (the v0.1 plugin API has no climbing state, only the v0.2 living-entity `is-climbing`)
+- ✅ Is Conditional — `{_block} is conditional`, the command block's `conditional` property
 - ✅ Is Custom Name Visible
-- ⛔ Is Dancing — no mob state in the plugin API
-- ⛔ Is Eating — no item-use state in the plugin API
-- 🟡 Is Edible — fixed list of vanilla foods
+- ⛔ Is Dancing — no allay, parrot or piglin dance state in `mob-data` or any other WIT in v0.1 or v0.2
+- ⛔ Is Eating — no item-use or active-hand state in the v0.1 or v0.2 plugin API (the `using-item` flag is a Bedrock status flag)
+- ✅ Is Edible — table built from Pumpkin's `items.json` (food or consumable component)
 - ✅ Is Empty — text, lists and unset values
 - ✅ Is Enchanted — `item is enchanted [with sharpness 5]`
 - ✅ Is Evenly Divisible By
-- 🟡 Is Fire Resistant — netherite items and ancient debris
-- ⛔ Is Fish Hook in Open Water — no fishing hooks in the plugin API
-- 🟡 Is Flammable — fixed list of vanilla blocks and items
-- 🟡 Is Flying ⭐ (tracked from flight toggle events)
-- ⛔ Is From A Mob Spawner — no spawn reason in the plugin API
+- ✅ Is Fire Resistant — table built from Pumpkin's `items.json` (damage resistant to fire)
+- ⛔ Is Fish Hook in Open Water — not done: the fishing bobber can be found by proximity and vanilla's open-water scan run with `get-block`, but the fish event's hook id is always nil, so the bobber can't be matched to the event
+- ✅ Is Flammable — table built from Pumpkin's `blocks.json` (blocks fire can burn; items count through the block they place)
+- ✅ Is Flying ⭐ — reads the live flying flag of the player
+- 🟡 Is From A Mob Spawner — `{_mob} is from a spawner`: Carve tags the entities the spawner events report, so only mobs spawned while it runs count; only the not-from-a-spawner case is checked in game (the test server has no spawner that spawns)
 - ✅ Is Frozen — fully frozen at 140 freeze ticks
-- 🟡 Is Fuel — fixed list of vanilla fuels
+- ✅ Is Fuel — table built from Pumpkin's `items.json` (fuel component)
 - ✅ Is Gliding
-- ⛔ Is Hand Raised — no item-use state in the plugin API
-- 🟡 Is Holding — via `tool of player is ...`
-- ⛔ Is In Love — no animal state in the plugin API
+- ⛔ Is Hand Raised — no item-use or hand-raised state in the v0.1 or v0.2 plugin API
+- ✅ Is Holding — `player is holding diamond sword [in main hand|off hand]`, players and mobs, both hands
+- ⛔ Is In Love — `ageable-data.in-love-ticks` exists, but Pumpkin's host hard-codes it to 0, so it can never read true
 - ✅ Is in World
-- ⛔ Is Incendiary — explosions are not reachable
-- ⛔ Is Infinite — no infinite potion durations in the plugin API
-- ⛔ Is Interactable — no mob state in the plugin API
+- ⛔ Is Incendiary — only `explosion-prime-event-data.fire` carries it, and Pumpkin fires that event for TNT only; no fireball or entity query exists
+- 🟡 Is Infinite — potion effect values (`infinite potion effect of ...`) are exact; for a player's active effect it reads duration 0, which is how Pumpkin's plugin API reports an infinite effect (not checked in game)
+- ⛔ Is Interactable — Skript's condition is about mannequins; neither WIT has a mannequin or interactable state
 - ✅ Is Invisible
 - ✅ Is Invulnerable
-- ⛔ Is Jumping — no jump state in the plugin API
-- ⛔ Is Leashed — no leads in the plugin API
-- 🟡 Is Loaded — `world "x" is loaded`, `chunk of player is loaded`; chunk checks need a host that can tell (see syntax/w4-skbee-raytrace-world.md)
-- ⛔ Is Lootable — no loot tables in the plugin API
+- 🟡 Is Jumping — players: follows the jump statistic, true for 10 ticks after it grows (the first check of a player only takes a baseline); the test bot can't make the server count a jump, so only the not-jumping case is checked in game
+- ⛔ Is Leashed — the plugin API only has the leash and unleash events (no state query), so a lead made before Carve loaded can't be seen
+- ✅ Is Loaded — `world "x" is loaded`, `chunk at player is loaded` (the chunk must be loaded already, which is how `get-chunk` answers)
+- 🟡 Is Lootable — containers read the `LootTable` key of their block entity; only the no-table case is checked in game (Pumpkin's console can't give a chest a loot table); entities are not readable
 - 🟡 Is Member/Owner of Region — `is an owner of bound`, `is a member of bound` (Carve bounds, not WorldGuard)
-- ⛔ Is Normalized — Carve has no vector type
-- ⛔ Is Occluding — no block shape data in the core
-- 🟡 Is of Type — `<entity> is a zombie`, `is not a zombie`; entity types only
+- ✅ Is Normalized — `vector(1, 0, 0) is normalized`
+- ✅ Is Occluding — a full cube with opacity 15, read from the placed block's state
+- ✅ Is of Type — `{_e} is of type pig`, `{_block} is of type stone`, items
 - ✅ Is on Ground
 - ✅ Is Online ⭐
 - ✅ Is Operator ⭐ — `player is op` (permission level above zero)
-- 🟡 Is Passable — block type; no collision shape
-- ⛔ Is Pathfinding — no mob AI in the plugin API
-- ⛔ Is Persistent — no entity persistence flag in the plugin API
-- ⛔ Is Playing Dead — axolotls are not reachable
-- 🟡 Is Plugin Enabled — Pumpkin plugins only, not exposed yet
-- 🟡 Is Poisoned — players only (no entity values yet)
+- ✅ Is Passable — block types and placed blocks (stairs and slabs by their own state)
+- ✅ Is Pathfinding — `{_mob} is pathfinding`, the mob navigator has a route
+- 🟡 Is Persistent — leaves: the `persistent` property (checked in game); entities: no persistence flag in the plugin API (`PersistenceRequired` has no getter)
+- ⛔ Is Playing Dead — axolotls exist in Pumpkin, but neither WIT's `mob-data` has an axolotl variant and entity NBT and synched data are not exposed
+- 🟡 Is Plugin Enabled — `plugin "x" is enabled`: probes the plugin IPC call; Carve itself and a plugin that is missing are checked in game, another plugin's answer is not
+- 🟡 Is Poisoned — players only: living entities have no effect calls in the v0.1 plugin API (only the v0.2 `living-entity` resource has them)
 - ✅ Is Preferred Tool — `diamond pickaxe is the preferred tool for <block>` (vanilla tool rules)
-- ⛔ Is Pressing Key — no player input API
+- ✅ Is Pressing Key — `player is pressing the jump key` (forward, backward, left, right, jump, sneak, sprint), from the input packets; the first script that uses it needs a restart
 - ✅ Is Responsive — `{_interaction} is responsive`
-- 🟡 Is Riding — players only, any vehicle (no entity type filter)
+- 🟡 Is Riding — players and other entities, `is riding a pig` compares the vehicle's type; only the not-riding case is checked in game (the test bot can't mount)
 - 🟡 Is Riptiding — `x is riptiding` (trident spin pose); only the not-riptiding case is checked in game (the test bot can't riptide)
 - ✅ Is Saddled — `{_pig} is saddled` (something in the saddle slot)
 - 🟡 Is Screaming — endermen only (goats have no data in the plugin API); only the not-screaming case is checked in game
 - ✅ Is Script Loaded — `script "shop" is loaded`
-- 🟡 Is Silent — players only (no entity values yet)
+- ✅ Is Silent — players and other entities
 - ✅ Is Sleeping
-- ⛔ Is Slime Chunk — the plugin API does not expose the world seed
+- ⛔ Is Slime Chunk — needs the world seed, which only the v0.2 plugin API exposes (`world.get-seed`); v0.1 has no seed getter, and the level file is outside the plugin's file access
 - ✅ Is Sneaking ⭐
-- 🟡 Is Solid — block or item type, from Pumpkin's block registry
+- ✅ Is Solid — block or item types, and placed blocks by their own state
 - ✅ Is Spawnable — `"zombie" is spawnable [in world]`
 - ✅ Is Sprinting ⭐
 - ✅ Is Stackable — `diamond is stackable` (max stack size above 1)
@@ -554,18 +554,18 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Is Tagged — `stone is tagged with minecraft tag "base_stone_overworld"` (built-in vanilla tag list; see syntax/w4-skbee-raytrace-world.md)
 - ✅ Is Tameable — `{_e} is tameable` (wolves, cats, parrots, horses, llamas, camels, ...)
 - 🟡 Is Tamed — wolves and cats only; other tameable mobs have no data in the plugin API
-- ⛔ Is Ticking — no tick manager in the plugin API
-- 🟡 Is Transparent — block type; light opacity of the default state
-- 🟡 Is Unbreakable — `unbreakable of player's tool` (main-hand item only)
-- ⛔ Is Using Experimental Feature — Pumpkin has no feature flags
+- ⛔ Is Ticking — not done: the server and world forms could compare `get-world-age` between two tick events, but there is no tick-manager getter in the plugin API, so it would only be a guess; entity ticking is not exposed
+- ✅ Is Transparent — block or item types (opacity 0), and placed blocks by their own state
+- 🟡 Is Unbreakable — `player's tool is unbreakable` reads the main-hand item's component, and items built by a script; item values from slots don't keep components; not checked in game
+- 🟡 Is Using Experimental Feature — `feature "bundle" is enabled` reads the enabled datapacks (Pumpkin's feature flags come from them); `vanilla` and a disabled feature are checked in game, an enabled one is not
 - ✅ Is Valid — `x is valid` (online player, set value)
 - ✅ Is Wearing — `player is wearing diamond helmet`; armor, body and saddle slots of players and mobs
 - ✅ Is Whitelisted — `player is whitelisted`, `"Name" is not on the whitelist`
-- 🟡 Is Within — two corners, or a world; no chunk or block-entity forms
+- ✅ Is Within — two corners, a world, a chunk (`within chunk at player`) or a world border (`within world border of world`)
 - ✅ Is Within Radius — `loc is within 5 blocks of loc`
 - 🟡 Item Has Enchantment Glint Override — `player's tool has enchantment glint overridden` (held item only: item values don't keep components)
 - ⛔ Leash Will Drop — the unleash event has no drop-leash flag
-- ⛔ Left Handed — the API gives no client settings from a player handle
+- ✅ Left Handed — `player is left handed` / `right handed`, from the client's main-hand setting; mobs have none
 - 🟡 Lid Is Open/Closed — `lid of {_b} is open`; chests, trapped chests and barrels (Pumpkin reports no viewers for ender chests and shulker boxes)
 - ✅ Matches — `text matches regex`, `contains regex`; own regex engine, no lookaround or captures
 - ⛔ Panda Is On Its Back — no panda data in the plugin API
@@ -575,11 +575,11 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 Potion Effect - Has Icon — `player's speed effect has an icon`; players only, the effect is named by type
 - 🟡 Potion Effect - Has Particles — `player's speed effect has particles`; players only, the effect is named by type
 - 🟡 Potion Effect - Is Ambient — players only; only the not-ambient case is checked in game (nothing in Pumpkin 0.2.2 gives an ambient effect)
-- 🟡 Potion Effect Type - Is Instant — effect names as text
+- ✅ Potion Effect Type - Is Instant — effect names as text, covers instant health, instant damage and saturation
 - ✅ PvP — `pvp is enabled [in world]`, from the pvp game rule
 - 🟡 Region Contains — `is within bound` (Carve bounds, not WorldGuard)
 - ✅ Resource Pack — `the resource pack was accepted`, `... successfully loaded`, `... declined` in `on resource pack response`
-- ⛔ Running Minecraft — the plugin API gives no Minecraft version
+- 🟡 Running Minecraft — `running minecraft "26.3"`, `above`, `below`: the v0.1 plugin API only gives Pumpkin's own version, so Carve maps the Pumpkin 0.2.x releases it was built for to their Minecraft version
 - ✅ Starts/Ends With
 - ⛔ Strider Is Shivering — no strider data, and Pumpkin never fires the strider temperature event
 - ✅ Text Display Has Drop Shadow — `{_d} has a drop shadow`

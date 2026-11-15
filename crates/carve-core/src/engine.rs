@@ -1464,6 +1464,7 @@ impl Engine {
             }
             Cond::Gap(g) => self.gap_cond(g, ex, host),
             Cond::W5c3(c) => self.cond_w5c3(c, ex, host),
+            Cond::W6c3(c) => self.cond_w6c3(c, ex, host),
             Cond::Rtw(r) => {
                 let a = self.eval(&r.a, ex, host)?;
                 let b = match &r.b {
@@ -2927,6 +2928,10 @@ impl Engine {
                 let wv = self.eval(world, ex, host)?;
                 let name = match &wv {
                     Value::World(n) | Value::Text(n) => n.clone(),
+                    // `is within chunk ...` and `is within the border of ...`
+                    Value::Chunk { .. } | Value::Border(_) => {
+                        return Ok(crate::w6_chunk3::within_area(&l, &wv, &mut ex.seen, host) != *negate);
+                    }
                     _ => return Ok(false),
                 };
                 let Some((_, _, _, Some(lw))) = w2_loc(&l, &mut ex.seen, host) else {
@@ -2962,6 +2967,10 @@ impl Engine {
                 let id = match self.eval(e, ex, host)? {
                     Value::Item { id, .. } => id,
                     Value::Text(t) => t,
+                    // A placed block: its own state (stairs, slabs, open doors).
+                    at @ Value::Location { .. } => {
+                        return Ok(crate::w6_chunk3::placed_block_trait(&at, *tr, host) == Some(!*negate));
+                    }
                     _ => return Ok(false),
                 };
                 match host.block_trait(&w::norm_id(&id), *tr) {

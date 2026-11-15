@@ -7,9 +7,299 @@ editLink: false
 
 # Conditions
 
-Conditions go after `if`, `else if` and `while`, or on a line of their own. 119 entries. Search all of them on the [reference home](./index.md).
+Conditions go after `if`, `else if` and `while`, or on a line of their own. 173 entries. Search all of them on the [reference home](./index.md).
 
 In a pattern, `%type%` is a value, `[...]` is optional and `(a|b)` means one of the words.
+
+## %object% (is not|isn't) passable {#object_is_not_isn_t_passable}
+
+```carve
+%object% (is not|isn't) passable
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %object% (is not|isn't) solid {#object_is_not_isn_t_solid}
+
+```carve
+%object% (is not|isn't) solid
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %object% (is not|isn't) transparent {#object_is_not_isn_t_transparent}
+
+```carve
+%object% (is not|isn't) transparent
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %object% (is not|isn't) within %object% {#object_is_not_isn_t_within_object}
+
+```carve
+%object% (is not|isn't) within %object%
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %object% (isn't|is not|aren't|are not) holding %object% in [the] main hand {#object_isn_t_is_not_aren_t_are_not_holding_object_in_the_main_hand}
+
+```carve
+%object% (isn't|is not|aren't|are not) holding %object% in [the] main hand
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %object% (isn't|is not|aren't|are not) holding %object% in [the] off hand {#object_isn_t_is_not_aren_t_are_not_holding_object_in_the_off_hand}
+
+```carve
+%object% (isn't|is not|aren't|are not) holding %object% in [the] off hand
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %object% (isn't|is not|aren't|are not) infinite {#object_isn_t_is_not_aren_t_are_not_infinite}
+
+```carve
+%object% (isn't|is not|aren't|are not) infinite
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %object% (isn't|is not|aren't|are not) jumping {#object_isn_t_is_not_aren_t_are_not_jumping}
+
+```carve
+%object% (isn't|is not|aren't|are not) jumping
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %object% (isn't|is not|aren't|are not) pressing [the] backward [key] {#object_isn_t_is_not_aren_t_are_not_pressing_the_backward_key}
+
+```carve
+%object% (isn't|is not|aren't|are not) pressing [the] backward [key]
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %object% (isn't|is not|aren't|are not) pressing [the] forward [key] {#object_isn_t_is_not_aren_t_are_not_pressing_the_forward_key}
+
+```carve
+%object% (isn't|is not|aren't|are not) pressing [the] forward [key]
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %object% (isn't|is not|aren't|are not) pressing [the] jump [key] {#object_isn_t_is_not_aren_t_are_not_pressing_the_jump_key}
+
+```carve
+%object% (isn't|is not|aren't|are not) pressing [the] jump [key]
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %object% (isn't|is not|aren't|are not) pressing [the] left [key] {#object_isn_t_is_not_aren_t_are_not_pressing_the_left_key}
+
+```carve
+%object% (isn't|is not|aren't|are not) pressing [the] left [key]
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %object% (isn't|is not|aren't|are not) pressing [the] right [key] {#object_isn_t_is_not_aren_t_are_not_pressing_the_right_key}
+
+```carve
+%object% (isn't|is not|aren't|are not) pressing [the] right [key]
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %object% (isn't|is not|aren't|are not) pressing [the] sneak [key] {#object_isn_t_is_not_aren_t_are_not_pressing_the_sneak_key}
+
+```carve
+%object% (isn't|is not|aren't|are not) pressing [the] sneak [key]
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %object% (isn't|is not|aren't|are not) pressing [the] sprint [key] {#object_isn_t_is_not_aren_t_are_not_pressing_the_sprint_key}
+
+```carve
+%object% (isn't|is not|aren't|are not) pressing [the] sprint [key]
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %object% (isn't|is not|aren't|are not) riding %object% {#object_isn_t_is_not_aren_t_are_not_riding_object}
+
+```carve
+%object% (isn't|is not|aren't|are not) riding %object%
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %object% (isn't|is not|aren't|are not) unbreakable {#object_isn_t_is_not_aren_t_are_not_unbreakable}
+
+```carve
+%object% (isn't|is not|aren't|are not) unbreakable
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %object% (isn't|is not|aren't|are not) using [the] [experimental] feature %object% {#object_isn_t_is_not_aren_t_are_not_using_the_experimental_feature_object}
+
+```carve
+%object% (isn't|is not|aren't|are not) using [the] [experimental] feature %object%
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %object% (is|are) jumping {#object_is_are_jumping}
+
+```carve
+%object% (is|are) jumping
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %object% (is|are) unbreakable {#object_is_are_unbreakable}
+
+```carve
+%object% (is|are) unbreakable
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %object% is passable {#object_is_passable}
+
+```carve
+%object% is passable
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %object% is solid {#object_is_solid}
+
+```carve
+%object% is solid
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %object% is transparent {#object_is_transparent}
+
+```carve
+%object% is transparent
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %object% is within %object% {#object_is_within_object}
+
+```carve
+%object% is within %object%
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %player%'s %object% [potion] effect (isn't|is not|aren't|are not) infinite {#player_s_object_potion_effect_isn_t_is_not_aren_t_are_not_infinite}
+
+```carve
+%player%'s %object% [potion] effect (isn't|is not|aren't|are not) infinite
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## %player%'s (tool|held item) (isn't|is not|aren't|are not) unbreakable {#player_s_tool_held_item_isn_t_is_not_aren_t_are_not_unbreakable}
+
+```carve
+%player%'s (tool|held item) (isn't|is not|aren't|are not) unbreakable
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## (isn't|is not|not) running (above|newer than|later than) [(minecraft|mc)] [version] %object% {#isn_t_is_not_not_running_above_newer_than_later_than_minecraft_mc_version_object}
+
+```carve
+(isn't|is not|not) running (above|newer than|later than) [(minecraft|mc)] [version] %object%
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## (isn't|is not|not) running (below|older than|earlier than) [(minecraft|mc)] [version] %object% {#isn_t_is_not_not_running_below_older_than_earlier_than_minecraft_mc_version_object}
+
+```carve
+(isn't|is not|not) running (below|older than|earlier than) [(minecraft|mc)] [version] %object%
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## [the] (tool|held item) of %player% (isn't|is not|aren't|are not) unbreakable {#the_tool_held_item_of_player_isn_t_is_not_aren_t_are_not_unbreakable}
+
+```carve
+[the] (tool|held item) of %player% (isn't|is not|aren't|are not) unbreakable
+```
+
+_No description yet._
+
+Since **unreleased**
 
 ## And / or {#and_or}
 
@@ -637,6 +927,24 @@ if sender is a player:
 
 Since **unreleased** · Guide: [senders](../syntax/senders.md)
 
+## Is adult / Is baby {#w6c3_age}
+
+```carve
+%object% (is|are) [an] adult
+%object% (isn't|is not|aren't|are not) [an] adult
+%object% (is|are) [a] baby
+%object% (isn't|is not|aren't|are not) [a] baby
+```
+
+Whether a mob is a baby. Read from the mob's age data (animals) or baby flag (zombies); any other living mob is an adult.
+
+```carve
+if {_cow} is a baby:
+    send "cute"
+```
+
+Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+
 ## Is alive {#alive}
 
 ```carve
@@ -695,6 +1003,25 @@ if "Alex" is banned:
 
 Since **unreleased** · Guide: [op-kick-ban](../syntax/op-kick-ban.md)
 
+## Is bed spawn / anchor spawn {#w6c3_spawn_point}
+
+```carve
+[the] respawn location (is|was) [a] bed spawn
+[the] respawn location (isn't|is not|wasn't|was not) [a] bed spawn
+[the] respawn location (is|was) [a] respawn anchor spawn
+[the] respawn location (isn't|is not|wasn't|was not) [a] respawn anchor spawn
+```
+
+What the event player's respawn point is: a bed or a respawn anchor, read from the block at (or just under) the saved respawn location.
+
+```carve
+on respawn:
+    if the respawn location is a bed spawn:
+        send "welcome back"
+```
+
+Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+
 ## Is between {#between}
 
 ```carve
@@ -737,6 +1064,54 @@ Since **unreleased** · Guide: [player-flags](../syntax/player-flags.md)
 Whether a player is on fire.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Is charged {#w6c3_charged}
+
+```carve
+%object% (is|are) charged
+%object% (isn't|is not|aren't|are not) charged
+```
+
+A creeper that was struck by lightning, or a player holding a loaded crossbow in the main hand.
+
+```carve
+if {_creeper} is charged:
+    send "boom"
+```
+
+Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+
+## Is climbing {#w6c3_climbing}
+
+```carve
+%object% (is|are) climbing
+%object% (isn't|is not|aren't|are not) climbing
+```
+
+Approximation: the entity is off the ground and the block at its feet is a ladder, vine, scaffolding or cave, twisting or weeping vine. The v0.1 plugin API has no climbing state.
+
+```carve
+if player is climbing:
+    send "up"
+```
+
+Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+
+## Is conditional {#w6c3_conditional}
+
+```carve
+%object% (is|are) conditional
+%object% (isn't|is not|aren't|are not) conditional
+```
+
+Whether a command block is in conditional mode (the `conditional` property of its block state).
+
+```carve
+if location(1, 64, 1) is conditional:
+    send "conditional"
+```
+
+Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
 
 ## Is divisible {#divisible}
 
@@ -840,6 +1215,22 @@ if player is flying:
 
 Since **unreleased** · Guide: [player-flags](../syntax/player-flags.md)
 
+## Is from a spawner {#w6c3_spawner}
+
+```carve
+%object% (is|are) (from|spawned from|spawned by) [(a|the)] [(mob|trial|monster)] spawner
+%object% (isn't|is not|aren't|are not) (from|spawned from|spawned by) [(a|the)] [(mob|trial|monster)] spawner
+```
+
+Whether a mob came out of a spawner block. Carve remembers the mobs the spawner events report, so mobs that spawned before Carve loaded count as not from a spawner.
+
+```carve
+if {_mob} is from a spawner:
+    send "spawner mob"
+```
+
+Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+
 ## Is frozen {#frozen}
 
 ```carve
@@ -886,6 +1277,40 @@ Whether a player has a glowing outline.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
+## Is holding {#w6c3_holding}
+
+```carve
+%object% (is|are) holding %object%
+%object% (is|are) holding %object% in [the] main hand
+%object% (is|are) holding %object% in [the] off hand
+%object% (isn't|is not|aren't|are not) holding %object%
+```
+
+Whether a player or mob holds an item in either hand, or in the main or off hand.
+
+```carve
+if player is holding diamond sword in the off hand:
+    send "dual"
+```
+
+Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+
+## Is igniting {#w6c3_igniting}
+
+```carve
+%object% (is|are) (igniting|ignited|in [the] ignition process)
+%object% (isn't|is not|aren't|are not) (igniting|ignited|in [the] ignition process)
+```
+
+Whether a creeper has lit its fuse. Primed TNT is not in the plugin API.
+
+```carve
+if {_creeper} is igniting:
+    send "run"
+```
+
+Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+
 ## Is in gamemode {#in_gamemode}
 
 ```carve
@@ -926,6 +1351,23 @@ Whether an entity or location is in a given world.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
+## Is infinite {#w6c3_infinite}
+
+```carve
+%object% (is|are) infinite
+%player%'s %object% [potion] effect (is|are) infinite
+```
+
+A potion effect value made with `infinite`, or a player's active effect. Pumpkin's plugin API reports an infinite effect with duration 0, and a real effect never lingers at 0.
+
+```carve
+set {_e} to potion effect of speed for 10 seconds
+if {_e} is infinite:
+    send "forever"
+```
+
+Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+
 ## Is instant {#instant}
 
 ```carve
@@ -959,6 +1401,24 @@ Whether a player takes no damage.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
+## Is left handed / right handed {#w6c3_handed}
+
+```carve
+%object% (is|are) left( |-)handed
+%object% (isn't|is not|aren't|are not) left( |-)handed
+%object% (is|are) right( |-)handed
+%object% (isn't|is not|aren't|are not) right( |-)handed
+```
+
+The main hand a Java player chose in their client settings. Mobs have no such data.
+
+```carve
+if player is left handed:
+    send "lefty"
+```
+
+Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+
 ## Is loaded {#loaded}
 
 ```carve
@@ -971,6 +1431,54 @@ Whether a chunk or world is loaded.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
+## Is lootable {#w6c3_lootable}
+
+```carve
+%object% (is|are) lootable
+%object% (isn't|is not|aren't|are not) lootable
+```
+
+Whether a container block still has a loot table (`LootTable` in its data). Entities are not supported: Pumpkin's plugin API cannot read them.
+
+```carve
+if location(1, 64, 1) is lootable:
+    send "unopened"
+```
+
+Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+
+## Is normalized {#w6c3_normalized}
+
+```carve
+%object% (is|are) normalized
+%object% (isn't|is not|aren't|are not) normalized
+```
+
+Whether a vector has length 1 (within 0.000001).
+
+```carve
+if vector(1, 0, 0) is normalized:
+    send "unit"
+```
+
+Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+
+## Is occluding {#w6c3_occluding}
+
+```carve
+%object% (is|are) occluding
+%object% (isn't|is not|aren't|are not) occluding
+```
+
+Whether the block at a location is a full cube that blocks all light (opacity 15).
+
+```carve
+if location(1, 64, 1) is occluding:
+    send "stone-like"
+```
+
+Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+
 ## Is of type {#of_type}
 
 ```carve
@@ -981,6 +1489,22 @@ Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 Whether a value is of a given type, like `entity type`.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Is of type {#w6c3_of_type}
+
+```carve
+%object% (is|are) of type %object%
+%object% (isn't|is not|aren't|are not) of type %object%
+```
+
+Compares types. An entity or player against an entity type word (`{_e} is of type pig`), a placed block against a block id (`{_block} is of type stone`), an item against an item id.
+
+```carve
+if {_e} is of type pig:
+    send "oink"
+```
+
+Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
 
 ## Is on ground {#on_ground}
 
@@ -1038,6 +1562,54 @@ Whether a block type can be walked through, like tall grass.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
+## Is pathfinding {#w6c3_pathfinding}
+
+```carve
+%object% (is|are) pathfinding
+%object% (isn't|is not|aren't|are not) pathfinding
+```
+
+Whether a mob's navigator has a route it is following.
+
+```carve
+if {_cow} is pathfinding:
+    send "walking"
+```
+
+Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+
+## Is persistent {#w6c3_persistent}
+
+```carve
+%object% (is|are) persistent
+%object% (isn't|is not|aren't|are not) persistent
+```
+
+Leaves: the `persistent` property (placed by a player, never decays). Entities: Pumpkin's plugin API has no persistence flag, so the check is false either way.
+
+```carve
+if location(1, 64, 1) is persistent:
+    send "player placed"
+```
+
+Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+
+## Is plugin enabled {#w6c3_plugin}
+
+```carve
+[the] plugin %object% (is|are) enabled
+[the] plugin %object% (isn't|is not|aren't|are not) enabled
+```
+
+Whether a Pumpkin plugin with that name is loaded (probed through the plugin IPC call, which sends an empty message to it). Carve itself always counts as loaded.
+
+```carve
+if plugin "carve" is enabled:
+    send "yes"
+```
+
+Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+
 ## Is poisoned {#poisoned}
 
 ```carve
@@ -1048,6 +1620,24 @@ Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 Whether a player has the poison effect.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Is powered {#w6c3_powered}
+
+```carve
+%object% (is|are) [block] [redstone] powered
+%object% (isn't|is not|aren't|are not) [block] [redstone] powered
+%object% (is|are) indirectly [block] [redstone] powered
+%object% (isn't|is not|aren't|are not) indirectly [block] [redstone] powered
+```
+
+Reads the `powered`, `power` or `lit` property of the block at a location: levers, buttons, doors, lamps, repeaters and redstone dust. A solid block that is only powered through a neighbour has no such property, so it reads as not powered.
+
+```carve
+if location(1, 64, 1) is powered:
+    send "on"
+```
+
+Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
 
 ## Is preferred tool {#is_preferred_tool}
 
@@ -1066,6 +1656,27 @@ if diamond pickaxe is the preferred tool for obsidian:
 ```
 
 Since **unreleased** · Guide: [w5-chunk2](../syntax/w5-chunk2.md)
+
+## Is pressing key {#w6c3_key}
+
+```carve
+%object% (is|are) pressing [the] forward [key]
+%object% (is|are) pressing [the] backward [key]
+%object% (is|are) pressing [the] left [key]
+%object% (is|are) pressing [the] right [key]
+%object% (is|are) pressing [the] jump [key]
+%object% (is|are) pressing [the] sneak [key]
+%object% (is|are) pressing [the] sprint [key]
+```
+
+The keys a player holds, from the input packets the client sends when a key changes. Needs a restart the first time a script uses it, because Carve only listens to that event when a script asks for it.
+
+```carve
+if player is pressing the jump key:
+    send "jumping"
+```
+
+Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
 
 ## Is responsive {#is_responsive}
 
@@ -1121,6 +1732,24 @@ if player is riptiding:
 ```
 
 Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+
+## Is running Minecraft {#w6c3_version}
+
+```carve
+running [(minecraft|mc)] [version] %object%
+running (above|newer than|later than) [(minecraft|mc)] [version] %object%
+running (below|older than|earlier than) [(minecraft|mc)] [version] %object%
+(isn't|is not|not) running [(minecraft|mc)] [version] %object%
+```
+
+Compares the server's Minecraft version with a version text. `running minecraft "26"` matches every 26.x. The v0.1 plugin API only reports Pumpkin's own version, so Carve maps the Pumpkin 0.2.x releases it was built for to their Minecraft version.
+
+```carve
+if running above minecraft "1.21":
+    send "new"
+```
+
+Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
 
 ## Is saddled {#w5c3_saddled}
 
@@ -1210,6 +1839,25 @@ Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 Whether an entity makes no sounds.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## Is silent / Is riding {#w6c3_silent_riding}
+
+```carve
+%object% (is|are) silent
+%object% (isn't|is not|aren't|are not) silent
+%object% (is|are) riding
+%object% (isn't|is not|aren't|are not) riding
+%object% (is|are) riding %object%
+```
+
+Work for players and other entities. `is riding a pig` compares the vehicle's type.
+
+```carve
+if player is riding a horse:
+    send "giddy up"
+```
+
+Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
 
 ## Is sleeping {#sleeping}
 
@@ -1409,6 +2057,39 @@ Whether a block type lets light through.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
 
+## Is unbreakable {#w6c3_unbreakable}
+
+```carve
+%player%'s (tool|held item) (is|are) unbreakable
+[the] (tool|held item) of %player% (is|are) unbreakable
+```
+
+Whether the main-hand item has the unbreakable component.
+
+```carve
+if player's tool is unbreakable:
+    send "forever"
+```
+
+Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+
+## Is using experimental feature {#w6c3_feature}
+
+```carve
+[the] [experimental] feature %object% (is|are) enabled
+[the] [experimental] feature %object% (isn't|is not|aren't|are not) enabled
+%object% (is|are) using [the] [experimental] feature %object%
+```
+
+Whether a feature flag (`trade_rebalance`, `minecart_improvements`, `redstone_experiments`, `bundle`) is on. Pumpkin turns them on through datapacks, so this reads the enabled datapacks. `vanilla` is always on.
+
+```carve
+if feature "bundle" is enabled:
+    send "bundles"
+```
+
+Since **unreleased** · Guide: [w6-chunk3](../syntax/w6-chunk3.md)
+
 ## Is valid {#valid}
 
 ```carve
@@ -1541,6 +2222,26 @@ Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
 Whether a text contains or fully matches a regular expression.
 
 Since **unreleased** · Guide: [conditions](../syntax/conditions.md)
+
+## plugin %object% (isn't|is not|aren't|are not) enabled {#plugin_object_isn_t_is_not_aren_t_are_not_enabled}
+
+```carve
+plugin %object% (isn't|is not|aren't|are not) enabled
+```
+
+_No description yet._
+
+Since **unreleased**
+
+## plugin %object% (is|are) enabled {#plugin_object_is_are_enabled}
+
+```carve
+plugin %object% (is|are) enabled
+```
+
+_No description yet._
+
+Since **unreleased**
 
 ## Potion effect has icon / particles / is ambient {#w5c3_effect_flags}
 

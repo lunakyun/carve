@@ -7,9 +7,39 @@ editLink: false
 
 # Expressions
 
-Expressions are values you put into effects and conditions. 137 entries. Search all of them on the [reference home](./index.md).
+Expressions are values you put into effects and conditions. 161 entries. Search all of them on the [reference home](./index.md).
 
 In a pattern, `%type%` is a value, `[...]` is optional and `(a|b)` means one of the words.
+
+## Add to world border size {#z6_border_change}
+
+```carve
+add %number% to [the] world border size [of %world%]
+remove %number% from [the] world border size [of %world%]
+```
+
+Makes the world border bigger or smaller by an amount (at once).
+
+```carve
+add 10 to world border size
+remove 30 from world border size
+```
+
+Since **unreleased** · Guide: [w6-chunk6](../syntax/w6-chunk6.md)
+
+## Age of a block {#w6c4_age}
+
+```carve
+[the] [max[imum]] age of %block%
+```
+
+The age of a block that has one (crops, nether wart, ...), and its maximum. Can be set, added to, removed from and reset to 0, clamped to the maximum. Blocks only; entities are not supported yet.
+
+```carve
+add 1 to age of block at location(0, 64, 0)
+```
+
+Since **unreleased** · Guide: [w6-chunk4](../syntax/w6-chunk4.md)
 
 ## Ago / later {#ago}
 
@@ -152,6 +182,20 @@ set {_half} to (5 + 3) / 2
 
 Since **0.1.0** · Guide: [expressions](../syntax/expressions.md)
 
+## Banner pattern item {#w6c4_banner_item}
+
+```carve
+[the] banner pattern item of %text%
+```
+
+The loom item for a banner pattern type such as `creeper`, `flower`, `globe`, `mojang`, `piglin`, `skull`, `flow`, `guster`, `field_masoned` or `bordure_indented`. Gives none for patterns that have no item.
+
+```carve
+give 1 of banner pattern item of "creeper" to player
+```
+
+Since **unreleased** · Guide: [w6-chunk4](../syntax/w6-chunk4.md)
+
 ## Barter input / drops {#w5c3_barter}
 
 ```carve
@@ -197,6 +241,20 @@ set player's bed location to location(0, 70, 0)
 ```
 
 Since **unreleased** · Guide: [w5-chunk3](../syntax/w5-chunk3.md)
+
+## Beehive honey level {#w6c4_honey}
+
+```carve
+[the] [max[imum]] [bee[ ]hive|bee nest] honey level of %block%
+```
+
+The honey level (0 to 5) of a beehive or bee nest block; `max` gives 5. Can be set, added to, removed from and reset (to 0); results stay between 0 and 5.
+
+```carve
+set honey level of block at location(0, 64, 0) to 5
+```
+
+Since **unreleased** · Guide: [w6-chunk4](../syntax/w6-chunk4.md)
 
 ## Block {#block}
 
@@ -373,6 +431,20 @@ on broadcast:
 ```
 
 Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+
+## Brushing stage {#w6c4_brushing}
+
+```carve
+[the] [max[imum]] brushing (stage|progress) of %block%
+```
+
+How far a suspicious sand or gravel block has been brushed (0 to 3); `max` gives 3. Can be set, added to, removed from and reset.
+
+```carve
+send "%brushing stage of block at location(0, 64, 0)%"
+```
+
+Since **unreleased** · Guide: [w6-chunk4](../syntax/w6-chunk4.md)
 
 ## Chat message {#message}
 
@@ -579,6 +651,20 @@ give diamond sword with damage 500 to player
 ```
 
 Since **unreleased** · Guide: [w5-chunk4](../syntax/w5-chunk4.md)
+
+## De-queue {#w6c4_dequeue}
+
+```carve
+(dequeue|de-queue) [[first] %number% element[s] of] %queue variable%
+```
+
+Removes the first value (or the first N values) from a queue variable and gives them. The variable keeps the rest. An empty queue gives none.
+
+```carve
+set {_next} to dequeue {_queue}
+```
+
+Since **unreleased** · Guide: [w6-chunk4](../syntax/w6-chunk4.md)
 
 ## Default value {#default}
 
@@ -849,6 +935,22 @@ set {_big::*} to {_n::*} where [input > 2]
 
 Since **unreleased** · Guide: [list-ops](../syntax/list-ops.md)
 
+## First, last and ranges of elements {#w6c4_elements}
+
+```carve
+[the] first %number% elements of %list%
+[the] last %number% elements of %list%
+[the] elements %number% to %number% of %list%
+```
+
+Part of a list variable: the first or last N values, or the values from position N to M (1-based, inclusive). Asking for more than the list holds gives what there is.
+
+```carve
+send "%first 3 elements of {top::*}%"
+```
+
+Since **unreleased** · Guide: [w6-chunk4](../syntax/w6-chunk4.md)
+
 ## Food and saturation {#food}
 
 ```carve
@@ -1024,6 +1126,22 @@ give 16 oak logs to player
 
 Since **unreleased** · Guide: [types](../syntax/types.md)
 
+## Item with component {#w6c5_item_with}
+
+```carve
+%item% with custom model data %number%
+%item% with enchantment glint true|false
+%item% with item model %text%
+```
+
+An item value with a component set, for `give`.
+
+```carve
+give diamond sword with custom model data 7 to player
+```
+
+Since **unreleased** · Guide: [expressions](../syntax/expressions.md)
+
 ## Items in {#items_in}
 
 ```carve
@@ -1157,6 +1275,26 @@ loop 3 times:
 
 Since **unreleased** · Guide: [loops](../syntax/loops.md)
 
+## Loot tables and loot contexts {#w6c5_loot}
+
+```carve
+loot table from key %text%
+key of %loot table%
+loot context at %location% [with luck %number%] [with looter %player%] [with looted entity %player%]
+loot location of %loot context%
+loot luck of %loot context%
+looter of %loot context%
+looted entity of %loot context%
+```
+
+Plain records for loot data. Carve can't roll a loot table, so these only carry values around.
+
+```carve
+set {_c} to loot context at player's location with luck 2
+```
+
+Since **unreleased** · Guide: [expressions](../syntax/expressions.md)
+
 ## Minecraft tag {#minecraft_tag}
 
 ```carve
@@ -1187,6 +1325,20 @@ send "%max enchantment level of sharpness%"
 ```
 
 Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+
+## N times {#z6_times}
+
+```carve
+%number% times
+```
+
+The list 1, 2, ... N.
+
+```carve
+set {_l::*} to 3 times
+```
+
+Since **unreleased** · Guide: [w6-chunk6](../syntax/w6-chunk6.md)
 
 ## Name {#name}
 
@@ -1344,6 +1496,22 @@ send parse placeholders in "Hi %%player_name%%, %%server_online%% online" for pl
 
 Since **unreleased** · Guide: [w4-placeholders](../syntax/w4-placeholders.md)
 
+## Parsed as integer, boolean or player {#w6c5_parsed}
+
+```carve
+%text% parsed as integer
+%text% parsed as boolean
+%text% parsed as player
+```
+
+A whole number, true or false (`yes` and `on` count), or an online player from text. `<none>` if the text does not fit.
+
+```carve
+set {_b} to "yes" parsed as boolean
+```
+
+Since **unreleased** · Guide: [expressions](../syntax/expressions.md)
+
 ## Parsed as number {#parsed_number}
 
 ```carve
@@ -1395,6 +1563,20 @@ draw {_p} at player
 
 Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
 
+## Persistent data keys {#w6c4_data_keys}
+
+```carve
+[all] [the] persistent data (keys|tags) of %object%
+```
+
+The keys of the persistent data Carve scripts stored on a player, entity, block or item, sorted.
+
+```carve
+send "%persistent data keys of player%"
+```
+
+Since **unreleased** · Guide: [w6-chunk4](../syntax/w6-chunk4.md)
+
 ## Ping and IP {#ping}
 
 ```carve
@@ -1442,6 +1624,21 @@ on placeholder request for prefix "x":
 
 Since **unreleased** · Guide: [w4-placeholders](../syntax/w4-placeholders.md)
 
+## Plain item {#z6_plain_item}
+
+```carve
+plain %item%
+```
+
+The item without its name, lore and enchantments. Type and amount stay.
+
+```carve
+set {_i} to diamond sword
+set {_p} to plain {_i}
+```
+
+Since **unreleased** · Guide: [w6-chunk6](../syntax/w6-chunk6.md)
+
 ## Player {#player}
 
 ```carve
@@ -1469,6 +1666,21 @@ give skull of player to player
 ```
 
 Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+
+## Portal cooldown {#z6_portal_cooldown}
+
+```carve
+[the] portal cooldown of %entity%
+```
+
+How long until the entity can use a portal again, as a timespan. Can be set.
+
+```carve
+set portal cooldown of player to 7 seconds
+send "%portal cooldown of player%" to player
+```
+
+Since **unreleased** · Guide: [w6-chunk6](../syntax/w6-chunk6.md)
 
 ## Potion effect amplifier, tier and duration {#potion_effect_parts}
 
@@ -1547,6 +1759,20 @@ on entity shoot bow:
 ```
 
 Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
+
+## Protocol version {#z6_protocol_version}
+
+```carve
+protocol version [of %player%]
+```
+
+The protocol number of a Java player's client, or of the server when no player is given (777 for Minecraft 26.3).
+
+```carve
+send "%protocol version of player% / %protocol version%" to player
+```
+
+Since **unreleased** · Guide: [w6-chunk6](../syntax/w6-chunk6.md)
 
 ## Queue and its start and end {#new_queue}
 
@@ -1699,6 +1925,36 @@ on join:
 
 Since **unreleased** · Guide: [w5-chunk5](../syntax/w5-chunk5.md)
 
+## Ringing time {#z6_ringing_time}
+
+```carve
+ringing time of %block%
+```
+
+How long a bell block has been ringing, as a timespan.
+
+```carve
+set {_t} to ringing time of block at player
+```
+
+Since **unreleased** · Guide: [w6-chunk6](../syntax/w6-chunk6.md)
+
+## Rotation angle, axis and rotated {#z6_rotation}
+
+```carve
+rotation angle of %quaternion%
+rotation axis of %quaternion%
+%vector/quaternion% rotated around (x|y|z|%vector%) by %number%
+```
+
+The angle (degrees) and unit axis of a quaternion, and a vector or quaternion turned around an axis by an angle in degrees.
+
+```carve
+set {_v} to vector(1, 0, 0) rotated around z by 90
+```
+
+Since **unreleased** · Guide: [w6-chunk6](../syntax/w6-chunk6.md)
+
 ## Scale {#c6_scale}
 
 ```carve
@@ -1746,6 +2002,39 @@ send "hello" to sender
 ```
 
 Since **unreleased** · Guide: [senders](../syntax/senders.md)
+
+## Set world spawn {#z6_set_spawn}
+
+```carve
+set spawn of %world% to %location%
+```
+
+Moves the world spawn with `setworldspawn`; only the main world can be set.
+
+```carve
+set spawn of world "world" to location(7, 100, 7)
+```
+
+Since **unreleased** · Guide: [w6-chunk6](../syntax/w6-chunk6.md)
+
+## Sign text, skull owner and texture, spawner type, loot table seed {#z6_block_entity}
+
+```carve
+sign (text|lines) of %block%
+skull owner of %block%
+skull texture of %block%
+spawner type of %block%
+loot table seed of %block%
+```
+
+Reads from the block entity data: the four front lines of a sign, the profile name and texture value of a skull, the entity a spawner spawns, and the loot table seed of a chest-like block. Unset values are none.
+
+```carve
+set {_lines::*} to sign text of block at player
+set {_type} to spawner type of block at player
+```
+
+Since **unreleased** · Guide: [w6-chunk6](../syntax/w6-chunk6.md)
 
 ## Size of list {#size}
 
@@ -2052,6 +2341,20 @@ send "%total minutes of {_t}%" to player
 
 Since **unreleased** · Guide: [timespans](../syntax/timespans.md)
 
+## Timespan, human readable {#w6c5_human_time}
+
+```carve
+%timespan% formatted human-readable
+```
+
+A timespan as words, like `1 hour and 5 minutes`. Plain `formatted` gives `1:05:00`.
+
+```carve
+send "%{_t} formatted human-readable%"
+```
+
+Since **unreleased** · Guide: [expressions](../syntax/expressions.md)
+
 ## Title, style, viewers {#c6_title_style_viewers}
 
 ```carve
@@ -2118,6 +2421,72 @@ set {_x} to {coins::%uuid of player%}
 ```
 
 Since **0.1.0** · Guide: [variables](../variables.md)
+
+## Vector and quaternion components {#z6_components}
+
+```carve
+w of %quaternion%
+set (x|y|z|w) of %variable% to %number%
+set (yaw|pitch) of %entity/vector% to %number%
+```
+
+`w of q` reads the w part of a quaternion (`x`, `y`, `z` work on vectors and quaternions). `set`, `add` and `remove` change one part of a vector or quaternion variable. Yaw and pitch turn a vector (keeping its length), a player or an entity.
+
+```carve
+set {_v} to vector(1, 2, 3)
+set x of {_v} to 5
+add 2 to y of {_v}
+```
+
+Since **unreleased** · Guide: [w6-chunk6](../syntax/w6-chunk6.md)
+
+## Vehicle and passengers {#z6_vehicle}
+
+```carve
+vehicle of %entity%
+passengers of %entity%
+```
+
+The entity something rides, and the list of entities riding it. Read only.
+
+```carve
+set {_v} to vehicle of player
+```
+
+Since **unreleased** · Guide: [w6-chunk6](../syntax/w6-chunk6.md)
+
+## Villager level, experience and profession {#z6_villager}
+
+```carve
+villager level of %entity%
+villager (experience|xp) of %entity%
+villager profession of %entity%
+```
+
+Villager data: level and experience as numbers, the profession as text like `librarian` or `none`. Read only.
+
+```carve
+set {_lvl} to villager level of last spawned entity
+```
+
+Since **unreleased** · Guide: [w6-chunk6](../syntax/w6-chunk6.md)
+
+## Whitelist state and players {#z6_whitelist}
+
+```carve
+whitelist (enabled|status|state)
+set whitelist [(enabled|status|state)] to (true|false|on|off)
+whitelisted players
+```
+
+Whether the whitelist is on, switching it, and the list of whitelisted players.
+
+```carve
+set whitelist to true
+set {_w::*} to whitelisted players
+```
+
+Since **unreleased** · Guide: [w6-chunk6](../syntax/w6-chunk6.md)
 
 ## World {#world}
 

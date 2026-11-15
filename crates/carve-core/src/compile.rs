@@ -251,6 +251,8 @@ pub enum Cond {
     Rtw(Box<crate::w4_skbee_raytrace_world::RtwCond>),
     /// Mob, item, block and effect checks (`w5_chunk3`).
     W5c3(Box<crate::w5_chunk3::W5Cond>),
+    /// Conditions the game can answer after all ().
+    W6c3(Box<crate::w6_chunk3::C3Cond>),
     /// `can age` (`w5_chunk1`).
     W5c1(Box<crate::w5_chunk1::CanAge>),
     /// `{_gui} contains diamond` (see `gaps`).
@@ -1492,6 +1494,9 @@ impl Cx<'_> {
             return Some(c);
         }
         if let Some(c) = crate::w5_chunk1::parse_cond(toks, &self.env) {
+            return Some(c);
+        }
+        if let Some(c) = crate::w6_chunk3::parse_cond(toks, &self.env) {
             return Some(c);
         }
         let mut memo = Memo::default();

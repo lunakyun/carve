@@ -73,6 +73,19 @@
     },
     {
       "category": "event",
+      "description": "A player puts on, takes off or swaps armor. `event-slot` (helmet, chestplate, leggings or boots), `event-item` and `past event-item`. Checked every 4 ticks while a script uses it.",
+      "example": "on armor change:\n    send \"%event-slot% changed\" to player",
+      "id": "armor_change",
+      "name": "Armor change",
+      "page": "syntax/w6-chunk1",
+      "patterns": [
+        "on armor change"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
       "description": "A player gets into a bed. Has `player`. Can be cancelled.",
       "example": "",
       "id": "bed_enter",
@@ -630,6 +643,19 @@
     },
     {
       "category": "event",
+      "description": "Any mob breaks down a door. `on zombie break door` only runs for zombie, husk, drowned and zombie villager. Can be cancelled.",
+      "example": "on entity break door:\n    cancel event",
+      "id": "entity_break_door",
+      "name": "Entity break door",
+      "page": "syntax/w6-chunk1",
+      "patterns": [
+        "on entity break door"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
       "description": "Two animals breed. Has `player` when a player fed them.",
       "example": "",
       "id": "entity_breed",
@@ -741,6 +767,19 @@
       "page": "syntax/triggers",
       "patterns": [
         "on experience cooldown change"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "An experience orb spawns. `event-location` and `event-entity`. Can be cancelled.",
+      "example": "on experience spawn:\n    broadcast \"orb at %event-location%\"",
+      "id": "experience_spawn",
+      "name": "Experience spawn",
+      "page": "syntax/w6-chunk1",
+      "patterns": [
+        "on experience spawn"
       ],
       "since": "unreleased",
       "source": "hand"
@@ -1176,6 +1215,19 @@
     },
     {
       "category": "event",
+      "description": "A player starts a jump (the jump bit of the player input goes up). Players only. Adding the first one needs a restart.",
+      "example": "on jump:\n    send \"Boing\" to player",
+      "id": "jump",
+      "name": "Jump",
+      "page": "syntax/w6-chunk1",
+      "patterns": [
+        "on jump"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
       "description": "A player is kicked from the server. Has `player`. Can be cancelled.",
       "example": "",
       "id": "kick",
@@ -1439,6 +1491,20 @@
     },
     {
       "category": "event",
+      "description": "A player moves into another chunk. `event-chunk-x`, `event-chunk-z` and the `event-previous-chunk-x` and `event-previous-chunk-z` it came from. Adding the first one needs a restart.",
+      "example": "on player chunk enter:\n    send \"chunk %event-chunk-x% %event-chunk-z%\" to player",
+      "id": "player_chunk_enter",
+      "name": "Player chunk enter",
+      "page": "syntax/w6-chunk1",
+      "patterns": [
+        "on player chunk enter",
+        "on player chunk enters"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
       "description": "A player presses or releases a movement key. Has `player`.",
       "example": "",
       "id": "player_input",
@@ -1446,6 +1512,19 @@
       "page": "syntax/triggers",
       "patterns": [
         "on player input"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "A player picks up an arrow. `event-entity` is the arrow. Can be cancelled. Not verified in-game.",
+      "example": "on player pickup arrow:\n    send \"Got it\" to player",
+      "id": "player_pickup_arrow",
+      "name": "Player pickup arrow",
+      "page": "syntax/w6-chunk1",
+      "patterns": [
+        "on player pickup arrow"
       ],
       "since": "unreleased",
       "source": "hand"
@@ -1500,6 +1579,33 @@
         "on preparing craft",
         "on prepare craft",
         "on beginning craft"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "A pressure plate is pressed. `event-location` and `event-power`. Can be cancelled. Tripwires fire no event on Pumpkin.",
+      "example": "on pressure plate:\n    broadcast \"pressed at %event-location%\"",
+      "id": "pressure_plate",
+      "name": "Pressure plate",
+      "page": "syntax/w6-chunk1",
+      "patterns": [
+        "on pressure plate",
+        "on trip"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "An arrow hits an entity. `event-entity` is the arrow, `event-hit-entity` what it hit, `event-location` the point. Can be cancelled. Not verified in-game.",
+      "example": "on projectile collide:\n    broadcast \"hit a %type of event-hit-entity%\"",
+      "id": "projectile_collide",
+      "name": "Projectile collide",
+      "page": "syntax/w6-chunk1",
+      "patterns": [
+        "on projectile collide"
       ],
       "since": "unreleased",
       "source": "hand"
@@ -1602,6 +1708,33 @@
     },
     {
       "category": "event",
+      "description": "A player launches with a riptide trident. `event-item` is the trident. Can be cancelled. Not verified in-game.",
+      "example": "on riptide:\n    send \"Wheee\" to player",
+      "id": "riptide",
+      "name": "Riptide",
+      "page": "syntax/w6-chunk1",
+      "patterns": [
+        "on riptide"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "Runs when the scripts are about to be replaced by `/carve reload`, and when the server stops.",
+      "example": "on unload:\n    send \"bye\" to console",
+      "id": "script_unload",
+      "name": "Script unload",
+      "page": "syntax/w6-chunk1",
+      "patterns": [
+        "on unload",
+        "on script unload"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
       "description": "The server sends a player the list of commands for tab completion. Has `player`.",
       "example": "",
       "id": "send_command_list",
@@ -1622,6 +1755,19 @@
       "page": "syntax/triggers",
       "patterns": [
         "on server list ping"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "Runs when the server stops (the plugin unloads).",
+      "example": "on server stop:\n    send \"stopping\" to console",
+      "id": "server_stop",
+      "name": "Server stop",
+      "page": "syntax/w6-chunk1",
+      "patterns": [
+        "on server stop"
       ],
       "since": "unreleased",
       "source": "hand"
@@ -1721,6 +1867,19 @@
     },
     {
       "category": "event",
+      "description": "A player in spectator mode starts spectating an entity. `event-entity` is the target. Checked every 2 ticks while a script uses it.",
+      "example": "on spectate:\n    send \"Watching a %type of event-entity%\" to player",
+      "id": "spectate",
+      "name": "Spectate",
+      "page": "syntax/w6-chunk1",
+      "patterns": [
+        "on spectate"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
       "description": "A sponge soaks up water. Can be cancelled.",
       "example": "",
       "id": "sponge_absorb",
@@ -1769,6 +1928,20 @@
       "page": "syntax/triggers",
       "patterns": [
         "on start smelt"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "A player moves onto a different block that is `<block>`. `event-block` is its id and `event-location` its position. Adding the first one needs a restart.",
+      "example": "on step on stone:\n    send \"Stone!\" to player",
+      "id": "step_on",
+      "name": "Step on",
+      "page": "syntax/w6-chunk1",
+      "patterns": [
+        "on step on <block>",
+        "on walk on <block>"
       ],
       "since": "unreleased",
       "source": "hand"
@@ -2001,6 +2174,32 @@
     },
     {
       "category": "event",
+      "description": "The target size of a world border changes. `event-world`, `event-old-size`, `event-new-size`. Found by checking every tick while a script uses it.",
+      "example": "on world border bounds change:\n    broadcast \"%event-old-size% to %event-new-size%\"",
+      "id": "world_border_bounds_change",
+      "name": "World border bounds change",
+      "page": "syntax/w6-chunk1",
+      "patterns": [
+        "on world border bounds change"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
+      "description": "The center of a world border moves. `event-world`, `event-old-x`, `event-old-z`, `event-new-x`, `event-new-z`.",
+      "example": "on world border center change:\n    broadcast \"now at %event-new-x% %event-new-z%\"",
+      "id": "world_border_center_change",
+      "name": "World border center change",
+      "page": "syntax/w6-chunk1",
+      "patterns": [
+        "on world border center change"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "event",
       "description": "A player arrived in another world. `event-world` is the new world, `past event-world` the old one.",
       "example": "on world change:\n    send \"Now in %event-world%\" to player",
       "id": "world-change",
@@ -2108,6 +2307,20 @@
     },
     {
       "category": "effect",
+      "description": "Lets a player fly (double-tap jump) or takes it away. Only the permission changes; `make player fly` also starts the flight.",
+      "example": "allow flight for player",
+      "id": "allow_flight",
+      "name": "Allow flight",
+      "page": "syntax/w6-chunk2",
+      "patterns": [
+        "(allow|enable) (fly|flight) (for|to) %object%",
+        "(disallow|disable) (fly|flight) (for|to) %object%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
       "description": "",
       "example": "",
       "id": "apply_object_to_player",
@@ -2146,6 +2359,20 @@
       ],
       "since": "unreleased",
       "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "A ban that ends by itself. The player has to be online; Pumpkin's ban list needs a UUID, which a plain name does not give. A later `ban` without a time is permanent.",
+      "example": "ban player because of \"spam\" for 2 hours",
+      "id": "ban_for",
+      "name": "Ban for a time",
+      "page": "syntax/w6-chunk2",
+      "patterns": [
+        "ban %object% [(because of|by reason of|due to|with reason) %text%] for %timespan%",
+        "ban ip %object% [(because of|by reason of|due to|with reason) %text%] for %timespan%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
     },
     {
       "category": "effect",
@@ -2709,6 +2936,21 @@
     },
     {
       "category": "effect",
+      "description": "Runs `/carve enable`, `/carve reload` or `/carve disable` for a script file. `unload` disables the script (the file is renamed with a `-`).",
+      "example": "reload script \"homes\"",
+      "id": "script_switch",
+      "name": "Enable, disable and reload script",
+      "page": "syntax/w6-chunk2",
+      "patterns": [
+        "(enable|load) script [(file|named)] %text% [with errors]",
+        "reload script [(file|named)] %text% [with errors]",
+        "(disable|unload) script [(file|named)] %text% [with errors]"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
       "description": "When the whitelist is on, kicks every online player who is neither whitelisted nor op.",
       "example": "enforce the whitelist",
       "id": "enforce_whitelist",
@@ -2733,6 +2975,21 @@
       ],
       "since": "unreleased",
       "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Puts up to four items on a player or a mob. Each item goes to its own slot: helmets on the head, shields in the off hand, everything else in the main hand.",
+      "example": "spawn a zombie at player\nequip last spawned entity with diamond helmet and iron boots",
+      "id": "equip_items",
+      "name": "Equip",
+      "page": "syntax/w6-chunk2",
+      "patterns": [
+        "equip %object% with %object% [and %object%]",
+        "make %object% wear %object% [and %object%]",
+        "equip with %object%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
     },
     {
       "category": "effect",
@@ -2955,6 +3212,23 @@
     },
     {
       "category": "effect",
+      "description": "Takes the horns off a goat, or grows them back. Goats only.",
+      "example": "spawn a goat at player\nremove the left horn of last spawned entity\nregrow both horns of last spawned entity",
+      "id": "goat_horns",
+      "name": "Goat horns",
+      "page": "syntax/w6-chunk2",
+      "patterns": [
+        "remove [the] (left|right|both) (horn|horns) of %object%",
+        "remove %object%'s (left|right|both) (horn|horns)",
+        "(regrow|replace) [the] (left|right|both) (horn|horns) of %object%",
+        "remove [the] horns of %object%",
+        "(regrow|replace) [the] horns of %object%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
       "description": "Turns gravity for an entity on or off.",
       "example": "",
       "id": "gravity_state",
@@ -2965,6 +3239,19 @@
       ],
       "since": "unreleased",
       "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Grows a tree at a location with Pumpkin's `place feature` command. Types: oak, tree, big tree, birch, jungle, acacia, dark oak, spruce, redwood, cherry, mangrove. The tree needs the right ground, like a sapling.",
+      "example": "grow oak at location(10, 64, 10)",
+      "id": "grow_tree",
+      "name": "Grow tree",
+      "page": "syntax/w6-chunk2",
+      "patterns": [
+        "(grow|create|generate) [(a|an)] <type> [tree] (at|on|above) %location%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
     },
     {
       "category": "effect",
@@ -3249,6 +3536,19 @@
     },
     {
       "category": "effect",
+      "description": "An allay makes a copy of itself. Both allays then wait before they can do it again.",
+      "example": "spawn an allay at player\nmake last spawned entity duplicate",
+      "id": "allay_duplicate",
+      "name": "Make allay duplicate",
+      "page": "syntax/w6-chunk2",
+      "patterns": [
+        "make %object% (duplicate|clone)"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
       "description": "Clears the breeding cooldown, or sets it to 5 minutes.",
       "example": "spawn a cow at location(0, 70, 0)\nmake last spawned entity breedable",
       "id": "make_breedable",
@@ -3257,6 +3557,22 @@
       "patterns": [
         "make %entities% breedable",
         "make %entities% (unbreedable|not breedable)"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
+      "description": "Switches the screaming goat voice. Goats only.",
+      "example": "spawn a goat at player\nmake last spawned entity scream",
+      "id": "make_scream",
+      "name": "Make entity scream",
+      "page": "syntax/w6-chunk2",
+      "patterns": [
+        "make %object% (start screaming|scream)",
+        "force %object% to (start screaming|scream)",
+        "make %object% stop screaming",
+        "force %object% to stop screaming"
       ],
       "since": "unreleased",
       "source": "hand"
@@ -3276,6 +3592,34 @@
       ],
       "since": "unreleased",
       "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Makes an interaction entity answer clicks with the swing animation.",
+      "example": "spawn an interaction at player\nmake last spawned entity responsive",
+      "id": "interaction_responsive",
+      "name": "Make interaction responsive",
+      "page": "syntax/w6-chunk2",
+      "patterns": [
+        "make %object% responsive",
+        "make %object% (unresponsive|not responsive)"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
+      "description": "Shows a player a block that is not there (only that player sees it), or puts the real block back.",
+      "example": "make player see location(5, 101, 5) as diamond_block\nmake player see location(5, 101, 5) as original block",
+      "id": "fake_block",
+      "name": "Make player see a block",
+      "page": "syntax/w6-chunk2",
+      "patterns": [
+        "make %object% see %location% as %object%",
+        "make %object% see %location% as [(the|its|their)] (original|normal|actual) [(block|blocks)]"
+      ],
+      "since": "unreleased",
+      "source": "hand"
     },
     {
       "category": "effect",
@@ -3545,6 +3889,20 @@
     },
     {
       "category": "effect",
+      "description": "`reset` sets a number to 0, a text to empty and a boolean to false; any other value, and a list, is deleted. `remove all x from {list::*}` removes every x.",
+      "example": "set {n} to 5\nreset {n}\nset {l::*} to 1, 2, 1 and 3\nremove all 1 from {l::*}",
+      "id": "reset_variable",
+      "name": "Reset and remove all",
+      "page": "syntax/w6-chunk2",
+      "patterns": [
+        "reset %variable%",
+        "remove all %object% from %variable%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
       "description": "Clears the title a player is seeing.",
       "example": "",
       "id": "reset_title",
@@ -3614,6 +3972,34 @@
       ],
       "since": "unreleased",
       "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Puts any entity or player on another entity, or takes it off. A player can not be the vehicle.",
+      "example": "spawn a pig at player\nmake player ride last spawned entity\nmake player dismount",
+      "id": "ride_any",
+      "name": "Ride and dismount any entity",
+      "page": "syntax/w6-chunk2",
+      "patterns": [
+        "(make|let|force) %object% [to] (ride|mount) [(in|on)] %object%",
+        "(make|let|force) %object% [to] dismount"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
+      "description": "Rotates the vector in a variable (every vector of a list variable) by degrees, around an axis or around another vector.",
+      "example": "set {v} to vector(1, 0, 0)\nrotate {v} around the z-axis by 90\nrotate {v} around vector(0, 1, 0) by 45",
+      "id": "rotate_vector",
+      "name": "Rotate vector",
+      "page": "syntax/w6-chunk2",
+      "patterns": [
+        "rotate %variable% around [the] (x|y|z) [-] axis by %number%",
+        "rotate %variable% around %object% by %number%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
     },
     {
       "category": "effect",
@@ -3987,6 +4373,20 @@
     },
     {
       "category": "effect",
+      "description": "Shears a sheep (the wool grows back with `unshear`). Sheep only; the wool is not dropped.",
+      "example": "spawn a sheep at player\nshear last spawned entity",
+      "id": "shear",
+      "name": "Shear and unshear",
+      "page": "syntax/w6-chunk2",
+      "patterns": [
+        "shear %object%",
+        "unshear %object%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
       "description": "Spawns a projectile in front of the shooter's eyes moving where they look (default speed 5) and runs the body with `event-entity` as the projectile. The projectile has no owner.",
       "example": "shoot an arrow from player at speed 2:\n    send \"%type of event-entity%\"",
       "id": "c6_shoot",
@@ -4010,6 +4410,22 @@
       ],
       "since": "unreleased",
       "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Stops an entity from making sounds, or lets it again.",
+      "example": "spawn a cow at player\nsilence last spawned entity",
+      "id": "silence_entity",
+      "name": "Silence entity",
+      "page": "syntax/w6-chunk2",
+      "patterns": [
+        "silence %object%",
+        "unsilence %object%",
+        "make %object% silent",
+        "make %object% not silent"
+      ],
+      "since": "unreleased",
+      "source": "hand"
     },
     {
       "category": "effect",
@@ -4109,6 +4525,20 @@
     },
     {
       "category": "effect",
+      "description": "Stops a named sound, or every sound, of one category: master, music, record, weather, block, hostile, neutral, player, ambient, voice. Without a player it goes to the one who started the trigger.",
+      "example": "stop sound \"entity.cow.ambient\" in music for player\nstop all sounds in master for player",
+      "id": "stop_sound_category",
+      "name": "Stop sound in a category",
+      "page": "syntax/w6-chunk2",
+      "patterns": [
+        "stop (sound|sounds) %text% (in|from) [the] <category> [(from playing to|for|to) %object%]",
+        "stop all (sound|sounds) (in|from) [the] <category> [(from playing to|for|to) %object%]"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
       "description": "Strikes a real bolt. With `effect` it is only the flash and sound.",
       "example": "strike lightning effect at player",
       "id": "lightning",
@@ -4133,6 +4563,20 @@
       ],
       "since": "unreleased",
       "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Plays the arm swing of any living entity.",
+      "example": "spawn a zombie at player\nmake last spawned entity swing main hand",
+      "id": "swing_any",
+      "name": "Swing hand",
+      "page": "syntax/w6-chunk2",
+      "patterns": [
+        "make %object% swing [their] [main] hand",
+        "make %object% swing [their] off hand"
+      ],
+      "since": "unreleased",
+      "source": "hand"
     },
     {
       "category": "effect",
@@ -4185,6 +4629,21 @@
     },
     {
       "category": "effect",
+      "description": "Tames a wolf or a cat, with the player who started the trigger as the owner, or frees it. Other tameable animals are not supported.",
+      "example": "spawn a wolf at player\ntame last spawned entity",
+      "id": "tame",
+      "name": "Tame and untame",
+      "page": "syntax/w6-chunk2",
+      "patterns": [
+        "tame %object%",
+        "untame %object%",
+        "domesticate %object%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "effect",
       "description": "Teleports the player to coordinates in their current world.",
       "example": "teleport player to 0, 64, 0",
       "id": "teleport",
@@ -4208,6 +4667,22 @@
       ],
       "since": "unreleased",
       "source": "registry"
+    },
+    {
+      "category": "effect",
+      "description": "Switches the drop shadow of a text display and whether it shows through blocks.",
+      "example": "spawn text display at player with text \"hi\"\napply drop shadow to last spawned entity\nmake last spawned entity visible through blocks",
+      "id": "text_display_flags",
+      "name": "Text display drop shadow and see through",
+      "page": "syntax/w6-chunk2",
+      "patterns": [
+        "(apply|add) (drop|text) shadow to [[the] text of] %object%",
+        "(remove|clear) (drop|text) shadow from [[the] text of] %object%",
+        "make %object% visible through (blocks|walls)",
+        "(prevent|block) %object% from being (visible|seen) through (blocks|walls)"
+      ],
+      "since": "unreleased",
+      "source": "hand"
     },
     {
       "category": "effect",
@@ -4263,6 +4738,397 @@
       ],
       "since": "unreleased",
       "source": "hand"
+    },
+    {
+      "category": "effect",
+      "description": "Replaces a villager with a zombie villager at the same spot, keeping its name and health (and back). Pumpkin has no conversion call, so this is a replacement.",
+      "example": "spawn a villager at player\nzombify last spawned entity",
+      "id": "zombify",
+      "name": "Zombify villager",
+      "page": "syntax/w6-chunk2",
+      "patterns": [
+        "zombify %object%",
+        "unzombify %object%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_not_isn_t_passable",
+      "name": "%object% (is not|isn't) passable",
+      "page": "",
+      "patterns": [
+        "%object% (is not|isn't) passable"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_not_isn_t_solid",
+      "name": "%object% (is not|isn't) solid",
+      "page": "",
+      "patterns": [
+        "%object% (is not|isn't) solid"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_not_isn_t_transparent",
+      "name": "%object% (is not|isn't) transparent",
+      "page": "",
+      "patterns": [
+        "%object% (is not|isn't) transparent"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_not_isn_t_within_object",
+      "name": "%object% (is not|isn't) within %object%",
+      "page": "",
+      "patterns": [
+        "%object% (is not|isn't) within %object%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_isn_t_is_not_aren_t_are_not_holding_object_in_the_main_hand",
+      "name": "%object% (isn't|is not|aren't|are not) holding %object% in [the] main hand",
+      "page": "",
+      "patterns": [
+        "%object% (isn't|is not|aren't|are not) holding %object% in [the] main hand"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_isn_t_is_not_aren_t_are_not_holding_object_in_the_off_hand",
+      "name": "%object% (isn't|is not|aren't|are not) holding %object% in [the] off hand",
+      "page": "",
+      "patterns": [
+        "%object% (isn't|is not|aren't|are not) holding %object% in [the] off hand"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_isn_t_is_not_aren_t_are_not_infinite",
+      "name": "%object% (isn't|is not|aren't|are not) infinite",
+      "page": "",
+      "patterns": [
+        "%object% (isn't|is not|aren't|are not) infinite"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_isn_t_is_not_aren_t_are_not_jumping",
+      "name": "%object% (isn't|is not|aren't|are not) jumping",
+      "page": "",
+      "patterns": [
+        "%object% (isn't|is not|aren't|are not) jumping"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_isn_t_is_not_aren_t_are_not_pressing_the_backward_key",
+      "name": "%object% (isn't|is not|aren't|are not) pressing [the] backward [key]",
+      "page": "",
+      "patterns": [
+        "%object% (isn't|is not|aren't|are not) pressing [the] backward [key]"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_isn_t_is_not_aren_t_are_not_pressing_the_forward_key",
+      "name": "%object% (isn't|is not|aren't|are not) pressing [the] forward [key]",
+      "page": "",
+      "patterns": [
+        "%object% (isn't|is not|aren't|are not) pressing [the] forward [key]"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_isn_t_is_not_aren_t_are_not_pressing_the_jump_key",
+      "name": "%object% (isn't|is not|aren't|are not) pressing [the] jump [key]",
+      "page": "",
+      "patterns": [
+        "%object% (isn't|is not|aren't|are not) pressing [the] jump [key]"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_isn_t_is_not_aren_t_are_not_pressing_the_left_key",
+      "name": "%object% (isn't|is not|aren't|are not) pressing [the] left [key]",
+      "page": "",
+      "patterns": [
+        "%object% (isn't|is not|aren't|are not) pressing [the] left [key]"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_isn_t_is_not_aren_t_are_not_pressing_the_right_key",
+      "name": "%object% (isn't|is not|aren't|are not) pressing [the] right [key]",
+      "page": "",
+      "patterns": [
+        "%object% (isn't|is not|aren't|are not) pressing [the] right [key]"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_isn_t_is_not_aren_t_are_not_pressing_the_sneak_key",
+      "name": "%object% (isn't|is not|aren't|are not) pressing [the] sneak [key]",
+      "page": "",
+      "patterns": [
+        "%object% (isn't|is not|aren't|are not) pressing [the] sneak [key]"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_isn_t_is_not_aren_t_are_not_pressing_the_sprint_key",
+      "name": "%object% (isn't|is not|aren't|are not) pressing [the] sprint [key]",
+      "page": "",
+      "patterns": [
+        "%object% (isn't|is not|aren't|are not) pressing [the] sprint [key]"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_isn_t_is_not_aren_t_are_not_riding_object",
+      "name": "%object% (isn't|is not|aren't|are not) riding %object%",
+      "page": "",
+      "patterns": [
+        "%object% (isn't|is not|aren't|are not) riding %object%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_isn_t_is_not_aren_t_are_not_unbreakable",
+      "name": "%object% (isn't|is not|aren't|are not) unbreakable",
+      "page": "",
+      "patterns": [
+        "%object% (isn't|is not|aren't|are not) unbreakable"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_isn_t_is_not_aren_t_are_not_using_the_experimental_feature_object",
+      "name": "%object% (isn't|is not|aren't|are not) using [the] [experimental] feature %object%",
+      "page": "",
+      "patterns": [
+        "%object% (isn't|is not|aren't|are not) using [the] [experimental] feature %object%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_are_jumping",
+      "name": "%object% (is|are) jumping",
+      "page": "",
+      "patterns": [
+        "%object% (is|are) jumping"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_are_unbreakable",
+      "name": "%object% (is|are) unbreakable",
+      "page": "",
+      "patterns": [
+        "%object% (is|are) unbreakable"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_passable",
+      "name": "%object% is passable",
+      "page": "",
+      "patterns": [
+        "%object% is passable"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_solid",
+      "name": "%object% is solid",
+      "page": "",
+      "patterns": [
+        "%object% is solid"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_transparent",
+      "name": "%object% is transparent",
+      "page": "",
+      "patterns": [
+        "%object% is transparent"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "object_is_within_object",
+      "name": "%object% is within %object%",
+      "page": "",
+      "patterns": [
+        "%object% is within %object%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "player_s_object_potion_effect_isn_t_is_not_aren_t_are_not_infinite",
+      "name": "%player%'s %object% [potion] effect (isn't|is not|aren't|are not) infinite",
+      "page": "",
+      "patterns": [
+        "%player%'s %object% [potion] effect (isn't|is not|aren't|are not) infinite"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "player_s_tool_held_item_isn_t_is_not_aren_t_are_not_unbreakable",
+      "name": "%player%'s (tool|held item) (isn't|is not|aren't|are not) unbreakable",
+      "page": "",
+      "patterns": [
+        "%player%'s (tool|held item) (isn't|is not|aren't|are not) unbreakable"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "isn_t_is_not_not_running_above_newer_than_later_than_minecraft_mc_version_object",
+      "name": "(isn't|is not|not) running (above|newer than|later than) [(minecraft|mc)] [version] %object%",
+      "page": "",
+      "patterns": [
+        "(isn't|is not|not) running (above|newer than|later than) [(minecraft|mc)] [version] %object%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "isn_t_is_not_not_running_below_older_than_earlier_than_minecraft_mc_version_object",
+      "name": "(isn't|is not|not) running (below|older than|earlier than) [(minecraft|mc)] [version] %object%",
+      "page": "",
+      "patterns": [
+        "(isn't|is not|not) running (below|older than|earlier than) [(minecraft|mc)] [version] %object%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "the_tool_held_item_of_player_isn_t_is_not_aren_t_are_not_unbreakable",
+      "name": "[the] (tool|held item) of %player% (isn't|is not|aren't|are not) unbreakable",
+      "page": "",
+      "patterns": [
+        "[the] (tool|held item) of %player% (isn't|is not|aren't|are not) unbreakable"
+      ],
+      "since": "unreleased",
+      "source": "registry"
     },
     {
       "category": "condition",
@@ -4888,6 +5754,22 @@
     },
     {
       "category": "condition",
+      "description": "Whether a mob is a baby. Read from the mob's age data (animals) or baby flag (zombies); any other living mob is an adult.",
+      "example": "if {_cow} is a baby:\n    send \"cute\"",
+      "id": "w6c3_age",
+      "name": "Is adult / Is baby",
+      "page": "syntax/w6-chunk3",
+      "patterns": [
+        "%object% (is|are) [an] adult",
+        "%object% (isn't|is not|aren't|are not) [an] adult",
+        "%object% (is|are) [a] baby",
+        "%object% (isn't|is not|aren't|are not) [a] baby"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
       "description": "Whether a player is alive or dead.",
       "example": "",
       "id": "alive",
@@ -4948,6 +5830,22 @@
     },
     {
       "category": "condition",
+      "description": "What the event player's respawn point is: a bed or a respawn anchor, read from the block at (or just under) the saved respawn location.",
+      "example": "on respawn:\n    if the respawn location is a bed spawn:\n        send \"welcome back\"",
+      "id": "w6c3_spawn_point",
+      "name": "Is bed spawn / anchor spawn",
+      "page": "syntax/w6-chunk3",
+      "patterns": [
+        "[the] respawn location (is|was) [a] bed spawn",
+        "[the] respawn location (isn't|is not|wasn't|was not) [a] bed spawn",
+        "[the] respawn location (is|was) [a] respawn anchor spawn",
+        "[the] respawn location (isn't|is not|wasn't|was not) [a] respawn anchor spawn"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
       "description": "Whether a number is in a range, both ends included.",
       "example": "if level of player is between 10 and 20:\n    send \"mid level\" to player",
       "id": "between",
@@ -4984,6 +5882,48 @@
       "patterns": [
         "%player% is (burning|on fire)",
         "%player% (is not|isn't) (burning|on fire)"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "A creeper that was struck by lightning, or a player holding a loaded crossbow in the main hand.",
+      "example": "if {_creeper} is charged:\n    send \"boom\"",
+      "id": "w6c3_charged",
+      "name": "Is charged",
+      "page": "syntax/w6-chunk3",
+      "patterns": [
+        "%object% (is|are) charged",
+        "%object% (isn't|is not|aren't|are not) charged"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Approximation: the entity is off the ground and the block at its feet is a ladder, vine, scaffolding or cave, twisting or weeping vine. The v0.1 plugin API has no climbing state.",
+      "example": "if player is climbing:\n    send \"up\"",
+      "id": "w6c3_climbing",
+      "name": "Is climbing",
+      "page": "syntax/w6-chunk3",
+      "patterns": [
+        "%object% (is|are) climbing",
+        "%object% (isn't|is not|aren't|are not) climbing"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Whether a command block is in conditional mode (the `conditional` property of its block state).",
+      "example": "if location(1, 64, 1) is conditional:\n    send \"conditional\"",
+      "id": "w6c3_conditional",
+      "name": "Is conditional",
+      "page": "syntax/w6-chunk3",
+      "patterns": [
+        "%object% (is|are) conditional",
+        "%object% (isn't|is not|aren't|are not) conditional"
       ],
       "since": "unreleased",
       "source": "registry"
@@ -5104,6 +6044,20 @@
     },
     {
       "category": "condition",
+      "description": "Whether a mob came out of a spawner block. Carve remembers the mobs the spawner events report, so mobs that spawned before Carve loaded count as not from a spawner.",
+      "example": "if {_mob} is from a spawner:\n    send \"spawner mob\"",
+      "id": "w6c3_spawner",
+      "name": "Is from a spawner",
+      "page": "syntax/w6-chunk3",
+      "patterns": [
+        "%object% (is|are) (from|spawned from|spawned by) [(a|the)] [(mob|trial|monster)] spawner",
+        "%object% (isn't|is not|aren't|are not) (from|spawned from|spawned by) [(a|the)] [(mob|trial|monster)] spawner"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
       "description": "Whether a player is fully frozen in powder snow.",
       "example": "",
       "id": "frozen",
@@ -5162,6 +6116,36 @@
     },
     {
       "category": "condition",
+      "description": "Whether a player or mob holds an item in either hand, or in the main or off hand.",
+      "example": "if player is holding diamond sword in the off hand:\n    send \"dual\"",
+      "id": "w6c3_holding",
+      "name": "Is holding",
+      "page": "syntax/w6-chunk3",
+      "patterns": [
+        "%object% (is|are) holding %object%",
+        "%object% (is|are) holding %object% in [the] main hand",
+        "%object% (is|are) holding %object% in [the] off hand",
+        "%object% (isn't|is not|aren't|are not) holding %object%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Whether a creeper has lit its fuse. Primed TNT is not in the plugin API.",
+      "example": "if {_creeper} is igniting:\n    send \"run\"",
+      "id": "w6c3_igniting",
+      "name": "Is igniting",
+      "page": "syntax/w6-chunk3",
+      "patterns": [
+        "%object% (is|are) (igniting|ignited|in [the] ignition process)",
+        "%object% (isn't|is not|aren't|are not) (igniting|ignited|in [the] ignition process)"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
       "description": "Checks the player's game mode.",
       "example": "if player is in creative:\n    send \"creative!\" to player",
       "id": "in_gamemode",
@@ -5200,6 +6184,20 @@
         "%object% (is not|isn't) in [the] world %object%",
         "%object% is within %world%",
         "%object% (is not|isn't) within %world%"
+      ],
+      "since": "unreleased",
+      "source": "registry+hand"
+    },
+    {
+      "category": "condition",
+      "description": "A potion effect value made with `infinite`, or a player's active effect. Pumpkin's plugin API reports an infinite effect with duration 0, and a real effect never lingers at 0.",
+      "example": "set {_e} to potion effect of speed for 10 seconds\nif {_e} is infinite:\n    send \"forever\"",
+      "id": "w6c3_infinite",
+      "name": "Is infinite",
+      "page": "syntax/w6-chunk3",
+      "patterns": [
+        "%object% (is|are) infinite",
+        "%player%'s %object% [potion] effect (is|are) infinite"
       ],
       "since": "unreleased",
       "source": "registry"
@@ -5248,6 +6246,22 @@
     },
     {
       "category": "condition",
+      "description": "The main hand a Java player chose in their client settings. Mobs have no such data.",
+      "example": "if player is left handed:\n    send \"lefty\"",
+      "id": "w6c3_handed",
+      "name": "Is left handed / right handed",
+      "page": "syntax/w6-chunk3",
+      "patterns": [
+        "%object% (is|are) left( |-)handed",
+        "%object% (isn't|is not|aren't|are not) left( |-)handed",
+        "%object% (is|are) right( |-)handed",
+        "%object% (isn't|is not|aren't|are not) right( |-)handed"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
       "description": "Whether a chunk or world is loaded.",
       "example": "",
       "id": "loaded",
@@ -5257,6 +6271,48 @@
         "%object% is loaded",
         "%object% (is not|isn't) loaded",
         "%object% is unloaded"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Whether a container block still has a loot table (`LootTable` in its data). Entities are not supported: Pumpkin's plugin API cannot read them.",
+      "example": "if location(1, 64, 1) is lootable:\n    send \"unopened\"",
+      "id": "w6c3_lootable",
+      "name": "Is lootable",
+      "page": "syntax/w6-chunk3",
+      "patterns": [
+        "%object% (is|are) lootable",
+        "%object% (isn't|is not|aren't|are not) lootable"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Whether a vector has length 1 (within 0.000001).",
+      "example": "if vector(1, 0, 0) is normalized:\n    send \"unit\"",
+      "id": "w6c3_normalized",
+      "name": "Is normalized",
+      "page": "syntax/w6-chunk3",
+      "patterns": [
+        "%object% (is|are) normalized",
+        "%object% (isn't|is not|aren't|are not) normalized"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Whether the block at a location is a full cube that blocks all light (opacity 15).",
+      "example": "if location(1, 64, 1) is occluding:\n    send \"stone-like\"",
+      "id": "w6c3_occluding",
+      "name": "Is occluding",
+      "page": "syntax/w6-chunk3",
+      "patterns": [
+        "%object% (is|are) occluding",
+        "%object% (isn't|is not|aren't|are not) occluding"
       ],
       "since": "unreleased",
       "source": "registry"
@@ -5274,6 +6330,20 @@
       ],
       "since": "unreleased",
       "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Compares types. An entity or player against an entity type word (`{_e} is of type pig`), a placed block against a block id (`{_block} is of type stone`), an item against an item id.",
+      "example": "if {_e} is of type pig:\n    send \"oink\"",
+      "id": "w6c3_of_type",
+      "name": "Is of type",
+      "page": "syntax/w6-chunk3",
+      "patterns": [
+        "%object% (is|are) of type %object%",
+        "%object% (isn't|is not|aren't|are not) of type %object%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
     },
     {
       "category": "condition",
@@ -5331,6 +6401,48 @@
         "%item% (is not|isn't) passable"
       ],
       "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "condition",
+      "description": "Whether a mob's navigator has a route it is following.",
+      "example": "if {_cow} is pathfinding:\n    send \"walking\"",
+      "id": "w6c3_pathfinding",
+      "name": "Is pathfinding",
+      "page": "syntax/w6-chunk3",
+      "patterns": [
+        "%object% (is|are) pathfinding",
+        "%object% (isn't|is not|aren't|are not) pathfinding"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Leaves: the `persistent` property (placed by a player, never decays). Entities: Pumpkin's plugin API has no persistence flag, so the check is false either way.",
+      "example": "if location(1, 64, 1) is persistent:\n    send \"player placed\"",
+      "id": "w6c3_persistent",
+      "name": "Is persistent",
+      "page": "syntax/w6-chunk3",
+      "patterns": [
+        "%object% (is|are) persistent",
+        "%object% (isn't|is not|aren't|are not) persistent"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Whether a Pumpkin plugin with that name is loaded (probed through the plugin IPC call, which sends an empty message to it). Carve itself always counts as loaded.",
+      "example": "if plugin \"carve\" is enabled:\n    send \"yes\"",
+      "id": "w6c3_plugin",
+      "name": "Is plugin enabled",
+      "page": "syntax/w6-chunk3",
+      "patterns": [
+        "[the] plugin %object% (is|are) enabled",
+        "[the] plugin %object% (isn't|is not|aren't|are not) enabled"
+      ],
+      "since": "unreleased",
       "source": "registry"
     },
     {
@@ -5343,6 +6455,22 @@
       "patterns": [
         "%player% (is|are) poisoned",
         "%player% (is not|isn't|are not|aren't) poisoned"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Reads the `powered`, `power` or `lit` property of the block at a location: levers, buttons, doors, lamps, repeaters and redstone dust. A solid block that is only powered through a neighbour has no such property, so it reads as not powered.",
+      "example": "if location(1, 64, 1) is powered:\n    send \"on\"",
+      "id": "w6c3_powered",
+      "name": "Is powered",
+      "page": "syntax/w6-chunk3",
+      "patterns": [
+        "%object% (is|are) [block] [redstone] powered",
+        "%object% (isn't|is not|aren't|are not) [block] [redstone] powered",
+        "%object% (is|are) indirectly [block] [redstone] powered",
+        "%object% (isn't|is not|aren't|are not) indirectly [block] [redstone] powered"
       ],
       "since": "unreleased",
       "source": "registry"
@@ -5362,6 +6490,25 @@
       ],
       "since": "unreleased",
       "source": "hand"
+    },
+    {
+      "category": "condition",
+      "description": "The keys a player holds, from the input packets the client sends when a key changes. Needs a restart the first time a script uses it, because Carve only listens to that event when a script asks for it.",
+      "example": "if player is pressing the jump key:\n    send \"jumping\"",
+      "id": "w6c3_key",
+      "name": "Is pressing key",
+      "page": "syntax/w6-chunk3",
+      "patterns": [
+        "%object% (is|are) pressing [the] forward [key]",
+        "%object% (is|are) pressing [the] backward [key]",
+        "%object% (is|are) pressing [the] left [key]",
+        "%object% (is|are) pressing [the] right [key]",
+        "%object% (is|are) pressing [the] jump [key]",
+        "%object% (is|are) pressing [the] sneak [key]",
+        "%object% (is|are) pressing [the] sprint [key]"
+      ],
+      "since": "unreleased",
+      "source": "registry"
     },
     {
       "category": "condition",
@@ -5415,6 +6562,22 @@
       "patterns": [
         "%object% (is|are) riptiding",
         "%object% (isn't|is not|aren't|are not) riptiding"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Compares the server's Minecraft version with a version text. `running minecraft \"26\"` matches every 26.x. The v0.1 plugin API only reports Pumpkin's own version, so Carve maps the Pumpkin 0.2.x releases it was built for to their Minecraft version.",
+      "example": "if running above minecraft \"1.21\":\n    send \"new\"",
+      "id": "w6c3_version",
+      "name": "Is running Minecraft",
+      "page": "syntax/w6-chunk3",
+      "patterns": [
+        "running [(minecraft|mc)] [version] %object%",
+        "running (above|newer than|later than) [(minecraft|mc)] [version] %object%",
+        "running (below|older than|earlier than) [(minecraft|mc)] [version] %object%",
+        "(isn't|is not|not) running [(minecraft|mc)] [version] %object%"
       ],
       "since": "unreleased",
       "source": "registry"
@@ -5519,6 +6682,23 @@
     },
     {
       "category": "condition",
+      "description": "Work for players and other entities. `is riding a pig` compares the vehicle's type.",
+      "example": "if player is riding a horse:\n    send \"giddy up\"",
+      "id": "w6c3_silent_riding",
+      "name": "Is silent / Is riding",
+      "page": "syntax/w6-chunk3",
+      "patterns": [
+        "%object% (is|are) silent",
+        "%object% (isn't|is not|aren't|are not) silent",
+        "%object% (is|are) riding",
+        "%object% (isn't|is not|aren't|are not) riding",
+        "%object% (is|are) riding %object%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
       "description": "Whether the player is in a bed.",
       "example": "if player is sleeping:\n    send \"zzz\" to player",
       "id": "sleeping",
@@ -5557,7 +6737,7 @@
         "%item% (is not|isn't) solid"
       ],
       "since": "unreleased",
-      "source": "registry"
+      "source": "hand"
     },
     {
       "category": "condition",
@@ -5698,6 +6878,35 @@
         "%item% (is not|isn't) transparent"
       ],
       "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "condition",
+      "description": "Whether the main-hand item has the unbreakable component.",
+      "example": "if player's tool is unbreakable:\n    send \"forever\"",
+      "id": "w6c3_unbreakable",
+      "name": "Is unbreakable",
+      "page": "syntax/w6-chunk3",
+      "patterns": [
+        "%player%'s (tool|held item) (is|are) unbreakable",
+        "[the] (tool|held item) of %player% (is|are) unbreakable"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "Whether a feature flag (`trade_rebalance`, `minecart_improvements`, `redstone_experiments`, `bundle`) is on. Pumpkin turns them on through datapacks, so this reads the enabled datapacks. `vanilla` is always on.",
+      "example": "if feature \"bundle\" is enabled:\n    send \"bundles\"",
+      "id": "w6c3_feature",
+      "name": "Is using experimental feature",
+      "page": "syntax/w6-chunk3",
+      "patterns": [
+        "[the] [experimental] feature %object% (is|are) enabled",
+        "[the] [experimental] feature %object% (isn't|is not|aren't|are not) enabled",
+        "%object% (is|are) using [the] [experimental] feature %object%"
+      ],
+      "since": "unreleased",
       "source": "registry"
     },
     {
@@ -5836,6 +7045,32 @@
         "%text% (doesn't|does not|don't|do not) contain regex %text%",
         "%text% (matches|match) %text%",
         "%text% (doesn't|does not|don't|do not) match %text%"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "plugin_object_isn_t_is_not_aren_t_are_not_enabled",
+      "name": "plugin %object% (isn't|is not|aren't|are not) enabled",
+      "page": "",
+      "patterns": [
+        "plugin %object% (isn't|is not|aren't|are not) enabled"
+      ],
+      "since": "unreleased",
+      "source": "registry"
+    },
+    {
+      "category": "condition",
+      "description": "",
+      "example": "",
+      "id": "plugin_object_is_are_enabled",
+      "name": "plugin %object% (is|are) enabled",
+      "page": "",
+      "patterns": [
+        "plugin %object% (is|are) enabled"
       ],
       "since": "unreleased",
       "source": "registry"
@@ -6001,6 +7236,33 @@
     },
     {
       "category": "expression",
+      "description": "Makes the world border bigger or smaller by an amount (at once).",
+      "example": "add 10 to world border size\nremove 30 from world border size",
+      "id": "z6_border_change",
+      "name": "Add to world border size",
+      "page": "syntax/w6-chunk6",
+      "patterns": [
+        "add %number% to [the] world border size [of %world%]",
+        "remove %number% from [the] world border size [of %world%]"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "The age of a block that has one (crops, nether wart, ...), and its maximum. Can be set, added to, removed from and reset to 0, clamped to the maximum. Blocks only; entities are not supported yet.",
+      "example": "add 1 to age of block at location(0, 64, 0)",
+      "id": "w6c4_age",
+      "name": "Age of a block",
+      "page": "syntax/w6-chunk4",
+      "patterns": [
+        "[the] [max[imum]] age of %block%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
       "description": "A date relative to now, or the time since or until a date.",
       "example": "if time since {last::%uuid of player%} < 30 seconds:\n    send \"slow down\" to player",
       "id": "ago",
@@ -6125,6 +7387,19 @@
     },
     {
       "category": "expression",
+      "description": "The loom item for a banner pattern type such as `creeper`, `flower`, `globe`, `mojang`, `piglin`, `skull`, `flow`, `guster`, `field_masoned` or `bordure_indented`. Gives none for patterns that have no item.",
+      "example": "give 1 of banner pattern item of \"creeper\" to player",
+      "id": "w6c4_banner_item",
+      "name": "Banner pattern item",
+      "page": "syntax/w6-chunk4",
+      "patterns": [
+        "[the] banner pattern item of %text%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
       "description": "In `on piglin barter`: the item the piglin took and the items it will throw.",
       "example": "on piglin barter:\n    broadcast \"%barter drops%\"",
       "id": "w5c3_barter",
@@ -6161,6 +7436,19 @@
       "patterns": [
         "bed location of %player%",
         "%player%'s bed location"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "The honey level (0 to 5) of a beehive or bee nest block; `max` gives 5. Can be set, added to, removed from and reset (to 0); results stay between 0 and 5.",
+      "example": "set honey level of block at location(0, 64, 0) to 5",
+      "id": "w6c4_honey",
+      "name": "Beehive honey level",
+      "page": "syntax/w6-chunk4",
+      "patterns": [
+        "[the] [max[imum]] [bee[ ]hive|bee nest] honey level of %block%"
       ],
       "since": "unreleased",
       "source": "hand"
@@ -6318,6 +7606,19 @@
       "page": "syntax/w5-chunk4",
       "patterns": [
         "[the] broadcast[ed] message"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "How far a suspicious sand or gravel block has been brushed (0 to 3); `max` gives 3. Can be set, added to, removed from and reset.",
+      "example": "send \"%brushing stage of block at location(0, 64, 0)%\"",
+      "id": "w6c4_brushing",
+      "name": "Brushing stage",
+      "page": "syntax/w6-chunk4",
+      "patterns": [
+        "[the] [max[imum]] brushing (stage|progress) of %block%"
       ],
       "since": "unreleased",
       "source": "hand"
@@ -6496,6 +7797,19 @@
       "patterns": [
         "%item% with (damage|data) [value] %number%",
         "%item% damaged by %number%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "Removes the first value (or the first N values) from a queue variable and gives them. The variable keeps the rest. An empty queue gives none.",
+      "example": "set {_next} to dequeue {_queue}",
+      "id": "w6c4_dequeue",
+      "name": "De-queue",
+      "page": "syntax/w6-chunk4",
+      "patterns": [
+        "(dequeue|de-queue) [[first] %number% element[s] of] %queue variable%"
       ],
       "since": "unreleased",
       "source": "hand"
@@ -6739,6 +8053,21 @@
     },
     {
       "category": "expression",
+      "description": "Part of a list variable: the first or last N values, or the values from position N to M (1-based, inclusive). Asking for more than the list holds gives what there is.",
+      "example": "send \"%first 3 elements of {top::*}%\"",
+      "id": "w6c4_elements",
+      "name": "First, last and ranges of elements",
+      "page": "syntax/w6-chunk4",
+      "patterns": [
+        "[the] first %number% elements of %list%",
+        "[the] last %number% elements of %list%",
+        "[the] elements %number% to %number% of %list%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
       "description": "Food level and saturation, 0 to 20.",
       "example": "if food level of player < 6:\n    send \"You are hungry.\" to player",
       "id": "food",
@@ -6896,6 +8225,21 @@
     },
     {
       "category": "expression",
+      "description": "An item value with a component set, for `give`.",
+      "example": "give diamond sword with custom model data 7 to player",
+      "id": "w6c5_item_with",
+      "name": "Item with component",
+      "page": "syntax/expressions",
+      "patterns": [
+        "%item% with custom model data %number%",
+        "%item% with enchantment glint true|false",
+        "%item% with item model %text%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
       "description": "Every item in an inventory value, `event-inventory` or a player's inventory (armor and off hand included), as a list. Empty slots are left out.",
       "example": "loop items in player's inventory:\n    send \"%loop-value%\" to player",
       "id": "items_in",
@@ -7018,6 +8362,25 @@
     },
     {
       "category": "expression",
+      "description": "Plain records for loot data. Carve can't roll a loot table, so these only carry values around.",
+      "example": "set {_c} to loot context at player's location with luck 2",
+      "id": "w6c5_loot",
+      "name": "Loot tables and loot contexts",
+      "page": "syntax/expressions",
+      "patterns": [
+        "loot table from key %text%",
+        "key of %loot table%",
+        "loot context at %location% [with luck %number%] [with looter %player%] [with looted entity %player%]",
+        "loot location of %loot context%",
+        "loot luck of %loot context%",
+        "looter of %loot context%",
+        "looted entity of %loot context%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
       "description": "The blocks or items in a vanilla tag such as \"logs\", or the tags a block or item belongs to. The tag list is built in.",
       "example": "on join:\n    set {_l::*} to minecraft block tag \"logs\"\n    send \"%size of {_l::*}%\"",
       "id": "minecraft_tag",
@@ -7039,6 +8402,19 @@
       "page": "syntax/w5-chunk5",
       "patterns": [
         "[the] ((max|min)[imum]|starting) enchant[ment] level of %enchantment%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "The list 1, 2, ... N.",
+      "example": "set {_l::*} to 3 times",
+      "id": "z6_times",
+      "name": "N times",
+      "page": "syntax/w6-chunk6",
+      "patterns": [
+        "%number% times"
       ],
       "since": "unreleased",
       "source": "hand"
@@ -7184,6 +8560,21 @@
     },
     {
       "category": "expression",
+      "description": "A whole number, true or false (`yes` and `on` count), or an online player from text. `<none>` if the text does not fit.",
+      "example": "set {_b} to \"yes\" parsed as boolean",
+      "id": "w6c5_parsed",
+      "name": "Parsed as integer, boolean or player",
+      "page": "syntax/expressions",
+      "patterns": [
+        "%text% parsed as integer",
+        "%text% parsed as boolean",
+        "%text% parsed as player"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
       "description": "The number in a text, or `<none>` if it isn't one.",
       "example": "set {_n} to \"42\" parsed as number",
       "id": "parsed_number",
@@ -7223,6 +8614,19 @@
         "%particle% with [a] distribution [of] %vector%",
         "%particle% with [a] velocity [of] %vector%",
         "%particle% with ([a] particle speed [value]|[an] extra value) [of] %number%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "The keys of the persistent data Carve scripts stored on a player, entity, block or item, sorted.",
+      "example": "send \"%persistent data keys of player%\"",
+      "id": "w6c4_data_keys",
+      "name": "Persistent data keys",
+      "page": "syntax/w6-chunk4",
+      "patterns": [
+        "[all] [the] persistent data (keys|tags) of %object%"
       ],
       "since": "unreleased",
       "source": "hand"
@@ -7272,6 +8676,19 @@
     },
     {
       "category": "expression",
+      "description": "The item without its name, lore and enchantments. Type and amount stay.",
+      "example": "set {_i} to diamond sword\nset {_p} to plain {_i}",
+      "id": "z6_plain_item",
+      "name": "Plain item",
+      "page": "syntax/w6-chunk6",
+      "patterns": [
+        "plain %item%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
       "description": "The player of the event, or who ran the command. `<none>` when offline or for the console.",
       "example": "send \"Hi %player%\" to player",
       "id": "player",
@@ -7292,6 +8709,19 @@
       "page": "syntax/w5-chunk5",
       "patterns": [
         "[the] skull of %player|text%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "How long until the entity can use a portal again, as a timespan. Can be set.",
+      "example": "set portal cooldown of player to 7 seconds\nsend \"%portal cooldown of player%\" to player",
+      "id": "z6_portal_cooldown",
+      "name": "Portal cooldown",
+      "page": "syntax/w6-chunk6",
+      "patterns": [
+        "[the] portal cooldown of %entity%"
       ],
       "since": "unreleased",
       "source": "hand"
@@ -7362,6 +8792,19 @@
       "page": "syntax/w5-chunk5",
       "patterns": [
         "[the] projectile force"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "The protocol number of a Java player's client, or of the server when no player is given (777 for Minecraft 26.3).",
+      "example": "send \"%protocol version of player% / %protocol version%\" to player",
+      "id": "z6_protocol_version",
+      "name": "Protocol version",
+      "page": "syntax/w6-chunk6",
+      "patterns": [
+        "protocol version [of %player%]"
       ],
       "since": "unreleased",
       "source": "hand"
@@ -7501,6 +8944,34 @@
     },
     {
       "category": "expression",
+      "description": "How long a bell block has been ringing, as a timespan.",
+      "example": "set {_t} to ringing time of block at player",
+      "id": "z6_ringing_time",
+      "name": "Ringing time",
+      "page": "syntax/w6-chunk6",
+      "patterns": [
+        "ringing time of %block%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "The angle (degrees) and unit axis of a quaternion, and a vector or quaternion turned around an axis by an angle in degrees.",
+      "example": "set {_v} to vector(1, 0, 0) rotated around z by 90",
+      "id": "z6_rotation",
+      "name": "Rotation angle, axis and rotated",
+      "page": "syntax/w6-chunk6",
+      "patterns": [
+        "rotation angle of %quaternion%",
+        "rotation axis of %quaternion%",
+        "%vector/quaternion% rotated around (x|y|z|%vector%) by %number%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
       "description": "The scale attribute of a living entity or player (0.0625 to 16), or the transformation scale of a display entity (a vector). Can be set, added to, removed from and reset.",
       "example": "set scale of player to 2\nreset scale of player",
       "id": "c6_scale",
@@ -7539,6 +9010,36 @@
         "console",
         "me",
         "myself"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "Moves the world spawn with `setworldspawn`; only the main world can be set.",
+      "example": "set spawn of world \"world\" to location(7, 100, 7)",
+      "id": "z6_set_spawn",
+      "name": "Set world spawn",
+      "page": "syntax/w6-chunk6",
+      "patterns": [
+        "set spawn of %world% to %location%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "Reads from the block entity data: the four front lines of a sign, the profile name and texture value of a skull, the entity a spawner spawns, and the loot table seed of a chest-like block. Unset values are none.",
+      "example": "set {_lines::*} to sign text of block at player\nset {_type} to spawner type of block at player",
+      "id": "z6_block_entity",
+      "name": "Sign text, skull owner and texture, spawner type, loot table seed",
+      "page": "syntax/w6-chunk6",
+      "patterns": [
+        "sign (text|lines) of %block%",
+        "skull owner of %block%",
+        "skull texture of %block%",
+        "spawner type of %block%",
+        "loot table seed of %block%"
       ],
       "since": "unreleased",
       "source": "hand"
@@ -7820,6 +9321,19 @@
     },
     {
       "category": "expression",
+      "description": "A timespan as words, like `1 hour and 5 minutes`. Plain `formatted` gives `1:05:00`.",
+      "example": "send \"%{_t} formatted human-readable%\"",
+      "id": "w6c5_human_time",
+      "name": "Timespan, human readable",
+      "page": "syntax/expressions",
+      "patterns": [
+        "%timespan% formatted human-readable"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
       "description": "The title, style and viewers of a boss bar, and the title and viewers of an inventory value. Add or remove players from viewers to show, hide, open or close; the title of an inventory in a variable can be set.",
       "example": "set {_i} to chest inventory with 3 rows named \"Shop\"\nadd player to viewers of {_i}\nsend \"%viewers of {_i}%\"",
       "id": "c6_title_style_viewers",
@@ -7876,6 +9390,65 @@
         "{name::%object%}"
       ],
       "since": "0.1.0",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "`w of q` reads the w part of a quaternion (`x`, `y`, `z` work on vectors and quaternions). `set`, `add` and `remove` change one part of a vector or quaternion variable. Yaw and pitch turn a vector (keeping its length), a player or an entity.",
+      "example": "set {_v} to vector(1, 2, 3)\nset x of {_v} to 5\nadd 2 to y of {_v}",
+      "id": "z6_components",
+      "name": "Vector and quaternion components",
+      "page": "syntax/w6-chunk6",
+      "patterns": [
+        "w of %quaternion%",
+        "set (x|y|z|w) of %variable% to %number%",
+        "set (yaw|pitch) of %entity/vector% to %number%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "The entity something rides, and the list of entities riding it. Read only.",
+      "example": "set {_v} to vehicle of player",
+      "id": "z6_vehicle",
+      "name": "Vehicle and passengers",
+      "page": "syntax/w6-chunk6",
+      "patterns": [
+        "vehicle of %entity%",
+        "passengers of %entity%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "Villager data: level and experience as numbers, the profession as text like `librarian` or `none`. Read only.",
+      "example": "set {_lvl} to villager level of last spawned entity",
+      "id": "z6_villager",
+      "name": "Villager level, experience and profession",
+      "page": "syntax/w6-chunk6",
+      "patterns": [
+        "villager level of %entity%",
+        "villager (experience|xp) of %entity%",
+        "villager profession of %entity%"
+      ],
+      "since": "unreleased",
+      "source": "hand"
+    },
+    {
+      "category": "expression",
+      "description": "Whether the whitelist is on, switching it, and the list of whitelisted players.",
+      "example": "set whitelist to true\nset {_w::*} to whitelisted players",
+      "id": "z6_whitelist",
+      "name": "Whitelist state and players",
+      "page": "syntax/w6-chunk6",
+      "patterns": [
+        "whitelist (enabled|status|state)",
+        "set whitelist [(enabled|status|state)] to (true|false|on|off)",
+        "whitelisted players"
+      ],
+      "since": "unreleased",
       "source": "hand"
     },
     {

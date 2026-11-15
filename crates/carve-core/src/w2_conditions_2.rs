@@ -9,6 +9,7 @@ use crate::compile::CondKind;
 use crate::expr::Expr;
 use crate::host::Host;
 use crate::value::{PlayerRef, Value};
+use crate::w2_conditions_3::norm_id;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum W2Kind {
@@ -179,6 +180,9 @@ pub fn check(kind: W2Kind, a: &Value, b: Option<&Value>, host: &mut dyn Host) ->
             match a {
                 Value::Player(_) => item_id(b).is_some_and(|w| w == "player"),
                 Value::Console => item_id(b).is_some_and(|w| w == "console"),
+                Value::Entity(e) => item_id(b).is_some_and(|w| w == norm_id(&e.kind)),
+                Value::Location { .. } => crate::w6_chunk3::block_id_at(a, host)
+                    .is_some_and(|id| item_id(b).is_some_and(|w| w == id)),
                 _ => matches!((item_id(a), item_id(b)), (Some(x), Some(y)) if x == y),
             }
         }
@@ -186,172 +190,23 @@ pub fn check(kind: W2Kind, a: &Value, b: Option<&Value>, host: &mut dyn Host) ->
     }
 }
 
-const WOODS: &[&str] = &[
-    "oak", "spruce", "birch", "jungle", "acacia", "dark_oak", "mangrove", "cherry", "pale_oak", "bamboo",
-];
-
-/// `oak_planks`, `stripped_birch_log`, ... Returns the part after the wood name.
-fn wood_part(id: &str) -> Option<&str> {
-    let id = id.strip_prefix("stripped_").unwrap_or(id);
-    WOODS.iter().find_map(|w| id.strip_prefix(w)?.strip_prefix('_'))
-}
-
-/// Items a player eats or drinks (food, potions, milk, honey).
+/// Items a player eats or drinks (a food or consumable component in the game data).
 pub fn is_edible(id: &str) -> bool {
-    matches!(
-        id,
-        "apple"
-            | "golden_apple"
-            | "enchanted_golden_apple"
-            | "bread"
-            | "beef"
-            | "cooked_beef"
-            | "porkchop"
-            | "cooked_porkchop"
-            | "chicken"
-            | "cooked_chicken"
-            | "mutton"
-            | "cooked_mutton"
-            | "rabbit"
-            | "cooked_rabbit"
-            | "cod"
-            | "cooked_cod"
-            | "salmon"
-            | "cooked_salmon"
-            | "tropical_fish"
-            | "pufferfish"
-            | "carrot"
-            | "golden_carrot"
-            | "potato"
-            | "baked_potato"
-            | "poisonous_potato"
-            | "beetroot"
-            | "beetroot_soup"
-            | "melon_slice"
-            | "sweet_berries"
-            | "glow_berries"
-            | "cookie"
-            | "pumpkin_pie"
-            | "mushroom_stew"
-            | "rabbit_stew"
-            | "suspicious_stew"
-            | "dried_kelp"
-            | "rotten_flesh"
-            | "spider_eye"
-            | "chorus_fruit"
-            | "honey_bottle"
-            | "milk_bucket"
-            | "potion"
-    )
+    crate::w6_chunk3_data::FOOD.binary_search(&id).is_ok()
 }
 
+/// Items a furnace burns (a fuel component in the game data).
 fn is_fuel(id: &str) -> bool {
-    if matches!(
-        id,
-        "coal"
-            | "charcoal"
-            | "coal_block"
-            | "lava_bucket"
-            | "blaze_rod"
-            | "dried_kelp_block"
-            | "stick"
-            | "bamboo"
-            | "scaffolding"
-            | "bowl"
-            | "ladder"
-            | "crafting_table"
-            | "chest"
-            | "trapped_chest"
-            | "barrel"
-            | "bookshelf"
-            | "chiseled_bookshelf"
-            | "lectern"
-            | "jukebox"
-            | "note_block"
-            | "daylight_detector"
-            | "loom"
-            | "composter"
-            | "cartography_table"
-            | "fletching_table"
-            | "smithing_table"
-            | "bow"
-            | "crossbow"
-            | "fishing_rod"
-            | "shield"
-            | "wooden_sword"
-            | "wooden_pickaxe"
-            | "wooden_axe"
-            | "wooden_shovel"
-            | "wooden_hoe"
-    ) {
-        return true;
-    }
-    if id.ends_with("_wool") || id.ends_with("_carpet") || id.ends_with("_banner") || id.ends_with("_sapling")
-    {
-        return true;
-    }
-    wood_part(id).is_some_and(|p| {
-        matches!(
-            p,
-            "planks"
-                | "log"
-                | "wood"
-                | "slab"
-                | "stairs"
-                | "fence"
-                | "fence_gate"
-                | "door"
-                | "trapdoor"
-                | "pressure_plate"
-                | "button"
-                | "sign"
-                | "hanging_sign"
-                | "boat"
-                | "chest_boat"
-        )
-    })
+    crate::w6_chunk3_data::FUEL.binary_search(&id).is_ok()
 }
 
 fn is_fire_resistant(id: &str) -> bool {
-    id.starts_with("netherite_") || id == "ancient_debris"
+    crate::w6_chunk3_data::FIRE_RESISTANT.binary_search(&id).is_ok()
 }
 
+/// Blocks fire can burn, and the items that place them.
 fn is_flammable(id: &str) -> bool {
-    if matches!(
-        id,
-        "hay_block"
-            | "bookshelf"
-            | "chiseled_bookshelf"
-            | "tnt"
-            | "coal_block"
-            | "dried_kelp_block"
-            | "short_grass"
-            | "grass"
-            | "tall_grass"
-            | "fern"
-            | "large_fern"
-            | "vine"
-            | "dead_bush"
-            | "bamboo"
-            | "scaffolding"
-            | "bee_nest"
-            | "beehive"
-            | "lectern"
-            | "composter"
-            | "loom"
-            | "target"
-    ) {
-        return true;
-    }
-    if id.ends_with("_wool") || id.ends_with("_carpet") || id.ends_with("_leaves") {
-        return true;
-    }
-    wood_part(id).is_some_and(|p| {
-        matches!(
-            p,
-            "planks" | "log" | "wood" | "slab" | "stairs" | "fence" | "fence_gate"
-        )
-    })
+    crate::w6_chunk3_data::FLAMMABLE_BLOCKS.binary_search(&id).is_ok()
 }
 
 use crate::player_flags::PlayerFlag;

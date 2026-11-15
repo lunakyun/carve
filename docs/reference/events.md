@@ -7,7 +7,7 @@ editLink: false
 
 # Events
 
-Events and other top-level lines: what starts a trigger. 152 entries. Search all of them on the [reference home](./index.md).
+Events and other top-level lines: what starts a trigger. 167 entries. Search all of them on the [reference home](./index.md).
 
 In a pattern, `%type%` is a value, `[...]` is optional and `(a|b)` means one of the words.
 
@@ -40,6 +40,21 @@ on arm swing
 A player swings their arm, for example when hitting air. Has `player`.
 
 Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Armor change {#armor_change}
+
+```carve
+on armor change
+```
+
+A player puts on, takes off or swaps armor. `event-slot` (helmet, chestplate, leggings or boots), `event-item` and `past event-item`. Checked every 4 ticks while a script uses it.
+
+```carve
+on armor change:
+    send "%event-slot% changed" to player
+```
+
+Since **unreleased** · Guide: [w6-chunk1](../syntax/w6-chunk1.md)
 
 ## Bed enter {#bed_enter}
 
@@ -543,6 +558,21 @@ An item is placed in an enchanting table and the offers are shown. Has `player`.
 
 Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
 
+## Entity break door {#entity_break_door}
+
+```carve
+on entity break door
+```
+
+Any mob breaks down a door. `on zombie break door` only runs for zombie, husk, drowned and zombie villager. Can be cancelled.
+
+```carve
+on entity break door:
+    cancel event
+```
+
+Since **unreleased** · Guide: [w6-chunk1](../syntax/w6-chunk1.md)
+
 ## Entity breed {#entity_breed}
 
 ```carve
@@ -632,6 +662,21 @@ on experience cooldown change
 A player's experience pickup cooldown changes. Has `player`.
 
 Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Experience spawn {#experience_spawn}
+
+```carve
+on experience spawn
+```
+
+An experience orb spawns. `event-location` and `event-entity`. Can be cancelled.
+
+```carve
+on experience spawn:
+    broadcast "orb at %event-location%"
+```
+
+Since **unreleased** · Guide: [w6-chunk1](../syntax/w6-chunk1.md)
 
 ## Explode {#explode}
 
@@ -997,6 +1042,21 @@ on join:
 
 Since **0.1.0** · Guide: [triggers](../syntax/triggers.md)
 
+## Jump {#jump}
+
+```carve
+on jump
+```
+
+A player starts a jump (the jump bit of the player input goes up). Players only. Adding the first one needs a restart.
+
+```carve
+on jump:
+    send "Boing" to player
+```
+
+Since **unreleased** · Guide: [w6-chunk1](../syntax/w6-chunk1.md)
+
 ## Kick {#kick}
 
 ```carve
@@ -1249,6 +1309,22 @@ on placeholder request for prefix "shop":
 
 Since **unreleased** · Guide: [w4-placeholders](../syntax/w4-placeholders.md)
 
+## Player chunk enter {#player_chunk_enter}
+
+```carve
+on player chunk enter
+on player chunk enters
+```
+
+A player moves into another chunk. `event-chunk-x`, `event-chunk-z` and the `event-previous-chunk-x` and `event-previous-chunk-z` it came from. Adding the first one needs a restart.
+
+```carve
+on player chunk enter:
+    send "chunk %event-chunk-x% %event-chunk-z%" to player
+```
+
+Since **unreleased** · Guide: [w6-chunk1](../syntax/w6-chunk1.md)
+
 ## Player input {#player_input}
 
 ```carve
@@ -1258,6 +1334,21 @@ on player input
 A player presses or releases a movement key. Has `player`.
 
 Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Player pickup arrow {#player_pickup_arrow}
+
+```carve
+on player pickup arrow
+```
+
+A player picks up an arrow. `event-entity` is the arrow. Can be cancelled. Not verified in-game.
+
+```carve
+on player pickup arrow:
+    send "Got it" to player
+```
+
+Since **unreleased** · Guide: [w6-chunk1](../syntax/w6-chunk1.md)
 
 ## Portal {#portal}
 
@@ -1305,6 +1396,37 @@ on preparing craft:
 ```
 
 Since **unreleased** · Guide: [w5-chunk1](../syntax/w5-chunk1.md)
+
+## Pressure plate {#pressure_plate}
+
+```carve
+on pressure plate
+on trip
+```
+
+A pressure plate is pressed. `event-location` and `event-power`. Can be cancelled. Tripwires fire no event on Pumpkin.
+
+```carve
+on pressure plate:
+    broadcast "pressed at %event-location%"
+```
+
+Since **unreleased** · Guide: [w6-chunk1](../syntax/w6-chunk1.md)
+
+## Projectile collide {#projectile_collide}
+
+```carve
+on projectile collide
+```
+
+An arrow hits an entity. `event-entity` is the arrow, `event-hit-entity` what it hit, `event-location` the point. Can be cancelled. Not verified in-game.
+
+```carve
+on projectile collide:
+    broadcast "hit a %type of event-hit-entity%"
+```
+
+Since **unreleased** · Guide: [w6-chunk1](../syntax/w6-chunk1.md)
 
 ## Projectile hit {#projectile_hit}
 
@@ -1396,6 +1518,37 @@ An entity would die and a totem of undying may save it. Can be cancelled.
 
 Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
 
+## Riptide {#riptide}
+
+```carve
+on riptide
+```
+
+A player launches with a riptide trident. `event-item` is the trident. Can be cancelled. Not verified in-game.
+
+```carve
+on riptide:
+    send "Wheee" to player
+```
+
+Since **unreleased** · Guide: [w6-chunk1](../syntax/w6-chunk1.md)
+
+## Script unload {#script_unload}
+
+```carve
+on unload
+on script unload
+```
+
+Runs when the scripts are about to be replaced by `/carve reload`, and when the server stops.
+
+```carve
+on unload:
+    send "bye" to console
+```
+
+Since **unreleased** · Guide: [w6-chunk1](../syntax/w6-chunk1.md)
+
 ## Send command list {#send_command_list}
 
 ```carve
@@ -1415,6 +1568,21 @@ on server list ping
 A client pings the server from its server list.
 
 Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Server stop {#server_stop}
+
+```carve
+on server stop
+```
+
+Runs when the server stops (the plugin unloads).
+
+```carve
+on server stop:
+    send "stopping" to console
+```
+
+Since **unreleased** · Guide: [w6-chunk1](../syntax/w6-chunk1.md)
 
 ## Sheep regrow wool {#sheep_regrow_wool}
 
@@ -1494,6 +1662,21 @@ A world's spawn point changes.
 
 Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
 
+## Spectate {#spectate}
+
+```carve
+on spectate
+```
+
+A player in spectator mode starts spectating an entity. `event-entity` is the target. Checked every 2 ticks while a script uses it.
+
+```carve
+on spectate:
+    send "Watching a %type of event-entity%" to player
+```
+
+Since **unreleased** · Guide: [w6-chunk1](../syntax/w6-chunk1.md)
+
 ## Sponge absorb {#sponge_absorb}
 
 ```carve
@@ -1540,6 +1723,22 @@ on start smelt
 A furnace starts smelting an item.
 
 Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## Step on {#step_on}
+
+```carve
+on step on <block>
+on walk on <block>
+```
+
+A player moves onto a different block that is `<block>`. `event-block` is its id and `event-location` its position. Adding the first one needs a restart.
+
+```carve
+on step on stone:
+    send "Stone!" to player
+```
+
+Since **unreleased** · Guide: [w6-chunk1](../syntax/w6-chunk1.md)
 
 ## Swap hand items {#swap-hand-items}
 
@@ -1725,6 +1924,36 @@ on weather change to rain
 The weather in a world changes. Can be cancelled.
 
 Since **unreleased** · Guide: [triggers](../syntax/triggers.md)
+
+## World border bounds change {#world_border_bounds_change}
+
+```carve
+on world border bounds change
+```
+
+The target size of a world border changes. `event-world`, `event-old-size`, `event-new-size`. Found by checking every tick while a script uses it.
+
+```carve
+on world border bounds change:
+    broadcast "%event-old-size% to %event-new-size%"
+```
+
+Since **unreleased** · Guide: [w6-chunk1](../syntax/w6-chunk1.md)
+
+## World border center change {#world_border_center_change}
+
+```carve
+on world border center change
+```
+
+The center of a world border moves. `event-world`, `event-old-x`, `event-old-z`, `event-new-x`, `event-new-z`.
+
+```carve
+on world border center change:
+    broadcast "now at %event-new-x% %event-new-z%"
+```
+
+Since **unreleased** · Guide: [w6-chunk1](../syntax/w6-chunk1.md)
 
 ## World change {#world-change}
 

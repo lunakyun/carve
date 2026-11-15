@@ -137,27 +137,27 @@ pub const W2_CONDITION_PATTERNS: &[(&str, CondKind)] = &[
         CondKind::W3(W2Kind::Instant(true)),
     ),
     (
-        "%item% is solid",
+        "%object% is solid",
         CondKind::W3(W2Kind::Block(BlockTrait::Solid, false)),
     ),
     (
-        "%item% (is not|isn't) solid",
+        "%object% (is not|isn't) solid",
         CondKind::W3(W2Kind::Block(BlockTrait::Solid, true)),
     ),
     (
-        "%item% is transparent",
+        "%object% is transparent",
         CondKind::W3(W2Kind::Block(BlockTrait::Transparent, false)),
     ),
     (
-        "%item% (is not|isn't) transparent",
+        "%object% (is not|isn't) transparent",
         CondKind::W3(W2Kind::Block(BlockTrait::Transparent, true)),
     ),
     (
-        "%item% is passable",
+        "%object% is passable",
         CondKind::W3(W2Kind::Block(BlockTrait::Passable, false)),
     ),
     (
-        "%item% (is not|isn't) passable",
+        "%object% (is not|isn't) passable",
         CondKind::W3(W2Kind::Block(BlockTrait::Passable, true)),
     ),
     (
@@ -177,11 +177,11 @@ pub const W2_CONDITION_PATTERNS: &[(&str, CondKind)] = &[
         CondKind::W3(W2Kind::WithinBox(true)),
     ),
     (
-        "%object% is within %world%",
+        "%object% is within %object%",
         CondKind::W3(W2Kind::WithinWorld(false)),
     ),
     (
-        "%object% (is not|isn't) within %world%",
+        "%object% (is not|isn't) within %object%",
         CondKind::W3(W2Kind::WithinWorld(true)),
     ),
     (
