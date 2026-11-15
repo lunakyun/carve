@@ -200,7 +200,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ On Portal — `on portal` — `player` when the entity is a player
 - 🟡 On Portal Create — `on portal create` — `event-text` is the portal type; no position value yet
 - ✅ On Portal Enter — `on portal enter` — `player` when the entity is a player
-- ⬜ On Prepare Craft
+- ✅ On Prepare Craft — `on preparing craft`, `event-item` (result) and `event-recipe`; cancellable
 - ⛔ On Pressure Plate / Trip — no pressure plate event in the plugin API; `on redstone` sees the power change
 - ⛔ On Projectile Collide — no projectile collide event in Pumpkin (see On Projectile Hit)
 - 🟡 On Projectile Hit ⭐ — no projectile type
@@ -273,14 +273,14 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Break Block ⭐ — `break block at <loc>`
 - ✅ Broadcast — also `broadcast "x" to world "name"`
 - ⛔ Cancel Active Item (no way to stop item use in the plugin API)
-- ⬜ Cancel Command Cooldown
-- ⬜ Cancel Drops
+- ✅ Cancel Command Cooldown — with `cooldown:`, `cooldown message:` and `cooldown bypass:` (in memory; `cooldown storage:` is an error)
+- ✅ Cancel Drops — `on break` and `on death`; items, xp or both
 - ✅ Cancel Event — before the first wait
 - 🟡 Change: Set/Add/Remove/Remove All/Delete/Reset ⭐ — set/add/remove/delete on variables and lists, including list literals like `set {x::*} to 1, 2 and 3`; no `remove all`, `reset`, or changing other expressions (health is separate)
 - ⛔ Charge Creeper (creeper state is not exposed)
 - ⛔ Charge Entity (creeper state is not exposed)
 - ⛔ Clear Entity Storage (no bee or entity storage in Pumpkin)
-- ⬜ Color Items
+- ✅ Color Items — the held item (`dye player's tool red`)
 - ✅ Command — `execute console command`, `execute command "x" [by player]`, `make player execute command "x"`
 - 🟡 Conditional / Unconditional — conditions on their own line stop the trigger
 - ✅ Connect (`connect player to server "host" [on port n]`)
@@ -290,13 +290,13 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Copy Into Variable (`copy {a::*} into {b::*}`)
 - 🟡 Damage/Heal/Repair — `heal`, `heal by`, `damage player by`; no repair
 - ⛔ Dance (no parrot or allay dance state in the plugin API)
-- ⬜ Detonate Entities
+- ✅ Detonate Entities — creepers, primed TNT and TNT minecarts
 - ✅ Do If ⭐ — `<effect> if <condition>`
-- ⬜ Drop
+- ✅ Drop — items at a location or the event player, `without velocity`
 - 🟡 Enable/Disable/Unload/Reload Script — through `/carve enable/disable/reload`, not as an effect
 - ✅ Enchant/Disenchant — `enchant player's tool with sharpness 5`, `disenchant player's tool` (held item)
 - ⛔ Enderman Teleport (enderman teleport is not exposed)
-- ⬜ Enforce Whitelist
+- ✅ Enforce Whitelist — kicks online players who are not whitelisted or op
 - ✅ Entity Despawn — `despawn`, `remove` or `delete` an entity
 - 🟡 Entity Visibility (players only: `hide p from q`, `reveal p to q`)
 - 🟡 Equip (players, one item: `equip player with diamond helmet`)
@@ -306,14 +306,14 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Equippable Component - Shear Off (no equippable component events)
 - ⛔ Equippable Component - Swap Equipment (no equippable component events)
 - ✅ Exit — `exit loop`, `stop`
-- ⬜ Expand/Shrink World Border
-- ⬜ Explode Creeper
+- ✅ Expand/Shrink World Border — diameter or radius, `by`/`to`, `over <time>`
+- ✅ Explode Creeper — ignite, stop ignition, instantly explode
 - ✅ Explosion ⭐ — `create explosion of force 3 [with fire] at ...` (plugin API only; Pumpkin has no /explode command)
-- ⬜ Fail Command Execution
+- ✅ Fail Command Execution — sends the error and stops the trigger
 - ✅ Feed ⭐ — `feed player [by n]`
 - ⛔ Force Attack (no attack call in the plugin API)
 - ⛔ Force Eating (no item use call in the plugin API)
-- ⬜ Force Enchantment Glint
+- ✅ Force Enchantment Glint — held item; on, off or reset
 - ⛔ Force Panda On Back (panda state is not exposed)
 - ✅ Force Respawn
 - ⛔ Generate Loot — the plugin API has a loot event but no call to roll a loot table into items
@@ -323,22 +323,22 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Ignite/Extinguish — `ignite player for 5 seconds`, `set player on fire`, `extinguish player` (players only)
 - ⛔ Insert Entity Storage — no bee hive or entity storage API
 - ⛔ Item Despawn — no item-entity despawn timer in the plugin API
-- ⬜ Item Tooltips
-- ⬜ Keep Inventory / Experience
+- ⛔ Item Tooltips — Pumpkin's tooltip_display component keeps no data, so hidden tooltips never reach the client
+- ✅ Keep Inventory / Experience — `on death`; Carve turns keep_inventory on for that death only (inventory checked in game, experience in unit tests)
 - ✅ Kick ⭐ — `kick player due to "x"`
 - ✅ Kill — players, entities and lists of them
 - ✅ Knockback — players only (`knock p away from loc [with strength n]`)
-- ⬜ Launch firework
-- ⬜ Leash entities
+- 🟡 Launch firework — a plain rocket launches and bursts; Pumpkin ignores firework data on summoned rockets, so the effect and `timed` do nothing
+- 🟡 Leash entities — the mob's leash NBT is written, but Pumpkin 0.2.2 does not attach it while loaded (no lead is sent)
 - ✅ Lightning ⭐ — `strike lightning [effect] at ...`
-- ⬜ Load Server Icon
+- ✅ Load Server Icon — a PNG from Carve's data folder; `set the server icon to the last loaded server icon` in `on server list ping`
 - 🟡 Load World — `create world "x" [with environment nether]`, `load world "x"`, `unload world "x"`; works only on hosts that can create worlds (Pumpkin 0.1 cannot, the script gets an error)
 - 🟡 Locally Suppress Warning — accepted and ignored; Carve has no such warnings
 - ✅ Log — `log "x" [to file "name"]` appends to `logs/<name>`
 - ✅ Look At — `make player look at <location>` (players)
-- ⬜ Make Adult/Baby
+- ✅ Make Adult/Baby
 - ⛔ Make Allay Duplicate — no allay API
-- ⬜ Make Breedable
+- ✅ Make Breedable — breedable clears the breeding cooldown, unbreedable sets 5 minutes (Pumpkin has no age lock)
 - ⛔ Make Disturbance — the plugin API cannot emit game events
 - ⛔ Make Egg Hatch — no egg hatch API
 - ⛔ Make Entity Scream — no goat scream API
@@ -352,14 +352,14 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Make Panda Roll — no panda API
 - ⛔ Make Panda Sneeze — no panda API
 - 🟡 Make Say — runs the vanilla `say` command as the player, so it shows as a say message, not normal chat
-- ⬜ Make Sign Glow
+- ✅ Make Sign Glow — front text of the sign at a location
 - ✅ Message — `send ... [to ...]`
 - ✅ op/deop ⭐ — `op player`, `deop player`
 - 🟡 Open Book — opens the written book already in the player's main or off hand; cannot open an arbitrary item
 - 🟡 Open/Close Inventory ⭐ — `open {_gui} to player` and `open chest with 3 rows named "x" to player` work; `close` compiles but Pumpkin's plugin API v0.1 cannot close a window (v0.2 can)
 - ⛔ Open/Close Lid — no chest or barrel lid API
-- ⬜ Pathfind
-- ⬜ Persistent
+- ✅ Pathfind — to a location or entity, `at speed`; Carve keeps steering for up to a minute; `stop pathfinding`
+- ✅ Persistent — mobs, through PersistenceRequired
 - ⛔ Play Dead — no death animation call in the plugin API
 - 🟡 Play Effect — particles only: `play 5 flame particles at player` (more options: syntax/skbee-particles-display.md)
 - 🟡 Play or Draw an Effect ⭐ — particles with `spread`, `offset x, y, z`, `speed`, `extra`, `force`; dust color, block and item data parse but the server cannot send them (see syntax/skbee-particles-display.md)
@@ -367,10 +367,10 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Player Info Visibility — no tab-list visibility API in the plugin API
 - ✅ Player Visibility — `hide %player% [from %player%]`, `reveal %player% [to %player%]`
 - 🟡 Poison/Cure — `poison %player% [for %timespan%]`, `cure %player%`; via the `effect` command
-- ⬜ Potion Effect - Ambient
-- ⬜ Potion Effect - Icon
-- ⬜ Potion Effect - Infinite
-- ⬜ Potion Effect - Particles
+- ✅ Potion Effect - Ambient — the player's active effects
+- ✅ Potion Effect - Icon — the player's active effects
+- ✅ Potion Effect - Infinite — the player's active effects
+- ✅ Potion Effect - Particles — the player's active effects
 - 🟡 Potion Effects ⭐ — `remove all potion effects from player`, `remove speed potion effect from player`; players only
 - ⛔ Pull In Hooked Entity — no fishing hook API
 - ✅ Push ⭐ — `push <entity or player> up/down/north/south/east/west/forward/backward [with speed N]`, `away from` / `towards <place>`
@@ -418,19 +418,19 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 
 ## Conditions (170)
 
-- ⬜ Allay Can Duplicate
-- ⬜ Alphanumeric
-- ⬜ Beehive Is Sedated
-- ⬜ Bell Is Resonating
-- ⬜ Bell Is Ringing
-- ⬜ Brewing Will Consume Fuel
-- ⬜ Camel Is Dashing
-- ⬜ Can Age
-- ⬜ Can Breed
-- ⬜ Can Build
-- ⬜ Can Despawn
+- ⛔ Allay Can Duplicate — the plugin API has no allay data
+- ✅ Alphanumeric
+- ✅ Beehive Is Sedated — a campfire up to 5 blocks below
+- ⛔ Bell Is Resonating — Pumpkin never resonates bells (its raider check is a TODO) and the API does not expose it
+- ✅ Bell Is Ringing
+- ⛔ Brewing Will Consume Fuel — Pumpkin's brewing fuel event has no consume flag
+- ⛔ Camel Is Dashing — the plugin API has no camel data
+- ✅ Can Age — mobs with a baby form
+- ✅ Can Breed
+- ✅ Can Build
+- ⛔ Can Despawn — the plugin API can't read a mob's persistence flag
 - 🟡 Can Fly (follows game mode: creative and spectator)
-- ⬜ Can Hold
+- ✅ Can Hold
 - ✅ Can Pick Up Items — `player can pick up items` (players; false in spectator)
 - ✅ Can See — `player can see {_other}`, follows `hide`/`reveal`
 - ✅ Can See Chat Colors — `player can see chat colors`, from the client settings

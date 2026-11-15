@@ -342,8 +342,9 @@ class TestBot extends Bot {
   // Right-click air with the held item.
   useItem (hand = 0, yaw = 0, pitch = 0) { this.send('use_item', varint(hand), varint(this.seq++), f32(yaw, pitch)) }
   // Right-click face `face` (0 down, 1 up, 2 north, 3 south, 4 west, 5 east) of the block at x y z.
-  useOn (x, y, z, face = 1, hand = 0) {
-    this.send('use_item_on', varint(hand), blockPos(x, y, z), varint(face), f32(0.5, 1, 0.5), [0, 0], varint(this.seq++))
+  // `cursor` is where on the block face the click lands (0..1 per axis).
+  useOn (x, y, z, face = 1, hand = 0, cursor = [0.5, 1, 0.5]) {
+    this.send('use_item_on', varint(hand), blockPos(x, y, z), varint(face), f32(...cursor), [0, 0], varint(this.seq++))
   }
   // Place the held block at x y z by clicking the top of the block below it.
   place (x, y, z) { this.useOn(x, y - 1, z, 1) }

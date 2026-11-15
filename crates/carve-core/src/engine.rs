@@ -495,6 +495,7 @@ pub struct Engine {
     /// Event values changed by the run in progress (`w2_events_4`).
     pub(crate) ext_out: Vec<(u8, Value)>,
     w5: crate::w2_expressions_5::State,
+    pub(crate) w5c1: Box<crate::w5_chunk1::State>,
     /// Nesting of placeholder scripts that parse placeholders themselves.
     ph_depth: u8,
 }
@@ -596,6 +597,7 @@ impl Engine {
             boards: Default::default(),
             ext_out: Vec::new(),
             w5: Default::default(),
+            w5c1: Default::default(),
             ph_depth: 0,
         }
     }
@@ -796,12 +798,23 @@ impl Engine {
                 });
             }
         };
+        if let Some(cd) = &def.cooldown
+            && let Some(msg) = self.w5c1_cooldown_gate(&name, cd, player.as_ref(), host)
+        {
+            return CommandOutcome::Usage(msg);
+        }
         let mut ctx = EventCtx::console();
         ctx.player = player;
         ctx.sender = sender;
         ctx.args = args;
         let ex = Exec::new(&trig, ctx);
         self.start(ex, host);
+        if def.cooldown.is_some() {
+            self.w5c1_command_done();
+        }
+        if let Some(msg) = self.w5c1.failed.take() {
+            return CommandOutcome::Usage(msg);
+        }
         CommandOutcome::Ran
     }
 
@@ -1474,6 +1487,7 @@ impl Engine {
             Cond::Nbt(n) => self.nbt_cond(n, ex, host),
             Cond::Ent(c) => self.ent_cond(c, ex, host),
             Cond::W5c2(c) => self.w5c2_cond(c, ex, host),
+            Cond::W5c1(c) => self.w5c1_cond(c, ex, host),
             Cond::Skb(c) => self.skb_cond(c, ex, host),
             Cond::Server(c) => self.server_cond(c, ex, host),
             Cond::HasPerm { player, node, negate } => {
@@ -2670,6 +2684,7 @@ impl Engine {
             Effect::Sbt(s) => self.sbt_effect(s, ex, host)?,
             Effect::Nbt(n) => self.nbt_effect(n, ex, host)?,
             Effect::Ent(f) => self.ent_effect(f, ex, host)?,
+            Effect::W5c1(f) => self.w5c1_effect(f, ex, host)?,
             Effect::Combat(f) => self.combat_effect(f, ex, host)?,
             Effect::Skb(s) => self.skb_effect(s, ex, host)?,
             Effect::Server(f) => self.server_effect(f, ex, host)?,

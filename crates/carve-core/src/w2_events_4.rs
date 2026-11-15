@@ -52,6 +52,8 @@ pub enum ExtEvent {
     ZombieBreakDoor,
     /// `on placeholder request for prefix "x"` (see `placeholders`).
     PlaceholderRequest,
+    /// `on preparing craft` (see `w5_chunk1`).
+    PrepareCraft,
 }
 
 /// One named value of an event. Writable ones can be changed with `set`.
@@ -71,6 +73,14 @@ macro_rules! w {
 /// Header texts (after `on `) and the event they name.
 const NAMES: &[(&str, ExtEvent)] = &[
     ("server list ping", ExtEvent::ServerListPing),
+    ("prepare craft", ExtEvent::PrepareCraft),
+    ("preparing craft", ExtEvent::PrepareCraft),
+    ("prepare crafting", ExtEvent::PrepareCraft),
+    ("preparing crafting", ExtEvent::PrepareCraft),
+    ("beginning craft", ExtEvent::PrepareCraft),
+    ("beginning crafting", ExtEvent::PrepareCraft),
+    ("player preparing craft", ExtEvent::PrepareCraft),
+    ("player beginning craft", ExtEvent::PrepareCraft),
     ("list ping", ExtEvent::ServerListPing),
     ("server ping", ExtEvent::ServerListPing),
     ("ping", ExtEvent::ServerListPing),
@@ -154,7 +164,9 @@ impl ExtEvent {
                 w!("players"),
                 r!("hostname"),
                 r!("address"),
+                w!("icon"),
             ],
+            PrepareCraft => &[r!("item"), r!("recipe")],
             SheepRegrowWool => &[r!("entity")],
             Shoot => &[r!("entity"), r!("weapon"), r!("force")],
             SignChange => &[
@@ -222,6 +234,7 @@ impl ExtEvent {
                 | VehicleDestroy
                 | VehicleEnter
                 | VehicleExit
+                | PrepareCraft
         )
     }
 }

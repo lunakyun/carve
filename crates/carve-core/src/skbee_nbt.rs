@@ -965,6 +965,8 @@ pub enum ItemComp {
     ItemModel,
     /// Enchantments kept in an enchanted book (`w5_chunk6`).
     StoredEnchantments,
+    /// Leather and wolf armor color (`dye`, see `w5_chunk1`).
+    DyedColor,
 }
 
 const RARITIES: [&str; 4] = ["common", "uncommon", "rare", "epic"];
@@ -1005,6 +1007,7 @@ impl ItemComp {
             ItemComp::GlintOverride => "glint override",
             ItemComp::ItemModel => "item model",
             ItemComp::StoredEnchantments => "stored enchantments",
+            ItemComp::DyedColor => "dye color",
         }
     }
 
@@ -1022,6 +1025,14 @@ impl ItemComp {
                 .map_or(Value::None, |r| Value::Text((*r).into())),
             ItemComp::GlintOverride => b.first().map_or(Value::None, |x| Value::Bool(*x != 0)),
             ItemComp::StoredEnchantments => crate::w5_chunk6::stored_decode(b),
+            ItemComp::DyedColor => match b.get(..4) {
+                Some(x) => Value::Color {
+                    r: x[1],
+                    g: x[2],
+                    b: x[3],
+                },
+                None => Value::None,
+            },
             ItemComp::ItemModel => {
                 let Some(n) = get_varint(b, &mut at) else {
                     return Value::None;
@@ -1076,6 +1087,14 @@ impl ItemComp {
                 Value::Bool(b) => out.push(u8::from(*b)),
                 _ => return Err(bad()),
             },
+            ItemComp::DyedColor => {
+                let (r, g, b) = match v {
+                    Value::Color { r, g, b } => (*r, *g, *b),
+                    Value::Text(t) => crate::colors::name_rgb(t).ok_or_else(bad)?,
+                    _ => return Err(bad()),
+                };
+                out.extend_from_slice(&[0, r, g, b]);
+            }
             ItemComp::ItemModel => {
                 let t = v.to_string();
                 let t = if t.contains(':') {

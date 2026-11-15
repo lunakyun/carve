@@ -9,7 +9,7 @@ use pumpkin_plugin_api::{DamageType, uuid};
 use super::{WasmHost, text, world_name};
 use crate::ents;
 
-fn uuid_of(e: &Entity) -> String {
+pub(super) fn uuid_of(e: &Entity) -> String {
     uuid::to_string(e.get_uuid())
 }
 

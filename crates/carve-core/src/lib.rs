@@ -72,6 +72,7 @@ pub mod w4_functions;
 pub mod w4_sections;
 pub mod w4_skbee_raytrace_world;
 pub mod w4_tags_data;
+pub mod w5_chunk1;
 pub mod w5_chunk2;
 pub mod w5_chunk3;
 pub mod w5_chunk5;

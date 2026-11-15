@@ -189,9 +189,13 @@ ext!(
             num(d.num_players),
             Value::Text(d.hostname.clone()),
             Value::Text(format!("{}:{}", d.address.host, d.address.port)),
+            d.favicon.clone().map_or(Value::None, Value::Text),
         ]
     ),
     apply = |d, out| {
+        if let Some(t) = out_text(out, 5) {
+            d.favicon = Some(t);
+        }
         if let Some(t) = out_text(out, 0) {
             d.motd = text(&t);
         }
@@ -201,6 +205,26 @@ ext!(
         if let Some(n) = out_num(out, 2) {
             d.num_players = n.max(0.0) as u32;
         }
+    }
+);
+
+ext!(
+    PrepareItemCraftEvent,
+    ExtEvent::PrepareCraft,
+    cancel = can!(),
+    build = |_st, _host, d| {
+        let id = d.recipe_id.strip_prefix("minecraft:").unwrap_or(&d.recipe_id);
+        (
+            Some(player_ref(&d.player)),
+            vec![
+                Value::Item {
+                    id: id.to_string(),
+                    count: 1,
+                    meta: None,
+                },
+                Value::Text(d.recipe_id.clone()),
+            ],
+        )
     }
 );
 
@@ -633,6 +657,7 @@ fn listen<E: ExtAccess + Send + Sync + 'static>(ctx: &Context) {
 
 pub(crate) fn register_all(ctx: &Context) {
     listen::<ServerListPingEvent>(ctx);
+    listen::<PrepareItemCraftEvent>(ctx);
     listen::<SheepRegrowWoolEvent>(ctx);
     listen::<EntityShootBowEvent>(ctx);
     listen::<SignChangeEvent>(ctx);

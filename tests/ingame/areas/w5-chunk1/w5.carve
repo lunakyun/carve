@@ -1,0 +1,227 @@
+# Wave 5 chunk 1 area. Every result goes to chat as c:<key> <value>.
+
+command /cping:
+    trigger:
+        send "c:ping" to player
+
+command /ccd:
+    cooldown: 1 minute
+    cooldown message: c:wait %remaining time%
+    trigger:
+        send "c:cd ran" to player
+
+command /ccdx:
+    cooldown: 1 minute
+    trigger:
+        send "c:cdx ran" to player
+        cancel the cooldown
+
+command /cfail:
+    trigger:
+        fail the command execution with the error message "c:failed here"
+        send "c:after fail" to player
+
+on break:
+    if {nodrop} is set:
+        cancel the drops
+
+command /cnodrop <text>:
+    trigger:
+        if arg-1 is "on":
+            set {nodrop} to true
+        else:
+            delete {nodrop}
+        send "c:nodrop %arg-1%" to player
+
+on death:
+    if {keep} is set:
+        keep the inventory
+
+command /ckeep <text>:
+    trigger:
+        if arg-1 is "on":
+            set {keep} to true
+        else:
+            delete {keep}
+        send "c:keep %arg-1%" to player
+
+command /chas:
+    trigger:
+        if player has 2 diamonds:
+            send "c:has yes" to player
+        else:
+            send "c:has no" to player
+
+command /cdye:
+    trigger:
+        dye player's tool red
+        force player's tool to glint
+        send "c:dyed" to player
+
+command /cnoglint:
+    trigger:
+        make player's tool stop glinting
+        send "c:noglint" to player
+
+command /ccreep:
+    trigger:
+        spawn a creeper at location at 20, 101, 6 in world "world"
+        instantly explode last spawned entity
+        send "c:creep" to player
+
+command /cignite:
+    trigger:
+        spawn a creeper at location at 20, 101, -6 in world "world"
+        set {_c} to last spawned entity
+        ignite creeper {_c}
+        send "c:ignite" to player
+
+command /ctnt:
+    trigger:
+        spawn a tnt at location at 22, 101, 0 in world "world"
+        detonate last spawned entity
+        send "c:tnt" to player
+
+command /cdropit:
+    trigger:
+        drop 3 diamonds at location at 3, 101, 3 in world "world"
+        send "c:dropped" to player
+
+command /cenforce:
+    trigger:
+        enforce the whitelist
+        send "c:enforced" to player
+
+command /cborder:
+    trigger:
+        expand the world border to 500
+        shrink the world border by 100 over 2 seconds
+        send "c:border" to player
+
+command /cleash:
+    trigger:
+        spawn a cow at location at 3, 101, -3 in world "world"
+        set {cow} to last spawned entity
+        leash {cow} to player
+        make {cow} persistent
+        send "c:leash %uuid of player%" to player
+
+command /cunleash:
+    trigger:
+        unleash {cow}
+        send "c:unleash" to player
+
+command /cicon:
+    trigger:
+        load the server icon from file "icon.png"
+        send "c:icon" to player
+
+on server list ping:
+    set the server icon to the last loaded server icon
+
+command /cfw:
+    trigger:
+        launch a firework effect "ball" at location at 6, 102, 6 in world "world" timed 1
+        send "c:fw" to player
+
+command /cbaby:
+    trigger:
+        spawn a cow at location at -3, 101, 3 in world "world"
+        # Without the wait the baby flag sometimes reaches the client before
+        # the cow does, and is lost.
+        wait 2 ticks
+        make last spawned entity a baby
+        send "c:baby" to player
+
+command /csign:
+    trigger:
+        set block at location at 2, 101, -2 in world "world" to oak sign
+        make block at location at 2, 101, -2 in world "world" have glowing text
+        if location at 2, 101, -2 in world "world" has glowing text:
+            send "c:sign glowing" to player
+        else:
+            send "c:sign plain" to player
+
+command /cpath:
+    trigger:
+        spawn a cow at location at 14, 101, 0 in world "world"
+        set {_c} to last spawned entity
+        make {_c} pathfind to location at 2, 101, 0 in world "world" at speed 1.5
+        send "c:pathstart" to player
+        wait 6 seconds
+        send "c:pathx %x of {_c}%" to player
+
+command /cpathz:
+    trigger:
+        spawn a zombie at location at 14, 101, 4 in world "world"
+        set {_c} to last spawned entity
+        make {_c} pathfind to location at 2, 101, 4 in world "world" at speed 1.5
+        send "c:pathzstart" to player
+        wait 6 seconds
+        send "c:pathzx %x of {_c}%" to player
+
+command /cbreed:
+    trigger:
+        spawn a cow at location at -6, 101, 6 in world "world"
+        set {_c} to last spawned entity
+        make {_c} unbreedable
+        wait 2 ticks
+        if {_c} can breed:
+            send "c:breed1 yes" to player
+        else:
+            send "c:breed1 no" to player
+        make {_c} breedable
+        wait 2 ticks
+        if {_c} can breed:
+            send "c:breed2 yes" to player
+        else:
+            send "c:breed2 no" to player
+
+command /cpot:
+    trigger:
+        apply speed 2 to player for 1 minute
+        make player's potion effects ambient
+        hide the particles of player's potion effects
+        hide the potion icon of player's potion effects
+        make player's potion effects infinite
+        send "c:pot" to player
+
+command /cconds:
+    trigger:
+        spawn a cow at location at -5, 101, -5 in world "world"
+        if last spawned entity can age:
+            send "c:cowage yes" to player
+        if last spawned entity can breed:
+            send "c:breed yes" to player
+        spawn an iron golem at location at -5, 101, -5 in world "world"
+        if last spawned entity can't grow up:
+            send "c:golemage no" to player
+        if "abc123" is alphanumeric:
+            send "c:alnum yes" to player
+        if "a b!" is not alphanumeric:
+            send "c:alnum2 yes" to player
+        if player can hold 64 of stone:
+            send "c:hold yes" to player
+        if player can build at location at 1, 101, 1 in world "world":
+            send "c:build yes" to player
+        send "c:conds" to player
+
+command /cbell:
+    trigger:
+        if location at -2, 101, 2 in world "world" is ringing:
+            send "c:bell ringing" to player
+        else:
+            send "c:bell quiet" to player
+
+command /csed:
+    trigger:
+        set {_a} to location at -4, 103, -4 in world "world"
+        set {_b} to location at -4, 101, -4 in world "world"
+        send "c:sedblk %type of block at {_a}% %type of block at {_b}%" to player
+        if location at -4, 103, -4 in world "world" is sedated:
+            send "c:sed yes" to player
+        else:
+            send "c:sed no" to player
+
+on preparing craft:
+    send "c:craft %event-item%" to player

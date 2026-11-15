@@ -1134,4 +1134,16 @@ pub trait Host {
     fn c6_block_state(&mut self, _at: &BlockPos) -> Option<crate::w5_chunk6::BlockState> {
         None
     }
+
+    /// Mob, sign and potion changes of `w5_chunk1` (creepers, babies,
+    /// pathfinding, glowing sign text, potion flags). `None`: not supported
+    /// or no such target.
+    fn w5c1(&mut self, _op: crate::w5_chunk1::HostOp<'_>) -> Option<bool> {
+        None
+    }
+
+    /// The bytes of a file in the plugin's data folder (`load server icon`).
+    fn read_data_file(&mut self, _path: &str) -> Option<Vec<u8>> {
+        None
+    }
 }

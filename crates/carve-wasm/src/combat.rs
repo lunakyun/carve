@@ -238,7 +238,13 @@ impl EventHandler<PlayerDeathEvent> for OnDeath {
                 inner: host,
                 hs: &mut st.hs,
             };
-            Some(st.engine.fire(EventKind::Death, ctx, &mut th))
+            let player = ctx.player.clone();
+            let o = st.engine.fire(EventKind::Death, ctx, &mut th);
+            let (keep_inv, keep_xp, no_drops) = super::w5_chunk1::death_flags(&o.set);
+            if let Some(p) = player {
+                host.w5_death(&p, keep_inv, keep_xp, no_drops);
+            }
+            Some(o)
         });
         if let Some(Some(o)) = out {
             if o.cancelled {
