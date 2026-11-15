@@ -815,6 +815,23 @@ impl WasmHost<'_> {
         }
     }
 
+    /// Through the inventory API, so the item is there for the rest of the
+    /// script (the default `item replace` command only runs after it).
+    fn equip(&mut self, p: &PlayerRef, slot: &str, id: &str) {
+        let Some(pl) = self.get(p) else {
+            return;
+        };
+        let index = match slot {
+            "armor.head" => 39,
+            "armor.chest" => 38,
+            "armor.legs" => 37,
+            "armor.feet" => 36,
+            "weapon.offhand" => 40,
+            _ => i64::from(pl.get_inventory().get_selected_slot()),
+        };
+        inv::set(pl, &p.uuid, false, index, Some((id, 1)));
+    }
+
     fn inv_clear(&mut self, p: &PlayerRef, current: bool) {
         if let Some(pl) = self.get(p) {
             inv::clear(pl, &p.uuid, current);
@@ -1520,6 +1537,7 @@ impl Host for TickHost<'_, '_> {
         open_chest(p: &PlayerRef, rows: u8, title: &str);
         inv_get(p: &PlayerRef, current: bool, slot: i64) -> Option<(String, u32)>;
         inv_set(p: &PlayerRef, current: bool, slot: i64, item: Option<(&str, u32)>);
+        equip(p: &PlayerRef, slot: &str, id: &str);
         inv_clear(p: &PlayerRef, current: bool);
         inv_remove(p: &PlayerRef, id: &str, count: u32) -> u32;
         close_inventory(p: &PlayerRef);
@@ -1872,7 +1890,7 @@ impl EventAccess for InventoryClickEvent {
         c.inv = Some(Box::new(InvClick {
             slot: i32::from(d.slot),
             item: d.clicked_item.as_ref().map(inv::pair),
-            click: format!("{:?}", d.click_type).to_lowercase(),
+            click: inv::click_name(d.click_type).to_string(),
         }));
         c
     }

@@ -180,6 +180,9 @@ const DECODE = {
   },
   container_set_slot: (r) => ({ windowId: r.varint(), stateId: r.varint(), slot: r.i16(), item: r.item() }),
   container_close: (r) => ({ windowId: r.varint() }),
+  // Player inventory slot (0-8 hotbar, 9-35 main, ...), not a window slot.
+  set_player_inventory: (r) => ({ slot: r.varint(), item: r.item() }),
+  set_cursor_item: (r) => ({ item: r.item() }),
   set_held_slot: (r) => ({ slot: r.varint() }),
   set_equipment: (r) => {
     const entityId = r.varint(); const slots = {}

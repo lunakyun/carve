@@ -1505,6 +1505,11 @@ impl P<'_> {
             if let Some(s) = joined.strip_suffix('s') {
                 candidates.push(s.to_string());
             }
+            // `carrots`, `potatoes`, `beetroots` are crop blocks with no item:
+            // as a word they mean the plural of the item.
+            if matches!(joined.as_str(), "carrots" | "potatoes" | "beetroots") {
+                candidates.remove(0);
+            }
             if let Some(id) = candidates.into_iter().find(|c| crate::items::is_known(c)) {
                 self.pos = start + n;
                 return Some(Expr::Item { id, count: 1 });

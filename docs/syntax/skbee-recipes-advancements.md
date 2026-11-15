@@ -82,6 +82,13 @@ on recipe discover:
     send "New recipe: %recipe id%" to player
 ```
 
+On Pumpkin 0.2.2 this runs when the player's client marks a recipe as seen in
+its recipe book, not when the recipe is unlocked, and `recipe id` is then
+`display_<n>` (the recipe book's display number).
+
+`on advancement done` does not run for a grant made by a script: the event
+fires while that script is still running, and Carve skips nested events.
+
 ## Statistics
 
 Names are `category:name`. The category is one of `mined`, `crafted`, `used`,

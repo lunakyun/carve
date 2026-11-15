@@ -206,6 +206,17 @@ fn set_slot() {
 }
 
 #[test]
+fn crop_plurals_are_items() {
+    // `carrots` is also a crop block id with no item; as a word it is the item.
+    assert_eq!(
+        run("set slot 3 of player's inventory to 5 carrots"),
+        ["set false 3 Some((\"carrot\", 5))"]
+    );
+    assert_eq!(run("remove 2 potatoes from player"), ["remove potato 2"]);
+    assert_eq!(run("add 3 beetroots to player's inventory"), ["give beetroot 3"]);
+}
+
+#[test]
 fn set_slot_air_empties() {
     assert_eq!(
         run("set slot 1 of player's inventory to air"),
