@@ -316,6 +316,7 @@ fn click(slot: i32, menu: Option<(u64, &str, u8)>) -> EventCtx {
         item: None,
         click: "left".into(),
         menu: menu.map(|(i, t, r)| (i, t.to_string(), r)),
+        cursor: None,
     }));
     c
 }
@@ -383,6 +384,7 @@ fn held_mock() -> Mock {
         name: Some("Old".into()),
         lore: vec!["one".into()],
         enchants: vec![("unbreaking".into(), 1)],
+        damage: None,
     });
     h
 }

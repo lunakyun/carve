@@ -1093,6 +1093,12 @@ pub trait Host {
     }
 
     /// `set quit message to` in `on quit`.
+    /// Block data, world border settings, books, ender chests, AI and
+    /// attributes (see `w5_chunk4::Q`). `None` means unknown or not done.
+    fn w5c4(&mut self, _q: crate::w5_chunk4::Q<'_>) -> Option<crate::value::Value> {
+        None
+    }
+
     fn set_quit_message(&mut self, text: &str) {
         self.set_join_message(text);
     }

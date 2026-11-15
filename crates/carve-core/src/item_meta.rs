@@ -17,11 +17,13 @@ pub struct ItemMeta {
     pub lore: Vec<String>,
     /// Enchantment id (`sharpness`, `sweeping_edge`) and level.
     pub enchants: Vec<(String, u32)>,
+    /// Used-up durability (the `damage` component), when the item has any.
+    pub damage: Option<u32>,
 }
 
 impl ItemMeta {
     pub fn is_empty(&self) -> bool {
-        self.name.is_none() && self.lore.is_empty() && self.enchants.is_empty()
+        self.name.is_none() && self.lore.is_empty() && self.enchants.is_empty() && self.damage.is_none()
     }
 
     /// Add an enchantment, replacing the level when it is already there.
@@ -49,6 +51,9 @@ impl ItemMeta {
             let e: Map<String, Json> = self.enchants.iter().map(|(k, v)| (k.clone(), json!(v))).collect();
             o.insert("enchants".into(), Json::Object(e));
         }
+        if let Some(d) = self.damage {
+            o.insert("damage".into(), json!(d));
+        }
         Json::Object(o)
     }
 
@@ -69,6 +74,10 @@ impl ItemMeta {
                 }
             }
         }
+        m.damage = o
+            .get("damage")
+            .and_then(Json::as_u64)
+            .and_then(|n| u32::try_from(n).ok());
         (!m.is_empty()).then(|| Box::new(m))
     }
 }
@@ -296,6 +305,9 @@ pub fn give_command(player: &str, id: &str, count: u32, meta: &ItemMeta) -> Stri
             .map(|(k, v)| format!("\"minecraft:{k}\":{v}"))
             .collect();
         parts.push(format!("enchantments={{{}}}", e.join(",")));
+    }
+    if let Some(d) = meta.damage {
+        parts.push(format!("damage={d}"));
     }
     if parts.is_empty() {
         format!("give {player} minecraft:{id} {count}")

@@ -614,6 +614,15 @@ impl Compound {
     }
 }
 
+/// One network NBT tag (type byte, then the payload) at `*at`. Moves `*at` past it.
+pub fn read_net_tag(b: &[u8], at: &mut usize) -> Result<Tag, String> {
+    let mut r = Reader { b, i: *at };
+    let id = r.take(1)?[0];
+    let t = read_payload(id, &mut r, 0)?;
+    *at = r.i;
+    Ok(t)
+}
+
 fn tag_id(t: &Tag) -> u8 {
     match t {
         Tag::Byte(_) => 1,

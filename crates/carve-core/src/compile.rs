@@ -410,6 +410,8 @@ pub enum Effect {
     Inv(Box<crate::inventories::InvEff>),
     /// Inventory values, held item edits and the other `gaps` effects.
     Gap(Box<crate::gaps::GapEff>),
+    /// Effects of `w5_chunk4` (set block data, apply a potion effect value, ...).
+    C4(Box<crate::w5_chunk4::C4Eff>),
     /// Create, delete and change bounds.
     Bound(Box<crate::skbee_bound::BoundEff>),
     /// Time, weather, game rule and difficulty changes.
@@ -1274,6 +1276,12 @@ impl Cx<'_> {
         {
             return Some((LoopSrc::Items(ListSrc::One(e)), LoopKind::List));
         }
+        // `loop blocks in radius 3 of player:`, `loop ender chest of player:`
+        if let Ok(e @ Expr::C4(_)) = parse_expr(&toks, &self.env)
+            && e.ty(&self.env) == Ty::List
+        {
+            return Some((LoopSrc::Items(ListSrc::One(e)), LoopKind::List));
+        }
         if crate::list_ops::looks_like_list_op(&toks, &self.env) {
             return match crate::list_ops::parse_src_all(&toks, &self.env, true) {
                 Ok(s) => Some((LoopSrc::Items(s), LoopKind::List)),
@@ -1551,6 +1559,17 @@ impl Cx<'_> {
         };
         if self.call_stmt(num, &toks) {
             return;
+        }
+        match crate::w5_chunk4::parse_effect(&toks, &self.env) {
+            Ok(Some(eff)) => {
+                self.emit(Instr::Eff(eff), num);
+                return;
+            }
+            Ok(None) => {}
+            Err(msg) => {
+                self.err(num, msg);
+                return;
+            }
         }
         match crate::gaps::parse_effect(&toks, &self.env) {
             Ok(Some(eff)) => {

@@ -25,6 +25,8 @@ pub struct InvClick {
     /// The open Carve menu: inventory id (0 if it was not built from a
     /// value), title and rows. `None` for other windows.
     pub menu: Option<(u64, String, u8)>,
+    /// The item on the cursor, `None` when it is empty.
+    pub cursor: Option<(String, u32)>,
 }
 
 /// Which inventory a line talks about.

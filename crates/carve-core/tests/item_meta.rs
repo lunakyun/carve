@@ -73,6 +73,7 @@ fn blade_meta() -> ItemMeta {
         name: Some("&bBlade".into()),
         lore: vec!["first".into(), "second".into()],
         enchants: vec![("sharpness".into(), 5), ("sweeping_edge".into(), 2)],
+        damage: None,
     }
 }
 

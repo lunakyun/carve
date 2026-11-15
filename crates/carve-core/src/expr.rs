@@ -234,6 +234,8 @@ pub enum Expr {
     Rtw(Box<crate::w4_skbee_raytrace_world::Node>),
     /// Inventory values, `items in`, regex replace (see `gaps`).
     Gap(Box<crate::gaps::GapExpr>),
+    /// Block data, block spheres, books, borders, attributes, ... (see `w5_chunk4`).
+    C4(Box<crate::w5_chunk4::Node>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -468,6 +470,7 @@ impl Expr {
             Expr::T1(n) => n.ty,
             Expr::Rtw(n) => n.ty,
             Expr::Gap(g) => g.ty(),
+            Expr::C4(n) => n.ty,
             Expr::Items(_) => Ty::List,
             Expr::Bound(b) => b.ty(),
             Expr::Sb(s) => s.ty(),
@@ -712,6 +715,7 @@ impl P<'_> {
     pub(crate) fn primary(&mut self) -> Result<Expr, String> {
         let mut e = self.primary_base()?;
         e = self.w2e7_post(e)?;
+        e = self.w5c4_post(e)?;
         // `5 minutes ago`, `2 hours later`
         if let Some(Tok::Word(w)) = self.toks.get(self.pos)
             && (w.eq_ignore_ascii_case("ago") || w.eq_ignore_ascii_case("later"))
@@ -796,6 +800,12 @@ impl P<'_> {
                 return Err("expected a property after 's, like player's location".into());
             };
             let lw = w.to_ascii_lowercase();
+            self.pos += 1;
+            if let Some(ne) = self.w5c4_poss(&lw, &e) {
+                e = ne;
+                continue;
+            }
+            self.pos -= 1;
             if let Some(unit) = crate::gaps::span_unit(&lw)
                 && matches!(e.ty(self.env), Ty::Timespan | Ty::Object)
             {
@@ -1673,6 +1683,9 @@ impl P<'_> {
             }
             Tok::Word(w) => {
                 let lw = w.to_ascii_lowercase();
+                if let Some(e) = self.w5c4_head(&lw)? {
+                    return Ok(e);
+                }
                 if let Some(e) = self.gaps_head(&lw)? {
                     return Ok(e);
                 }
@@ -3326,7 +3339,11 @@ impl P<'_> {
     /// `None` when it is a single plain value (not a list at all).
     fn try_agg(&mut self, agg: Agg) -> Option<Result<Expr, String>> {
         match parse_src_at(self.toks, self.pos, self.env, false) {
-            Ok((ListSrc::One(e), _)) if agg == Agg::Size && !matches!(e, Expr::X2(_) | Expr::Gap(_)) => None,
+            Ok((ListSrc::One(e), _))
+                if agg == Agg::Size && !matches!(e, Expr::X2(_) | Expr::Gap(_) | Expr::C4(_)) =>
+            {
+                None
+            }
             Ok((s, end)) => {
                 self.pos = end;
                 Some(Ok(Expr::ListAgg(agg, Box::new(s))))
