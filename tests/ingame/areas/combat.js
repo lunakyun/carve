@@ -204,8 +204,14 @@ t.run(async () => {
 
     for (const [dir, axis, sign] of [['north', 'z', -1], ['east', 'x', 1]]) {
       s = Date.now()
-      await run(`epush ${dir}`, `e:pushed ${dir}`)
-      const pm = await bot.waitPacket('set_entity_motion', (d) => d.entityId === fid && d.velocity && d.velocity[axis] * sign > 0.05, 3000, s)
+      // The pig's own AI can overwrite the push on the same tick, so push again
+      // (up to 3 times) until a motion packet shows it.
+      let pm = null
+      for (let i = 0; i < 3 && !pm && bot.entities.has(fid); i++) {
+        const since = Date.now()
+        await run(`epush ${dir}`, `e:pushed ${dir}`)
+        pm = await bot.waitPacket('set_entity_motion', (d) => d.entityId === fid && d.velocity && d.velocity[axis] * sign > 0.05, 2000, since)
+      }
       t.check(`push entity ${dir}`, !!pm, pm ? JSON.stringify(pm.velocity) : 'no matching motion packet; got ' + bot.packets.filter((p) => p.name === 'set_entity_motion' && p.t >= s && p.data.entityId === fid).map((p) => JSON.stringify(p.data.velocity)).join(' '))
       await sleep(1000)
     }

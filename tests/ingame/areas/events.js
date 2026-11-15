@@ -159,6 +159,9 @@ t.run(async () => {
   await bot.waitPacket('container_set_slot', (d) => d.item && d.item.name === 'stick', 4000, since)
   bot.setHotbar(0)
   await sleep(300)
+  // Look straight up: the world is new each run, and a tree in view would be
+  // the clicked block of an air click.
+  bot.look(0, -90)
   since = now()
   bot.useItem()
   const rcs = await bot.waitText('e:rclick-stick', { since })
