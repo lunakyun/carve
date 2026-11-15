@@ -1,0 +1,5 @@
+on right click on chest:
+    if player is sneaking:
+        send "probe sneak=yes" to player
+    else:
+        send "probe sneak=no" to player

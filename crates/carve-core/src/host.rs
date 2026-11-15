@@ -622,6 +622,17 @@ pub trait Host {
         );
     }
 
+    /// Put an item value in a slot, with its name, lore and enchantments;
+    /// `<none>` or air empties it. The default drops the meta.
+    fn inv_set_item(&mut self, player: &PlayerRef, current: bool, slot: i64, item: &crate::value::Value) {
+        match item {
+            crate::value::Value::Item { id, count, .. } if id != "air" => {
+                self.inv_set(player, current, slot, Some((id, (*count).max(1))));
+            }
+            _ => self.inv_set(player, current, slot, None),
+        }
+    }
+
     /// Empty the player's own inventory, or the open menu when `current`.
     fn inv_clear(&mut self, _player: &PlayerRef, _current: bool) {
         self.log(

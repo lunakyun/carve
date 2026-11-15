@@ -341,14 +341,11 @@ impl Engine {
             }
             InvEff::SetSlot { slot, inv, item } => {
                 let slot = slot_index(self.num(slot, ex, host)?)?;
-                let item = item_of(self.eval(item, ex, host)?)?;
+                let item = self.eval(item, ex, host)?;
+                // Checks the type; the host gets the whole value, name and lore too.
+                item_of(item.clone())?;
                 if let Some(p) = self.player(&inv.who, ex, host)? {
-                    host.inv_set(
-                        &p,
-                        inv.current,
-                        slot,
-                        item.as_ref().map(|(i, c)| (i.as_str(), *c)),
-                    );
+                    host.inv_set_item(&p, inv.current, slot, &item);
                 }
             }
             InvEff::Close(who) => {
