@@ -14,13 +14,14 @@ const SB = {
   C_CLIENT_INFO: 0, C_FINISH: 3, C_KEEP_ALIVE: 4, C_PONG: 5, C_KNOWN_PACKS: 7, C_ACCEPT_COC: 9,
   ACCEPT_TP: 0, CHAT_COMMAND: 7, CHAT: 9, CHUNK_BATCH_RECEIVED: 11, KEEP_ALIVE: 28, MOVE_POS: 30,
   PLAYER_ACTION: 41, PLAYER_LOADED: 44, PONG: 45, USE_ITEM_ON: 66, CLIENT_COMMAND: 12, COMMAND_SUGGESTION: 15,
+  CONTAINER_CLICK: 18,
 }
 const CB = {
   L_DISCONNECT: 0, L_FINISHED: 2, L_COMPRESSION: 3,
   C_DISCONNECT: 2, C_FINISH: 3, C_KEEP_ALIVE: 4, C_PING: 5, C_KNOWN_PACKS: 15, C_COC: 20, COMMAND_SUGGESTIONS: 15,
   CHUNK_BATCH_FINISHED: 11, DISCONNECT: 32, DISGUISED_CHAT: 33, KEEP_ALIVE: 45, PING: 62,
   PLAYER_CHAT: 66, PLAYER_POSITION: 73, RESPAWN: 84, ACTION_BAR: 89, SET_HEALTH: 106, SUBTITLE: 114,
-  TITLE: 116, SYSTEM_CHAT: 124,
+  TITLE: 116, SYSTEM_CHAT: 124, OPEN_SCREEN: 60,
 }
 
 function varint (n) {
@@ -182,6 +183,13 @@ class Bot extends EventEmitter {
         break
       }
       case CB.RESPAWN: this.loaded = false; this._record('respawn', ''); break
+      // sync id, window type, title: recorded as "<sync id> <title text>".
+      case CB.OPEN_SCREEN: {
+        const [sync, o] = readVarint(d, 0)
+        this.screen = sync
+        this._record('screen', `${sync} ${text(d.subarray(readVarint(d, o)[1]))}`)
+        break
+      }
     }
   }
 
@@ -200,6 +208,14 @@ class Bot extends EventEmitter {
 
   // Ask for tab completion of a command line like "/carve re".
   suggest (line) { this._send(SB.COMMAND_SUGGESTION, Buffer.concat([varint(7), str(line)])) }
+
+  // Left-click a slot of the open window (sync id from the last 'screen').
+  click (slot, sync = this.screen) {
+    const s = Buffer.alloc(3)
+    s.writeInt16BE(slot, 0)
+    s.writeInt8(0, 2)
+    this._send(SB.CONTAINER_CLICK, Buffer.concat([varint(sync), varint(0), s, varint(0), varint(0), u8(0)]))
+  }
 
   // Press "Respawn" on the death screen.
   respawn () { this._send(SB.CLIENT_COMMAND, varint(0)) }

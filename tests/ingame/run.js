@@ -18,6 +18,8 @@ const EXE = process.env.PUMPKIN_EXE ||
 const WASM = path.join(ROOT, 'target', 'wasm32-wasip2', 'release', 'carve.wasm')
 const DATA = path.join(SERVER_DIR, 'plugins', 'data', 'carve')
 const SCRIPTS = path.join(DATA, 'scripts')
+// A private server copy can run on another port (see docs/ingame-testing.md).
+const PORT = Number(process.env.CARVE_PORT || 25565)
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const results = []
@@ -68,7 +70,7 @@ class Server {
 }
 
 async function join (name) {
-  const bot = new Bot(name)
+  const bot = new Bot(name, { port: PORT })
   bot.on('error', (e) => console.log(`[${name}] error: ${e.message}`))
   await new Promise((resolve, reject) => {
     bot.once('spawn', resolve)
@@ -336,9 +338,12 @@ async function phase1 (srv) {
   tester.command('tvar')
   check('admin: tab completion of an argument is harmless', !!await tester.waitFor(has('system', 't:counter'), 4000, t))
 
+  await gaps(srv, tester, say)
+
   t = Date.now()
   pleb.quit()
   check('on quit (player name still known)', !!await tester.waitFor(has('system', 't:quit Pleb'), 4000, t))
+  check('gaps: set quit message', !!await tester.waitFor(has('system', 't:bye Pleb'), 4000, t))
 
   await sleep(6000) // variables.json is saved ~5 s after a change
   lastCounter = Math.max(0, ...tester.log.filter(has('system', 't:counter')).map((e) => Number((e.text.match(/t:counter (\d+)/) || [])[1] || 0)))
@@ -347,6 +352,60 @@ async function phase1 (srv) {
 }
 
 let lastCounter = 0
+
+// Inventory values, held item editing and the other `gaps` syntax.
+async function gaps (srv, tester, say) {
+  srv.console('tp Tester 0.5 64 0.5')
+  srv.console('clear Tester')
+  srv.console('give Tester diamond_sword 1')
+  await sleep(800)
+  const held = await say('theld', 't:held ')
+  check('gaps: set name/lore, add lore, enchant held item', !!held &&
+    held.text.includes('t:held Blade|line a, line b and line c|sharpness 5'), held ? held.text.slice(0, 90) : 'no reply')
+  const held2 = await tester.waitFor(has('system', 't:held2'), 3000, held ? held.t : 0)
+  check("gaps: disenchant + items in player's inventory", !!held2 && held2.text.includes('t:held2 [<none>] 1'), held2 ? held2.text.slice(0, 60) : 'no reply')
+
+  const misc = await say('tmisc', 't:misc')
+  check("gaps: sorted by, {t}'s minutes, regex replace, rgb in text", !!misc &&
+    misc.text.includes('t:misc a, bb and ccc 2 a#b#') && misc.text.includes('red'), misc ? misc.text.slice(0, 90) : 'no reply')
+  check('gaps: do if', !!await tester.waitFor(has('system', 't:doif'), 3000, misc ? misc.t : 0))
+  check('gaps: filter section', !!await tester.waitFor(has('system', 't:filter a'), 3000, misc ? misc.t : 0))
+  check('gaps: rgb() color in particles (no error)', !srv.lines.some((l) => /ERROR.*(dust|color)/i.test(l)))
+  let t = Date.now()
+  tester.chat('tcancel')
+  check('gaps: event is cancelled', !!await tester.waitFor(has('system', 't:cancelled'), 3000, t))
+
+  t = Date.now()
+  tester.command('tgui')
+  const scr = await tester.waitFor((e) => e.kind === 'screen' && e.text.includes('Shop'), 4000, t)
+  const gui = await tester.waitFor(has('system', 't:gui'), 4000, t)
+  check('gaps: open inventory value as a menu', !!scr && !!gui && gui.text.includes('t:gui Shop 3'),
+    `${scr ? scr.text : 'no window'} / ${gui ? gui.text.slice(0, 40) : 'no reply'}`)
+  if (scr) {
+    t = Date.now()
+    tester.click(6, Number(scr.text.split(' ')[0]))
+    const clk = await tester.waitFor(has('system', 't:guiclick'), 4000, t)
+    check('gaps: click: name of event-inventory, event-inventory is {var}, live slot update', !!clk &&
+      clk.text.includes('t:guiclick 6 gold ingot'), clk ? clk.text.slice(0, 60) : 'no click event')
+    check('gaps: clicked item is the real stack', !!clk && clk.text.includes('gold ingot gold ingot'), clk ? clk.text.slice(0, 60) : '')
+  }
+
+  const mob = await say('tmob', 't:mob ')
+  check('gaps: spawn named + set velocity to vector', !!mob && mob.text.includes('t:mob Bob 0.5'), mob ? mob.text.slice(0, 50) : 'no reply')
+  const push = await tester.waitFor(has('system', 't:mobpush'), 3000, mob ? mob.t : 0)
+  const px = push ? Number(push.text.split(' ')[1]) : NaN
+  check('gaps: push away from', px > 0.5, push ? push.text.slice(0, 40) : 'no reply')
+  const pv = await tester.waitFor(has('system', 't:pvel'), 3000, mob ? mob.t : 0)
+  check('gaps: set velocity of player', !!pv && pv.text.includes('t:pvel 0.42'), pv ? pv.text.slice(0, 40) : 'no reply')
+  const fwd = await tester.waitFor(has('system', 't:pfwd'), 3000, mob ? mob.t : 0)
+  const [fx, fz] = fwd ? fwd.text.split('t:pfwd ')[1].split(' ').map(Number) : [NaN, NaN]
+  check('gaps: push forward (facing yaw 0: +z)', Math.abs(fx) < 0.01 && fz > 0.9, fwd ? fwd.text.slice(0, 40) : 'no reply')
+  t = Date.now()
+  srv.console('kill @e[type=minecraft:zombie]')
+  // Natural zombies may die too; look for the named one.
+  const md = await tester.waitFor(has('system', 't:mobdeath zombie Bob'), 5000, t)
+  check('gaps: on death of zombie', !!md, md ? md.text.slice(0, 50) : 'no event for Bob')
+}
 
 async function phase2 (srv) {
   const tester = await join('Tester')

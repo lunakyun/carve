@@ -121,3 +121,68 @@ on right click:
 
 on left click with stone:
     send "t:lclick-stone" to player
+
+# ---- gaps: inventory values, held items, misc ----
+command /tgui:
+    trigger:
+        set {t_gui} to chest inventory with 3 rows named "Shop"
+        set slot 4 of {t_gui} to diamond named "&bBuy"
+        set slot 5 of {t_gui} to 2 emeralds
+        open {t_gui} to player
+        set slot 6 of {t_gui} to gold ingot
+        send "t:gui %name of {t_gui}% %size of items in {t_gui}%" to player
+
+on inventory click:
+    if name of event-inventory is "Shop":
+        cancel event
+        if event-inventory is {t_gui}:
+            send "t:guiclick %clicked slot% %slot 6 of event-inventory% %clicked item%" to player
+
+command /theld:
+    trigger:
+        set name of player's tool to "Blade"
+        set lore of player's tool to "line a" and "line b"
+        add "line c" to lore of player's tool
+        enchant player's tool with sharpness 5
+        send "t:held %name of player's tool%|%lore of player's tool%|%enchantments of player's tool%" to player
+        disenchant player's tool
+        send "t:held2 [%enchantments of player's tool%] %size of items in player's inventory%" to player
+
+command /tmisc:
+    trigger:
+        set {_l::*} to "ccc", "a" and "bb"
+        set {_t} to 2 minutes and 30 seconds
+        set {_x} to "a1b22"
+        replace all regex "[0-9]+" in {_x} with "#"
+        send "t:misc %sorted {_l::*} by length of input% %{_t}'s minutes% %{_x}% <%rgb(255, 0, 0)%>red" to player
+        send "t:doif" to player if 1 is 1
+        filter {_l::*} to match:
+            input is "a"
+        send "t:filter %{_l::*}%" to player
+        play dust particles at player with color rgb(0, 255, 0)
+
+command /tmob:
+    trigger:
+        spawn a zombie named "Bob" at location(4, 64, 0.5)
+        set {_z} to last spawned entity
+        set velocity of {_z} to vector(0, 0.5, 0)
+        send "t:mob %name of {_z}% %y velocity of {_z}%" to player
+        push {_z} away from player with speed 1
+        send "t:mobpush %x velocity of {_z}%" to player
+        set velocity of player to vector(0, 0.42, 0)
+        send "t:pvel %y velocity of player%" to player
+        set velocity of player to vector(0, 0, 0)
+        push player forward with speed 1
+        send "t:pfwd %x velocity of player% %z velocity of player%" to player
+
+on death of zombie:
+    broadcast "t:mobdeath %victim% %name of victim%"
+
+on quit:
+    set quit message to "t:bye %player%"
+
+on chat:
+    if message is "tcancel":
+        cancel event
+        if event is cancelled:
+            send "t:cancelled" to player
