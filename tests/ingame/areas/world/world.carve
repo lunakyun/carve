@@ -1,0 +1,289 @@
+# World area: blocks, weather, time, rules, border and effects.
+# Every command reports back with a "w:" message the test reads.
+
+command /wpad:
+    trigger:
+        set block at location(0, 100, 0) to stone
+        set block at location(1, 100, 0) to stone
+        set block at location(2, 100, 0) to stone
+        set block at location(3, 100, 0) to stone
+        set block at location(4, 100, 0) to stone
+        set block at location(5, 100, 0) to stone
+        set block at location(6, 100, 0) to stone
+        set block at location(7, 100, 0) to stone
+        set block at location(8, 100, 0) to stone
+        send "w:pad" to player
+
+command /wset:
+    trigger:
+        set block at location(4, 100, 4) to diamond block
+        set block at location(4, 101, 4) to gold block
+        set {_b} to block at location(4, 102, 4)
+        set block at {_b} to oak planks
+        send "w:set" to player
+
+command /wread:
+    trigger:
+        send "w:type %type of block at location(4, 100, 4)%" to player
+        send "w:above %type of block above location(4, 100, 4)%" to player
+        send "w:below %type of block below player%" to player
+        set {_b} to block at location(4.7, 100.2, 4.9)
+        send "w:stored %{_b}% %type of {_b}%" to player
+        send "w:north %type of block north of location(4, 101, 5)%" to player
+        send "w:loc %location at 1, 2, 3%" to player
+        if block at location(4, 100, 4) is diamond block:
+            send "w:is yes" to player
+        if block at location(4, 100, 4) is not stone:
+            send "w:isnot yes" to player
+        if block at location(4, 101, 4) is stone or gold block:
+            send "w:isor yes" to player
+        if block at location(4, 100, 4) is stone:
+            send "w:is wrong" to player
+        if location(1, 100, 1) is within 5 blocks of location(0, 100, 0):
+            send "w:radius yes" to player
+        send "w:readdone" to player
+
+command /wbreak:
+    trigger:
+        break block at location(4, 101, 4)
+        destroy block at location(4, 102, 4)
+        send "w:broken %type of block at location(4, 101, 4)%" to player
+
+command /wfloor:
+    trigger:
+        set block below player to emerald block
+        send "w:floor %type of block below player%" to player
+
+command /wtarget:
+    trigger:
+        send "w:target %targeted block of player% %type of targeted block of player%" to player
+        send "w:target2 %player's targeted block%" to player
+        set {_r} to ray trace from player with max distance 50
+        send "w:ray %hit block of {_r}% %hit block face of {_r}% %hit distance of {_r}%" to player
+
+command /wrain:
+    trigger:
+        set weather to rain
+        send "w:weather %weather%" to player
+        if it is raining:
+            send "w:raining" to player
+
+command /wthunder:
+    trigger:
+        set weather to thunder
+        if it is thundering:
+            send "w:thundering %weather%" to player
+
+command /wclear:
+    trigger:
+        set the weather to clear
+        if it is sunny:
+            send "w:sunny %weather%" to player
+        if weather is clear:
+            send "w:clearis" to player
+
+command /wrainfor:
+    trigger:
+        set weather to rain for 5 minutes
+        send "w:rainfor" to player
+
+command /wsun:
+    trigger:
+        set weather to clear
+        send "w:sun" to player
+
+command /wtime:
+    trigger:
+        set time to 6000
+        send "w:time %time%" to player
+        if it is day:
+            send "w:day" to player
+
+command /wnight:
+    trigger:
+        set the time to night
+        send "w:night %time%" to player
+        if it is night:
+            send "w:isnight" to player
+
+command /wclock:
+    trigger:
+        set time to 6:30 pm
+        add 500 to time
+        send "w:clock %time%" to player
+
+command /wrule:
+    trigger:
+        set gamerule keepInventory to true
+        send "w:rule %gamerule keepInventory%" to player
+        set gamerule randomTickSpeed to 10
+        send "w:rts %gamerule randomTickSpeed%" to player
+        if gamerule keepInventory is true:
+            send "w:ruleis" to player
+        set gamerule doDaylightCycle to false
+        send "w:cycle %gamerule doDaylightCycle%" to player
+
+command /wdiff:
+    trigger:
+        set difficulty to hard
+        wait 5 ticks
+        send "w:diff %difficulty%" to player
+        if difficulty is hard:
+            send "w:diffis" to player
+
+command /wborder:
+    trigger:
+        set world border size to 500
+        send "w:border %world border size%" to player
+
+command /wborder2:
+    trigger:
+        set world border size to 1000 over 30 seconds
+        send "w:border2" to player
+
+command /wbolt:
+    trigger:
+        strike lightning at location(10, 101, 10)
+        send "w:bolt" to player
+
+command /wflash:
+    trigger:
+        strike lightning effect at location(-10, 101, 10)
+        send "w:flash" to player
+
+command /wboom:
+    trigger:
+        create explosion of force 2 at location(20, 110, 20)
+        send "w:boom" to player
+
+command /wpart:
+    trigger:
+        play 5 flame particles at location(2, 102, 2) with offset 1, 0.5, 1 with extra 0.05
+        show 20 happy villager particles at location(1, 102, 1) with spread 0.5 with speed 0.1
+        show crit particles at player
+        send "w:part" to player
+
+command /wforce:
+    trigger:
+        play 1 end_rod particles at location(0, 105, 0) with force
+        send "w:force" to player
+
+command /wdust:
+    trigger:
+        play 10 dust particles at player with color rgb 255, 128, 0 with size 2
+        send "w:dust" to player
+
+command /wsound:
+    trigger:
+        play sound "block.note_block.pling" with volume 0.5 and pitch 2 to player
+        play sound "block.anvil.land" to player at location(3, 101, 3)
+        send "w:sound" to player
+
+command /wstop:
+    trigger:
+        stop sound "music.game" from player
+        send "w:stop1" to player
+
+command /wstopall:
+    trigger:
+        stop all sounds for player
+        send "w:stopall" to player
+
+command /wpot:
+    trigger:
+        apply potion of speed 2 to player for 10 seconds
+        apply jump boost to player
+        if player has potion effect speed:
+            send "w:hasspeed" to player
+        if player doesn't have potion effect poison:
+            send "w:nopoison" to player
+
+command /wunpot:
+    trigger:
+        remove the speed potion effect from player
+        if player doesn't have potion effect speed:
+            send "w:speedgone" to player
+
+command /wunall:
+    trigger:
+        remove all potion effects from player
+        send "w:unall" to player
+
+command /wfire:
+    trigger:
+        ignite player for 5 seconds
+        send "w:fire %burn duration of player%" to player
+
+command /wwater:
+    trigger:
+        extinguish player
+        send "w:water %burn duration of player%" to player
+
+command /wdisplay:
+    trigger:
+        spawn text display at location(2, 103, 2) with text "&aHello" with billboard center with scale 2
+        spawn block display of stone at location(3, 103, 2) with scale 0.5
+        spawn item display of diamond sword at location(4, 103, 2) with mode head
+        send "w:display" to player
+
+command /wbound:
+    trigger:
+        create bound with id "zone" within location(6, 90, -3, world of player) and location(9, 120, 3, world of player)
+        if bound "zone" exists:
+            send "w:bound %volume of bound "zone"%" to player
+
+command /winbound:
+    trigger:
+        if player is within bound "zone":
+            send "w:inside" to player
+        else:
+            send "w:outside" to player
+
+command /wchunk:
+    trigger:
+        set {_c} to chunk at player
+        send "w:chunk %chunk x of {_c}% %chunk z of {_c}%" to player
+        set {_all::*} to chunks in radius 1 around player
+        send "w:chunks %size of {_all::*}%" to player
+        send "w:chunkx %chunk x of location(40, 64, -20)% %chunk z of location(40, 64, -20)%" to player
+        if {_c} is loaded:
+            send "w:loaded" to player
+
+command /wtag:
+    trigger:
+        if oak log is tagged with minecraft tag "logs":
+            send "w:tagged" to player
+        set {_t::*} to minecraft tags of oak log
+        send "w:tags %{_t::*}%" to player
+        set {_l::*} to minecraft block tag "logs"
+        send "w:logs %size of {_l::*}%" to player
+        set {_b} to block at location(4, 100, 4)
+        if {_b} is tagged with minecraft tag "beacon_base_blocks":
+            send "w:beacon" to player
+        send "w:tagdone" to player
+
+command /wmisc:
+    trigger:
+        send "w:world %world of player%" to player
+        send "w:biome %biome of player%" to player
+        send "w:light %light level at location(0, 101, 0)%" to player
+        send "w:env %environment of world of player%" to player
+        send "w:moon %moon phase of player%" to player
+        send "w:high %highest solid block at location(0, 64, 0)%" to player
+        send "w:spawn %spawn of world of player%" to player
+        send "w:miscdone" to player
+
+on weather change:
+    broadcast "w:ev weather %event-weather%"
+
+on lightning strike:
+    broadcast "w:ev lightning"
+
+on explode:
+    broadcast "w:ev explode %explosion yield%"
+
+on bound enter:
+    send "w:enter %event-bound%" to player
+
+on bound exit:
+    send "w:exit %event-bound%" to player

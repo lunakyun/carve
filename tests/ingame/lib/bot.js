@@ -207,6 +207,30 @@ const DECODE = {
   disconnect: (r) => r.component(),
   damage_event: (r) => ({ entityId: r.varint(), sourceType: r.varint() }),
   hurt_animation: (r) => ({ entityId: r.varint(), yaw: r.f32() }),
+  change_difficulty: (r) => ({ difficulty: ['peaceful', 'easy', 'normal', 'hard'][r.u8()], locked: r.bool() }),
+  set_border_lerp_size: (r) => ({ oldSize: r.f64(), size: r.f64(), speed: Number(r.varlong()) }),
+  update_mob_effect: (r) => {
+    const entityId = r.varint(); const id = r.varint()
+    return { entityId, id, effect: nameOf('effect', id), amplifier: r.varint(), duration: r.varint(), flags: r.u8() }
+  },
+  remove_mob_effect: (r) => { const entityId = r.varint(); const id = r.varint(); return { entityId, id, effect: nameOf('effect', id) } },
+  // Byte, int, long, float, string and boolean entries are read (bytes and
+  // booleans into `bytes`, the rest into `values`); any other type ends the decode.
+  set_entity_data: (r) => {
+    const entityId = r.varint(); const bytes = {}; const values = {}
+    for (;;) {
+      const index = r.u8()
+      if (index === 0xff) break
+      const type = r.varint()
+      if (type === 0 || type === 8) bytes[index] = r.u8()
+      else if (type === 1) values[index] = r.varint()
+      else if (type === 2) values[index] = r.varlong()
+      else if (type === 3) values[index] = r.f32()
+      else if (type === 4) values[index] = r.str()
+      else break
+    }
+    return { entityId, bytes, values }
+  },
 }
 
 // Text-ish packets that also count as `text` for waitText.
