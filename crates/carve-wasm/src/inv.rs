@@ -108,6 +108,17 @@ pub fn set_in_menu(uuid: &str, slot: u32, item: &Value) {
     });
 }
 
+/// Uuids of the players with a menu open that was built from inventory value `id`.
+pub fn viewers_of(id: u64) -> Vec<String> {
+    MENUS.with(|m| {
+        m.borrow()
+            .iter()
+            .filter(|(_, x)| x.id == id && id != 0)
+            .map(|(u, _)| u.clone())
+            .collect()
+    })
+}
+
 /// The player closed a window.
 pub fn forget(uuid: &str) {
     MENUS.with(|m| m.borrow_mut().remove(uuid));

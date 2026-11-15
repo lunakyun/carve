@@ -71,6 +71,41 @@ fn division(s: BarStyle) -> BossBarDivision {
     }
 }
 
+/// Plain title of a bar (`w5_chunk6`).
+pub fn bar_title(id: &str) -> Option<String> {
+    SB.with(|s| {
+        s.borrow()
+            .bars
+            .get(id)
+            .map(|b| carve_core::item_meta::plain_from_json(&b.get_title().to_json()))
+    })
+}
+
+/// Style id of a bar, as the `boss bar style` type names it.
+pub fn bar_style(id: &str) -> Option<&'static str> {
+    SB.with(|s| {
+        s.borrow().bars.get(id).map(|b| match b.get_division() {
+            BossBarDivision::NoDivision => "solid",
+            BossBarDivision::Notches6 => "segmented_6",
+            BossBarDivision::Notches10 => "segmented_10",
+            BossBarDivision::Notches12 => "segmented_12",
+            BossBarDivision::Notches20 => "segmented_20",
+        })
+    })
+}
+
+/// Uuids of the players who see a bar.
+pub fn bar_viewers(id: &str) -> Option<Vec<String>> {
+    SB.with(|s| {
+        s.borrow().bars.get(id).map(|b| {
+            b.get_players()
+                .iter()
+                .map(|p| uuid::to_string(p.get_id()))
+                .collect()
+        })
+    })
+}
+
 fn unknown_bar(id: &str) {
     plog(ApiLevel::Warn, &format!("no bossbar '{id}': create it first"));
 }

@@ -66,6 +66,7 @@ mod w2_expressions_3;
 mod w4;
 mod w4_conditions_1;
 mod w4_events_movement;
+mod w5_chunk6;
 
 const SCRIPTS_DIR: &str = "scripts";
 const VARS_FILE: &str = "variables.json";
@@ -1789,6 +1790,22 @@ impl Host for TickHost<'_, '_> {
         self.inner.w4c1_check(c, v)
     }
 
+    fn c6_get(&mut self, q: carve_core::w5_chunk6::Get<'_>) -> Option<Value> {
+        self.inner.c6_get_impl(q)
+    }
+
+    fn c6_set(&mut self, s: carve_core::w5_chunk6::Set<'_>) -> bool {
+        self.inner.c6_set_impl(s)
+    }
+
+    fn c6_block_state(&mut self, at: &BlockPos) -> Option<carve_core::w5_chunk6::BlockState> {
+        self.inner.c6_block_state_impl(at)
+    }
+
+    fn last_display(&mut self) -> Option<carve_core::EntityRef> {
+        displays::take_last()
+    }
+
     sb::sb_host_methods!();
 
     fn schedule_wait(&mut self, ticks: u64, token: u64) {
@@ -3215,6 +3232,7 @@ fn data_component(
         ItemComp::Rarity => D::Rarity,
         ItemComp::GlintOverride => D::EnchantmentGlintOverride,
         ItemComp::ItemModel => D::ItemModel,
+        ItemComp::StoredEnchantments => D::StoredEnchantments,
     }
 }
 
