@@ -11,7 +11,7 @@ use pumpkin_plugin_api::events::*;
 use pumpkin_plugin_api::logging::LogLevel as ApiLevel;
 use pumpkin_plugin_api::{Context, Server};
 
-use super::{State, TickHost, WasmHost, player_ref, plog, text, with_state};
+use super::{State, TickHost, WasmHost, player_ref, plog, text, with_state, world_name};
 
 /// What an event hands to scripts: the player (if any) and the values.
 type Built = (Option<PlayerRef>, Vec<Value>);
@@ -238,7 +238,7 @@ ext!(
                     d.block_pos.x,
                     d.block_pos.y,
                     d.block_pos.z,
-                    Some(d.player.get_world().get_name()),
+                    Some(world_name(&d.player.get_world())),
                 ),
                 line(0),
                 line(1),
@@ -309,7 +309,7 @@ ext!(
     ExtEvent::SpawnChange,
     cancel = can!(no),
     build = |_st, _host, d| {
-        let w = d.target_world.get_name();
+        let w = world_name(&d.target_world);
         (
             None,
             vec![
@@ -341,7 +341,7 @@ ext!(
     ExtEvent::Spread,
     cancel = can!(),
     build = |_st, _host, d| {
-        let w = d.target_world.get_name();
+        let w = world_name(&d.target_world);
         (
             None,
             vec![
@@ -427,7 +427,7 @@ ext!(
     ExtEvent::VaultDisplayItem,
     cancel = can!(),
     build = |_st, _host, d| {
-        let w = d.target_world.get_name();
+        let w = world_name(&d.target_world);
         (
             None,
             vec![
@@ -573,7 +573,7 @@ impl ExtAccess for WeatherChangeEvent {
         let w = if d.to_weather_state { "rain" } else { "clear" };
         (
             None,
-            vec![Value::World(d.target_world.get_name()), Value::Text(w.into())],
+            vec![Value::World(world_name(&d.target_world)), Value::Text(w.into())],
         )
     }
     fn cancel(d: &mut EventData<Self>) {
@@ -585,21 +585,21 @@ ext!(
     WorldInitEvent,
     ExtEvent::WorldInit,
     cancel = can!(no),
-    build = |_st, _host, d| (None, vec![Value::World(d.target_world.get_name())])
+    build = |_st, _host, d| (None, vec![Value::World(world_name(&d.target_world))])
 );
 
 ext!(
     WorldLoadEvent,
     ExtEvent::WorldLoad,
     cancel = can!(no),
-    build = |_st, _host, d| (None, vec![Value::World(d.target_world.get_name())])
+    build = |_st, _host, d| (None, vec![Value::World(world_name(&d.target_world))])
 );
 
 ext!(
     WorldUnloadEvent,
     ExtEvent::WorldUnload,
     cancel = can!(),
-    build = |_st, _host, d| (None, vec![Value::World(d.target_world.get_name())])
+    build = |_st, _host, d| (None, vec![Value::World(world_name(&d.target_world))])
 );
 
 ext!(

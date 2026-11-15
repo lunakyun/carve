@@ -361,6 +361,18 @@ fn full_node(node: &str) -> String {
     }
 }
 
+/// The name scripts see for a world. Pumpkin 0.2.2 names every dimension
+/// after the level folder (`world`), so the other dimensions go by their
+/// dimension id (`minecraft:the_nether`), which `get_world_by_name` accepts.
+fn world_name(w: &World) -> String {
+    let dim = w.get_dimension();
+    if dim == "minecraft:overworld" {
+        w.get_name()
+    } else {
+        dim
+    }
+}
+
 fn player_ref(p: &Player) -> PlayerRef {
     PlayerRef {
         uuid: uuid::to_string(p.get_id()),
@@ -477,7 +489,7 @@ impl WasmHost<'_> {
     fn player_location(&mut self, p: &PlayerRef) -> Option<(f64, f64, f64, String)> {
         let pl = self.get(p)?;
         let (x, y, z) = pl.get_position();
-        Some((x, y, z, pl.get_world().get_name()))
+        Some((x, y, z, world_name(&pl.get_world())))
     }
 
     fn teleport_to(&mut self, p: &PlayerRef, x: f64, y: f64, z: f64, world: Option<&str>) {
@@ -785,7 +797,7 @@ impl WasmHost<'_> {
             x: hit.pos.x,
             y: hit.pos.y,
             z: hit.pos.z,
-            world: Some(pl.get_world().get_name()),
+            world: Some(world_name(&pl.get_world())),
         })
     }
 
@@ -1296,11 +1308,7 @@ impl WasmHost<'_> {
     }
 
     fn world_names(&mut self) -> Vec<String> {
-        self.server
-            .get_all_worlds()
-            .iter()
-            .map(|w| w.get_name())
-            .collect()
+        self.server.get_all_worlds().iter().map(world_name).collect()
     }
 
     fn broadcast_world(&mut self, world: &str, msg: &str) {
@@ -1375,7 +1383,7 @@ impl WasmHost<'_> {
     fn compass_target(&mut self, p: &PlayerRef) -> Option<(f64, f64, f64, Option<String>)> {
         let pl = self.get(p)?;
         let (x, y, z) = pl.get_compass_target();
-        Some((x, y, z, Some(pl.get_world().get_name())))
+        Some((x, y, z, Some(world_name(&pl.get_world()))))
     }
 
     fn set_compass_target(&mut self, p: &PlayerRef, x: f64, y: f64, z: f64, _world: Option<&str>) {
@@ -1842,6 +1850,10 @@ trait EventAccess: FromIntoEvent {
     fn observe(_data: &EventData<Self>, _hs: &mut HostState) {}
     /// A message a script set during the event (`set join message to`).
     fn set_message(_data: &mut EventData<Self>, _msg: &str) {}
+    /// True when this server event is not the script event (no script runs).
+    fn skip(_data: &EventData<Self>) -> bool {
+        false
+    }
 }
 
 impl EventAccess for PlayerJoinEvent {
@@ -1920,7 +1932,7 @@ impl EventAccess for PlayerDeathEvent {
         let (x, y, z) = d.player.get_position();
         hs.w4.deaths.insert(
             uuid::to_string(d.player.get_id()),
-            (x, y, z, d.player.get_world().get_name()),
+            (x, y, z, world_name(&d.player.get_world())),
         );
     }
     fn set_cancelled(d: &mut EventData<Self>) {
@@ -2103,7 +2115,7 @@ impl<E: EventAccess> EventHandler<E> for OnEvent<E> {
         }
         let result = with_state(&server, None, |st, host| {
             E::observe(&data, &mut st.hs);
-            if !st.engine.table().has_event(kind) {
+            if !st.engine.table().has_event(kind) || E::skip(&data) {
                 return (false, None);
             }
             let ctx = E::ctx(&data);
@@ -2240,7 +2252,7 @@ ext_event!(
     |d| ExtEvent::BedEnter,
     |d| ev_ctx(
         Some(&d.player),
-        vec![at_pos(Some(d.player.get_world().get_name()), &d.bed_pos)]
+        vec![at_pos(Some(world_name(&d.player.get_world())), &d.bed_pos)]
     ),
     |d| d.cancelled = true
 );
@@ -2249,7 +2261,7 @@ ext_event!(
     |d| ExtEvent::BedLeave,
     |d| ev_ctx(
         Some(&d.player),
-        vec![at_pos(Some(d.player.get_world().get_name()), &d.bed_pos)]
+        vec![at_pos(Some(world_name(&d.player.get_world())), &d.bed_pos)]
     ),
     |d| {}
 );
@@ -2259,8 +2271,8 @@ ext_event!(
     |d| ev_ctx(
         None,
         vec![
-            at_pos(Some(d.target_world.get_name()), &d.block_pos),
-            Value::World(d.target_world.get_name()),
+            at_pos(Some(world_name(&d.target_world)), &d.block_pos),
+            Value::World(world_name(&d.target_world)),
             d.entity_id.map_or(Value::None, |i| Value::Num(f64::from(i))),
             d.direction.clone().map_or(Value::None, Value::Text),
         ]
@@ -2273,7 +2285,7 @@ ext_event!(
     |d| ev_ctx(
         Some(&d.player),
         vec![
-            at_pos(Some(d.player.get_world().get_name()), &d.block_pos),
+            at_pos(Some(world_name(&d.player.get_world())), &d.block_pos),
             Value::Bool(d.insta_break),
         ]
     ),
@@ -2285,8 +2297,8 @@ ext_event!(
     |d| ev_ctx(
         d.player.as_ref(),
         vec![
-            at_pos(Some(d.target_world.get_name()), &d.block_pos),
-            Value::World(d.target_world.get_name()),
+            at_pos(Some(world_name(&d.target_world)), &d.block_pos),
+            Value::World(world_name(&d.target_world)),
             d.items.first().map_or(Value::None, |s| {
                 let mut v = ev_item(&s.get_registry_key());
                 if let Value::Item { count, .. } = &mut v {
@@ -2305,8 +2317,8 @@ ext_event!(
     |d| ev_ctx(
         d.player.as_ref(),
         vec![
-            at_pos(Some(d.target_world.get_name()), &d.block_pos),
-            Value::World(d.target_world.get_name()),
+            at_pos(Some(world_name(&d.target_world)), &d.block_pos),
+            Value::World(world_name(&d.target_world)),
             Value::Num(d.changed_blocks.len() as f64),
         ]
     ),
@@ -2318,8 +2330,8 @@ ext_event!(
     |d| ev_ctx(
         None,
         vec![
-            at_pos(Some(d.target_world.get_name()), &d.block_pos),
-            Value::World(d.target_world.get_name()),
+            at_pos(Some(world_name(&d.target_world)), &d.block_pos),
+            Value::World(world_name(&d.target_world)),
             ev_item(&d.new_block),
             ev_item(&d.old_block),
         ]
@@ -2367,8 +2379,8 @@ ext_event!(
     |d| ev_ctx(
         None,
         vec![
-            at_pos(Some(d.target_world.get_name()), &d.block_pos),
-            Value::World(d.target_world.get_name()),
+            at_pos(Some(world_name(&d.target_world)), &d.block_pos),
+            Value::World(world_name(&d.target_world)),
             Value::Num(f64::from(d.brewing_time)),
         ]
     ),
@@ -2401,7 +2413,7 @@ ext_event!(
     |d| ev_ctx(
         Some(&d.player),
         vec![
-            at_pos(Some(d.player.get_world().get_name()), &d.block_pos),
+            at_pos(Some(world_name(&d.player.get_world())), &d.block_pos),
             ev_item(&d.bucket),
         ]
     ),
@@ -2413,7 +2425,7 @@ ext_event!(
     |d| ev_ctx(
         Some(&d.player),
         vec![
-            at_pos(Some(d.player.get_world().get_name()), &d.block_pos),
+            at_pos(Some(world_name(&d.player.get_world())), &d.block_pos),
             ev_item(&d.bucket),
         ]
     ),
@@ -2425,8 +2437,8 @@ ext_event!(
     |d| ev_ctx(
         None,
         vec![
-            at_pos(Some(d.target_world.get_name()), &d.block_pos),
-            Value::World(d.target_world.get_name()),
+            at_pos(Some(world_name(&d.target_world)), &d.block_pos),
+            Value::World(world_name(&d.target_world)),
             ev_item(&d.block),
             ev_item(&d.igniting_block),
         ]

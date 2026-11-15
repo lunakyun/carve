@@ -143,7 +143,17 @@ Actions: `chat`, `command`, `attack(entityId)`, `interact(entityId)`,
 `useItem()`, `useOn(x, y, z, face)`, `place(x, y, z)`, `breakBlock(x, y, z)`,
 `look(yaw, pitch)`, `moveTo`, `walkTo` (small steps), `setHotbar(slot)`,
 `swapHands()`, `sneak(on)`, `sprint(on)`, `clickSlot(slot, { button, mode })`,
-`closeContainer()` and `respawn()`.
+`closeContainer()`, `respawn()`, `fly(on)` (needs creative) and
+`dropItem(stack)`.
+
+### `lib/status.js`
+
+`statusPing(port)` does a server list ping and resolves with the status JSON
+(`description`, `players`, `version`).
+
+In a git worktree the default template and asset paths don't exist; set
+`CARVE_TEMPLATE_DIR` (the set-up test server) and `PUMPKIN_REF_DIR`
+(Pumpkin's `assets` folder) to the main checkout's copies.
 
 ## What `run.js` covers
 
