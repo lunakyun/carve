@@ -768,8 +768,8 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Experience Cooldown Change Reason — needs the experience cooldown event, which is not wired in Carve
 - ⛔ Experience Pickup Cooldown — needs the experience cooldown event, which is not wired in Carve
 - ⛔ Exploded Blocks — needs the explosion event, which is not wired in Carve
-- 🟡 Explosion Block Yield — wired: `explosion yield` in `on explode` (BlockExplodeEvent.yield-rate); not re-checked in-game this wave
-- 🟡 Explosion Yield — wired: `explosion yield` in `on explode` (EntityExplodeEvent.yield-rate); not re-checked in-game this wave
+- 🟡 Explosion Block Yield — wired: `explosion yield` in `on explode` (BlockExplodeEvent.yield-rate); not re-checked in-game yet
+- 🟡 Explosion Yield — wired: `explosion yield` in `on explode` (EntityExplodeEvent.yield-rate); not re-checked in-game yet
 - 🟡 Explosive Yield — `explosion radius` in `on explosion prime` (TNT only); creeper radius via mob data is not wired
 - 🟡 Facing — `facing of player` as north, south, east, west, up or down; players only (not done yet: Entities have get-yaw/get-pitch (v0.1 world.wit), so facing can work for any entity, not just players)
 - ✅ Fall Distance — `fall distance of player`; set, add, remove; players only
@@ -791,7 +791,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 Free / Max / Total Memory — `free memory`, `max memory`, `total memory` in MB; machine memory, not a JVM heap. Needs the `sys.info.ram` plugin permission, which Carve does not request (so in-game it reads `<none>`)
 - ✅ Freeze Time — `freeze time of player` as a timespan; set, add, remove
 - ✅ Function
-- 🟡 Furnace Event Items — wired for fuel burn, smelt, start smelt and furnace extract events; not re-checked in-game this wave
+- 🟡 Furnace Event Items — wired for fuel burn, smelt, start smelt and furnace extract events; not re-checked in-game yet
 - ⛔ Furnace Slot — not blocked by the API, only not built yet: world.get-block-entity-nbt (v0.1) returns the furnace NBT including its Items list (Carve host already reads raw block NBT); write back with set-block-entity-nbt. container-block-entity.get-stack also works
 - ⛔ Furnace Times — not blocked by the API, only not built yet: Pumpkin furnace NBT carries BurnTime, BurnDuration and CookTime (furnace_like_block_entity.rs:718-720). Read via get-block-entity-nbt, set via set-block-entity-nbt
 - ⛔ Game Effects with Data — not blocked by the API, only not built yet: java-packets.wit has c-level-event / c-world-event (effect id, position, data); send with player.send-packet(java-packet) (v0.1 player.wit:1351). Needs a Carve effect-name table
@@ -803,17 +803,17 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Group — needs a permissions plugin (Vault)
 - ⛔ Hanging Entity/Remover — hanging entities are not in the plugin API
 - ✅ Hash ⭐ — `"x" hashed with MD5` (also SHA-1, SHA-256, SHA-512), lowercase hex
-- 🟡 Hatching Entity Type — wired in `on egg throw` (hatching type slot); not re-checked in-game this wave
-- 🟡 Hatching Number — wired in `on egg throw` (num-hatches slot); not re-checked in-game this wave
+- 🟡 Hatching Entity Type — wired in `on egg throw` (hatching type slot); not re-checked in-game yet
+- 🟡 Hatching Number — wired in `on egg throw` (num-hatches slot); not re-checked in-game yet
 - ✅ Head location — `head location of player` (eye position)
-- 🟡 Heal Amount — wired in `on heal` (EntityRegainHealthEvent); not re-checked in-game this wave
+- 🟡 Heal Amount — wired in `on heal` (EntityRegainHealthEvent); not re-checked in-game yet
 - ⛔ Heal Reason — needs the regain health event, which is not wired in Carve
 - ✅ Health — read, set, add, remove
 - ✅ Hex Code — `hex code of "red"` or of `"#00ff7f"`, gives `FF5555`; named colors and #rrggbb
 - ✅ Hidden Players — `hidden players of player`: online players that player cannot see
 - ✅ Highest Solid Block — `highest solid block at <location>`; the highest solid block of the column, as a location
 - ⛔ Horse Domestication — horses are not in the plugin API
-- 🟡 Hostname — wired in `on server list ping` (hostname slot); not re-checked in-game this wave
+- 🟡 Hostname — wired in `on server list ping` (hostname slot); not re-checked in-game yet
 - ⛔ Hotbar Button — not blocked by the API, only not built yet: inventory-click-event-data has hotbar-button: s32 (event.wit:221) in both APIs; Carve's InventoryClickEvent ctx (carve-wasm lib.rs:1879) only copies slot/item/click, so add the field to InvClick
 - 🟡 Hotbar Slot — `hotbar slot of player` (0 to 8); read only, the plugin API cannot change it (not done yet: v0.1 inventory.wit:53 player-inventory.set-selected-slot exists, but the host (pumpkin-inventory player_inventory.rs:631) only stores the value and sends no packet)
 - ⛔ Hover List — needs the server list ping event, which is not wired in Carve
@@ -823,7 +823,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Indices of List ⭐ — `indices of {list::*}`, also in `loop` and `set`
 - ✅ Indices of Value — `first index of value x in {l::*}`, `last index ...`, `indices of value x in {l::*}`
 - ✅ Infinity — `infinity`, `positive infinity`, `negative infinity`
-- ⛔ Initiator Inventory — not blocked by the API, only not built yet: event.wit inventory-move-item-event-data carries source-pos and target-pos, and hopper.rs fires it with the hopper position as source. Carve already registers it (carve-wasm w2_events_2.rs:420)
+- ⛔ Initiator Inventory — not blocked by the API, only not built yet: event.wit inventory-move-item-event-data carries source-pos and target-pos, and hopper.rs fires it with the hopper position as source. Carve already registers it (carve-wasm events_game.rs:420)
 - 🟡 Input — the filter/sort `input` exists (`filtered by`, `sorted by`); the player WASD state is not in the API
 - ⛔ Interaction Height/Width — not blocked by the API, only not built yet: display.wit v0.1 resource interaction-entity: from-entity, get/set-width, get/set-height, get/set-response. Carve's ents.rs already maps the entity type interaction
 - ✅ Inventory ⭐ — `player's inventory`, `player's current inventory`, chest inventory values in variables, `event-inventory`
@@ -840,7 +840,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Item Display Transform — not blocked by the API, only not built yet: display.wit v0.1 item-display-entity.get/set-item-display-mode (enum none, thirdperson-*, firstperson-*, head, gui, ground, fixed). Carve already spawns display entities (carve-wasm displays.rs, item_mode() at line 18); only the get/set expression on an existing entity is missing
 - ✅ Item Enchantments — `enchantments of x`
 - ⛔ Item Flags — item flags are the tooltip_display component, which Pumpkin 0.2.2 keeps as a unit struct (hidden components are discarded)
-- 🟡 Item Model — the API only exposes raw component bytes, not typed access; audit: ItemComp::ItemModel encodes and decodes the item_model component (skbee_nbt.rs on feat/gaps, lines 960-1130) and is wired in carve-wasm lib.rs:3100
+- 🟡 Item Model — the API only exposes raw component bytes, not typed access; note: ItemComp::ItemModel encodes and decodes the item_model component (skbee_nbt.rs on feat/gaps, lines 960-1130) and is wired in carve-wasm lib.rs:3100
 - ⛔ Item of an Entity — not blocked by the API, only not built yet: v0.2 world.wit:554-560 entity.get-item-stack, set-item-stack, get-pickup-delay and set-pickup-delay. v0.1 has none of them
 - 🟡 Item Rarity — get, set and reset on `player's tool` only (not done yet: ItemComp::Rarity already exists (skbee_nbt.rs:1062), and inventory slots are reachable through get-inventory-item and set-inventory-item (player.wit:1083-1088))
 - ✅ Item with Custom Model Data — `<item> with custom model data 5`; the client item carries custom_model_data
@@ -849,7 +849,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Item with Lore ⭐ — `x with lore "a" and "b"`
 - ✅ Item With Model — `<item> with item model "ns:key"`; the client item carries item_model
 - ⛔ Item with Tooltip — Pumpkin 0.2.2 stores the tooltip_display component as a unit struct (TooltipDisplayImpl), so hide_tooltip is read and thrown away; a given item always shows its tooltip
-- 🟡 Items — wired: `items in <inventory>` / `items in player's inventory`; not re-checked in-game this wave
+- 🟡 Items — wired: `items in <inventory>` / `items in player's inventory`; not re-checked in-game yet
 - ✅ Items In ⭐ — `items in {_gui}`, `items in player's inventory`, `items in event-inventory`
 - ✅ Join & Split ⭐
 - ✅ Join Message ⭐ — `join message`, `set join message to "..."` in `on join`
@@ -869,7 +869,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 Last Resource Pack Response — `[last] resource pack response [of <player>]`: status text from Pumpkin
 - ✅ Last Spawned Entity — needs the plugin host, `/summon` cannot report it
 - ⛔ Last/First Login Time — not blocked by the API, only not built yet: No API for history, but Carve can stamp first and last join in its own data on player-join and player-leave events. It is only correct from when Carve started tracking, because earlier players have no record
-- ⛔ Leash Holder — not blocked by the API, only not built yet: player-leash-entity-event-data has entity-id and holder-id (event.wit:1073), and entity-unleash-event-data clears it. Carve already registers both (w2_events_3.rs:15)
+- ⛔ Leash Holder — not blocked by the API, only not built yet: player-leash-entity-event-data has entity-id and holder-id (event.wit:1073), and entity-unleash-event-data clears it. Carve already registers both (events_player_server.rs:15)
 - ✅ Length ⭐
 - ✅ Level ⭐ — `level of player`, set/add/remove/give
 - ✅ Level Progress — read, set, add, remove (0 to 1)
@@ -904,7 +904,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Maximum Long Value — `maximum long value` (a number, so it loses the last digits)
 - ✅ Maximum Stack Size — `max stack size of <item>` is read from the server (item-stack get-max-count); the built-in table is only a fallback
 - ✅ Me ⭐ — `me`, `myself`
-- 🟡 Mending Repair Amount — wired: `repair amount` in `on item mend`; not re-checked in-game this wave
+- 🟡 Mending Repair Amount — wired: `repair amount` in `on item mend`; not re-checked in-game yet
 - ✅ Message — `send ... [to ...]`
 - ✅ Message of the Day — `motd` reads the server motd; writable as `event-motd` in `on server list ping`
 - 🟡 Metadata — `metadata value "key" of <player|world|item>`; kept in memory, lost on restart; players, worlds and item types only (not done yet: Skript metadata is in-memory and lost on restart, which matches)

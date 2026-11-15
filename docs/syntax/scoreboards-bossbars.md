@@ -44,7 +44,7 @@ exists replaces the old one.
 create bossbar "raid" with title "&cRaid" with color red with style notched 10 with progress 100
 show bossbar "raid" to player
 set progress of bossbar "raid" to 40
-set title of bossbar "raid" to "&cRaid: wave 2"
+set title of bossbar "raid" to "&cRaid: round 2"
 hide bossbar "raid" from player
 remove bossbar "raid"
 ```

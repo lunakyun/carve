@@ -234,19 +234,6 @@ t.run(async () => {
   t.check('on break cancel: script runs', !!await bot.waitText('e:break-cancelled', { since }))
   const back = await bot.waitPacket('block_update', (d) => d.x === 3 && d.y === 64 && d.z === 1, 3000, since)
   t.check('on break cancel: block stays', !back || back.block === 'stone', back ? back.block : 'no update')
-  // ---- on break of <block> and event-block ----
-  await flag('cancel', false)
-  await setblock(3, 64, 1, 'stone')
-  since = now()
-  bot.breakBlock(3, 64, 1)
-  t.check('on break: event-block is the broken block', !!await bot.waitText('e:break-block stone', { since }))
-  t.check('on break of stone or dirt: runs for stone', !!await bot.waitText('e:break-of stone', { since }))
-  t.check('on break of oak log: skipped for stone', !await bot.waitText('e:break-oak', { since, ms: 800 }))
-  await setblock(3, 64, 1, 'oak_log')
-  since = now()
-  bot.breakBlock(3, 64, 1)
-  t.check('on break of oak log: runs for oak log', !!await bot.waitText('e:break-oak oak log', { since }))
-  t.check('on break of stone or dirt: skipped for oak log', !await bot.waitText('e:break-of', { since, ms: 800 }))
   await flag('break', false)
   await flag('place')
   since = now()
@@ -259,7 +246,6 @@ t.run(async () => {
   t.check('on place cancel: script runs', !!await bot.waitText('e:place-cancelled', { since }))
   const pc = await bot.waitPacket('block_update', (d) => d.x === 3 && d.y === 65 && d.z === 1, 2000, since)
   t.check('on place cancel: no block placed', !pc || pc.block === 'air', pc ? pc.block : 'no update')
-  await flag('cancel', false)
   since = now()
   bot.place(3, 65, 1)
   t.check('on place', !!await bot.waitText('e:place', { since }))
@@ -369,6 +355,23 @@ t.run(async () => {
   } catch (e) {
     t.check('on server list ping', false, e.message)
   }
+
+  // ---- on break of <block> and event-block ----
+  await tpTo(0.5, 64, 0.5)
+  await flag('break')
+  await setblock(3, 64, 1, 'stone')
+  since = now()
+  bot.breakBlock(3, 64, 1)
+  t.check('on break: event-block is the broken block', !!await bot.waitText('e:break-block stone', { since }))
+  t.check('on break of stone or dirt: runs for stone', !!await bot.waitText('e:break-of stone', { since }))
+  t.check('on break of oak log: skipped for stone', !await bot.waitText('e:break-oak', { since, ms: 800 }))
+  await setblock(3, 64, 1, 'oak_log')
+  since = now()
+  bot.breakBlock(3, 64, 1)
+  t.check('on break of oak log: runs for oak log', !!await bot.waitText('e:break-oak oak log', { since }))
+  t.check('on break of stone or dirt: skipped for oak log', !await bot.waitText('e:break-of', { since, ms: 800 }))
+  await setblock(3, 64, 1, 'stone')
+  await flag('break', false)
 
   // ---- kick ----
   since = now()

@@ -68,14 +68,14 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   start with the new file, the old files are imported and renamed to `.old`.
   See [variables](docs/variables.md#saving).
 
-### Added (Skript parity, wave 6 chunk 1)
+### Added (new events and event values)
 
 - New events: `on jump`, `on player chunk enter`, `on step on <block>`,
   `on pressure plate`, `on experience spawn`, `on armor change`, `on spectate`,
   `on world border bounds change`, `on world border center change`,
   `on unload`, `on server stop`, `on entity break door`, and (not yet verified
   in-game) `on player pickup arrow`, `on riptide` and `on projectile collide`.
-  See [the wave 6 page](docs/syntax/events-step-jump.md).
+  See [the step and jump events page](docs/syntax/events-step-jump.md).
 - Event values: `event-location` for leaves decay, lightning, pistons, portal
   create and redstone; `event-entity` for leash, unleash, love mode, combust and
   bucket catch; `event-items` for block drop and piglin barter; `event-item`
@@ -84,28 +84,28 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - `on spawn change` also runs for player spawn points; `on shoot` also runs for
   players' arrows; `on zombie break door` only runs for zombies.
 
-### Added (Skript parity, wave 6 chunks 2 to 7)
+### Added (more effects, conditions and expressions)
 
-- Chunk 2: flight, fake blocks, interaction and text display flags, sound
+- Entity effects: flight, fake blocks, interaction and text display flags, sound
   categories, shearing, taming, timed bans, riding any entity, swing and equip,
   goat horns, handedness, silence, scream, trees, zombify, allay clone, script
   switching, reset, remove all, vector rotation, world calls.
-- Chunk 3: new conditions (adult, baby, charged, climbing, conditional, holding,
+- Conditions (adult, baby, charged, climbing, conditional, holding,
   pressing key, plugin, feature, version and more) and game-data tables for
   edible, fuel, fire resistant and flammable.
-- Chunk 4: honey level, brushing stage, block age, element ranges, dequeue,
+- Block state and lists: honey level, brushing stage, block age, element ranges, dequeue,
   banner pattern items, persistent data keys.
-- Chunk 5: `parsed as` integer, boolean and player, human-readable timespans,
+- Parsing and loot: `parsed as` integer, boolean and player, human-readable timespans,
   loot values, item components, server max stack size.
-- Chunk 6: portal cooldown, protocol version, vehicle, villager, whitelist,
+- Protocol and rotation: portal cooldown, protocol version, vehicle, villager, whitelist,
   rotation maths, block entity reads.
-- Chunk 7: variadic `min`/`max`, round places, `world()` and `entity()` calls,
+- Functions and aliases: variadic `min`/`max`, round places, `world()` and `entity()` calls,
   `axisAngle`, `for each`, alias patterns, team death message visibility,
   server icon, auto reload for scripts with an auto reload line.
-- In-game areas `w6-chunk1` to `w6-chunk7`; the parity checklist now counts
+- New in-game areas for these topics; the parity checklist now counts
   about 70% of core Skript (about 90% of what Pumpkin allows).
 
-### Fixed (wave 6)
+### Fixed
 
 - A `N times` read only applies where a list can start.
 
@@ -164,7 +164,7 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   particles and display entities, recipes, advancements, statistics,
   scoreboard teams, ray traces, Minecraft tags and utilities.
 - Placeholders for other plugins.
-- About 200 more entries in wave 5: command `cooldown:`, `damage was caused
+- About 200 more entries: command `cooldown:`, `damage was caused
   by`, `blocks in radius`, book pages, tamed and saddled checks, `all
   operators` and more. 645 core Skript entries now fully work and 223 work
   with a noted limit, all checked on a real server (1035 in-game checks).
