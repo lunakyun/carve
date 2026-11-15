@@ -538,68 +538,68 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ⛔ Is Pressing Key — no player input API
 - ⬜ Is Responsive — needs entity values (entities slice), not done here
 - 🟡 Is Riding — players only, any vehicle (no entity type filter)
-- ⬜ Is Riptiding — needs entity values (entities slice), not done here
-- ⬜ Is Saddled — needs entity values (entities slice), not done here
-- ⬜ Is Screaming — needs entity values (entities slice), not done here
+- 🟡 Is Riptiding — `x is riptiding` (trident spin pose); only the not-riptiding case is checked in game (the test bot can't riptide)
+- ✅ Is Saddled — `{_pig} is saddled` (something in the saddle slot)
+- 🟡 Is Screaming — endermen only (goats have no data in the plugin API); only the not-screaming case is checked in game
 - ✅ Is Script Loaded — `script "shop" is loaded`
 - 🟡 Is Silent — players only (no entity values yet)
 - ✅ Is Sleeping
 - ⛔ Is Slime Chunk — the plugin API does not expose the world seed
 - ✅ Is Sneaking ⭐
 - 🟡 Is Solid — block or item type, from Pumpkin's block registry
-- ⬜ Is Spawnable
+- ✅ Is Spawnable — `"zombie" is spawnable [in world]`
 - ✅ Is Sprinting ⭐
-- ⬜ Is Stackable
+- ✅ Is Stackable — `diamond is stackable` (max stack size above 1)
 - ✅ Is Swimming
 - ✅ Is Tagged — `stone is tagged with minecraft tag "base_stone_overworld"` (built-in vanilla tag list; see syntax/w4-skbee-raytrace-world.md)
-- ⬜ Is Tameable — needs entity values (entities slice), not done here
-- ⬜ Is Tamed — needs entity values (entities slice), not done here
+- ✅ Is Tameable — `{_e} is tameable` (wolves, cats, parrots, horses, llamas, camels, ...)
+- 🟡 Is Tamed — wolves and cats only; other tameable mobs have no data in the plugin API
 - ⛔ Is Ticking — no tick manager in the plugin API
 - 🟡 Is Transparent — block type; light opacity of the default state
 - 🟡 Is Unbreakable — `unbreakable of player's tool` (main-hand item only)
 - ⛔ Is Using Experimental Feature — Pumpkin has no feature flags
 - ✅ Is Valid — `x is valid` (online player, set value)
-- ⬜ Is Wearing
+- ✅ Is Wearing — `player is wearing diamond helmet`; armor, body and saddle slots of players and mobs
 - ✅ Is Whitelisted — `player is whitelisted`, `"Name" is not on the whitelist`
 - 🟡 Is Within — two corners, or a world; no chunk or block-entity forms
 - ✅ Is Within Radius — `loc is within 5 blocks of loc`
-- ⬜ Item Has Enchantment Glint Override
-- ⬜ Leash Will Drop — needs entity values (entities slice), not done here
+- 🟡 Item Has Enchantment Glint Override — `player's tool has enchantment glint overridden` (held item only: item values don't keep components)
+- ⛔ Leash Will Drop — the unleash event has no drop-leash flag
 - ⛔ Left Handed — the API gives no client settings from a player handle
-- ⬜ Lid Is Open/Closed
+- 🟡 Lid Is Open/Closed — `lid of {_b} is open`; chests, trapped chests and barrels (Pumpkin reports no viewers for ender chests and shulker boxes)
 - ✅ Matches — `text matches regex`, `contains regex`; own regex engine, no lookaround or captures
-- ⬜ Panda Is On Its Back — needs entity values (entities slice), not done here
-- ⬜ Panda Is Rolling — needs entity values (entities slice), not done here
-- ⬜ Panda Is Scared — needs entity values (entities slice), not done here
-- ⬜ Panda Is Sneezing — needs entity values (entities slice), not done here
-- ⬜ Potion Effect - Has Icon
-- ⬜ Potion Effect - Has Particles
-- ⬜ Potion Effect - Is Ambient
+- ⛔ Panda Is On Its Back — no panda data in the plugin API
+- ⛔ Panda Is Rolling — no panda data in the plugin API
+- ⛔ Panda Is Scared — no panda data in the plugin API
+- ⛔ Panda Is Sneezing — no panda data in the plugin API
+- 🟡 Potion Effect - Has Icon — `player's speed effect has an icon`; players only, the effect is named by type
+- 🟡 Potion Effect - Has Particles — `player's speed effect has particles`; players only, the effect is named by type
+- 🟡 Potion Effect - Is Ambient — players only; only the not-ambient case is checked in game (nothing in Pumpkin 0.2.2 gives an ambient effect)
 - 🟡 Potion Effect Type - Is Instant — effect names as text
 - ✅ PvP — `pvp is enabled [in world]`, from the pvp game rule
 - 🟡 Region Contains — `is within bound` (Carve bounds, not WorldGuard)
-- ⬜ Resource Pack
+- ✅ Resource Pack — `the resource pack was accepted`, `... successfully loaded`, `... declined` in `on resource pack response`
 - ⛔ Running Minecraft — the plugin API gives no Minecraft version
 - ✅ Starts/Ends With
-- ⬜ Strider Is Shivering — needs entity values (entities slice), not done here
-- ⬜ Text Display Has Drop Shadow
-- ⬜ Text Display Visible Through Blocks
+- ⛔ Strider Is Shivering — no strider data, and Pumpkin never fires the strider temperature event
+- ✅ Text Display Has Drop Shadow — `{_d} has a drop shadow`
+- ✅ Text Display Visible Through Blocks — `text of {_d} is visible through blocks`
 - ✅ Time ⭐ — `it is day`, `it is night`, `it is not night in world "w"`
 - ✅ Weather ⭐ — `it is raining`, `it is thundering`, `it is sunny`, `weather is clear`
-- ⬜ Will Consume Boosting Firework — needs entity values (entities slice), not done here
-- ⬜ Will Despawn — needs entity values (entities slice), not done here
+- ⛔ Will Consume Boosting Firework — Pumpkin's elytra boost event has no consume flag
+- ⛔ Will Despawn — the plugin API has no persistence or despawn flag
 
 ## Expressions (547)
 
 - ⛔ Absorbed blocks — needs a sponge event; Pumpkin has none
 - ⛔ Active Item — the plugin API cannot see the item being used
 - ⛔ Active Item Use Time — the plugin API cannot see item use time
-- ⬜ Affected Entities — needs the area-effect-cloud event wired; not done yet
+- ⛔ Affected Entities — Pumpkin 0.2.2 never fires the area effect cloud event
 - ⛔ Age of Block/Entity — no block-state API, and only players are reachable as entities
-- ⬜ All Banned Players/IPs
+- ✅ All Banned Players/IPs — `all banned players`, `banned ips`
 - ⛔ All Commands — the plugin API cannot list commands
 - ⛔ All Groups — needs a permissions plugin
-- ⬜ All Operators
+- ✅ All Operators — `all operators`
 - ⛔ All Permissions — the plugin API cannot list permissions
 - ⛔ All Persistent Data Keys — the plugin API cannot list data keys
 - ✅ All Scripts — `all scripts`: file names of the loaded scripts, usable as a list
@@ -613,30 +613,30 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - ✅ Amount of Items — `amount of diamonds in player's inventory`
 - ✅ An Eternity — `an eternity` or `eternity`: a huge time span
 - ✅ Angle — `90 degrees`, `1.57 radians`: result is in degrees
-- ⬜ Anvil Repair Cost — needs the prepare-anvil event wired; not done yet
-- ⬜ Anvil Text Input — needs the prepare-anvil event wired; not done yet
-- ⬜ Any Of — not done yet
+- 🟡 Anvil Repair Cost — `anvil repair cost` in `on anvil prepare`; read only, Pumpkin always sends 1
+- ✅ Anvil Text Input — `anvil text input` in `on anvil prepare`
+- ✅ Any Of — `x is any of {_list::*}`, `any of {_l::*} is x`
 - ⛔ Applied Beacon Effect — Pumpkin has no beacon-effect event
-- ⬜ Applied Enchantments
+- 🟡 Applied Enchantments — `applied enchantments` in `on enchant` (texts like `sharpness 1`); read only
 - ✅ Argument — `arg`, `arg-N`
 - ✅ Arithmetic — + - * /
-- ⬜ Armor Change Item — needs an equipment-change event; not done yet
+- ⛔ Armor Change Item — the plugin API has no equipment change event
 - 🟡 Armor Slot — `helmet of player`, `chestplate`, `leggings`, `boots`: read only
 - ⛔ Arrow Attached Block — no arrow entity API
 - ⛔ Arrow Knockback Strength — no arrow entity API
-- ⬜ Arrows Stuck — needs the arrow-body-count-change event wired; not done yet
+- ⛔ Arrows Stuck — no stuck-arrow count in the plugin API, and Pumpkin never fires the arrow body count event
 - ⛔ Attack Cooldown — the plugin API has no attack cooldown
 - ✅ Attacked — `victim`
 - ✅ Attacker — the attacking player or entity; in `on death` the last hit within 5 seconds
 - ⛔ Banner Pattern — the banner block entity API has no patterns
 - ⛔ Banner Pattern Item — the banner block entity API has no patterns
 - ⛔ Banner Patterns — the banner block entity API has no patterns
-- ⬜ Barter Drops — needs the piglin-barter event wired; not done yet
-- ⬜ Barter Input — needs the piglin-barter event wired; not done yet
-- ⬜ Beacon Effects — not done yet (primary and secondary effect are in the block entity NBT)
+- 🟡 Barter Drops — `barter drops` in `on piglin barter`; changes stay in the script, Pumpkin 0.2.2 copies only `cancelled` back
+- ✅ Barter Input — `barter input` in `on piglin barter`
+- 🟡 Beacon Effects — `primary beacon effect of {_b}` (read only); Pumpkin 0.2.2 can't set beacon effects in game, so only `<none>` is checked
 - ✅ Beacon Range — `beacon range of {loc}`
 - ✅ Beacon Tier — `beacon tier of {loc}`
-- ⬜ Bed — not done yet (the API has a respawn location)
+- ✅ Bed — `bed location of player`, `set player's bed location to ...` (the respawn location)
 - ⛔ Beehive Honey Level — needs block-state properties; the plugin API has none
 - ⛔ Beehive Target Flower — the plugin API has no beehive flower data
 - ✅ Biome — `biome at {loc}`, `biome of player`: a text like `birch_forest`
