@@ -193,6 +193,8 @@ pub struct CommandDef {
     pub usage_msg: Option<String>,
     /// `executable by: players` (true) or `console` (false).
     pub players_only: Option<bool>,
+    /// `cooldown:`, `cooldown message:` and `cooldown bypass:`.
+    pub cooldown: Option<Box<crate::w5_chunk1::Cooldown>>,
 }
 
 impl CommandDef {
@@ -247,6 +249,8 @@ pub enum Cond {
     W5c2(Box<crate::w5_chunk2::C2Cond>),
     /// Tag and loaded checks (`w4_skbee_raytrace_world`).
     Rtw(Box<crate::w4_skbee_raytrace_world::RtwCond>),
+    /// `can age` (`w5_chunk1`).
+    W5c1(Box<crate::w5_chunk1::CanAge>),
     /// `{_gui} contains diamond` (see `gaps`).
     Gap(Box<crate::gaps::GapCond>),
     HasPerm {
@@ -361,6 +365,8 @@ pub enum Effect {
     Rtw(Box<crate::w4_skbee_raytrace_world::RtwEffect>),
     /// Potion effect, particle and weather effects (`w5_chunk5`).
     W5c5(Box<crate::w5_chunk5::W5Effect>),
+    /// Effects of `w5_chunk1` (cooldowns, drops, creepers, leashes, ...).
+    W5c1(Box<crate::w5_chunk1::Fx>),
     SetHealth(Expr, Expr),
     SetGamemode(Expr, Expr),
     /// Experience change; the two expressions are in pattern order.
@@ -1444,6 +1450,9 @@ impl Cx<'_> {
         if let Some(c) = crate::w5_chunk2::parse_cond(toks, &self.env) {
             return Some(c);
         }
+        if let Some(c) = crate::w5_chunk1::parse_cond(toks, &self.env) {
+            return Some(c);
+        }
         let mut memo = Memo::default();
         registry()
             .conditions
@@ -1565,6 +1574,20 @@ impl Cx<'_> {
         };
         if self.call_stmt(num, &toks) {
             return;
+        }
+        match crate::w5_chunk1::parse_effect(&toks, &self.env, self.is_command) {
+            Ok(Some((eff, stop))) => {
+                self.emit(Instr::Eff(eff), num);
+                if stop {
+                    self.emit(Instr::Stop, num);
+                }
+                return;
+            }
+            Ok(None) => {}
+            Err(msg) => {
+                self.err(num, msg);
+                return;
+            }
         }
         match crate::gaps::parse_effect(&toks, &self.env) {
             Ok(Some(eff)) => {
@@ -2214,6 +2237,7 @@ fn parse_command_header(file: &str, num: usize, head: &str) -> Result<CommandDef
         aliases: Vec::new(),
         usage_msg: None,
         players_only: None,
+        cooldown: None,
     })
 }
 
@@ -2770,11 +2794,15 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                         }
                     };
                 } else if el.starts_with("cooldown") {
-                    errors.push(ScriptError::new(
-                        file,
-                        entry.num,
-                        "command cooldowns are not supported yet; store the time in a variable instead",
-                    ));
+                    match crate::w5_chunk1::command_entry(&mut def.cooldown, &el, &entry.text) {
+                        Ok(true) => {}
+                        Ok(false) => errors.push(ScriptError::new(
+                            file,
+                            entry.num,
+                            "use cooldown:, cooldown message: or cooldown bypass:",
+                        )),
+                        Err(e) => errors.push(ScriptError::new(file, entry.num, e)),
+                    }
                 } else if el.starts_with("description:") {
                     def.description = Some(
                         entry

@@ -360,14 +360,15 @@ pub fn max_stack(id: &str) -> u32 {
 }
 
 /// Can a player's main inventory take `count` of `id`? Slots 0..36 are the
-/// hotbar and main inventory. Slots that read as unknown count as full.
+/// hotbar and main inventory. A slot that reads as nothing is empty (the
+/// Pumpkin host gives `None` for an empty slot).
 fn can_hold(host: &mut dyn Host, p: &PlayerRef, id: &str, count: u32) -> Option<bool> {
     let cap = max_stack(id);
     let mut room: u64 = 0;
-    let mut known = false;
+    let mut known = host.resolve_player(&p.uuid).is_some();
     for slot in 0..36 {
         match host.inv_get(p, false, slot) {
-            None => {}
+            None => room += u64::from(cap),
             Some((sid, n)) => {
                 known = true;
                 if sid.is_empty() || is_air(&sid) || n == 0 {
