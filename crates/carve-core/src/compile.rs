@@ -1685,6 +1685,19 @@ impl Cx<'_> {
                 None => {}
             }
         }
+        if !self.env.ev_fields.is_empty() {
+            match crate::w6_chunk1::parse_can_build_set(&toks, &self.env) {
+                Some(Ok(eff)) => {
+                    self.emit(Instr::Eff(eff), num);
+                    return;
+                }
+                Some(Err(e)) => {
+                    self.err(num, e);
+                    return;
+                }
+                None => {}
+            }
+        }
         if self.env.ext4.is_some() {
             match crate::w2_events_4::parse_effect(&toks, &self.env) {
                 Some(Ok(eff)) => {
@@ -2734,7 +2747,9 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
             let (ev, ev_filter) = crate::events_items::split_filter(ev.trim());
             let (ev, ph_prefix) = crate::placeholders::split_header(ev);
             let (ev, cmd_filter) = crate::w4_events_movement::split_command_filter(ev);
+            let (ev, step_filter) = crate::w6_chunk1::split_step_on(ev);
             let (ev, mut filters) = split_click_filters(ev);
+            filters.extend(step_filter);
             filters.extend(ev_filter);
             filters.extend(ph_prefix.map(|p| ("prefix", p)));
             filters.extend(cmd_filter.map(|t| ("command", t)));
@@ -2772,6 +2787,7 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
                 ev_fields: match k {
                     EventKind::Ext(e) => e.fields(),
                     EventKind::Mv(e) => e.fields(),
+                    EventKind::Ext3(e) => e.fields(),
                     _ => &[],
                 },
                 has_damage: k == EventKind::Damage || matches!(k, EventKind::Ext3(e) if e.has_number()),
@@ -2959,6 +2975,19 @@ fn compile_triggers(file: &str, tree: &[Line], sigs: &Arc<Vec<Sig>>) -> (Vec<Tri
         let mut guards = Vec::new();
         let mut header_ok = true;
         for (what, text) in std::mem::take(&mut click_filters) {
+            if what == "stepon" {
+                let Some(right) = crate::w6_chunk1::step_rhs(&text) else {
+                    cx.err(top.num, format!("'{text}' is not a block name"));
+                    header_ok = false;
+                    continue;
+                };
+                let at = cx.emit(
+                    Instr::JumpIfNot(Cond::Cmp(Expr::Ev4Val(0), CmpOp::Eq, right), usize::MAX),
+                    top.num,
+                );
+                guards.push(at);
+                continue;
+            }
             if what == "command" {
                 let (left, right) = crate::w4_events_movement::command_guard(&text);
                 let at = cx.emit(

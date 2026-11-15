@@ -29,6 +29,19 @@ struct Extract {
     number: Option<f64>,
     /// `event-...` values in `EventCtx::ev` (the barter input and drops).
     ev: Vec<Value>,
+    /// An entity id looked up when the event fires and pushed after `ev`
+    /// as `event-entity`.
+    event_entity: Option<i32>,
+}
+
+/// A block position as an `event-location`.
+fn loc(world: Option<String>, p: &pumpkin_plugin_api::common::BlockPos) -> Value {
+    Value::Location {
+        x: f64::from(p.x),
+        y: f64::from(p.y),
+        z: f64::from(p.z),
+        world,
+    }
 }
 
 trait ExtEvent: FromIntoEvent {
@@ -63,17 +76,31 @@ ext!(PlayerLocaleChangeEvent, |d| Extract {
 });
 ext!(PlayerLeashEntityEvent, |d| Extract {
     player: Some(player_ref(&d.player)),
+    event_entity: Some(d.entity_id),
     ..Extract::default()
 });
 ext!(EntityUnleashEvent, |d| Extract {
     text: Some(d.reason.clone()),
+    event_entity: Some(d.entity_id),
     ..Extract::default()
 });
-ext!(LeavesDecayEvent, |_d| Extract::default());
-ext!(LightningStrikeEvent, |_d| Extract::default());
+ext!(LeavesDecayEvent, |d| Extract {
+    ev: vec![loc(Some(super::world_name(&d.target_world)), &d.block_pos)],
+    ..Extract::default()
+});
+ext!(LightningStrikeEvent, |d| Extract {
+    ev: vec![Value::Location {
+        x: d.position.0,
+        y: d.position.1,
+        z: d.position.2,
+        world: None,
+    }],
+    ..Extract::default()
+});
 ext!(EntityEnterLoveModeEvent, |d| Extract {
     entity: d.human_entity_id,
     number: Some(f64::from(d.ticks_in_love)),
+    event_entity: Some(d.entity_id),
     ..Extract::default()
 });
 impl ExtEvent for PiglinBarterEvent {
@@ -98,10 +125,12 @@ impl ExtEvent for PiglinBarterEvent {
 }
 ext!(BlockPistonExtendEvent, |d| Extract {
     text: Some(d.direction.clone()),
+    ev: vec![loc(None, &d.block_pos)],
     ..Extract::default()
 });
 ext!(BlockPistonRetractEvent, |d| Extract {
     text: Some(d.direction.clone()),
+    ev: vec![loc(None, &d.block_pos)],
     ..Extract::default()
 });
 ext!(EntityPortalEvent, |d| Extract {
@@ -114,10 +143,12 @@ ext!(EntityPortalEnterEvent, |d| Extract {
 });
 ext!(PortalCreateEvent, |d| Extract {
     text: Some(d.portal_type.clone()),
+    ev: vec![loc(None, &d.pos)],
     ..Extract::default()
 });
 ext!(BlockRedstoneEvent, |d| Extract {
     number: Some(f64::from(d.new_current)),
+    ev: vec![loc(Some(super::world_name(&d.target_world)), &d.block_pos)],
     ..Extract::default()
 });
 ext!(PlayerResourcePackStatusEvent, |d| Extract {
@@ -167,6 +198,10 @@ impl<E: ExtEvent> EventHandler<E> for OnExt<E> {
             ctx.message = x.text;
             ctx.damage = x.number;
             ctx.ev = x.ev;
+            if let Some(id) = x.event_entity {
+                ctx.ev
+                    .push(host.entity_by_id(id).map_or(Value::None, Value::Entity));
+            }
             let mut th = TickHost {
                 inner: host,
                 hs: &mut st.hs,

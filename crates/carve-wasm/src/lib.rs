@@ -72,6 +72,7 @@ mod w5_chunk3;
 mod w5_chunk4;
 mod w5_chunk5;
 mod w5_chunk6;
+mod w6_chunk1;
 mod w6_chunk5;
 mod w6_chunk7;
 
@@ -735,9 +736,16 @@ impl WasmHost<'_> {
     fn strike_lightning(&mut self, at: &FxPos, effect_only: bool) {
         if let Some(w) = self.fx_world(at) {
             w.strike_lightning((at.x, at.y, at.z), effect_only);
+            let mut ctx = carve_core::EventCtx::console();
+            ctx.ev = vec![Value::Location {
+                x: at.x,
+                y: at.y,
+                z: at.z,
+                world: at.world.clone(),
+            }];
             self.late.push((
                 EventKind::Ext3(carve_core::w2_events_3::Ev3::LightningStrike),
-                carve_core::EventCtx::console(),
+                ctx,
             ));
         }
     }
@@ -2304,6 +2312,8 @@ trait ExtAccess: FromIntoEvent {
     fn kind(d: &EventData<Self>) -> ExtEvent;
     fn ctx(d: &EventData<Self>) -> EventCtx;
     fn set_cancelled(d: &mut EventData<Self>);
+    /// Take values changed by `set event-...` back into the event.
+    fn apply(_d: &mut EventData<Self>, _o: &carve_core::FireOutcome) {}
 }
 
 struct OnExt<E>(std::marker::PhantomData<fn() -> E>);
@@ -2315,12 +2325,17 @@ impl<E: ExtAccess> EventHandler<E> for OnExt<E> {
             if !st.engine.table().has_event(kind) {
                 return false;
             }
-            let ctx = E::ctx(&data);
+            let mut ctx = E::ctx(&data);
+            w6_chunk1::ext_fixup(st, host, E::kind(&data), &mut ctx);
             let mut th = TickHost {
                 inner: host,
                 hs: &mut st.hs,
             };
-            st.engine.fire(kind, ctx, &mut th).cancelled
+            let o = st.engine.fire(kind, ctx, &mut th);
+            if !o.set.is_empty() {
+                E::apply(&mut data, &o);
+            }
+            o.cancelled
         });
         if cancelled == Some(true) {
             E::set_cancelled(&mut data);
@@ -2330,8 +2345,9 @@ impl<E: ExtAccess> EventHandler<E> for OnExt<E> {
 }
 
 macro_rules! ext_event {
-    ($ty:ty, |$k:ident| $kind:expr, |$d:ident| $ctx:expr, |$c:ident| $cancel:expr) => {
+    ($ty:ty, |$k:ident| $kind:expr, |$d:ident| $ctx:expr, |$c:ident| $cancel:expr $(, apply = |$ad:ident, $out:ident| $apply:block)?) => {
         impl ExtAccess for $ty {
+            $(fn apply($ad: &mut EventData<Self>, $out: &carve_core::FireOutcome) $apply)?
             fn kind($k: &EventData<Self>) -> ExtEvent {
                 let _ = $k;
                 $kind
@@ -2451,6 +2467,7 @@ ext_event!(
                 v
             }),
             Value::Num(d.items.len() as f64),
+            Value::List(d.items.iter().map(gaps::value_of).collect()),
         ]
     ),
     |d| d.cancelled = true
@@ -2603,6 +2620,11 @@ ext_event!(
     |d| {
         d.cancelled = true;
         d.buildable = false;
+    },
+    apply = |d, o| {
+        if let Some((_, Value::Bool(b))) = o.set.iter().rev().find(|(s, _)| *s == 0) {
+            d.buildable = *b;
+        }
     }
 );
 ext_event!(
@@ -2876,6 +2898,12 @@ impl CommandHandler for AdminCommand {
         };
         let out = with_state(&server, Some(&sender), |st, host| {
             let allowed = |node: &str| sender.has_permission(&server, node);
+            if self.sub == "reload"
+                && (sender.as_player().is_none() || allowed(ADMIN_PERM) || allowed("carve:reload"))
+            {
+                // The old scripts see `on unload` before they are replaced.
+                w6_chunk1::fire_unload_here(st, host, false);
+            }
             let mut store = DirStore(st.scripts_dir());
             let env = carve_core::admin::AdminEnv {
                 sender: recipient,
@@ -2947,6 +2975,7 @@ fn tick(server: Server) {
             st.engine.tick(now, &mut th);
         }
         tick_at_time(&server, st, host);
+        w6_chunk1::tick(&server, st, host, now);
         if let Some(json) = st.engine.save_due(now * 50) {
             st.save(&json);
         }
@@ -3175,6 +3204,7 @@ impl Plugin for Carve {
         w2_events_2::register_all(&context);
         w2_events_3::register_all(&context, &|ev| engine.table().has_event(EventKind::Ext3(ev)));
         w2_events_4::register_all(&context);
+        w6_chunk1::register_all(&context, &|k| engine.table().has_event(EventKind::Ext4(k)));
         w4_events_movement::register_all(
             &context,
             engine
@@ -3258,6 +3288,11 @@ impl Plugin for Carve {
     }
 
     fn on_unload(&self, _context: Context) -> Result<(), String> {
+        PH_SERVER.with(|s| {
+            if let Some(server) = s.borrow().as_ref() {
+                w6_chunk1::fire_unload(server, true);
+            }
+        });
         if let Ok(mut g) = STATE.try_lock()
             && let Some(st) = g.as_mut()
             && let Some(json) = st.engine.save_now()

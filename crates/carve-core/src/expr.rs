@@ -2842,6 +2842,16 @@ impl P<'_> {
     /// `command`, `full command` and `past event-location` of the
     /// movement events (`w4_events_movement`).
     fn mv_value(&mut self, lw: &str) -> Result<Option<Expr>, String> {
+        // `past event-item` in the events of `w2_events_4` reads the slot
+        // `previous-item`.
+        if lw == "past"
+            && let (Some(ev4), Some(Tok::Word(w))) = (self.env.ext4, self.toks.get(self.pos))
+            && let Some(rest) = w.to_ascii_lowercase().strip_prefix("event-").map(str::to_string)
+            && let Some(i) = ev4.slot_index(&format!("previous-{rest}"))
+        {
+            self.pos += 1;
+            return Ok(Some(Expr::Ev4Val(i as u8)));
+        }
         let (field, used) = match lw {
             "command" if !self.is_word(0, "sender") => ("event-command", 0),
             "full" if self.is_word(0, "command") => ("event-full-command", 1),
@@ -2950,7 +2960,9 @@ impl P<'_> {
                 self.pos += 1;
                 Ok(Some(Self::x2(W2Op::DamageCause, Vec::new())))
             }
-            "command" | "full" | "past" if !self.env.in_function && !self.env.ev_fields.is_empty() => {
+            "command" | "full" | "past"
+                if !self.env.in_function && (!self.env.ev_fields.is_empty() || self.env.ext4.is_some()) =>
+            {
                 self.mv_value(lw)
             }
             "chat" if self.is_word(0, "recipients") && self.env.has_message && !self.env.in_function => {

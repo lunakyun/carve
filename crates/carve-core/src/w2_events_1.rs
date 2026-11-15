@@ -152,7 +152,10 @@ impl ExtEvent {
 
     /// Whether the event has a player only sometimes (`player` may be unset).
     pub fn maybe_player(self) -> bool {
-        matches!(self, ExtEvent::BlockDrop | ExtEvent::BlockFertilize)
+        matches!(
+            self,
+            ExtEvent::BlockDrop | ExtEvent::BlockFertilize | ExtEvent::BellRing
+        )
     }
 
     /// Whether `cancel event` means anything.
@@ -174,7 +177,7 @@ impl ExtEvent {
             BedEnter | BedLeave => &[LOC],
             BellRing => &[LOC, WORLD, NUM, TEXT],
             BlockDamage => &[LOC, ("event-boolean", Ty::Boolean)],
-            BlockDrop => &[LOC, WORLD, ITEM, NUM],
+            BlockDrop => &[LOC, WORLD, ITEM, NUM, ("event-items", Ty::List)],
             BlockFertilize => &[LOC, WORLD, NUM],
             BlockGrowth => &[
                 LOC,
@@ -186,7 +189,7 @@ impl ExtEvent {
             BrewingComplete | BrewingFuel => &[LOC, NUM],
             BrewingStart => &[LOC, WORLD, NUM],
             Broadcast => &[TEXT, ("event-sender", Ty::Text)],
-            BucketCatch => &[ITEM, NUM],
+            BucketCatch => &[ITEM, NUM, ("event-entity", Ty::Object)],
             BucketEmpty | BucketFill => &[LOC, ITEM],
             Burn => &[
                 LOC,
@@ -200,7 +203,11 @@ impl ExtEvent {
                 ("event-boolean", Ty::Boolean),
             ],
             ChunkGenerate | ChunkUnload => &[("event-chunk-x", Ty::Number), ("event-chunk-z", Ty::Number)],
-            Combust => &[NUM, ("event-timespan", Ty::Timespan)],
+            Combust => &[
+                NUM,
+                ("event-timespan", Ty::Timespan),
+                ("event-entity", Ty::Object),
+            ],
             Dispense => &[LOC, ITEM],
             EggThrow => &[("event-boolean", Ty::Boolean), NUM, TEXT],
             ElytraBoost => &[NUM],
