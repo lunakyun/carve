@@ -111,8 +111,9 @@ demo.carve:4: script stopped: ran more than 100000 instructions without a wait
 ```
 
 A run can do at most 100,000 steps before it reaches a `wait`. Each `wait`
-starts a fresh count. Carve has no loops yet, so normal scripts never get
-close. The guard is there so a broken script can't freeze the server.
+starts a fresh count. Normal scripts never get close; a loop that never ends
+(`while true is true:` without a `wait`) is stopped here, and the server keeps
+running. Endless recursion stops at 64 function calls deep.
 
 ## Warnings
 

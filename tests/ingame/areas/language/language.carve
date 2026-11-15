@@ -1,0 +1,405 @@
+# Language area script for tests/ingame/areas/language.js.
+# Every message is "<group>:<key>=<value>"; the runner compares the values.
+
+options:
+    prefix: [L]
+    num: 7
+    mode: debug
+
+variables:
+    {lang_default} = "dflt"
+    {lang_pp::%player%} = 100
+
+function lsq(n: number) :: number:
+    return {_n} * {_n}
+
+function lgreet(name: text, greeting: text = "Hello") :: text:
+    return "%{_greeting}% %{_name}%"
+
+function lfact(n: number) :: number:
+    if {_n} <= 1:
+        return 1
+    return {_n} * lfact({_n} - 1)
+
+function levens(nums: numbers) :: numbers:
+    return {_nums::*} where [mod(input, 2) = 0]
+
+function ltell(p: player, t: text):
+    send "fn:tell=%{_t}%" to {_p}
+
+function lwaiter(p: player):
+    wait 2 ticks
+    send "fn:waited=yes" to {_p}
+
+function lchange(nums: numbers):
+    add 99 to {_nums::*}
+
+function lfail() :: number:
+    return 1 / 0
+
+function ldeep(n: number) :: number:
+    return ldeep({_n} + 1)
+
+local function lloc() :: text:
+    return "local"
+
+command /lvars:
+    trigger:
+        set {_a} to 5
+        send "lv:local=%{_a}%"
+        set {lang_g} to "keep"
+        add 3 to {lang_n}
+        set {lang_list::*} to "a", "b" and "c"
+        set {lang_date} to date from unix timestamp 1700000000
+        set {lang_span} to 1 minute and 30 seconds
+        set {lang_nbt} to nbt from "{a:1,b:""x""}"
+        set {lang_bool} to true
+        set {lang_player} to player
+        set {Lang_Case} to "ci"
+        send "lv:case=%{lang_case}%"
+        send "lv:pp=%{lang_pp::%player%}%"
+        send "lv:dflt=%{lang_default}%"
+        send "lv:done=yes"
+
+command /lvlocal:
+    trigger:
+        send "lv:fresh=%{_a}%"
+
+command /lvshow:
+    trigger:
+        send "lr:g=%{lang_g}%"
+        send "lr:n=%{lang_n}%"
+        send "lr:list=%{lang_list::*}%"
+        send "lr:date=%{lang_date}%"
+        send "lr:span=%{lang_span}%"
+        send "lr:nbt=%int tag ""a"" of {lang_nbt}%"
+        send "lr:bool=%{lang_bool}%"
+        send "lr:player=%name of {lang_player}%"
+        send "lr:dflt=%{lang_default}%"
+        send "lr:done=yes"
+
+command /llists:
+    trigger:
+        set {_l::*} to 3, 1 and 2
+        send "ll:lit=%{_l::*}%"
+        add 5 to {_l::*}
+        remove 1 from {_l::*}
+        send "ll:addrm=%{_l::*}%"
+        send "ll:size=%size of {_l::*}%"
+        send "ll:amount=%amount of {_l::*}%"
+        send "ll:sorted=%sorted {_l::*}%"
+        send "ll:rev=%reversed {_l::*}%"
+        set {_s::*} to shuffled {_l::*}
+        send "ll:shuf=%size of {_s::*}% %sum of {_s::*}%"
+        send "ll:where=%{_l::*} where [input > 2]%"
+        send "ll:idx=%indices of {_l::*}%"
+        send "ll:first=%first element of {_l::*}%"
+        send "ll:last=%last element of {_l::*}%"
+        send "ll:el2=%element 2 of {_l::*}%"
+        send "ll:byidx=%{_l::4}%"
+        if {_l::*} contains 5:
+            send "ll:contains=yes"
+        if {_l::*} does not contain 1:
+            send "ll:notcontains=yes"
+        set {_n::a::x} to 1
+        set {_n::a::y} to 2
+        set {_n::b} to 3
+        send "ll:nested=%size of {_n::*}% %recursive size of {_n::*}%"
+        send "ll:nestedval=%{_n::a::y}%"
+        delete {_n::*}
+        send "ll:deleted=%recursive size of {_n::*}%"
+        set {_c::*} to {_l::*}, 9
+        send "ll:concat=%{_c::*}%"
+        sort {_c::*} in descending order
+        send "ll:sortdesc=%{_c::*}%"
+        filter {_c::*} to match:
+            input > 2
+            input < 9
+        send "ll:filter=%{_c::*}%"
+        set {_w::*} to "pear", "Apple" and "fig"
+        send "ll:alpha=%alphabetically sorted {_w::*}%"
+        send "ll:nums=%numbers from 1 to 4%"
+        set {_r::*} to random 2 elements of {_l::*}
+        send "ll:rand=%size of {_r::*}%"
+        set {_t::*} to 1, 2 and 3
+        transform {_t::*} with (input * 2)
+        send "ll:transform=%{_t::*}%"
+        send "ll:reduce=%reduce {_t::*} with [reduced value + input]%"
+        send "ll:sum=%sum of {_t::*}% avg=%average of {_t::*}% min=%min of {_t::*}% max=%max of {_t::*}%"
+        send "ll:empty=%size of {_none::*}%"
+        send "ll:done=yes"
+
+command /ltext:
+    trigger:
+        set {_w::*} to "a", "b" and "c"
+        send "tx:join=%join {_w::*} with ", "%"
+        set {_p::*} to split "x,y,z" at ","
+        send "tx:split=%size of {_p::*}% %{_p::2}%"
+        set {_ch::*} to split "abc" at ""
+        send "tx:chars=%{_ch::*}%"
+        set {_r} to "hello world"
+        replace all "o" with "0" in {_r}
+        send "tx:replace=%{_r}%"
+        set {_r2} to "aaa"
+        replace first "a" with "b" in {_r2}
+        send "tx:replfirst=%{_r2}%"
+        set {_q} to "aXbX"
+        send "tx:replexpr=%{_q} with all "X" replaced with "-"%"
+        send "tx:upper=%uppercase of "abc"%"
+        send "tx:lower=%"ABC" in lower case%"
+        send "tx:proper=%"hello wORLD" in proper case%"
+        send "tx:cap=%capitalized "hello world"%"
+        send "tx:sub=%substring of "abcdef" from 2 to 4%"
+        send "tx:first=%first 3 characters of "abcdef"%"
+        send "tx:last=%last 2 characters of "abcdef"%"
+        send "tx:char=%character at index 2 of "abc"%"
+        send "tx:len=%length of "héllo"%"
+        send "tx:index=%index of "l" in "hello"% %last index of "l" in "hello"% %index of "z" in "hello"%"
+        if "abc123" matches "[a-z]+[0-9]+":
+            send "tx:regex=match"
+        if "xx bar yy" contains regex "b[a-z]r":
+            send "tx:regexany=yes"
+        if "abc" matches "[0-9]+":
+            send "tx:regexbad=wrong"
+        send "tx:trim=[%trimmed "  hi  "%]"
+        send "tx:revtext=%reversed "abc"%"
+        send "tx:repeat=%"ab" repeated 3 times%"
+        send "tx:hash=%"abc" hashed with MD5%"
+        if "Hello" starts with "He":
+            send "tx:starts=yes"
+        send "tx:nl=a%nl%b"
+        send "tx:done=yes"
+
+command /ldates:
+    trigger:
+        set {_d} to date from unix timestamp 1700000000
+        send "dt:fmt=%{_d} formatted as "yyyy-MM-dd HH:mm:ss"%"
+        send "dt:print=%{_d}%"
+        send "dt:unix=%unix timestamp of {_d}%"
+        send "dt:year=%now formatted as "yyyy"%"
+        set {_t} to 1 hour and 30 minutes
+        send "dt:span=%{_t}%"
+        send "dt:min=%minutes of {_t}%"
+        send "dt:total=%total minutes of {_t}%"
+        if 1 minute is 60 seconds:
+            send "dt:cmp=yes"
+        if 5 minutes ago < now:
+            send "dt:ago=yes"
+        set {_sum} to 1 minute + 30 seconds
+        send "dt:arith=%{_sum}% %{_sum} * 2%"
+        send "dt:later=%{_d} + 1 day%"
+        send "dt:formatted=%{_t} formatted%"
+        set {_start} to now
+        send "dt:w1=yes"
+        wait 1 second
+        send "dt:w2=yes"
+        send "dt:since=%total milliseconds of time since {_start}%"
+        send "dt:done=yes"
+
+command /lmath:
+    trigger:
+        send "mt:arith=%2 + 3 * 4% %(2 + 3) * 4% %7 / 2% %2 - 5%"
+        send "mt:abs=%abs(-3)% %floor(2.7)% %ceil(2.1)% %round(2.5)% %sqrt(16)% %mod(7, 3)%"
+        send "mt:minmax=%min(2, 5)% %max(2, 5)%"
+        send "mt:trig=%sin(90)% %cos(0)% %atan2(1, 1)%"
+        send "mt:more=%clamp(15, 0, 10)% %factorial(5)% %log(100)% %root(27, 3)% %exp(0)% %ln(1)%"
+        send "mt:base=%toBase(255, 16)% %fromBase("ff", 16)%"
+        send "mt:fmt=%formatNumber(1234.5, "#,##0.00")%"
+        set {_l::*} to 1, 2, 3 and 10
+        send "mt:list=%sum of {_l::*}% %average of {_l::*}% %median({_l::*})% %product({_l::*})%"
+        send "mt:comb=%combinations(5, 2)% %permutations(5, 2)%"
+        send "mt:rgb=%rgb(255, 0, 0)%"
+        send "mt:special=%pi%"
+        set {_x} to random integer between 1 and 6
+        if {_x} is between 1 and 6:
+            send "mt:random=ok"
+        send "mt:rounded=%3.14159 rounded to 2 decimal places%"
+        send "mt:done=yes"
+
+command /lfuncs:
+    trigger:
+        send "fn:sq=%lsq(7)%"
+        send "fn:default=%lgreet("Bob")%"
+        send "fn:given=%lgreet("Bob", "Hi")%"
+        send "fn:rec=%lfact(5)%"
+        set {_x::*} to 5, 8, 2 and 9
+        send "fn:list=%levens({_x::*})%"
+        send "fn:listsum=%sum of levens({_x::*})%"
+        lchange({_x::*})
+        send "fn:copy=%size of {_x::*}%"
+        ltell(player, "hey")
+        send "fn:local=%lloc()%"
+        send "fn:opt={@prefix} {@num}"
+        send "fn:optmath=%{@num} + 1%"
+        lwaiter(player)
+        send "fn:done=yes"
+
+command /lstruct:
+    trigger:
+        catch runtime errors:
+            set {_z} to 1 / 0
+            send "st:notreached=bad"
+        send "st:caught=%last caught runtime error%"
+        catch runtime errors:
+            set {_y} to lfail()
+        send "st:caughtfn=%last caught runtime error%"
+        catch runtime errors:
+            set {_ok} to 1
+        send "st:clear=%last caught runtime error%"
+        send "st:tern=%"yes" if 1 < 2 else "no"%"
+        send "st:tern2=%"yes" if 1 > 2 else "no"%"
+        send "st:default=%{_unset} ? "fb"%"
+        send "st:inline=yes" if 1 = 1
+        send "st:inlineno=bad" if 1 = 2
+        send "st:unless=yes" unless 1 = 2
+        send "st:quoted=go if you can"
+        parse if "{@mode}" is "debug":
+            send "st:parseif=yes"
+        parse if "{@mode}" is not "debug":
+            send "st:parseifno=bad"
+        set {_n} to 2
+        if {_n} is 1:
+            send "st:elif=one"
+        else if {_n} is 2:
+            send "st:elif=two"
+        else:
+            send "st:elif=many"
+        if {_n} > 1 and {_n} < 3:
+            send "st:and=yes"
+        if {_n} = 5 or {_n} = 2:
+            send "st:or=yes"
+        send "st:whether=%whether {_n} is 2%"
+        send "st:done=yes"
+
+command /lloops:
+    trigger:
+        set {_i} to 0
+        while {_i} < 3:
+            add 1 to {_i}
+        send "lp:while=%{_i}%"
+        loop 3 times:
+            add loop-number to {_s}
+        send "lp:times=%{_s}%"
+        loop 0 times:
+            send "lp:zero=bad"
+        set {_l::*} to 1, 2, 3, 4 and 5
+        loop {_l::*}:
+            if loop-value is 2:
+                continue
+            if loop-value is 4:
+                exit loop
+            add loop-value to {_acc}
+        send "lp:list=%{_acc}%"
+        loop {_l::*}:
+            add loop-index to {_ix::*}
+        send "lp:index=%{_ix::*}%"
+        loop "a", "b" and "c":
+            add loop-value to {_v::*}
+        send "lp:literal=%join {_v::*} with "-"%"
+        loop 2 times:
+            loop 2 times:
+                add "%loop-number-1%%loop-number-2%" to {_nest::*}
+        send "lp:nested=%{_nest::*}%"
+        set {_k} to 0
+        while true is true:
+            add 1 to {_k}
+            exit loop if {_k} >= 4
+        send "lp:whileexit=%{_k}%"
+        loop split "p,q" at ",":
+            add loop-value to {_sp::*}
+        send "lp:split=%{_sp::*}%"
+        loop 3 times:
+            set {_w} to loop-number
+            wait 1 tick
+        send "lp:wait=%{_w}%"
+        send "lp:done=yes"
+
+command /lstop:
+    trigger:
+        send "lp:beforestop=yes"
+        stop
+        send "lp:afterstop=bad"
+
+command /lskbee:
+    trigger:
+        send "sb:commas=%1234567 with commas%"
+        send "sb:commas2=%1234567.891 with commas and 2 decimal places%"
+        send "sb:abbr=%abbreviated 1500% %abbreviated 2000000%"
+        send "sb:roman=%roman numeral of 1994% %number from roman numeral "XIV"%"
+        send "sb:hex=%hex of 255% %number from hex "ff"%"
+        set {_j} to "a ""q"""
+        send "sb:json=%json of {_j}%"
+        send "sb:uuid=%random uuid%"
+        send "sb:pose=%pose of player%"
+        send "sb:locale=%locale of player%"
+        send "sb:done=yes"
+
+command /lnbt:
+    trigger:
+        set {_n} to nbt from "{power:5,id:{name:""blade""}}"
+        send "nb:int=%int tag ""power"" of {_n}%"
+        send "nb:str=%string tag ""id;name"" of {_n}%"
+        send "nb:wrongtype=%string tag ""power"" of {_n}%"
+        set int tag "lvl" of {_n} to 3
+        set string tag "id;name" of {_n} to "sword"
+        remove tag "power" from {_n}
+        merge nbt from "{c:3b}" into {_n}
+        send "nb:snbt=%snbt of {_n}%"
+        send "nb:keys=%tag names of {_n}%"
+        if {_n} has tag "lvl":
+            send "nb:has=yes"
+        if {_n} does not have tag "power":
+            send "nb:hasnot=yes"
+        set {lang_nbt2} to {_n}
+        send "nb:done=yes"
+
+command /ltool:
+    trigger:
+        set int tag "power" of nbt of player's tool to 7
+        send "nb:tool=%int tag ""power"" of nbt of player's tool%"
+        set custom model data of player's tool to 42
+        send "nb:cmd=%custom model data of player's tool%"
+        send "nb:tooldone=yes"
+
+command /lrunaway:
+    trigger:
+        send "rw:start=yes"
+        set {_x} to 0
+        while true is true:
+            add 1 to {_x}
+        send "rw:after=bad"
+
+command /ldeep:
+    trigger:
+        send "rw:deep=%ldeep(1)%"
+
+command /lping:
+    trigger:
+        send "rw:pong=yes"
+
+command /lextra:
+    trigger:
+        set {_a::*} to 1, 2 and 3
+        copy {_a::*} into {_b::*}
+        add 4 to {_b::*}
+        send "ex:copy=%size of {_a::*}% %size of {_b::*}%"
+        send "ex:between=%characters between "a" and "e"%"
+        send "ex:codepoint=%codepoint of "A"% %character from codepoint 66%"
+        send "ex:diff=%difference between 3 and 10%"
+        send "ex:parsed=%"12" parsed as number% %"x" parsed as number%"
+        set {_e} to ""
+        if {_e} is empty:
+            send "ex:empty=yes"
+        send "ex:until=%time until (2 hours later)%"
+        send "ex:valueidx=%first index of value 2 in {_a::*}%"
+        send "ex:digits=%number of digits in "a1b22"%"
+        loop {_a::*}:
+            set {_it} to loop-iteration
+        send "ex:iteration=%{_it}%"
+        set {_r::x::y} to 5
+        set {_r::z} to 6
+        set {_rv::*} to recursive {_r::*}
+        send "ex:recursive=%size of {_rv::*}%"
+        send "ex:unixdate=%unix date of 1700000000%"
+        send "ex:maxof=%max(3, 9)% %min of {_a::*}%"
+        send "ex:done=yes"
