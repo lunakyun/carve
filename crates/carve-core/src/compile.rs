@@ -243,6 +243,8 @@ pub enum Cond {
     /// Rare conditions, boxed so this enum stays small.
     Rare3(Box<crate::w2_conditions_3::W2Cond>),
     Rare4(Box<crate::w4_conditions_1::W4Cond>),
+    /// Conditions from `w5_chunk2`.
+    W5c2(Box<crate::w5_chunk2::C2Cond>),
     /// Tag and loaded checks (`w4_skbee_raytrace_world`).
     Rtw(Box<crate::w4_skbee_raytrace_world::RtwCond>),
     /// `{_gui} contains diamond` (see `gaps`).
@@ -1428,6 +1430,9 @@ impl Cx<'_> {
             return Some(c);
         }
         if let Some(c) = crate::skbee_recipes_advancements::parse_cond(toks, &self.env) {
+            return Some(c);
+        }
+        if let Some(c) = crate::w5_chunk2::parse_cond(toks, &self.env) {
             return Some(c);
         }
         let mut memo = Memo::default();

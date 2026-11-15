@@ -924,6 +924,12 @@ pub trait Host {
         None
     }
 
+    /// Answer a question for the `w5_chunk2` conditions. `None` means the game
+    /// cannot tell.
+    fn w5c2_query(&mut self, _q: crate::w5_chunk2::Query<'_>) -> Option<crate::value::Value> {
+        None
+    }
+
     /// Ticks left on an item cooldown, `None` when there is none.
     fn item_cooldown(&mut self, _player: &PlayerRef, _item: &str) -> Option<i64> {
         None
