@@ -2907,7 +2907,7 @@ impl CommandHandler for AdminCommand {
 // ---------- plugin ----------
 
 fn tick(server: Server) {
-    with_state(&server, None, |st, host| {
+    let reloaded = with_state(&server, None, |st, host| {
         st.flush_late(host, None);
         host.w5_tick();
         st.hs.tick += 1;
@@ -2944,7 +2944,14 @@ fn tick(server: Server) {
         if let Some(json) = st.engine.bounds.save_due(now * 50) {
             st.save_to(BOUNDS_FILE, &json);
         }
+        if now % w6_chunk7::AUTO_RELOAD_TICKS == 0 {
+            return w6_chunk7::auto_reload(st, host);
+        }
+        false
     });
+    if reloaded == Some(true) {
+        fire_load(&server);
+    }
 }
 
 /// Run `on load` triggers (after the first load and after each good reload).

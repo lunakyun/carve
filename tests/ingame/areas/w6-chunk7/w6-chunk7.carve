@@ -52,3 +52,12 @@ command /c7suppress:
     trigger:
         locally suppress conflict warnings
         send "c7:suppress" to player
+
+command /c7icon:
+    trigger:
+        load the server icon from file "icon.png"
+        send "c7:icon" to player
+
+
+on server list ping:
+    set the server icon to the last loaded server icon
