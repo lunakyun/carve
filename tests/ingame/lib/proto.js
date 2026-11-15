@@ -136,10 +136,52 @@ class Reader {
     const add = this.varint()
     const remove = this.varint()
     const it = { id, name: nameOf('item', id), count, patched: add + remove }
-    if (add > 0) { it.partial = true; this.o = this.b.length; return it }
+    // Components with a known wire format are decoded into it.components;
+    // the first unknown one ends the readable part as before.
+    const comps = {}
+    for (let i = 0; i < add; i++) {
+      const cid = this.varint()
+      const dec = ITEM_COMPONENTS[cid]
+      if (!dec) { it.partial = true; it.unknownComponent = cid; it.components = comps; this.o = this.b.length; return it }
+      comps[dec[0]] = dec[1](this)
+    }
+    if (add > 0) it.components = comps
     for (let i = 0; i < remove; i++) this.varint()
     return it
   }
+}
+
+// Enchantment registry ids are alphabetical in 26.3 (pumpkin-data enchantment.rs).
+const ENCHANTMENTS = ['aqua_affinity', 'bane_of_arthropods', 'binding_curse', 'blast_protection', 'breach', 'channeling',
+  'density', 'depth_strider', 'efficiency', 'feather_falling', 'fire_aspect', 'fire_protection', 'flame', 'fortune',
+  'frost_walker', 'impaling', 'infinity', 'knockback', 'looting', 'loyalty', 'luck_of_the_sea', 'lunge', 'lure',
+  'mending', 'multishot', 'piercing', 'power', 'projectile_protection', 'protection', 'punch', 'quick_charge',
+  'respiration', 'riptide', 'sharpness', 'silk_touch', 'smite', 'soul_speed', 'sweeping_edge', 'swift_sneak', 'thorns',
+  'unbreaking', 'vanishing_curse', 'wind_burst']
+const RARITIES = ['common', 'uncommon', 'rare', 'epic']
+const list = (r, fn) => { const n = r.varint(); const a = []; for (let i = 0; i < n; i++) a.push(fn()); return a }
+const enchList = (r) => list(r, () => { const id = r.varint(); return { id, name: ENCHANTMENTS[id] || `#${id}`, level: r.varint() } })
+// Wire formats from pumpkin-protocol codec/data_component.rs; ids from data_component.json.
+const ITEM_COMPONENTS = {
+  0: ['custom_data', (r) => r.nbt()],
+  1: ['max_stack_size', (r) => r.varint()],
+  2: ['max_damage', (r) => r.varint()],
+  3: ['damage', (r) => r.varint()],
+  4: ['unbreakable', () => true],
+  6: ['custom_name', (r) => r.component()],
+  9: ['item_name', (r) => r.component()],
+  10: ['item_model', (r) => r.str()],
+  11: ['lore', (r) => list(r, () => r.component())],
+  12: ['rarity', (r) => RARITIES[r.varint()]],
+  13: ['enchantments', enchList],
+  17: ['custom_model_data', (r) => ({
+    floats: list(r, () => r.f32()), flags: list(r, () => r.bool()), strings: list(r, () => r.str()), colors: list(r, () => r.i32()),
+  })],
+  18: ['tooltip_display', (r) => ({ hide: r.bool(), hidden: list(r, () => r.varint()) })],
+  19: ['repair_cost', (r) => r.varint()],
+  21: ['enchantment_glint_override', (r) => r.bool()],
+  45: ['stored_enchantments', enchList],
+  47: ['dyed_color', (r) => r.i32()],
 }
 
 // Turn an NBT text component into {text, color, bold..., click, hover, parts}.

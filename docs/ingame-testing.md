@@ -127,10 +127,16 @@ time, world border and disconnect. Text components come back as
 `{ text, color, bold, click, hover, translate }`, with translations filled
 in from `en_us_java.json`.
 
-Not fully decoded: item stacks with component patches (custom name, lore,
-enchantments) show their id and count, but the data that follows them is
-skipped because it has no length prefix. A `container_set_content` with such
-an item is marked `partial`. Explosions stop after the particle id.
+Item stacks decode their component patch into `item.components` for the
+common components: `custom_data` (NBT), `max_stack_size`, `max_damage`,
+`damage`, `unbreakable`, `custom_name`, `item_name`, `item_model`, `lore`,
+`rarity`, `enchantments` (`{ name, level }`), `custom_model_data`,
+`tooltip_display`, `repair_cost`, `enchantment_glint_override`,
+`stored_enchantments` and `dyed_color`. Component data has no length prefix,
+so the first other component ends the readable part: the item is marked
+`partial` (with `unknownComponent`), and so is a `container_set_content` that
+holds it. `set_player_inventory` (a player-inventory slot, not a window slot)
+and `set_cursor_item` are decoded too. Explosions stop after the particle id.
 Particle options (dust color, block type) are skipped.
 
 Actions: `chat`, `command`, `attack(entityId)`, `interact(entityId)`,
