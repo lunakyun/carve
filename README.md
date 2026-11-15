@@ -11,6 +11,7 @@ Skript-style scripts for Pumpkin, the Minecraft server written in Rust.
 [![CI](https://github.com/lunakyun/carve/actions/workflows/ci.yml/badge.svg)](https://github.com/lunakyun/carve/actions/workflows/ci.yml)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 [![Pumpkin plugin API v0.1](https://img.shields.io/badge/Pumpkin%20API-v0.1-orange.svg)](https://github.com/Pumpkin-MC/Pumpkin)
+[![Discord](https://img.shields.io/badge/Discord-join-5865F2.svg?logo=discord&logoColor=white)](https://discord.gg/tsWufDvzmE)
 
 > [!WARNING]
 > Some of Carve's code was written with the help of AI. It is held to the same bar as the
