@@ -1,0 +1,150 @@
+# In-game checks for events (tests/ingame/areas/events.js).
+# Every message starts with "e:" so the test can match it.
+
+on load:
+    send "e:load" to console
+
+on join:
+    send "e:join %player%" to player
+
+on first join:
+    send "e:first %player%" to player
+
+on quit:
+    broadcast "e:quit %player%"
+
+on chat:
+    if message is "e-cancel":
+        cancel event
+        send "e:chat-cancelled" to player
+    else:
+        send "e:chat %message%" to player
+
+command /eblocked:
+    trigger:
+        send "e:eblocked-ran" to player
+
+command /eplain <text>:
+    trigger:
+        send "e:eplain-ran %arg-1%" to player
+
+on command:
+    if command is "eblocked":
+        cancel event
+        send "e:cmd-cancel %full command%" to player
+
+on command "eplain":
+    send "e:cmd %command% | %full command%" to player
+
+command /eflag <text>:
+    trigger:
+        set {e::%arg-1%} to true
+        send "e:flag %arg-1%" to player
+
+command /eunflag <text>:
+    trigger:
+        delete {e::%arg-1%}
+        send "e:unflag %arg-1%" to player
+
+on move:
+    if {e::move} is true:
+        send "e:move %x of event-location% %z of event-location% from %x of past event-location% %z of past event-location%" to player
+
+on sneak toggle:
+    if player is sneaking:
+        send "e:sneak was-sneaking" to player
+    else:
+        send "e:sneak was-standing" to player
+
+on sprint toggle:
+    send "e:sprint" to player
+
+on flight toggle:
+    send "e:flight" to player
+
+on swap hand items:
+    send "e:swap" to player
+    if {e::swapcancel} is true:
+        cancel event
+        send "e:swap-cancelled" to player
+
+on teleport:
+    if {e::tp} is true:
+        send "e:tp %x of event-location% %y of event-location% from %x of past event-location%" to player
+        if x of event-location > 76:
+            cancel event
+            send "e:tp-cancelled" to player
+
+on world change:
+    send "e:world %event-world% from %past event-world%" to player
+    send "e:wop %world of player%" to player
+
+on right click with stick:
+    send "e:rclick-stick %clicked block%" to player
+
+on right click on gold block:
+    send "e:rclick-on-gold" to player
+
+on left click with stick on emerald block:
+    send "e:lclick-stick-emerald %event-block%" to player
+
+on left click:
+    if {e::lclick} is true:
+        send "e:lclick %clicked block%" to player
+
+on click:
+    if {e::click} is true:
+        send "e:click-any" to player
+
+on break:
+    if {e::break} is true:
+        send "e:break" to player
+        if {e::cancel} is true:
+            cancel event
+            send "e:break-cancelled" to player
+
+on place:
+    if {e::place} is true:
+        send "e:place" to player
+        if {e::cancel} is true:
+            cancel event
+            send "e:place-cancelled" to player
+
+on respawn:
+    send "e:respawn" to player
+
+on drop:
+    send "e:drop %event-item%" to player
+    if event-item is diamond:
+        cancel event
+        send "e:drop-cancelled" to player
+
+on pick up:
+    send "e:pickup %event-item%" to player
+
+on consume:
+    send "e:consume %event-item%" to player
+
+every 2 seconds:
+    if {e::every} is true:
+        broadcast "e:every"
+
+at 18:00:
+    broadcast "e:at-18"
+
+on inventory click:
+    if {e::inv} is true:
+        send "e:invclick %clicked slot%" to player
+
+on inventory close:
+    if {e::inv} is true:
+        send "e:invclose" to player
+
+on server list ping:
+    set event-motd to "e:motd %event-players%"
+    set event-max-players to 42
+
+on kick:
+    broadcast "e:kick %player% %event-text%"
+    if event-text contains "nokick":
+        cancel event

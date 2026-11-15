@@ -326,6 +326,10 @@ class TestBot extends Bot {
     this.send('container_click', varint(windowId), varint(this.window.stateId), i16(slot), [button & 0xff], varint(mode), varint(0), [0])
   }
   closeContainer (windowId = this.window.id) { this.send('container_close', varint(windowId)); this.window = { id: 0, stateId: 0 } }
+  // Start or stop flying (needs a game mode that allows flight). Flags bit 0x02 = flying.
+  fly (on = true) { this.send('player_abilities', [on ? 0x02 : 0]) }
+  // Drop the held item (Q); `stack` drops the whole stack. 26.3 wire ids: 4 = stack, 5 = one.
+  dropItem (stack = false) { this.send('player_action', varint(stack ? 4 : 5), blockPos(0, 0, 0), [0], varint(0)) }
 }
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
