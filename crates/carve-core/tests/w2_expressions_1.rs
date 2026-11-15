@@ -209,6 +209,33 @@ fn alphabetical_sort() {
     ]);
     assert_eq!(o[0], "10,Apple,banana,pear");
     assert_eq!(&o[1..], ["- 10", "- Apple", "- banana", "- pear"]);
+    // Also as a value inside text.
+    let o = out(&[
+        r#"set {l::*} to "pear", "Apple" and "fig""#,
+        r#"send "%alphabetically sorted {l::*}%""#,
+    ]);
+    assert_eq!(o, ["Apple, fig and pear"]);
+}
+
+#[test]
+fn hash_inside_nested_text_is_not_a_comment() {
+    use carve_core::lexer::strip_comment;
+    assert_eq!(
+        strip_comment(r##"send "%f("#,##0")%" # c"##),
+        r##"send "%f("#,##0")%" "##
+    );
+    assert_eq!(
+        strip_comment(r##"send "a ""#"" b" # c"##),
+        r##"send "a ""#"" b" "##
+    );
+    assert_eq!(
+        strip_comment(r##"set {x::%"#"%} to 1 # c"##),
+        r##"set {x::%"#"%} to 1 "##
+    );
+    assert_eq!(strip_comment(r##"send "100%% #1" # c"##), r##"send "100%% #1" "##);
+    assert_eq!(strip_comment("add 1 to {a} # c"), "add 1 to {a} ");
+    let o = out(&[r##"send "%formatNumber(1234.5, "#,##0.00")%""##]);
+    assert_eq!(o, ["1,234.50"]);
 }
 
 #[test]

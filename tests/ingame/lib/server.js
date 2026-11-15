@@ -25,7 +25,7 @@ process.on('exit', () => { for (const p of running) try { p.kill() } catch {} })
 // Pumpkin's offline-mode UUID: the first 16 bytes of sha256(name).
 function offlineUuid (name) {
   const h = crypto.createHash('sha256').update(name).digest('hex')
-  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`
 }
 
 function copyTemplate (dir) {
