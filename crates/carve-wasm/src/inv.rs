@@ -108,6 +108,23 @@ pub fn set_in_menu(uuid: &str, slot: u32, item: &Value) {
     });
 }
 
+/// Uuids of the players who have this menu open. `id` 0: the menu opened for `viewer`.
+pub fn viewers(id: u64, viewer: Option<&str>) -> Vec<String> {
+    MENUS.with(|m| {
+        m.borrow()
+            .iter()
+            .filter(|(uuid, menu)| {
+                if id == 0 {
+                    viewer == Some(uuid.as_str())
+                } else {
+                    menu.id == id
+                }
+            })
+            .map(|(uuid, _)| uuid.clone())
+            .collect()
+    })
+}
+
 /// The player closed a window.
 pub fn forget(uuid: &str) {
     MENUS.with(|m| m.borrow_mut().remove(uuid));

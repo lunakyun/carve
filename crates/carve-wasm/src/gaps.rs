@@ -109,6 +109,7 @@ pub fn value_of(stack: &ItemStack) -> Value {
             .into_iter()
             .map(|e| (enchant_id(&format!("{:?}", e.enchantment)), e.level))
             .collect(),
+        ..ItemMeta::default()
     };
     Value::Item {
         id,

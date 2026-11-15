@@ -37,6 +37,11 @@ thread_local! {
     static SB: RefCell<Sb> = RefCell::new(Sb::default());
 }
 
+/// Progress (0 to 1) of a boss bar, `None` when there is no bar with this id.
+pub fn bar_health(id: &str) -> Option<f32> {
+    SB.with(|s| s.borrow().bars.get(id).map(BossBar::get_health))
+}
+
 /// A player left: their sidebar and tab list are gone with their session.
 pub fn forget(uuid: &str) {
     SB.with(|s| {
