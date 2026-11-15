@@ -4,7 +4,7 @@
 
 # Carve
 
-Simple, readable scripts for the Pumpkin Minecraft server.
+Skript-style scripts for Pumpkin, the Minecraft server written in Rust.
 
 **[Documentation](https://lunakyun.github.io/carve/)** · [Syntax reference](https://lunakyun.github.io/carve/reference/)
 
@@ -19,8 +19,8 @@ Simple, readable scripts for the Pumpkin Minecraft server.
 > Found a bug? [Open an issue](https://github.com/lunakyun/carve/issues).
 
 Carve is a scripting plugin for [Pumpkin](https://github.com/Pumpkin-MC/Pumpkin),
-in the spirit of Skript. You write what should happen in almost-plain English,
-save the file, and reload. No Rust, no compiling.
+in the spirit of Skript. You write what should happen in near-plain English,
+save the file and reload. No Rust, no compiling.
 
 ```
 on join:
@@ -68,7 +68,7 @@ command /heal [<player>]:
 ## Quick install
 
 1. Download `carve.wasm` from a release, or build it (below).
-2. Put it in your Pumpkin server's `plugins/` folder and start the server.
+2. Put it in your server's `plugins/` folder and start the server.
    Allow the `fs.read.data` and `fs.write.data` permissions when asked.
    On a hosted server without an interactive console, allow them in
    `pumpkin.toml` instead (see below).

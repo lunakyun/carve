@@ -864,7 +864,7 @@ tables, vectors and quaternions, equippable components, and experimental Skript 
 - 🟡 Last Damage Cause — `last damage cause of <player>`: text like `fall` or `player_attack` (not done yet: Same as Last Damage)
 - ✅ Last Death Location — `last death location of <player>`; remembered since the plugin loaded
 - ⛔ Last Interaction Date — not blocked by the API, only not built yet: interaction-entity.get-last-interaction returns only a uuid. Pumpkin stores a timestamp (PlayerAction in interaction.rs) but the WIT does not expose it
-- ⛔ Last Interaction Player — not blocked by the API, only not built yet: display.wit v0.1 interaction-entity.get-last-interaction returns option<uuid>, and get-last-attacker also exists. Resolve the uuid with server.get-player-by-name or the online player list
+- ⛔ Last Interaction Player — not blocked by the API, only not built yet: display.wit v0.1 interaction-entity.get-last-interaction returns `option<uuid>`, and get-last-attacker also exists. Resolve the uuid with server.get-player-by-name or the online player list
 - ✅ Last Loaded Server Icon — `last loaded server icon` (a data: URL); in-game: sent in the status ping
 - 🟡 Last Resource Pack Response — `[last] resource pack response [of <player>]`: status text from Pumpkin
 - ✅ Last Spawned Entity — needs the plugin host, `/summon` cannot report it

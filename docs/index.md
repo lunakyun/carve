@@ -6,7 +6,7 @@ titleTemplate: Scripts for Pumpkin
 hero:
   name: Carve
   text: Scripting for Pumpkin
-  tagline: Simple, readable scripts for the Pumpkin Minecraft server
+  tagline: Skript-style scripts for Pumpkin, the Minecraft server written in Rust
   image:
     src: /carve-icon.png
     alt: Carve pumpkin icon
@@ -43,13 +43,13 @@ features:
     link: /reference/
     linkText: Search syntax
   - title: Built for Pumpkin
-    details: A WebAssembly plugin for the Pumpkin server, written in Rust. Works on hosted servers too.
+    details: A WebAssembly plugin for Pumpkin, written in Rust. Works on hosted servers too.
     link: /getting-started#hosted-servers
     linkText: Hosted servers
 ---
 
 ## What is Carve?
 
-Carve is a scripting plugin for [Pumpkin](https://github.com/Pumpkin-MC/Pumpkin), the Minecraft server written in Rust. You write commands, events and small minigames in plain, Skript-style English, and `/carve reload` puts them live without a restart.
+Carve is a scripting plugin for [Pumpkin](https://github.com/Pumpkin-MC/Pumpkin), the Minecraft server written in Rust. You write commands, events and small minigames in Skript-style English, and `/carve reload` puts them live without a restart.
 
-Scripts are compiled once at load time into a flat instruction list and run by a small virtual machine inside a sandboxed WebAssembly plugin. A per-slice instruction budget stops runaway loops, and variables save to JSON on their own. If you have used Skript on Spigot or Paper, you already know most of Carve.
+Scripts are compiled once at load time into a flat instruction list and run by a small virtual machine inside a sandboxed WebAssembly plugin. A per-slice instruction budget stops runaway loops, and variables are saved to disk for you. If you've used Skript on Spigot or Paper, most of Carve will look familiar.

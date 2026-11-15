@@ -1,7 +1,7 @@
 # Structures
 
-Structures are the top-level parts of a script file, and a few helpers inside
-triggers. This page covers `variables:`, `aliases:`, inline conditions,
+Structures are the top-level parts of a script file, plus a few helpers inside
+triggers: `variables:`, `aliases:`, inline conditions,
 `catch runtime errors:`, `parse if:`, `else if`, `local function` and `using`.
 
 ## variables:

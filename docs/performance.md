@@ -1,7 +1,7 @@
 # Performance
 
 Carve runs inside the server, so scripts should cost as little as possible.
-This page shows how we measure that and what the numbers are.
+Here is how we measure it, and the numbers.
 
 ## The benchmark
 

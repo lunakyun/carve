@@ -1,6 +1,6 @@
 # Architecture
 
-This page is for people who want to work on Carve itself.
+Read this if you want to work on Carve itself.
 
 ## Two crates
 
@@ -122,7 +122,7 @@ the rest.
 
 ### Variables
 
-Global variables live in `Variables` (a sorted map) and are saved as JSON. A
+Global variables live in `Variables` (a sorted map) and are saved to `carve.redb`. A
 change marks them dirty; the plugin saves about 5 seconds later and again on
 unload. Local variables live in the run.
 

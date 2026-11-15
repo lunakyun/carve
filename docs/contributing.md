@@ -1,9 +1,8 @@
 # Contributing
 
-Thanks for helping! The full guide for code changes (adding an effect, rules
-for code) is
+For code changes (adding an effect, code rules) see
 [CONTRIBUTING.md](https://github.com/lunakyun/carve/blob/master/CONTRIBUTING.md)
-in the repository. This page covers the commands and the docs site.
+in the repo. This page has the commands and the docs site.
 
 ## Run the tests
 

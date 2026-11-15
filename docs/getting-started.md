@@ -1,6 +1,6 @@
 # Getting started
 
-This guide takes you from nothing to your first working script.
+From nothing to a working script.
 
 ## What you need
 

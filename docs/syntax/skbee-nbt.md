@@ -1,6 +1,6 @@
 # NBT and item components (SkBee style)
 
-This page covers NBT compounds and a few item data components. The syntax
+NBT compounds and a few item data components. The syntax
 is close to [SkBee](https://github.com/ShaneBeee/SkBee/wiki), so most SkBee
 scripts port with small changes.
 

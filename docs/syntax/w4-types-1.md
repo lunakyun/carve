@@ -1,6 +1,6 @@
 # Types: named values, colors and more
 
-This page covers the value types added in the types-1 batch. Every value can be stored in a variable,
+The value types from the types-1 batch. Every value can be stored in a variable,
 compared with `is`, printed in text and used as a function parameter or return type.
 
 ## Named values

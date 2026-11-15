@@ -1,6 +1,6 @@
 # Item meta
 
-An item can carry a name, lore and enchantments. This page shows how to write them and how to read them back.
+An item can carry a name, lore and enchantments. Here is how to write them and read them back.
 
 ## Making an item with meta
 
