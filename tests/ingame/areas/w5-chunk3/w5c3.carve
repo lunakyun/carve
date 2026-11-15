@@ -1,0 +1,187 @@
+# Wave 5 chunk 3 area. Every result goes to chat as c:<key> <value>.
+
+command /c3pos:
+    trigger:
+        send "c:pos %floor(x of player)% %floor(y of player)% %floor(z of player)%" to player
+
+command /c3logic:
+    trigger:
+        set {_l::*} to 1, 2 and 3
+        set {_r} to ""
+        if diamond is stackable:
+            set {_r} to "%{_r}%A"
+        if diamond sword is not stackable:
+            set {_r} to "%{_r}%B"
+        if "zombie" is spawnable:
+            set {_r} to "%{_r}%C"
+        if "player" is not spawnable:
+            set {_r} to "%{_r}%D"
+        if "zombie" is spawnable in player's world:
+            set {_r} to "%{_r}%E"
+        if 2 is any of {_l::*}:
+            set {_r} to "%{_r}%F"
+        if 7 is not any of {_l::*}:
+            set {_r} to "%{_r}%G"
+        if any of {_l::*} is 3:
+            set {_r} to "%{_r}%H"
+        if 9 is any of {_l::*}:
+            set {_r} to "%{_r}%X"
+        send "c:logic %{_r}%" to player
+
+command /c3lists:
+    trigger:
+        send "c:lists ops=%all operators% banned=%all banned players% ips=%banned ips%" to player
+
+command /c3wolf:
+    trigger:
+        spawn a wolf at player
+        set {w} to last spawned entity
+        spawn a pig at player
+        set {p} to last spawned entity
+        spawn an enderman at player
+        set {en} to last spawned entity
+        send "c:wolf" to player
+
+command /c3mobs:
+    trigger:
+        set {_r} to ""
+        if {w} is tameable:
+            set {_r} to "%{_r}%wt "
+        if {p} is not tameable:
+            set {_r} to "%{_r}%pnt "
+        if {w} is tamed:
+            set {_r} to "%{_r}%wtamed "
+        if {w} is not tamed:
+            set {_r} to "%{_r}%wwild "
+        if {p} is saddled:
+            set {_r} to "%{_r}%psad "
+        if {p} is not saddled:
+            set {_r} to "%{_r}%pbare "
+        if {p} is wearing saddle:
+            set {_r} to "%{_r}%pwear "
+        if {en} is screaming:
+            set {_r} to "%{_r}%escream "
+        if {en} is not screaming:
+            set {_r} to "%{_r}%equiet "
+        if player is not riptiding:
+            set {_r} to "%{_r}%nrip "
+        if player is riptiding:
+            set {_r} to "%{_r}%rip "
+        send "c:mobs %{_r}%" to player
+
+command /c3armor:
+    trigger:
+        equip player with diamond helmet
+        wait 5 ticks
+        set {_r} to ""
+        if player is wearing diamond helmet:
+            set {_r} to "%{_r}%helm "
+        if player is not wearing diamond boots:
+            set {_r} to "%{_r}%noboots "
+        if player is wearing diamond boots:
+            set {_r} to "%{_r}%boots "
+        send "c:armor %{_r}%" to player
+
+command /c3glinton:
+    trigger:
+        set glint override of player's tool to true
+        send "c:gset %glint override of player's tool%" to player
+
+command /c3glint:
+    trigger:
+        if player's tool has enchantment glint overridden:
+            send "c:glint yes" to player
+        if player's tool doesn't have enchantment glint override:
+            send "c:glint no" to player
+
+command /c3lid <number> <number> <number>:
+    trigger:
+        set {_b} to location(arg-1, arg-2, arg-3, player's world)
+        set {_r} to "unknown"
+        if lid of {_b} is open:
+            set {_r} to "open"
+        if lid of {_b} is closed:
+            set {_r} to "closed"
+        send "c:lid %{_r}%" to player
+
+command /c3effects:
+    trigger:
+        set {_r} to ""
+        if player's speed effect has an icon:
+            set {_r} to "%{_r}%sicon "
+        if player's speed effect doesn't have particles:
+            set {_r} to "%{_r}%snopart "
+        if player's speed effect has particles:
+            set {_r} to "%{_r}%spart "
+        if potion effect of haste on player has particles:
+            set {_r} to "%{_r}%hpart "
+        if potion effect of haste on player is not ambient:
+            set {_r} to "%{_r}%hnamb "
+        if potion effect of haste on player is ambient:
+            set {_r} to "%{_r}%hamb "
+        send "c:effects %{_r}%" to player
+
+command /c3display:
+    trigger:
+        spawn text display at player with text "Hi" with shadow with see through
+        spawn text display at player with text "Plain"
+        wait 5 ticks
+        set {_r} to ""
+        loop all entities in radius 3 of player:
+            if loop-entity is a text display:
+                if loop-entity has a drop shadow:
+                    set {_r} to "%{_r}%shadow "
+                if loop-entity doesn't have a drop shadow:
+                    set {_r} to "%{_r}%noshadow "
+                if text of loop-entity is visible through blocks:
+                    set {_r} to "%{_r}%see "
+                if loop-entity is not visible through walls:
+                    set {_r} to "%{_r}%nosee "
+        send "c:display %{_r}%" to player
+
+command /c3bed:
+    trigger:
+        set bed location of player to location(10, 70, 12)
+        send "c:bed1 %x of bed location of player% %y of player's bed location% %z of bed location of player%" to player
+
+command /c3bed2:
+    trigger:
+        send "c:bed2 %x of player's bed location% %y of player's bed location% %z of player's bed location%" to player
+
+command /c3beacon <number> <number> <number>:
+    trigger:
+        set {_b} to location(arg-1, arg-2, arg-3, player's world)
+        send "c:beacon %primary beacon effect of {_b}%|%secondary effect of {_b}%" to player
+
+command /c3pack:
+    trigger:
+        send resource pack "https://example.test/pack.zip" to player
+        send "c:packsent" to player
+
+on resource pack response:
+    set {_r} to "%event-text% "
+    if the resource pack was accepted:
+        set {_r} to "%{_r}%acc "
+    if the resource pack was successfully loaded:
+        set {_r} to "%{_r}%loaded "
+    if resource pack wasn't declined:
+        set {_r} to "%{_r}%nodecl "
+    if resource pack was declined:
+        set {_r} to "%{_r}%decl "
+    send "c:pack %{_r}%" to player
+
+on anvil prepare:
+    send "c:anvil %anvil text input%|%anvil repair cost%" to player
+
+on enchant:
+    send "c:applied %applied enchantments%" to player
+
+command /c3piglin:
+    trigger:
+        spawn a piglin at player
+        set {pg} to last spawned entity
+        send "c:piglin" to player
+
+on piglin barter:
+    set barter drops to 3 diamonds
+    broadcast "c:barter in=%barter input% out=%barter drops%"

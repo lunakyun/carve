@@ -1224,7 +1224,7 @@ impl Engine {
     }
 
     /// Items of a list variable.
-    fn list_items(
+    pub(crate) fn list_items(
         &mut self,
         v: &VarRef,
         ex: &mut Exec,
@@ -1445,6 +1445,7 @@ impl Engine {
                 )
             }
             Cond::Gap(g) => self.gap_cond(g, ex, host),
+            Cond::W5c3(c) => self.cond_w5c3(c, ex, host),
             Cond::Rtw(r) => {
                 let a = self.eval(&r.a, ex, host)?;
                 let b = match &r.b {
@@ -2125,6 +2126,7 @@ impl Engine {
                 }
                 crate::w5_chunk5::apply(n.op, &vals, host)?
             }
+            Expr::W5c3(n) => self.eval_w5c3(n, ex, host)?,
             Expr::Rtw(n) => {
                 let mut vals = Vec::with_capacity(n.args.len());
                 for a in &n.args {
@@ -2515,6 +2517,7 @@ impl Engine {
                 }
                 crate::w5_chunk5::run_effect(w.op, &vals, host)?;
             }
+            Effect::W5c3(w) => self.run_w5c3(w, ex, host)?,
             Effect::Rtw(w) => {
                 let name = self.eval(&w.name, ex, host)?;
                 crate::w4_skbee_raytrace_world::run_effect(w, &name, host)?;

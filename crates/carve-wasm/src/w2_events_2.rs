@@ -84,15 +84,23 @@ macro_rules! reg {
 
 pub fn register_all(c: &Context) {
     // ---- player events ----
-    reg!(c, EnchantItemEvent, Ev::Enchant, cancel, |_s, _h, d| Some(
-        make_ctx(
+    reg!(c, EnchantItemEvent, Ev::Enchant, cancel, |_s, _h, d| {
+        let mut ctx = make_ctx(
             Ev::Enchant,
             Some(player_ref(&d.player)),
             &[f(d.option), f(d.cost), d.enchantments_to_add.len() as f64],
             &[id(&d.item.get_registry_key())],
             &[],
-        )
-    ));
+        );
+        // `applied enchantments` (w5_chunk3) reads the texts after the item.
+        if let Some(x) = ctx.ext.as_mut() {
+            for e in &d.enchantments_to_add {
+                let name = crate::enchant_id(&format!("{:?}", e.enchantment));
+                x.texts.push(format!("{name} {}", e.level));
+            }
+        }
+        Some(ctx)
+    });
     reg!(
         c,
         PrepareItemEnchantEvent,
