@@ -23,6 +23,31 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - `on spawn change` also runs for player spawn points; `on shoot` also runs for
   players' arrows; `on zombie break door` only runs for zombies.
 
+### Added (Skript parity, wave 6 chunks 2 to 7)
+
+- Chunk 2: flight, fake blocks, interaction and text display flags, sound
+  categories, shearing, taming, timed bans, riding any entity, swing and equip,
+  goat horns, handedness, silence, scream, trees, zombify, allay clone, script
+  switching, reset, remove all, vector rotation, world calls.
+- Chunk 3: new conditions (adult, baby, charged, climbing, conditional, holding,
+  pressing key, plugin, feature, version and more) and game-data tables for
+  edible, fuel, fire resistant and flammable.
+- Chunk 4: honey level, brushing stage, block age, element ranges, dequeue,
+  banner pattern items, persistent data keys.
+- Chunk 5: `parsed as` integer, boolean and player, human-readable timespans,
+  loot values, item components, server max stack size.
+- Chunk 6: portal cooldown, protocol version, vehicle, villager, whitelist,
+  rotation maths, block entity reads.
+- Chunk 7: variadic `min`/`max`, round places, `world()` and `entity()` calls,
+  `axisAngle`, `for each`, alias patterns, team death message visibility,
+  server icon, auto reload for scripts with an auto reload line.
+- In-game areas `w6-chunk1` to `w6-chunk7`; the parity checklist now counts
+  about 70% of core Skript (about 90% of what Pumpkin allows).
+
+### Fixed (wave 6)
+
+- A `N times` read only applies where a list can start.
+
 ### Fixed
 
 - Several events were marked blocked in the parity checklist for reasons that

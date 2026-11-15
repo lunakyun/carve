@@ -923,6 +923,11 @@ impl Engine {
                             _ => continue,
                         };
                         let slot = crate::w2_effects_1::equip_slot(&id);
+                        if let Value::Player(p) = &target {
+                            // Direct host call, so the script sees the item at once.
+                            host.equip(p, slot, &id);
+                            continue;
+                        }
                         host.execute_command(&format!(
                             "item replace entity {sel} {slot} with minecraft:{id}"
                         ));

@@ -16,18 +16,18 @@ event needs an in-game check. ⛔ items depend on Bukkit plugins (WorldGuard, Va
 
 | Category | Total | ✅ | 🟡 | ⬜ | ⛔ |
 |---|--:|--:|--:|--:|--:|
-| Events | 186 | 108 | 41 | 0 | 37 |
-| Effects | 154 | 64 | 25 | 0 | 65 |
-| Conditions | 170 | 83 | 33 | 0 | 54 |
-| Expressions | 547 | 261 | 82 | 1 | 203 |
-| Sections | 11 | 8 | 3 | 0 | 0 |
-| Structures | 8 | 5 | 3 | 0 | 0 |
-| Functions | 45 | 37 | 5 | 0 | 3 |
-| Types | 126 | 79 | 31 | 0 | 16 |
-| **All** | **1247** | **645** | **223** | **1** | **378** |
+| Events | 186 | 128 | 34 | 5 | 19 |
+| Effects | 154 | 83 | 21 | 0 | 50 |
+| Conditions | 170 | 109 | 29 | 0 | 32 |
+| Expressions | 547 | 304 | 86 | 1 | 156 |
+| Sections | 11 | 10 | 1 | 0 | 0 |
+| Structures | 8 | 8 | 0 | 0 | 0 |
+| Functions | 45 | 44 | 1 | 0 | 0 |
+| Types | 126 | 91 | 20 | 0 | 15 |
+| **All** | **1247** | **777** | **192** | **6** | **272** |
 
-Counting 🟡 as half, Carve covers about **61%** of core Skript by entry count.
-Leaving out the ⛔ entries that Pumpkin does not allow, it covers about **87%** of what can be done on Pumpkin.
+Counting 🟡 as half, Carve covers about **70%** of core Skript by entry count.
+Leaving out the ⛔ entries that Pumpkin does not allow, it covers about **90%** of what can be done on Pumpkin.
 By real-world use the number is much higher: the common core (events, variables, loops, conditions,
 functions, commands) is mostly done, and most ⬜ entries are niche (pandas, brewing stands, loot tables).
 

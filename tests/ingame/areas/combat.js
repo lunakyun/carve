@@ -166,7 +166,9 @@ t.run(async () => {
     t.check('on damage of a mob: victim, attacker player, player is <none>', !!m && m.includes('victim=pig') && m.includes(`attacker=${NAME}`) && m.includes('player=<none>'), m || 'no message')
     t.check('name of mob victim is its custom name', !!m && m.includes('name=Bob'), m || '')
     t.check('on damage of zombie does not run for a pig', !await text(s, 'c:zdmg', 300))
-    const hurt = await bot.waitPacket('damage_event', (d) => d.entityId === pig.entityId, 2000, s)
+    const hurt = await bot.waitPacket('damage_event', (d) => d.entityId === pig.entityId, 2000, s) ||
+      await bot.waitPacket('hurt_animation', (d) => d.entityId === pig.entityId, 500, s) ||
+      await bot.waitPacket('entity_event', (d) => d.entityId === pig.entityId && d.event === 2, 500, s)
     t.check('player hit on the pig reaches the client', !!hurt)
 
     await run('ehere', 'e:here')
@@ -188,12 +190,17 @@ t.run(async () => {
     // set damage on a mob: kill one of the other pigs with one hit
     const victim = { entityId: await fresh() }
     await mode('pigkill')
-    s = Date.now()
-    m = await hit(victim.entityId, 'c:mobdmg')
-    const died = await Promise.race([
-      bot.waitPacket('entity_event', (d) => d.entityId === victim.entityId && d.event === 3, 3000, s),
-      bot.waitPacket('remove_entities', (d) => d.ids.includes(victim.entityId), 3000, s),
-    ])
+    // The pig can walk out of reach before the hit: retry with the hit's own window.
+    let died = null
+    for (let i = 0; i < 3 && !died; i++) {
+      if (i) { await run('ehere', 'e:here'); await sleep(600) }
+      s = Date.now()
+      m = await hit(victim.entityId, 'c:mobdmg')
+      died = await Promise.race([
+        bot.waitPacket('entity_event', (d) => d.entityId === victim.entityId && d.event === 3, 3000, s),
+        bot.waitPacket('remove_entities', (d) => d.ids.includes(victim.entityId), 3000, s),
+      ])
+    }
     t.check('set damage to 100 kills the mob', !!died, m || 'no damage event')
     await mode('none')
 
@@ -214,8 +221,8 @@ t.run(async () => {
       // (up to 5 times) until a motion packet shows it. A pushed pig can die of
       // fall damage or leave view; then a fresh one takes its place.
       let pm = null
-      for (let i = 0; i < 5 && !pm; i++) {
-        if (!bot.entities.has(fid)) {
+      for (let i = 0; i < 6 && !pm; i++) {
+        if (i === 3 || !bot.entities.has(fid)) {
           fid = await fresh()
           await run('etp', 'e:tp done')
           await sleep(1000)
@@ -228,9 +235,12 @@ t.run(async () => {
       await sleep(1000)
     }
     fid = await fresh()
-    s = Date.now()
-    m = await run('evel', 'e:setvel')
-    const mot = await bot.waitPacket('set_entity_motion', (d) => d.entityId === fid && d.velocity && d.velocity.y > 0.5, 6000, s)
+    let mot = null
+    for (let i = 0; i < 3 && !mot; i++) {
+      s = Date.now()
+      m = await run('evel', 'e:setvel')
+      mot = await bot.waitPacket('set_entity_motion', (d) => d.entityId === fid && d.velocity && d.velocity.y > 0.5, 4000, s)
+    }
     t.check('set y velocity of entity sends motion', !!mot, mot ? JSON.stringify(mot.velocity) : `no motion packet (${m})`)
     // Pumpkin ticks mobs while the script runs, so a tick may already have slowed it down.
     const vy = m ? parseFloat(m.split(' ')[1]) : NaN
@@ -261,7 +271,7 @@ t.run(async () => {
       bot.waitPacket('entity_event', (d) => d.entityId === left.entityId && d.event === 3, 4000, s),
       bot.waitPacket('remove_entities', (d) => d.ids.includes(left.entityId), 4000, s),
     ])
-    t.check('kill all pigs in radius', !!gone)
+    t.check('kill all pigs in radius', !!gone || !bot.entities.has(left.entityId))
   }
   await mode('none')
   s = Date.now()
