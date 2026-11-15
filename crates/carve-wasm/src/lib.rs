@@ -66,6 +66,7 @@ mod w2_expressions_3;
 mod w4;
 mod w4_conditions_1;
 mod w4_events_movement;
+mod w5_chunk2;
 
 const SCRIPTS_DIR: &str = "scripts";
 const VARS_FILE: &str = "variables.json";
@@ -1467,6 +1468,14 @@ impl WasmHost<'_> {
         self.w4c1_check_impl(c, v)
     }
 
+    fn w5c2_query(&mut self, q: carve_core::w5_chunk2::Query<'_>) -> Option<Value> {
+        self.w5c2_query_impl(q)
+    }
+
+    fn default_world(&mut self) -> Option<String> {
+        self.server.get_all_worlds().first().map(world_name)
+    }
+
     fn w2e7_query(&mut self, q: Query<'_>) -> Option<Value> {
         let num = |n: f64| Some(Value::Num(n));
         match q {
@@ -1787,6 +1796,14 @@ impl Host for TickHost<'_, '_> {
 
     fn w4c1_check(&mut self, c: carve_core::w4_conditions_1::Check, v: &Value) -> Option<bool> {
         self.inner.w4c1_check(c, v)
+    }
+
+    fn w5c2_query(&mut self, q: carve_core::w5_chunk2::Query<'_>) -> Option<Value> {
+        self.inner.w5c2_query(q)
+    }
+
+    fn default_world(&mut self) -> Option<String> {
+        self.inner.default_world()
     }
 
     sb::sb_host_methods!();
@@ -2122,8 +2139,9 @@ impl State {
 impl<E: EventAccess> EventHandler<E> for OnEvent<E> {
     fn handle(&self, server: Server, mut data: EventData<E>) -> EventData<E> {
         let kind = self.0;
-        if let Some(u) = E::left(&data) {
-            sb::forget(&u);
+        let left = E::left(&data);
+        if let Some(u) = &left {
+            sb::forget(u);
         }
         let result = with_state(&server, None, |st, host| {
             E::observe(&data, &mut st.hs);
@@ -2146,6 +2164,9 @@ impl<E: EventAccess> EventHandler<E> for OnEvent<E> {
             if let Some(m) = msg {
                 E::set_message(&mut data, &m);
             }
+        }
+        if let Some(u) = &left {
+            w4_events_movement::left(u);
         }
         data
     }
