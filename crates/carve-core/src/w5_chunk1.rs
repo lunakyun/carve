@@ -235,8 +235,10 @@ fn first_words(src: &str) -> Option<Vec<String>> {
 }
 
 /// Pattern indexes by first word (lowercase), plus the ones always tried.
-fn by_head() -> &'static (HashMap<String, Vec<usize>>, Vec<usize>) {
-    static I: OnceLock<(HashMap<String, Vec<usize>>, Vec<usize>)> = OnceLock::new();
+type HeadIndex = (HashMap<String, Vec<usize>>, Vec<usize>);
+
+fn by_head() -> &'static HeadIndex {
+    static I: OnceLock<HeadIndex> = OnceLock::new();
     I.get_or_init(|| {
         let mut map: HashMap<String, Vec<usize>> = HashMap::new();
         let mut any = Vec::new();
