@@ -72,6 +72,7 @@ mod w5_chunk3;
 mod w5_chunk4;
 mod w5_chunk5;
 mod w5_chunk6;
+mod w6_chunk3;
 
 const SCRIPTS_DIR: &str = "scripts";
 const VARS_FILE: &str = "variables.json";
@@ -655,11 +656,9 @@ impl WasmHost<'_> {
             PlayerFlag::Swimming => e.is_swimming(),
             PlayerFlag::OnGround => e.is_on_ground(),
             PlayerFlag::Sleeping => matches!(e.get_pose(), EntityPose::Sleeping),
-            PlayerFlag::Flying => flying,
-            // The API has no "allow flight" ability, so this follows the game mode.
-            PlayerFlag::CanFly => {
-                matches!(pl.get_gamemode(), GameMode::Creative | GameMode::Spectator) || flying
-            }
+            // The player's own flying state (tracked toggles only cover older hosts).
+            PlayerFlag::Flying => pl.is_flying() || flying,
+            PlayerFlag::CanFly => pl.get_abilities().allow_flying || flying,
             // No shield-blocking state in the plugin API yet.
             PlayerFlag::Blocking => false,
             PlayerFlag::Burning => e.is_on_fire(),
@@ -702,9 +701,7 @@ impl WasmHost<'_> {
         let block = Block::from_name(id)?;
         match t {
             BlockTrait::Solid => Some(block.is_solid),
-            BlockTrait::Transparent => {
-                Block::get_default_state_for_id(block.id).map(|s| s.opacity == 0 && !block.is_solid)
-            }
+            BlockTrait::Transparent => Block::get_default_state_for_id(block.id).map(|s| s.opacity == 0),
             BlockTrait::Passable => {
                 Block::get_default_state_for_id(block.id).map(|s| s.collision_shapes.is_empty())
             }
@@ -1506,6 +1503,20 @@ impl WasmHost<'_> {
         self.w5c3_impl(q)
     }
 
+    fn w6c3(&mut self, q: carve_core::w6_chunk3::Q<'_>) -> Option<Value> {
+        self.w6c3_impl(q)
+    }
+
+    fn is_banned(&mut self, name: &str) -> bool {
+        let bans = self.server.get_ban_manager();
+        if name.parse::<std::net::IpAddr>().is_ok() {
+            return bans.is_ip_banned(name);
+        }
+        bans.list_player_bans()
+            .iter()
+            .any(|b| b.name.eq_ignore_ascii_case(name) || uuid::to_string(b.uuid) == name)
+    }
+
     fn w5c1(&mut self, op: carve_core::w5_chunk1::HostOp<'_>) -> Option<bool> {
         self.w5c1_impl(op)
     }
@@ -1854,6 +1865,14 @@ impl Host for TickHost<'_, '_> {
 
     fn w5c3(&mut self, q: carve_core::w5_chunk3::Q<'_>) -> Option<Value> {
         self.inner.w5c3(q)
+    }
+
+    fn w6c3(&mut self, q: carve_core::w6_chunk3::Q<'_>) -> Option<Value> {
+        self.inner.w6c3(q)
+    }
+
+    fn is_banned(&mut self, name: &str) -> bool {
+        self.inner.is_banned(name)
     }
 
     fn c6_get(&mut self, q: carve_core::w5_chunk6::Get<'_>) -> Option<Value> {
@@ -3154,6 +3173,25 @@ impl Plugin for Carve {
         w2_events_2::register_all(&context);
         w2_events_3::register_all(&context, &|ev| engine.table().has_event(EventKind::Ext3(ev)));
         w2_events_4::register_all(&context);
+        if carve_core::w6_chunk3::keys_used() {
+            let _ = context.register_event_handler::<pumpkin_plugin_api::events::PlayerInputEvent, _>(
+                w6_chunk3::OnInput,
+                EventPriority::Normal,
+                true,
+            );
+        }
+        if carve_core::w6_chunk3::spawner_used() {
+            let _ = context.register_event_handler::<pumpkin_plugin_api::events::SpawnerSpawnEvent, _>(
+                w6_chunk3::OnSpawner,
+                EventPriority::Normal,
+                true,
+            );
+            let _ = context.register_event_handler::<pumpkin_plugin_api::events::TrialSpawnerSpawnEvent, _>(
+                w6_chunk3::OnTrialSpawner,
+                EventPriority::Normal,
+                true,
+            );
+        }
         w4_events_movement::register_all(
             &context,
             engine
@@ -3215,6 +3253,9 @@ impl Plugin for Carve {
             });
         }
         schedule_repeating_task(1, 1, tick);
+        if carve_core::w6_chunk3::version_used() {
+            let _ = w6_chunk3::version(&context.get_server());
+        }
         PH_SERVER.with(|s| *s.borrow_mut() = Some(context.get_server()));
         fire_load(&context.get_server());
         Ok(())

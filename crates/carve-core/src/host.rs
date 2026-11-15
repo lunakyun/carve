@@ -920,6 +920,11 @@ pub trait Host {
     }
     // ---- w2_expressions_4 ----
 
+    /// Answer one of the `w6_chunk3` questions (see [`crate::w6_chunk3::Q`]).
+    fn w6c3(&mut self, _q: crate::w6_chunk3::Q<'_>) -> Option<crate::value::Value> {
+        None
+    }
+
     /// Answer one of the `w5_chunk3` questions (see [`crate::w5_chunk3::Q`]).
     /// `None` when the game cannot tell.
     fn w5c3(&mut self, _q: crate::w5_chunk3::Q<'_>) -> Option<crate::value::Value> {

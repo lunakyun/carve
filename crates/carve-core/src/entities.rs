@@ -108,7 +108,7 @@ fn joined(toks: &[Tok]) -> Option<String> {
     (!out.is_empty()).then_some(out)
 }
 
-fn kind_words(toks: &[Tok]) -> Option<&'static str> {
+pub(crate) fn kind_words(toks: &[Tok]) -> Option<&'static str> {
     kind_of(&joined(toks)?)
 }
 
