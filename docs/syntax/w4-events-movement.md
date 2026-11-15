@@ -39,9 +39,11 @@ the first `on move` script needs a restart.
 
 ## Swap hand items
 
-Pumpkin defines this event but does not fire it yet, so the script never runs
-until the server does.
+Runs when the player presses the swap key (F). `cancel event` keeps both
+hands as they were.
 
 ## World change
 
-`event-world` is the new world, `past event-world` the old one.
+`event-world` is the new world, `past event-world` the old one. The overworld
+is `world`; the nether and the end are `minecraft:the_nether` and
+`minecraft:the_end`.

@@ -40,9 +40,17 @@ Carve itself. For the full feature-by-feature status, see the
   - `on death` is for players only.
   - Cancelling a death leaves the player at 0 health. Pumpkin marks the player
     as dead before the event runs.
-- **Events Pumpkin doesn't fire yet:** `on swap hand items` is wired up, but
-  Pumpkin 0.2.2 never sends it. `on move` runs when the player moves to
-  another block, not on every small move or turn of the head.
+- **Move:** `on move` runs when the player moves to another block, not on
+  every small move or turn of the head.
+- **Consume:** `on consume` runs when the player starts eating or drinking,
+  not when the item is used up. Pumpkin fires its event on the right click.
+- **Pick up:** `on pick up` has no `event-item` (Pumpkin 0.2.2 sends the
+  entity type id instead of the item), and `cancel event` doesn't stop the
+  pickup, because Pumpkin fires the event after the item is in the inventory.
+- **World names:** Pumpkin 0.2.2 gives every dimension the level folder's
+  name, so Carve names the nether and the end by their dimension id
+  (`minecraft:the_nether`, `minecraft:the_end`), not `world_nether` and
+  `world_the_end` like Skript.
 - **Nested events:** if the server calls back into Carve while a script is
   running, that event is skipped with a warning. Console commands from scripts
   run after the script finishes, which avoids this in the common case.

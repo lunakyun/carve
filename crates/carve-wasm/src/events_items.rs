@@ -37,6 +37,11 @@ impl EventAccess for PlayerDropItemEvent {
 }
 
 impl EventAccess for PlayerItemConsumeEvent {
+    /// Pumpkin fires this for every right click with any item (even an empty
+    /// hand), so only food and drinks reach `on consume`.
+    fn skip(d: &EventData<Self>) -> bool {
+        !carve_core::w2_conditions_2::is_edible(&short(&d.item_name))
+    }
     fn ctx(d: &EventData<Self>) -> EventCtx {
         let extra = EventExtra {
             item: Some((short(&d.item_name), 1)),
@@ -101,7 +106,7 @@ impl EventAccess for CreatureSpawnEvent {
                 x,
                 y,
                 z,
-                world: Some(d.target_world.get_name()),
+                world: Some(world_name(&d.target_world)),
             }),
             reason: Some(d.spawn_reason.to_ascii_lowercase()),
             ..Default::default()
@@ -129,8 +134,12 @@ impl EventHandler<EntityPickupItemEvent> for OnPickUp {
             let Some(p) = st.player_by_entity(host, data.entity_id) else {
                 return false;
             };
+            // Pumpkin 0.2.2 sends the item entity's type id ("72") here, not
+            // the item; leave `event-item` unset rather than a wrong item.
+            let item = (!data.item_name.bytes().all(|b| b.is_ascii_digit()))
+                .then(|| (short(&data.item_name), u32::from(data.count)));
             let extra = EventExtra {
-                item: Some((short(&data.item_name), u32::from(data.count))),
+                item,
                 ..Default::default()
             };
             let mut th = TickHost {

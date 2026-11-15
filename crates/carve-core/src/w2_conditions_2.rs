@@ -196,7 +196,8 @@ fn wood_part(id: &str) -> Option<&str> {
     WOODS.iter().find_map(|w| id.strip_prefix(w)?.strip_prefix('_'))
 }
 
-fn is_edible(id: &str) -> bool {
+/// Items a player eats or drinks (food, potions, milk, honey).
+pub fn is_edible(id: &str) -> bool {
     matches!(
         id,
         "apple"

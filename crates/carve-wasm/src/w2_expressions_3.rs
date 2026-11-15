@@ -4,7 +4,7 @@
 use carve_core::PlayerRef;
 use carve_core::w2_expressions_3::PStat;
 
-use crate::WasmHost;
+use crate::{WasmHost, world_name};
 
 impl WasmHost<'_> {
     pub(crate) fn pstat_impl(&mut self, p: &PlayerRef, s: PStat) -> Option<f64> {
@@ -43,7 +43,7 @@ impl WasmHost<'_> {
     pub(crate) fn eye_location_impl(&mut self, p: &PlayerRef) -> Option<(f64, f64, f64, String)> {
         let pl = self.get(p)?;
         let (x, y, z) = pl.as_entity().get_eye_position();
-        Some((x, y, z, pl.get_world().get_name()))
+        Some((x, y, z, world_name(&pl.get_world())))
     }
 
     pub(crate) fn first_empty_slot_impl(&mut self, p: &PlayerRef) -> Option<u32> {
