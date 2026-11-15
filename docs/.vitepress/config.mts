@@ -141,7 +141,7 @@ const sidebar: DefaultTheme.SidebarItem[] = [
 
 export default defineConfig({
   title: 'Carve',
-  description: 'Simple, readable scripts for the Pumpkin Minecraft server',
+  description: 'Skript-style scripting for Pumpkin servers. Write commands, events and minigames in plain English, /carve reload and they're live.',
   base: '/carve/',
   srcDir: '.',
   cleanUrls: true,
@@ -151,7 +151,7 @@ export default defineConfig({
     ['link', { rel: 'icon', href: '/carve/favicon.ico' }],
     ['meta', { name: 'theme-color', content: '#f28c28' }],
     ['meta', { property: 'og:title', content: 'Carve' }],
-    ['meta', { property: 'og:description', content: 'Simple, readable scripts for the Pumpkin Minecraft server' }],
+    ['meta', { property: 'og:description', content: 'Skript-style scripting for Pumpkin servers. Write commands, events and minigames in plain English, /carve reload and they're live.' }],
   ],
   markdown: {
     languages: [carveGrammar as any],
