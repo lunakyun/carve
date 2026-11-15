@@ -1,0 +1,229 @@
+# Wave 6 chunk 3 area. Every result goes to chat as c:<key> <value>.
+
+command /c6pos:
+    trigger:
+        send "c:pos %floor(x of player)% %floor(y of player)% %floor(z of player)%" to player
+
+command /c6logic:
+    trigger:
+        set {_r} to ""
+        if vector(1, 0, 0) is normalized:
+            set {_r} to "%{_r}%A"
+        if vector(1, 1, 0) is not normalized:
+            set {_r} to "%{_r}%B"
+        if plugin "carve" is enabled:
+            set {_r} to "%{_r}%C"
+        if plugin "no-such-plugin" is not enabled:
+            set {_r} to "%{_r}%D"
+        if feature "vanilla" is enabled:
+            set {_r} to "%{_r}%E"
+        if feature "bundle" is not enabled:
+            set {_r} to "%{_r}%F"
+        if running minecraft "26.3":
+            set {_r} to "%{_r}%G"
+        if running above minecraft "1.20":
+            set {_r} to "%{_r}%H"
+        if running below minecraft "30":
+            set {_r} to "%{_r}%I"
+        if not running minecraft "1.8":
+            set {_r} to "%{_r}%J"
+        if bread is edible:
+            set {_r} to "%{_r}%K"
+        if honey bottle is edible:
+            set {_r} to "%{_r}%L"
+        if stick is not edible:
+            set {_r} to "%{_r}%M"
+        if coal is fuel:
+            set {_r} to "%{_r}%N"
+        if diamond is not fuel:
+            set {_r} to "%{_r}%O"
+        if netherite ingot is fire resistant:
+            set {_r} to "%{_r}%P"
+        if iron ingot is not fire resistant:
+            set {_r} to "%{_r}%Q"
+        if oak planks is flammable:
+            set {_r} to "%{_r}%R"
+        if stone is not flammable:
+            set {_r} to "%{_r}%S"
+        if the command "c6logic" is a script command:
+            set {_r} to "%{_r}%T"
+        if the command "nothing-here" is not a script command:
+            set {_r} to "%{_r}%U"
+        if "instant_health" is instant:
+            set {_r} to "%{_r}%V"
+        if "speed" is not instant:
+            set {_r} to "%{_r}%W"
+        send "c:logic %{_r}%" to player
+
+command /c6mobs:
+    trigger:
+        set {_r} to ""
+        if {pg} is an adult:
+            set {_r} to "%{_r}%padult "
+        if {pg} is not a baby:
+            set {_r} to "%{_r}%pnobaby "
+        if {bb} is a baby:
+            set {_r} to "%{_r}%bbaby "
+        if {bb} is not an adult:
+            set {_r} to "%{_r}%bnoadult "
+        if {cr} is not charged:
+            set {_r} to "%{_r}%cplain "
+        if {cr} is charged:
+            set {_r} to "%{_r}%ccharged "
+        if {cr} is not igniting:
+            set {_r} to "%{_r}%cquiet "
+        if {pg} is not climbing:
+            set {_r} to "%{_r}%pnoclimb "
+        if {pg} is not silent:
+            set {_r} to "%{_r}%pnoisy "
+        if {sl} is silent:
+            set {_r} to "%{_r}%slsilent "
+        if {pg} is not riding:
+            set {_r} to "%{_r}%pfree "
+        if {pg} is of type pig:
+            set {_r} to "%{_r}%ptype "
+        if {pg} is not of type cow:
+            set {_r} to "%{_r}%pnotcow "
+        if {pg} is not from a spawner:
+            set {_r} to "%{_r}%pwild "
+        send "c:mobs %{_r}%" to player
+
+command /c6spawn:
+    trigger:
+        spawn a pig at player
+        set {pg} to last spawned entity
+        spawn a cow at player
+        set {bb} to last spawned entity
+        spawn a creeper at player
+        set {cr} to last spawned entity
+        spawn a pig at player
+        set {sl} to last spawned entity
+        wait 3 ticks
+        make {bb} a baby
+        send "c:spawned" to player
+
+command /c6silent:
+    trigger:
+        execute console command "data merge entity %uuid of {sl}% {Silent:1b}"
+        send "c:silenced" to player
+
+command /c6charge:
+    trigger:
+        execute console command "data merge entity %uuid of {cr}% {powered:1b}"
+        wait 1 second
+        send "c:charged" to player
+
+command /c6ignite:
+    trigger:
+        execute console command "data merge entity %uuid of {cr}% {ignited:1b,Fuse:200}"
+        wait 1 second
+        send "c:ignited" to player
+
+command /c6path:
+    trigger:
+        set {_r} to ""
+        spawn a cow at player
+        set {_c} to last spawned entity
+        if {_c} is not pathfinding:
+            set {_r} to "idle"
+        make {_c} pathfind to location at 14, 101, 0 in world "world" at speed 1.5
+        wait 5 ticks
+        if {_c} is pathfinding:
+            set {_r} to "%{_r}% walking"
+        send "c:path %{_r}%" to player
+
+command /c6set <number> <number> <number> <text>:
+    trigger:
+        set {_l} to location(arg-1, arg-2, arg-3, player's world)
+        set block data of block at {_l} to arg-4
+        send "c:set %block data of block at {_l}%" to player
+
+command /c6blk <number> <number> <number>:
+    trigger:
+        set {_b} to location(arg-1, arg-2, arg-3, player's world)
+        set {_r} to ""
+        if {_b} is conditional:
+            set {_r} to "%{_r}%cond "
+        if {_b} is lootable:
+            set {_r} to "%{_r}%loot "
+        if {_b} is persistent:
+            set {_r} to "%{_r}%pers "
+        if {_b} is occluding:
+            set {_r} to "%{_r}%occ "
+        if {_b} is powered:
+            set {_r} to "%{_r}%pow "
+        if {_b} is solid:
+            set {_r} to "%{_r}%solid "
+        if {_b} is transparent:
+            set {_r} to "%{_r}%transp "
+        if {_b} is passable:
+            set {_r} to "%{_r}%pass "
+        if {_b} is of type stone:
+            set {_r} to "%{_r}%stone "
+        send "c:blk %{_r}%" to player
+
+command /c6self:
+    trigger:
+        set {_r} to ""
+        if player is right handed:
+            set {_r} to "%{_r}%right "
+        if player is left handed:
+            set {_r} to "%{_r}%left "
+        if player is not left handed:
+            set {_r} to "%{_r}%notleft "
+        if player is holding diamond sword:
+            set {_r} to "%{_r}%holds "
+        if player is holding diamond sword in main hand:
+            set {_r} to "%{_r}%main "
+        if player is not holding diamond sword in off hand:
+            set {_r} to "%{_r}%notoff "
+        if player is not holding stick:
+            set {_r} to "%{_r}%nostick "
+        if player can fly:
+            set {_r} to "%{_r}%canfly "
+        if player is flying:
+            set {_r} to "%{_r}%flying "
+        if player is jumping:
+            set {_r} to "%{_r}%jumping "
+        if player is climbing:
+            set {_r} to "%{_r}%climbing "
+        if player is not riding:
+            set {_r} to "%{_r}%free "
+        if player is not silent:
+            set {_r} to "%{_r}%noisy "
+        if player is pressing jump key:
+            set {_r} to "%{_r}%jump "
+        if player is pressing the sneak key:
+            set {_r} to "%{_r}%sneak "
+        if player is not pressing forward key:
+            set {_r} to "%{_r}%nofwd "
+        if player is within chunk at player:
+            set {_r} to "%{_r}%inchunk "
+        if player is not within chunk at 1000, 1000:
+            set {_r} to "%{_r}%outchunk "
+        if chunk at player is loaded:
+            set {_r} to "%{_r}%loaded "
+        if chunk at 1000, 1000 is not loaded:
+            set {_r} to "%{_r}%unloaded "
+        if player is within world border of player's world:
+            set {_r} to "%{_r}%inborder "
+        send "c:self %{_r}%" to player
+
+command /c6ban <text>:
+    trigger:
+        if arg-1 is banned:
+            send "c:ban yes" to player
+        else:
+            send "c:ban no" to player
+
+command /c6spawnpoint <number> <number> <number>:
+    trigger:
+        set player's bed location to location(arg-1, arg-2, arg-3, player's world)
+        set {_r} to ""
+        if the respawn location is a bed spawn:
+            set {_r} to "%{_r}%bed "
+        if the respawn location is a respawn anchor spawn:
+            set {_r} to "%{_r}%anchor "
+        if the respawn location is not a bed spawn:
+            set {_r} to "%{_r}%notbed "
+        send "c:spawnpoint %{_r}%" to player
