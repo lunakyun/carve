@@ -728,6 +728,11 @@ pub trait Host {
         Vec::new()
     }
 
+    /// The live entity with this uuid, in any world.
+    fn entity_by_uuid(&mut self, _uuid: &str) -> Option<EntityRef> {
+        None
+    }
+
     /// The entity with this server entity id (the id events carry).
     fn entity_by_id(&mut self, _id: i32) -> Option<EntityRef> {
         None

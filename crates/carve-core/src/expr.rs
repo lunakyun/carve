@@ -1069,7 +1069,14 @@ impl P<'_> {
                 if !matches!(u.ty(self.env), Ty::Text | Ty::Object) {
                     return Err("'player from uuid' needs the UUID as text".into());
                 }
-                ext(ExtFn::PlayerFromUuid, vec![u])
+                ext(
+                    if lw == "entity" {
+                        ExtFn::EntityFromUuid
+                    } else {
+                        ExtFn::PlayerFromUuid
+                    },
+                    vec![u],
+                )
             }
             "highest" | "top"
                 if (lw == "top" && next(1) == "block" && next(2) == "at")
@@ -2209,6 +2216,33 @@ impl P<'_> {
                         let name = self.primary()?;
                         Ok(Expr::WorldNamed(Box::new(name)))
                     }
+                    "world"
+                        if matches!(self.peek(), Some(t) if t.is_lit("(")) && !self.has_function("world") =>
+                    {
+                        self.pos += 1;
+                        let name = self.top()?;
+                        if !self.eat_sym(")") {
+                            return Err("missing ')' after world(\"name\")".into());
+                        }
+                        if !matches!(name.ty(self.env), Ty::Text | Ty::Object) {
+                            return Err("world(name) needs the world name as text".into());
+                        }
+                        Ok(Expr::WorldNamed(Box::new(name)))
+                    }
+                    "entity"
+                        if matches!(self.peek(), Some(t) if t.is_lit("("))
+                            && !self.has_function("entity") =>
+                    {
+                        self.pos += 1;
+                        let u = self.top()?;
+                        if !self.eat_sym(")") {
+                            return Err("missing ')' after entity(uuid)".into());
+                        }
+                        if !matches!(u.ty(self.env), Ty::Text | Ty::Object) {
+                            return Err("entity(uuid) needs the UUID as text".into());
+                        }
+                        Ok(Expr::Ext(crate::w2_expressions_3::ExtFn::EntityFromUuid, vec![u]))
+                    }
                     "random" if matches!(self.peek(), Some(t) if t.is_lit("element")) => {
                         self.pos += 1;
                         if !matches!(self.peek(), Some(t) if t.is_lit("of")) {
@@ -2357,13 +2391,14 @@ impl P<'_> {
                         if !self.eat_sym(")") {
                             return Err(format!("missing ')' after {lw}("));
                         }
-                        if args.len() != n {
+                        let variadic = matches!(f, MathFn::Min | MathFn::Max) && args.len() > n;
+                        if args.len() != n && !variadic && !(f == MathFn::Round && args.len() == 2) {
                             return Err(format!("{lw}() takes {n} number(s), got {}", args.len()));
                         }
                         if args.iter().any(|a| !Ty::Number.accepts(a.ty(self.env))) {
                             return Err(format!("{lw}() needs numbers"));
                         }
-                        Ok(Expr::Math(f, args))
+                        Ok(crate::w6_chunk7::math_call(f, args))
                     }
                     _ if matches!(self.peek(), Some(t) if t.is_lit("(")) => self.call(&w),
                     _ => {

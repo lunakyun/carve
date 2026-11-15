@@ -1157,6 +1157,8 @@ pub enum Op {
     HexOf,
     /// `quaternion(w, x, y, z)`
     Quat,
+    /// `axisAngle(angle, x, y, z)` or `axisAngle(angle, vector)`
+    AxisAngle,
     /// `timeperiod(from, to)`: two times of day, in ticks.
     Period,
     /// `queue(a, b, ...)`
@@ -1234,6 +1236,13 @@ pub fn apply(op: &Op, vals: &[Value]) -> Result<Value, String> {
             y: n(2, "y")?,
             z: n(3, "z")?,
         },
+        Op::AxisAngle => {
+            let (angle, x, y, z) = match vals.get(1) {
+                Some(Value::Vector { x, y, z }) => (n(0, "the angle")?, *x, *y, *z),
+                _ => (n(0, "the angle")?, n(1, "x")?, n(2, "y")?, n(3, "z")?),
+            };
+            crate::w6_chunk7::axis_angle(angle, x, y, z)?
+        }
         Op::Period => Value::Timeperiod {
             start: n(0, "the start")? as i64,
             end: n(1, "the end")? as i64,
@@ -1333,6 +1342,13 @@ impl P<'_> {
             "quaternion" if paren => {
                 let args = self.t1_args("quaternion", 4, 4)?;
                 node(Op::Quat, args, T_QUATERNION)
+            }
+            "axisangle" if paren => {
+                let args = self.t1_args("axisAngle", 2, 4)?;
+                if args.len() == 3 {
+                    return Err("axisAngle(angle, x, y, z) or axisAngle(angle, vector)".into());
+                }
+                node(Op::AxisAngle, args, T_QUATERNION)
             }
             "identity" if self.t1_lit(0, "quaternion") => {
                 self.pos += 1;

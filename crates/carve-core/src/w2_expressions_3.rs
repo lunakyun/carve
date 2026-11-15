@@ -72,6 +72,8 @@ pub enum ExtFn {
     /// `<timespan> formatted`.
     Clock,
     PlayerFromUuid,
+    /// `entity from uuid`, `entity(uuid)`: a player or any live entity.
+    EntityFromUuid,
     /// `highest solid block at <location>`.
     Highest,
     IndexOf(IndexSel),
@@ -91,6 +93,7 @@ pub fn ty(f: ExtFn) -> Ty {
         ExtFn::HiddenPlayers | ExtFn::Except | ExtFn::IndexOf(IndexSel::All) => Ty::List,
         ExtFn::IndexOf(_) => Ty::Object,
         ExtFn::PlayerFromUuid => Ty::Player,
+        ExtFn::EntityFromUuid => Ty::Object,
         ExtFn::ExactItem => Ty::Item,
     }
 }
@@ -301,6 +304,7 @@ pub fn apply(f: ExtFn, a: &[Value], host: &mut dyn Host) -> Value {
                 None => Value::None,
             }
         }
+        ExtFn::EntityFromUuid => crate::w6_chunk7::entity_from_uuid(arg, host),
         ExtFn::Highest => {
             let (x, z, world) = match arg {
                 Value::Location { x, z, world, .. } => (*x, *z, world.clone()),

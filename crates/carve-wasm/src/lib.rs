@@ -72,6 +72,7 @@ mod w5_chunk3;
 mod w5_chunk4;
 mod w5_chunk5;
 mod w5_chunk6;
+mod w6_chunk7;
 
 const SCRIPTS_DIR: &str = "scripts";
 const VARS_FILE: &str = "variables.json";
@@ -1786,6 +1787,10 @@ impl Host for TickHost<'_, '_> {
         let r = self.inner.entity_by_id(id);
         self.hs.w4.ent_ids.push((id, r.clone()));
         r
+    }
+
+    fn entity_by_uuid(&mut self, uuid: &str) -> Option<carve_core::EntityRef> {
+        self.inner.entity_by_uuid_impl(uuid)
     }
 
     fn top_block_y(&mut self, world: Option<&str>, x: i32, z: i32) -> Option<i32> {
